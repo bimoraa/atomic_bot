@@ -6,6 +6,7 @@ import * as ticket_close_modal from "../interactions/modals/ticket/close";
 import * as devlog_modal from "../interactions/modals/devlog";
 import * as review_modal from "../interactions/modals/review";
 import * as purchase_close_reason_modal from "../interactions/modals/purchase_close_reason";
+import * as edit_rules_modal from "../interactions/modals/edit_rules";
 import * as join_ticket from "../interactions/buttons/ticket/join";
 import * as close_ticket from "../interactions/buttons/ticket/close";
 import * as review_submit from "../interactions/buttons/review/submit";
@@ -114,6 +115,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "purchase_close_reason_modal") {
         await purchase_close_reason_modal.handle_purchase_close_reason_modal(interaction);
+        return;
+      }
+      if (interaction.customId.startsWith("edit_rules:")) {
+        await edit_rules_modal.handle_edit_rules_modal(interaction);
         return;
       }
     } catch (err) {
