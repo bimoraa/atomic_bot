@@ -1,36 +1,27 @@
-import { ButtonInteraction } from "discord.js";
-import {
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
-  ActionRowBuilder,
-} from "discord.js";
+import { ButtonInteraction } from "discord.js"
+import { modal } from "../../../utils"
 
 export async function handle_review_submit(interaction: ButtonInteraction) {
-  const modal = new ModalBuilder()
-    .setCustomId("review_modal")
-    .setTitle("Submit a Review");
+  const review_modal = modal.create_modal(
+    "review_modal",
+    "Submit a Review",
+    modal.create_text_input({
+      custom_id: "review_text",
+      label: "Your Review",
+      style: "paragraph",
+      placeholder: "Tell us about your experience...",
+      required: true,
+      max_length: 500,
+    }),
+    modal.create_text_input({
+      custom_id: "review_rating",
+      label: "Rating (1-5)",
+      style: "short",
+      placeholder: "5",
+      required: true,
+      max_length: 1,
+    })
+  )
 
-  const review_input = new TextInputBuilder()
-    .setCustomId("review_text")
-    .setLabel("Your Review")
-    .setStyle(TextInputStyle.Paragraph)
-    .setPlaceholder("Tell us about your experience...")
-    .setRequired(true)
-    .setMaxLength(500);
-
-  const rating_input = new TextInputBuilder()
-    .setCustomId("review_rating")
-    .setLabel("Rating (1-5)")
-    .setStyle(TextInputStyle.Short)
-    .setPlaceholder("5")
-    .setRequired(true)
-    .setMaxLength(1);
-
-  modal.addComponents(
-    new ActionRowBuilder<TextInputBuilder>().addComponents(review_input),
-    new ActionRowBuilder<TextInputBuilder>().addComponents(rating_input)
-  );
-
-  await interaction.showModal(modal);
+  await interaction.showModal(review_modal)
 }

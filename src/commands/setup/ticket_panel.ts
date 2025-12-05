@@ -3,15 +3,15 @@ import {
   SlashCommandBuilder,
   TextChannel,
   GuildMember,
-} from "discord.js";
-import { Command } from "../../types/command";
-import { is_admin } from "../../functions/permissions";
-import { load_config } from "../../configuration/loader";
+} from "discord.js"
+import { Command } from "../../types/command"
+import { is_admin } from "../../functions/permissions"
+import { load_config } from "../../configuration/loader"
+import { component, api, format } from "../../utils"
 
-const config = load_config<{ panel_channel_id: string; priority_role_id: string }>("ticket");
-const panel_channel_id = config.panel_channel_id;
-const priority_role_id = config.priority_role_id;
-const logo_url = "https://github.com/bimoraa/Euphoria/blob/main/aaaaa.png?raw=true";
+const config = load_config<{ panel_channel_id: string; priority_role_id: string }>("ticket")
+const panel_channel_id = config.panel_channel_id
+const priority_role_id = config.priority_role_id
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -19,91 +19,70 @@ export const command: Command = {
     .setDescription("Send the priority support ticket panel") as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
-    const member = interaction.member as GuildMember;
+    const member = interaction.member as GuildMember
 
     if (!is_admin(member)) {
       await interaction.reply({
         content: "You don't have permission to use this command.",
         ephemeral: true,
-      });
-      return;
+      })
+      return
     }
 
-    const channel = interaction.guild?.channels.cache.get(panel_channel_id) as TextChannel;
+    const channel = interaction.guild?.channels.cache.get(panel_channel_id) as TextChannel
 
     if (!channel) {
-      await interaction.reply({ content: "Panel channel not found.", ephemeral: true });
-      return;
+      await interaction.reply({ content: "Panel channel not found.", ephemeral: true })
+      return
     }
 
-    const url = `https://discord.com/api/v10/channels/${channel.id}/messages`;
-
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-      },
-      body: JSON.stringify({
-        flags: 32768,
-        components: [
-          {
-            type: 17,
-            components: [
+    const message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.section({
+              content: [
+                `## Priority Support`,
+                `This ticket can only be made by people with the role <@&${priority_role_id}> as they are given the priority support by our Customer Relations Team. However, there are lists of things you need to know before opening a ticket.`,
+                ``,
+                `You can't open the ticket for the following reasons:`,
+                ``,
+                `1. Asking for refund`,
+                `2. Asking for sharing permission`,
+                `3. Asking help for daily executor key`,
+                `4. Asking for executors download link`,
+              ],
+              thumbnail: format.logo_url,
+            }),
+            component.select_menu("ticket_select", "Select Issue Type", [
               {
-                type: 9,
-                components: [
-                  {
-                    type: 10,
-                    content: `## Priority Support\nThis ticket can only be made by people with the role <@&${priority_role_id}> as they are given the priority support by our Customer Relations Team. However, there are lists of things you need to know before opening a ticket.\n\nYou can't open the ticket for the following reasons:\n\n1. Asking for refund\n2. Asking for sharing permission\n3. Asking help for daily executor key\n4. Asking for executors download link`,
-                  },
-                ],
-                accessory: {
-                  type: 11,
-                  media: {
-                    url: logo_url,
-                  },
-                },
+                label: "Script Issue",
+                value: "script_issue",
+                description: "Asking or Help about Script",
               },
               {
-                type: 1,
-                components: [
-                  {
-                    type: 3,
-                    custom_id: "ticket_select",
-                    placeholder: "Select Issue Type",
-                    options: [
-                      {
-                        label: "Script Issue",
-                        value: "script_issue",
-                        description: "Asking or Help about Script",
-                      },
-                      {
-                        label: "Discord Issue",
-                        value: "discord_issue",
-                        description: "Discord Account Transfer or Suspected Hacked Account",
-                      },
-                      {
-                        label: "Others",
-                        value: "others",
-                        description: "Reserved for urgent requests only",
-                      },
-                    ],
-                  },
-                ],
+                label: "Discord Issue",
+                value: "discord_issue",
+                description: "Discord Account Transfer or Suspected Hacked Account",
               },
-            ],
-          },
-        ],
-      }),
-    });
+              {
+                label: "Others",
+                value: "others",
+                description: "Reserved for urgent requests only",
+              },
+            ]),
+          ],
+        }),
+      ],
+    })
 
-    if (response.ok) {
-      await interaction.reply({ content: "Ticket panel sent!", ephemeral: true });
+    const response = await api.send_components_v2(channel.id, api.get_token(), message)
+
+    if (!response.error) {
+      await interaction.reply({ content: "Ticket panel sent!", ephemeral: true })
     } else {
-      const error = await response.json();
-      console.error("[ticket_panel] Error:", error);
-      await interaction.reply({ content: "Failed to send ticket panel.", ephemeral: true });
+      console.error("[ticket_panel] Error:", response)
+      await interaction.reply({ content: "Failed to send ticket panel.", ephemeral: true })
     }
   },
-};
+}

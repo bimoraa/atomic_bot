@@ -1,23 +1,22 @@
-import { ButtonInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from "discord.js";
+import { ButtonInteraction } from "discord.js"
+import { modal } from "../../../utils"
 
 export async function handle(interaction: ButtonInteraction) {
-  if (interaction.customId !== "close_ticket") return false;
+  if (interaction.customId !== "close_ticket") return false
 
-  const modal = new ModalBuilder()
-    .setCustomId("close_ticket_modal")
-    .setTitle("Close Ticket");
+  const close_modal = modal.create_modal(
+    "close_ticket_modal",
+    "Close Ticket",
+    modal.create_text_input({
+      custom_id: "close_reason",
+      label: "Close Reason",
+      style: "paragraph",
+      placeholder: "Enter the reason for closing this ticket...",
+      required: true,
+      max_length: 500,
+    })
+  )
 
-  const reason_input = new TextInputBuilder()
-    .setCustomId("close_reason")
-    .setLabel("Close Reason")
-    .setStyle(TextInputStyle.Paragraph)
-    .setPlaceholder("Enter the reason for closing this ticket...")
-    .setRequired(true)
-    .setMaxLength(500);
-
-  const row = new ActionRowBuilder<TextInputBuilder>().addComponents(reason_input);
-  modal.addComponents(row);
-
-  await interaction.showModal(modal);
-  return true;
+  await interaction.showModal(close_modal)
+  return true
 }

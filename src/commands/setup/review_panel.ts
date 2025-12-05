@@ -3,9 +3,10 @@ import {
   SlashCommandBuilder,
   TextChannel,
   GuildMember,
-} from "discord.js";
-import { Command } from "../../types/command";
-import { is_admin } from "../../functions/permissions";
+} from "discord.js"
+import { Command } from "../../types/command"
+import { is_admin } from "../../functions/permissions"
+import { component, api } from "../../utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -17,53 +18,29 @@ export const command: Command = {
       await interaction.reply({
         content: "You don't have permission to use this command.",
         ephemeral: true,
-      });
-      return;
+      })
+      return
     }
 
-    const channel = interaction.channel as TextChannel;
+    const channel = interaction.channel as TextChannel
 
-    await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        flags: 32768,
-        components: [
-          {
-            type: 17,
-            accent_color: null,
-            spoiler: false,
-            components: [
-              {
-                type: 10,
-                content: "# ⭐ Reviews\nShare your experience with us!",
-              },
-              {
-                type: 14,
-              },
-              {
-                type: 1,
-                components: [
-                  {
-                    type: 2,
-                    style: 1,
-                    label: "Submit a Review",
-                    custom_id: "review_submit",
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      }),
-    });
+    const message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text("# ⭐ Reviews\nShare your experience with us!"),
+            component.divider(),
+            component.action_row(component.primary_button("Submit a Review", "review_submit")),
+          ],
+        }),
+      ],
+    })
+
+    await api.send_components_v2(channel.id, api.get_token(), message)
 
     await interaction.reply({
       content: "Review panel sent!",
       ephemeral: true,
-    });
+    })
   },
-};
+}

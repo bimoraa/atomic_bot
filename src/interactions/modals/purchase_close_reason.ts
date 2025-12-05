@@ -1,155 +1,133 @@
-import { ModalSubmitInteraction, TextChannel, ThreadChannel } from "discord.js";
-import { remove_open_ticket } from "../buttons/purchase/open";
-import { purchase_owners, purchase_staff, purchase_logs, purchase_ticket_ids, purchase_claimed_by, purchase_open_time, purchase_log_channel_id } from "../shared/ticket_state";
-
-const log_channel_id = purchase_log_channel_id;
+import { ModalSubmitInteraction, TextChannel, ThreadChannel } from "discord.js"
+import { remove_open_ticket } from "../buttons/purchase/open"
+import {
+  purchase_owners,
+  purchase_staff,
+  purchase_logs,
+  purchase_ticket_ids,
+  purchase_claimed_by,
+  purchase_open_time,
+  purchase_log_channel_id,
+} from "../shared/ticket_state"
+import { component, time, api, format } from "../../utils"
 
 export async function handle_purchase_close_reason_modal(interaction: ModalSubmitInteraction) {
-  const thread = interaction.channel as ThreadChannel;
+  const thread = interaction.channel as ThreadChannel
 
   if (!thread.isThread()) {
     await interaction.reply({
       content: "This can only be used in a ticket thread.",
       flags: 64,
-    });
-    return;
+    })
+    return
   }
 
-  await interaction.deferReply({ flags: 64 });
+  await interaction.deferReply({ flags: 64 })
 
-  const reason = interaction.fields.getTextInputValue("close_reason");
-  const thread_name = thread.name;
-  const owner_id = purchase_owners.get(thread.id);
-  const ticket_id = purchase_ticket_ids.get(thread.id) || "Unknown";
-  const claimed_by = purchase_claimed_by.get(thread.id);
-  const open_time = purchase_open_time.get(thread.id);
-  const open_log_id = purchase_logs.get(thread.id);
+  const reason = interaction.fields.getTextInputValue("close_reason")
+  const owner_id = purchase_owners.get(thread.id)
+  const ticket_id = purchase_ticket_ids.get(thread.id) || "Unknown"
+  const claimed_by = purchase_claimed_by.get(thread.id)
+  const open_time = purchase_open_time.get(thread.id)
+  const open_log_id = purchase_logs.get(thread.id)
 
   if (owner_id) {
-    remove_open_ticket(owner_id);
-    purchase_owners.delete(thread.id);
+    remove_open_ticket(owner_id)
+    purchase_owners.delete(thread.id)
   }
 
-  purchase_staff.delete(thread.id);
-  purchase_logs.delete(thread.id);
-  purchase_ticket_ids.delete(thread.id);
-  purchase_claimed_by.delete(thread.id);
-  purchase_open_time.delete(thread.id);
+  purchase_staff.delete(thread.id)
+  purchase_logs.delete(thread.id)
+  purchase_ticket_ids.delete(thread.id)
+  purchase_claimed_by.delete(thread.id)
+  purchase_open_time.delete(thread.id)
 
-  const timestamp = Math.floor(Date.now() / 1000);
+  const timestamp = time.now()
+  const token = api.get_token()
 
-  const log_channel = interaction.client.channels.cache.get(log_channel_id) as TextChannel;
+  const log_channel = interaction.client.channels.cache.get(purchase_log_channel_id) as TextChannel
   if (log_channel) {
     if (open_log_id) {
-      await fetch(`https://discord.com/api/v10/channels/${log_channel.id}/messages/${open_log_id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-        },
-      });
+      await api.delete_message(log_channel.id, open_log_id, token)
     }
 
-    let owner_avatar = "https://cdn.discordapp.com/embed/avatars/0.png";
+    let owner_avatar = format.default_avatar
     if (owner_id) {
       try {
-        const owner_user = await interaction.client.users.fetch(owner_id);
-        owner_avatar = owner_user.displayAvatarURL({ size: 128 });
+        const owner_user = await interaction.client.users.fetch(owner_id)
+        owner_avatar = owner_user.displayAvatarURL({ size: 128 })
       } catch {}
     }
 
-    const log_response = await fetch(`https://discord.com/api/v10/channels/${log_channel.id}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        flags: 32768,
-        components: [
-          {
-            type: 17,
-            components: [
-              {
-                type: 9,
-                components: [
-                  {
-                    type: 10,
-                    content: `## Purchase Ticket Closed\nA purchase ticket has been closed.`,
-                  },
-                ],
-                accessory: {
-                  type: 11,
-                  media: {
-                    url: owner_avatar,
-                  },
-                },
-              },
-              {
-                type: 14,
-              },
-              {
-                type: 10,
-                content: `- **Ticket ID:** \`${ticket_id}\`\n- **Opened By:** ${owner_id ? `<@${owner_id}>` : "Unknown"}\n- **Closed By:** <@${interaction.user.id}>`,
-              },
-              {
-                type: 14,
-              },
-              {
-                type: 10,
-                content: `- **Open Time:** ${open_time ? `<t:${open_time}:F>` : "Unknown"}\n- **Claimed By:** ${claimed_by ? `<@${claimed_by}>` : "Not claimed"}\n- **Reason:** ${reason}`,
-              },
-            ],
-          },
-        ],
-      }),
-    });
-    const log_data = await log_response.json();
-    console.log("Close reason log response:", log_data);
+    const log_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.section({
+              content: [
+                `## Purchase Ticket Closed`,
+                `A purchase ticket has been closed.`,
+              ],
+              thumbnail: owner_avatar,
+            }),
+            component.divider(),
+            component.text([
+              `- **Ticket ID:** ${format.code(ticket_id)}`,
+              `- **Opened By:** ${owner_id ? `<@${owner_id}>` : "Unknown"}`,
+              `- **Closed By:** <@${interaction.user.id}>`,
+            ]),
+            component.divider(),
+            component.text([
+              `- **Open Time:** ${open_time ? time.full_date_time(open_time) : "Unknown"}`,
+              `- **Claimed By:** ${claimed_by ? `<@${claimed_by}>` : "Not claimed"}`,
+              `- **Reason:** ${reason}`,
+            ]),
+          ],
+        }),
+      ],
+    })
+
+    const log_data = await api.send_components_v2(log_channel.id, token, log_message)
+    console.log("Close reason log response:", log_data)
   }
 
   if (owner_id) {
     try {
-      const owner = await interaction.client.users.fetch(owner_id);
-      const dm_channel = await owner.createDM();
-      await fetch(`https://discord.com/api/v10/channels/${dm_channel.id}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          flags: 32768,
-          components: [
-            {
-              type: 17,
-              components: [
-                {
-                  type: 10,
-                  content: `## <:ticket:1411878131366891580> Purchase Ticket Closed\n\nYour purchase ticket has been closed.\n\n- **Ticket ID:** \`${ticket_id}\`\n- **Closed by:** <@${interaction.user.id}>\n- **Reason:** ${reason}\n- **Closed:** <t:${timestamp}:F>\n\nThank you for using our service!`,
-                },
-                {
-                  type: 1,
-                  components: [
-                    {
-                      type: 2,
-                      style: 5,
-                      label: "View Ticket",
-                      url: `https://discord.com/channels/${interaction.guildId}/${thread.id}`,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        }),
-      });
+      const owner = await interaction.client.users.fetch(owner_id)
+      const dm_channel = await owner.createDM()
+
+      const dm_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text([
+                `## <:ticket:1411878131366891580> Purchase Ticket Closed`,
+                ``,
+                `Your purchase ticket has been closed.`,
+                ``,
+                `- **Ticket ID:** ${format.code(ticket_id)}`,
+                `- **Closed by:** <@${interaction.user.id}>`,
+                `- **Reason:** ${reason}`,
+                `- **Closed:** ${time.full_date_time(timestamp)}`,
+                ``,
+                `Thank you for using our service!`,
+              ]),
+              component.action_row(
+                component.link_button("View Ticket", format.channel_url(interaction.guildId!, thread.id))
+              ),
+            ],
+          }),
+        ],
+      })
+
+      await api.send_components_v2(dm_channel.id, token, dm_message)
     } catch {}
   }
 
-  await thread.setLocked(true);
-  await thread.setArchived(true);
+  await thread.setLocked(true)
+  await thread.setArchived(true)
 
   await interaction.editReply({
     content: "Ticket closed with reason.",
-  });
+  })
 }

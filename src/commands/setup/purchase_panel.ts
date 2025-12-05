@@ -3,9 +3,10 @@ import {
   SlashCommandBuilder,
   TextChannel,
   GuildMember,
-} from "discord.js";
-import { Command } from "../../types/command";
-import { is_admin } from "../../functions/permissions";
+} from "discord.js"
+import { Command } from "../../types/command"
+import { is_admin } from "../../functions/permissions"
+import { component, api } from "../../utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -17,82 +18,57 @@ export const command: Command = {
       await interaction.reply({
         content: "You don't have permission to use this command.",
         flags: 64,
-      });
-      return;
+      })
+      return
     }
 
-    await interaction.deferReply({ flags: 64 });
+    await interaction.deferReply({ flags: 64 })
 
-    const channel = interaction.client.channels.cache.get("1395947216375513298") as TextChannel;
+    const channel = interaction.client.channels.cache.get("1395947216375513298") as TextChannel
     if (!channel) {
       await interaction.editReply({
         content: "Panel channel not found.",
-      });
-      return;
+      })
+      return
     }
 
-    await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        flags: 32768,
-        components: [
-          {
-            type: 17,
-            components: [
-              {
-                type: 10,
-                content: "## Purchase Ticket\nIf you have questions about the script please use <#1250786601462923396> to ask our staffs.\n\nYou can only create a ticket to purchase a script. Opening a ticket without making a purchase will be considered intentional trolling and a warning will be given.\n\nOur script price is stated in <#1250770696876068927>",
-              },
-              {
-                type: 14,
-                spacing: 2,
-              },
-              {
-                type: 9,
-                components: [
-                  {
-                    type: 10,
-                    content: "## Payment Method:\n<:qris:1251913366713139303> - QRIS ( Quick Response Code Indonesian Standard ) \n<:paypal:1251913398816604381> - Paypal \n<:gopay:1251913342646489181> - Gopay\n<:dana:1251913282923790379> - Dana\n<:ovo:1251913316092088404> - Ovo",
-                  },
-                ],
-                accessory: {
-                  type: 11,
-                  media: {
-                    url: "https://cdn.discordapp.com/icons/1250337227582472243/a_b68981606529e316b31e92e4eb67b498.gif",
-                  },
-                },
-              },
-              {
-                type: 14,
-                spacing: 2,
-              },
-              {
-                type: 1,
-                components: [
-                  {
-                    type: 2,
-                    style: 2,
-                    label: "Open",
-                    emoji: {
-                      id: "1411878131366891580",
-                      name: "ticket",
-                    },
-                    custom_id: "purchase_open",
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      }),
-    });
+    const message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text([
+              "## Purchase Ticket",
+              "If you have questions about the script please use <#1250786601462923396> to ask our staffs.",
+              "",
+              "You can only create a ticket to purchase a script. Opening a ticket without making a purchase will be considered intentional trolling and a warning will be given.",
+              "",
+              "Our script price is stated in <#1250770696876068927>",
+            ]),
+            component.divider(),
+            component.section({
+              content: [
+                "## Payment Method:",
+                "<:qris:1251913366713139303> - QRIS ( Quick Response Code Indonesian Standard )",
+                "<:paypal:1251913398816604381> - Paypal",
+                "<:gopay:1251913342646489181> - Gopay",
+                "<:dana:1251913282923790379> - Dana",
+                "<:ovo:1251913316092088404> - Ovo",
+              ],
+              thumbnail: "https://cdn.discordapp.com/icons/1250337227582472243/a_b68981606529e316b31e92e4eb67b498.gif",
+            }),
+            component.divider(),
+            component.action_row(
+              component.secondary_button("Open", "purchase_open", component.emoji_object("ticket", "1411878131366891580"))
+            ),
+          ],
+        }),
+      ],
+    })
+
+    await api.send_components_v2(channel.id, api.get_token(), message)
 
     await interaction.editReply({
       content: "Purchase panel sent!",
-    });
+    })
   },
-};
+}
