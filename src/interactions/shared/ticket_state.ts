@@ -1,11 +1,26 @@
 import { GuildMember } from "discord.js";
+import { load_config } from "../../configuration/loader";
 
-export const priority_role_id = "1398313779380617459";
-export const log_channel_id = "1445745610027171892";
-export const closed_log_channel_id = "1445771395467444366";
-export const ticket_channel_id = "1260623558175096897";
+const ticket_cfg = load_config<{
+  ticket_category_id: string;
+  log_channel_id: string;
+  closed_log_channel_id: string;
+  priority_role_id: string;
+  panel_channel_id: string;
+}>("ticket");
 
-export const purchase_log_channel_id = "1392575437481447557";
+const purchase_cfg = load_config<{
+  log_channel_id: string;
+  ticket_parent_id: string;
+}>("purchase");
+
+export const priority_role_id = ticket_cfg.priority_role_id;
+export const log_channel_id = ticket_cfg.log_channel_id;
+export const closed_log_channel_id = ticket_cfg.closed_log_channel_id;
+export const ticket_channel_id = ticket_cfg.ticket_category_id;
+
+export const purchase_log_channel_id = purchase_cfg.log_channel_id;
+export const purchase_ticket_parent_id = purchase_cfg.ticket_parent_id;
 
 export const issue_labels: Record<string, string> = {
   script_issue: "Script Issue",

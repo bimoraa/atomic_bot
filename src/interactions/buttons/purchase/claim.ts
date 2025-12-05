@@ -5,9 +5,9 @@ import {
   GuildMember,
 } from "discord.js";
 import { is_admin } from "../../../functions/permissions";
-import { purchase_claimed_by } from "../../shared/ticket_state";
+import { purchase_claimed_by, purchase_log_channel_id } from "../../shared/ticket_state";
 
-const log_channel_id = "1392575437481447557";
+const log_channel_id = purchase_log_channel_id;
 
 export async function handle_purchase_claim(interaction: ButtonInteraction) {
   if (!is_admin(interaction.member as GuildMember)) {

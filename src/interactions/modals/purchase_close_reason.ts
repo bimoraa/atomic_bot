@@ -1,8 +1,8 @@
 import { ModalSubmitInteraction, TextChannel, ThreadChannel } from "discord.js";
 import { remove_open_ticket } from "../buttons/purchase/open";
-import { purchase_owners, purchase_staff, purchase_logs, purchase_ticket_ids, purchase_claimed_by, purchase_open_time } from "../shared/ticket_state";
+import { purchase_owners, purchase_staff, purchase_logs, purchase_ticket_ids, purchase_claimed_by, purchase_open_time, purchase_log_channel_id } from "../shared/ticket_state";
 
-const log_channel_id = "1392575437481447557";
+const log_channel_id = purchase_log_channel_id;
 
 export async function handle_purchase_close_reason_modal(interaction: ModalSubmitInteraction) {
   const thread = interaction.channel as ThreadChannel;

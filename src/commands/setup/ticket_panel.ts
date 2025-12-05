@@ -6,9 +6,11 @@ import {
 } from "discord.js";
 import { Command } from "../../types/command";
 import { is_admin } from "../../functions/permissions";
+import { load_config } from "../../configuration/loader";
 
-const panel_channel_id = "1395947216375513298";
-const priority_role_id = "1398313779380617459";
+const config = load_config<{ panel_channel_id: string; priority_role_id: string }>("ticket");
+const panel_channel_id = config.panel_channel_id;
+const priority_role_id = config.priority_role_id;
 const logo_url = "https://github.com/bimoraa/Euphoria/blob/main/aaaaa.png?raw=true";
 
 export const command: Command = {

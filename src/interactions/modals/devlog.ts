@@ -1,7 +1,9 @@
 import { ModalSubmitInteraction } from "discord.js";
+import { load_config } from "../../configuration/loader";
 
-const devlog_channel_id = "1257034070035267636";
-const priority_role_id  = "1398313779380617459";
+const config = load_config<{ devlog_channel_id: string; priority_role_id: string }>("devlog");
+const devlog_channel_id = config.devlog_channel_id;
+const priority_role_id  = config.priority_role_id;
 const logo_url          = "https://github.com/bimoraa/Euphoria/blob/main/aaaaa.png?raw=true";
 
 function format_list(items: string, prefix: string): string {

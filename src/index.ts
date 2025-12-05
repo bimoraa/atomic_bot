@@ -8,8 +8,12 @@ import { start_roblox_update_checker } from "./functions/roblox_update";
 config();
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
 }) as Client & { commands: Collection<string, Command> };
+
+export { client };
+
+import "./events/guild_member_add";
 
 client.once("ready", async () => {
   console.log(`Logged in as ${client.user?.tag}`);

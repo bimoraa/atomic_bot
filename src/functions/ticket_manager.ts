@@ -5,10 +5,16 @@ import {
   GuildMember,
   CategoryChannel,
 } from "discord.js";
+import { load_config } from "../configuration/loader";
 
-const ticket_category_id = "1260623558175096897";
-const log_channel_id = "1445745610027171892";
-const priority_role_id = "1398313779380617459";
+const config = load_config<{
+  ticket_category_id: string;
+  log_channel_id: string;
+  priority_role_id: string;
+}>("ticket");
+const ticket_category_id = config.ticket_category_id;
+const log_channel_id = config.log_channel_id;
+const priority_role_id = config.priority_role_id;
 
 interface TicketOptions {
   issue_type: string;

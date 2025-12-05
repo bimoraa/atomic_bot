@@ -1,6 +1,8 @@
 import { ModalSubmitInteraction, TextChannel } from "discord.js";
+import { load_config } from "../../configuration/loader";
 
-const review_channel_id = "1251862836297203853";
+const config = load_config<{ review_channel_id: string }>("review");
+const review_channel_id = config.review_channel_id;
 
 export async function handle_review_modal(interaction: ModalSubmitInteraction) {
   await interaction.deferReply({ flags: 64 });

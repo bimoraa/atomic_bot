@@ -4,9 +4,9 @@ import {
   ChannelType,
   ThreadAutoArchiveDuration,
 } from "discord.js";
-import { purchase_log_channel_id, purchase_logs, purchase_staff, purchase_owners, purchase_ticket_ids, purchase_open_time, generate_ticket_id } from "../../shared/ticket_state";
+import { purchase_log_channel_id, purchase_logs, purchase_staff, purchase_owners, purchase_ticket_ids, purchase_open_time, generate_ticket_id, purchase_ticket_parent_id } from "../../shared/ticket_state";
 
-const ticket_parent_id = "1250446131993903114";
+const ticket_parent_id = purchase_ticket_parent_id;
 
 const open_tickets: Map<string, string> = new Map();
 

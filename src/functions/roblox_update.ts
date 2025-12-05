@@ -1,6 +1,8 @@
 import { Client } from "discord.js";
+import { load_config } from "../configuration/loader";
 
-const roblox_update_channel_id = "1395947216375513298";
+const config = load_config<{ roblox_update_channel_id: string }>("roblox_update");
+const roblox_update_channel_id = config.roblox_update_channel_id;
 const check_interval = 60000;
 
 let last_version: string | null = null;
