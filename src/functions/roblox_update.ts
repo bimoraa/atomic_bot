@@ -1,36 +1,47 @@
 import { Client } from "discord.js"
 import { load_config } from "../configuration/loader"
-import { component, api, time, format } from "../utils"
+import { component, api, time, format, logger } from "../utils"
 
-const config = load_config<{ roblox_update_channel_id: string }>("roblox_update")
+interface roblox_config {
+  roblox_update_channel_id: string
+}
+
+interface roblox_version_info {
+  version:        string
+  client_version: string
+  platform:       string
+}
+
+const config                   = load_config<roblox_config>("roblox_update")
 const roblox_update_channel_id = config.roblox_update_channel_id
-const check_interval = 60000
+const check_interval           = 60000
+const roblox_api_url           = "https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer"
+const log                      = logger.create_logger("roblox_update")
 
 let last_version: string | null = null
 
-interface RobloxVersionInfo {
-  version: string
-  client_version: string
-  platform: string
-}
-
-async function get_roblox_version(): Promise<RobloxVersionInfo | null> {
+async function get_roblox_version(): Promise<roblox_version_info | null> {
   try {
-    const response = await fetch("https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer")
+    const response = await fetch(roblox_api_url)
     if (!response.ok) return null
 
     const data = (await response.json()) as { version: string; clientVersionUpload: string }
+
     return {
-      version: data.version,
+      version:        data.version,
       client_version: data.clientVersionUpload,
-      platform: "Windows",
+      platform:       "Windows",
     }
   } catch {
+    log.error("Failed to fetch Roblox version")
     return null
   }
 }
 
-async function send_update_notification(client: Client, version_info: RobloxVersionInfo) {
+async function send_update_notification(
+  client:       Client,
+  version_info: roblox_version_info
+): Promise<void> {
   const unix_timestamp = time.now()
 
   const message = component.build_message({
@@ -58,15 +69,15 @@ async function send_update_notification(client: Client, version_info: RobloxVers
   })
 
   await api.send_components_v2(roblox_update_channel_id, api.get_token(), message)
-
-  console.log(`[roblox_update] Sent notification for version ${version_info.version}`)
+  log.info(`Sent notification for version ${version_info.version}`)
 }
 
-export async function start_roblox_update_checker(client: Client) {
+export async function start_roblox_update_checker(client: Client): Promise<void> {
   const initial_version = await get_roblox_version()
+
   if (initial_version) {
     last_version = initial_version.version
-    console.log(`[roblox_update] Initial version: ${last_version}`)
+    log.info(`Initial version: ${last_version}`)
   }
 
   setInterval(async () => {
@@ -80,10 +91,10 @@ export async function start_roblox_update_checker(client: Client) {
     last_version = version_info.version
   }, check_interval)
 
-  console.log(`[roblox_update] Checker started (interval: ${check_interval / 1000}s)`)
+  log.info(`Checker started (interval: ${check_interval / 1000}s)`)
 }
 
-export async function test_roblox_update_notification(): Promise<RobloxVersionInfo | null> {
+export async function test_roblox_update_notification(): Promise<roblox_version_info | null> {
   const version_info = await get_roblox_version()
   if (!version_info) return null
 
@@ -113,6 +124,7 @@ export async function test_roblox_update_notification(): Promise<RobloxVersionIn
   })
 
   await api.send_components_v2(roblox_update_channel_id, api.get_token(), message)
+  log.info(`Test notification sent for version ${version_info.version}`)
 
   return version_info
 }

@@ -3,8 +3,12 @@ import * as time from "./timestamp"
 import * as api from "./discord_api"
 import * as format from "./format"
 import * as modal from "./modal"
+import * as validate from "./validator"
+import * as array from "./array"
+import * as async_util from "./async"
+import * as logger from "./logger"
 
-export { component, time, api, format, modal }
+export { component, time, api, format, modal, validate, array, async_util, logger }
 
 export type {
   button_component,

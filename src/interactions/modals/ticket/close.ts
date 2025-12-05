@@ -14,10 +14,10 @@ import { component, api, time, format } from "../../../utils"
 export async function handle(interaction: ModalSubmitInteraction) {
   if (interaction.customId !== "close_ticket_modal") return false
 
-  const thread = interaction.channel as ThreadChannel
-  const guild = interaction.guild!
-  const closed_by = interaction.member as GuildMember
-  const close_reason = interaction.fields.getTextInputValue("close_reason")
+  const thread        = interaction.channel as ThreadChannel
+  const guild         = interaction.guild!
+  const closed_by     = interaction.member as GuildMember
+  const close_reason  = interaction.fields.getTextInputValue("close_reason")
 
   const log_message_id = ticket_logs.get(thread.id)
   const owner_id = ticket_owners.get(thread.id) || closed_by.id
