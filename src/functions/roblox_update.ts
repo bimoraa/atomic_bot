@@ -1,6 +1,6 @@
 import { Client } from "discord.js"
 import { load_config } from "../configuration/loader"
-import { component, api, time, format, logger } from "../utils"
+import { component, api, time, format, logger, http } from "../utils"
 
 interface roblox_config {
   roblox_update_channel_id: string
@@ -22,10 +22,7 @@ let last_version: string | null = null
 
 async function get_roblox_version(): Promise<roblox_version_info | null> {
   try {
-    const response = await fetch(roblox_api_url)
-    if (!response.ok) return null
-
-    const data = (await response.json()) as { version: string; clientVersionUpload: string }
+    const data = await http.get<{ version: string; clientVersionUpload: string }>(roblox_api_url)
 
     return {
       version:        data.version,

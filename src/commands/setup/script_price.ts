@@ -4,8 +4,7 @@ import {
   TextChannel,
 } from "discord.js"
 import { Command } from "../../types/command"
-import { component, api, format } from "../../utils"
-import { readFileSync, writeFileSync, existsSync } from "fs"
+import { component, api, format, file, http } from "../../utils"
 import { join } from "path"
 
 interface PricingConfig {
@@ -27,11 +26,11 @@ interface ExchangeRateResponse {
   }
 }
 
+const CONFIG_PATH = join(__dirname, "../../configuration/pricing.cfg")
+
 async function get_usd_rate(): Promise<number> {
   try {
-    const response = await fetch("https://v6.exchangerate-api.com/v6/latest/IDR")
-    if (!response.ok) return 16000
-    const data = await response.json() as ExchangeRateResponse
+    const data = await http.get<ExchangeRateResponse>("https://v6.exchangerate-api.com/v6/latest/IDR")
     return 1 / data.conversion_rates.USD
   } catch {
     return 16000
@@ -39,13 +38,11 @@ async function get_usd_rate(): Promise<number> {
 }
 
 function load_config(): PricingConfig {
-  const file_path = join(__dirname, "../../configuration/pricing.cfg")
-  return JSON.parse(readFileSync(file_path, "utf-8"))
+  return file.read_json<PricingConfig>(CONFIG_PATH)
 }
 
 function save_config(config: PricingConfig): void {
-  const file_path = join(__dirname, "../../configuration/pricing.cfg")
-  writeFileSync(file_path, JSON.stringify(config, null, 2))
+  file.write_json(CONFIG_PATH, config)
 }
 
 function format_price(price: number, discount: number, applies: boolean): string {

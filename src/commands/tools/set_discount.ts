@@ -3,8 +3,8 @@ import {
   SlashCommandBuilder,
 } from "discord.js"
 import { Command } from "../../types/command"
-import { readFileSync, writeFileSync } from "fs"
 import { join } from "path"
+import { file } from "../../utils"
 import { update_price_panel } from "../setup/script_price"
 
 interface PricingConfig {
@@ -18,14 +18,14 @@ interface PricingConfig {
   }
 }
 
+const CONFIG_PATH = join(__dirname, "../../configuration/pricing.cfg")
+
 function load_config(): PricingConfig {
-  const file_path = join(__dirname, "../../configuration/pricing.cfg")
-  return JSON.parse(readFileSync(file_path, "utf-8"))
+  return file.read_json<PricingConfig>(CONFIG_PATH)
 }
 
 function save_config(config: PricingConfig): void {
-  const file_path = join(__dirname, "../../configuration/pricing.cfg")
-  writeFileSync(file_path, JSON.stringify(config, null, 2))
+  file.write_json(CONFIG_PATH, config)
 }
 
 export const command: Command = {

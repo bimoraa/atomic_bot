@@ -4,9 +4,9 @@ import {
   MessageFlags,
 } from "discord.js"
 import { Command } from "../../types/command"
-import { readFileSync, existsSync, readdirSync } from "fs"
+import { readdirSync } from "fs"
 import { join } from "path"
-import { component, api } from "../../utils"
+import { component, api, file } from "../../utils"
 
 interface RolesMapping {
   [key: string]: string
@@ -18,31 +18,32 @@ interface CommandPermission {
   allow_higher_roles: boolean
 }
 
+const PERMISSIONS_DIR = join(__dirname, "../../permissions")
+const ROLES_PATH      = join(PERMISSIONS_DIR, "roles.cfg")
+
 function load_roles(): RolesMapping {
-  const file_path = join(__dirname, "../../permissions/roles.cfg")
-  if (!existsSync(file_path)) return {}
+  if (!file.exists(ROLES_PATH)) return {}
   try {
-    return JSON.parse(readFileSync(file_path, "utf-8"))
+    return file.read_json<RolesMapping>(ROLES_PATH)
   } catch {
     return {}
   }
 }
 
 function load_permission(command_name: string): CommandPermission | null {
-  const file_path = join(__dirname, `../../permissions/${command_name}.cfg`)
-  if (!existsSync(file_path)) return null
+  const perm_path = join(PERMISSIONS_DIR, `${command_name}.cfg`)
+  if (!file.exists(perm_path)) return null
   try {
-    return JSON.parse(readFileSync(file_path, "utf-8"))
+    return file.read_json<CommandPermission>(perm_path)
   } catch {
     return null
   }
 }
 
 function get_all_permission_files(): string[] {
-  const dir_path = join(__dirname, "../../permissions")
-  if (!existsSync(dir_path)) return []
+  if (!file.dir_exists(PERMISSIONS_DIR)) return []
   
-  return readdirSync(dir_path)
+  return readdirSync(PERMISSIONS_DIR)
     .filter(f => f.endsWith(".cfg") && f !== "roles.cfg")
     .map(f => f.replace(".cfg", ""))
 }

@@ -7,8 +7,14 @@ import * as validate from "./validator"
 import * as array from "./array"
 import * as async_util from "./async"
 import * as logger from "./logger"
+import * as collection from "./collection"
+import * as fn from "./function"
+import * as cache from "./cache"
+import * as env from "./env"
+import * as file from "./file"
+import * as http from "./http"
 
-export { component, time, api, format, modal, validate, array, async_util, logger }
+export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http }
 
 export type {
   button_component,
@@ -26,3 +32,11 @@ export type {
 export type { api_response } from "./discord_api"
 
 export type { text_input_options } from "./modal"
+
+export type { CacheItem, Cache } from "./cache"
+
+export type {
+  method as http_method,
+  options as http_options,
+  response as http_response,
+} from "./http"

@@ -1,6 +1,6 @@
 import { GuildMember } from "discord.js"
-import { readFileSync, existsSync } from "fs"
 import { join } from "path"
+import { file, cache } from "../utils"
 
 interface CommandPermission {
   role_ids:           string[] | null
@@ -12,48 +12,30 @@ interface RolesMapping {
   [key: string]: string
 }
 
-const permissions_cache = new Map<string, CommandPermission>()
-let roles_mapping: RolesMapping | null = null
+const PERMISSIONS_DIR = join(__dirname, "../permissions")
+const ROLES_PATH      = join(PERMISSIONS_DIR, "roles.cfg")
 
 function load_roles_mapping(): RolesMapping {
-  if (roles_mapping) return roles_mapping
-
-  const file_path = join(__dirname, "../permissions/roles.cfg")
-
-  if (!existsSync(file_path)) {
-    roles_mapping = {}
-    return roles_mapping
-  }
-
-  try {
-    const content = readFileSync(file_path, "utf-8")
-    roles_mapping = JSON.parse(content) as RolesMapping
-    return roles_mapping
-  } catch {
-    roles_mapping = {}
-    return roles_mapping
-  }
+  return cache.get_or_set("roles_mapping", () => {
+    if (!file.exists(ROLES_PATH)) return {}
+    try {
+      return file.read_json<RolesMapping>(ROLES_PATH)
+    } catch {
+      return {}
+    }
+  })
 }
 
 function load_command_permission(command_name: string): CommandPermission | null {
-  if (permissions_cache.has(command_name)) {
-    return permissions_cache.get(command_name)!
-  }
-
-  const file_path = join(__dirname, `../permissions/${command_name}.cfg`)
-
-  if (!existsSync(file_path)) {
-    return null
-  }
-
-  try {
-    const content    = readFileSync(file_path, "utf-8")
-    const permission = JSON.parse(content) as CommandPermission
-    permissions_cache.set(command_name, permission)
-    return permission
-  } catch {
-    return null
-  }
+  return cache.get_or_set(`perm_${command_name}`, () => {
+    const perm_path = join(PERMISSIONS_DIR, `${command_name}.cfg`)
+    if (!file.exists(perm_path)) return null
+    try {
+      return file.read_json<CommandPermission>(perm_path)
+    } catch {
+      return null
+    }
+  })
 }
 
 function resolve_role_ids(permission: CommandPermission): string[] {
@@ -127,6 +109,5 @@ export function get_required_roles(command_name: string): string[] {
 }
 
 export function clear_permission_cache(): void {
-  permissions_cache.clear()
-  roles_mapping = null
+  cache.clear()
 }
