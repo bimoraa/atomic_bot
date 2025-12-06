@@ -8,7 +8,7 @@ import {
 import { is_staff, is_admin_or_mod } from "../../../functions/permissions"
 
 const ANSWER_LOG_CHANNEL_ID = "1446894637980713090"
-const COLLECTION_NAME = "answer_stats"
+const COLLECTION_NAME       = "answer_stats"
 
 interface AnswerStat {
   staff_id: string

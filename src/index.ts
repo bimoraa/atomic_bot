@@ -36,8 +36,10 @@ function update_presence(): void {
 client.once("ready", async () => {
   console.log(`Logged in as ${client.user?.tag}`)
 
-  await db.connect()
-  console.log("Connected to MongoDB")
+  const mongo = await db.connect()
+  if (mongo) {
+    console.log("Connected to MongoDB")
+  }
 
   update_presence()
   setInterval(update_presence, 3000)

@@ -79,6 +79,31 @@ export async function delete_message(
   return response.ok
 }
 
+export async function edit_interaction_response(
+  application_id: string,
+  interaction_token: string,
+  payload: message_payload
+): Promise<api_response> {
+  const response = await fetch(
+    `${base_url}/webhooks/${application_id}/${interaction_token}/messages/@original`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  )
+
+  const data = (await response.json()) as api_response
+
+  if (!response.ok) {
+    return { error: true, ...data }
+  }
+
+  return data
+}
+
 export async function bulk_delete_messages(
   channel_id: string,
   message_ids: string[],

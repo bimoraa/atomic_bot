@@ -2,19 +2,36 @@ import { MongoClient, Db, Collection } from "mongodb"
 
 let client: MongoClient | null = null
 let db: Db | null = null
+let connected = false
 
-export async function connect(): Promise<Db> {
+export async function connect(): Promise<Db | null> {
   if (db) return db
 
   const uri     = process.env.MONGO_URI || "mongodb://localhost:27017"
   const db_name = process.env.MONGO_DB_NAME || "atomic_bot"
 
-  client = new MongoClient(uri)
-  await client.connect()
-  db = client.db(db_name)
+  try {
+    client = new MongoClient(uri, {
+      retryWrites: true,
+      w: "majority",
+      serverSelectionTimeoutMS: 15000,
+      directConnection: false,
+    })
+    await client.connect()
+    db = client.db(db_name)
+    connected = true
 
-  console.log(`[MongoDB] Connected to ${db_name}`)
-  return db
+    console.log(`[MongoDB] Connected to ${db_name}`)
+    return db
+  } catch (err) {
+    console.error("[MongoDB] Connection failed:", (err as Error).message)
+    console.log("[MongoDB] Bot will continue without database features")
+    return null
+  }
+}
+
+export function is_connected(): boolean {
+  return connected
 }
 
 export async function disconnect(): Promise<void> {

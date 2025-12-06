@@ -7,6 +7,8 @@ import {
 } from "discord.js"
 
 export async function handle_ask_staff_button(interaction: ButtonInteraction): Promise<void> {
+  if (interaction.replied || interaction.deferred) return
+
   const modal = new ModalBuilder()
     .setCustomId("ask_staff_modal")
     .setTitle("Ask a Staff")

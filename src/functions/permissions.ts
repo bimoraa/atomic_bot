@@ -10,7 +10,7 @@ interface permissions_config {
 const config            = load_config<permissions_config>("permissions")
 const admin_role_id     = config.admin_role_id
 const moderator_role_id = config.moderator_role_id
-const staff_role_id     = config.staff_role_id
+export const staff_role_id     = config.staff_role_id ?? ""
 
 export function is_admin(member: GuildMember): boolean {
   return member.roles.cache.has(admin_role_id)

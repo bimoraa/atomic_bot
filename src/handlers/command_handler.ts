@@ -16,7 +16,14 @@ export async function load_commands(client: Client & { commands: Collection<stri
 
     for (const file of command_files) {
       const file_path = join(category_path, file);
-      const { command } = await import(file_path);
+      const imported = await import(file_path);
+      const command = imported.default || imported.command;
+      
+      if (!command?.data) {
+        console.warn(`[command_handler] Skipping ${file} - no valid command export`);
+        continue;
+      }
+      
       client.commands.set(command.data.name, command);
       commands_data.push(command.data.toJSON());
     }
