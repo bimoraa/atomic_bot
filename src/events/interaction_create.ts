@@ -1,5 +1,6 @@
 import { Client, Collection, Interaction, ThreadChannel, GuildMember } from "discord.js";
 import { Command } from "../types/command";
+import { can_use_command } from "../functions/command_permissions";
 import * as ticket_select from "../interactions/select_menus/ticket/select";
 import * as ticket_create_modal from "../interactions/modals/ticket/create";
 import * as ticket_close_modal from "../interactions/modals/ticket/close";
@@ -16,6 +17,7 @@ import * as purchase_close_reason from "../interactions/buttons/purchase/close_r
 import * as purchase_claim from "../interactions/buttons/purchase/claim";
 import * as purchase_join from "../interactions/buttons/purchase/join";
 import * as purchase_add_member from "../interactions/buttons/purchase/add_member";
+import { handle_role_permission_select } from "../commands/tools/get_role_permission";
 
 export async function handle_interaction(
   interaction: Interaction,
@@ -23,6 +25,10 @@ export async function handle_interaction(
 ) {
   if (interaction.isStringSelectMenu()) {
     try {
+      if (interaction.customId === "role_permission_select") {
+        await handle_role_permission_select(interaction, interaction.values[0]);
+        return;
+      }
       if (await ticket_select.handle(interaction)) return;
     } catch (err) {
       console.log("[select] Error:", err);
@@ -130,6 +136,15 @@ export async function handle_interaction(
 
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
+
+  const member = interaction.member as GuildMember;
+  if (!can_use_command(member, interaction.commandName)) {
+    await interaction.reply({
+      content: "You don't have permission to use this command.",
+      ephemeral: true,
+    });
+    return;
+  }
 
   try {
     await command.execute(interaction);

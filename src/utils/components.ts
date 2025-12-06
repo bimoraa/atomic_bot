@@ -71,7 +71,7 @@ export interface text_component {
 export interface section_component {
   type: number
   components: text_component[]
-  accessory?: thumbnail_component
+  accessory: thumbnail_component | button_component
 }
 
 export interface divider_component {
@@ -183,17 +183,12 @@ export function text(content: string | string[]): text_component {
   }
 }
 
-export function section(options: { content: string | string[]; thumbnail?: string }): section_component {
-  const result: section_component = {
+export function section(options: { content: string | string[]; thumbnail: string }): section_component {
+  return {
     type: component_type.section,
     components: [text(options.content)],
+    accessory: thumbnail(options.thumbnail),
   }
-
-  if (options.thumbnail) {
-    result.accessory = thumbnail(options.thumbnail)
-  }
-
-  return result
 }
 
 export function divider(spacing?: number): divider_component {
