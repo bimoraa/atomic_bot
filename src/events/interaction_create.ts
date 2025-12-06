@@ -19,6 +19,7 @@ import * as purchase_claim from "../interactions/buttons/purchase/claim";
 import * as purchase_join from "../interactions/buttons/purchase/join";
 import * as purchase_add_member from "../interactions/buttons/purchase/add_member";
 import * as ask_staff_button from "../interactions/buttons/ask/ask_staff";
+import * as ask_answer from "../interactions/buttons/ask/answer";
 import { handle_role_permission_select } from "../commands/tools/get_role_permission";
 
 export async function handle_interaction(
@@ -109,6 +110,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "ask_staff_button") {
         await ask_staff_button.handle_ask_staff_button(interaction);
+        return;
+      }
+      if (interaction.customId.startsWith("ask_answer_")) {
+        await ask_answer.handle_ask_answer(interaction);
         return;
       }
     } catch (err) {
