@@ -9,6 +9,47 @@ import {
 } from "discord.js"
 import { Command } from "../../types/command"
 import { is_admin } from "../../functions/permissions"
+import { api } from "../../utils"
+
+const rules_channel_id = "1250373760016715866"
+
+interface ComponentV2 {
+  type: number
+  content?: string
+  components?: ComponentV2[]
+  accessory?: { media?: { url?: string } }
+}
+
+function parse_rules_message(data: { components?: ComponentV2[] }): { header: string; rules: string; footer: string } {
+  let header = ""
+  let rules  = ""
+  let footer = ""
+
+  const container = data.components?.[0]
+  if (!container?.components) return { header, rules, footer }
+
+  const components = container.components
+  let text_index   = 0
+
+  for (const comp of components) {
+    if (comp.type === 9 && comp.components?.[0]?.content) {
+      const content = comp.components[0].content
+      const lines   = content.split("\n").filter((l: string) => !l.startsWith("## Server Rules"))
+      header        = lines.join("\n").trim()
+    }
+
+    if (comp.type === 10 && comp.content) {
+      if (text_index === 0) {
+        rules = comp.content
+        text_index++
+      } else {
+        footer = comp.content
+      }
+    }
+  }
+
+  return { header, rules, footer }
+}
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -32,6 +73,18 @@ export const command: Command = {
 
     const message_id = interaction.options.getString("message_id", true)
 
+    const message_data = await api.get_message(rules_channel_id, message_id, api.get_token())
+
+    if (!message_data || message_data.error) {
+      await interaction.reply({
+        content: "Could not fetch the rules message. Make sure the message ID is correct.",
+        ephemeral: true,
+      })
+      return
+    }
+
+    const { header, rules, footer } = parse_rules_message(message_data as { components?: ComponentV2[] })
+
     const modal = new ModalBuilder()
       .setCustomId(`edit_rules:${message_id}`)
       .setTitle("Edit Server Rules")
@@ -41,7 +94,7 @@ export const command: Command = {
       .setLabel("Header Text")
       .setStyle(TextInputStyle.Paragraph)
       .setPlaceholder("Welcome message for the rules...")
-      .setValue("Hello and welcome to the Sades Discord Server! We want everyone to have fun here, regardless of background or rank, so we've got a few rules you'll need to follow:")
+      .setValue(header || "Hello and welcome!")
       .setRequired(true)
       .setMaxLength(500)
 
@@ -50,19 +103,7 @@ export const command: Command = {
       .setLabel("Rules (use ### for titles)")
       .setStyle(TextInputStyle.Paragraph)
       .setPlaceholder("### 1. Rule Title\nRule description...")
-      .setValue([
-        "### 1. Respect Everyone",
-        "Treat others with kindness and respect. No harassment, toxic behavior, or personal attacks.",
-        "",
-        "### 2. No Controversial Topics",
-        "Avoid discussions about politics, religion, or sensitive issues that could create conflicts.",
-        "",
-        "### 3. Zero Tolerance for Hate Speech",
-        "No racism, sexism, homophobia, or any form of discrimination.",
-        "",
-        "### 4. No Spam or Unwanted Promotions",
-        "Avoid excessive messages, emojis, caps, pings, or posting Discord invites without permission.",
-      ].join("\n"))
+      .setValue(rules || "### 1. Rule\nDescription")
       .setRequired(true)
       .setMaxLength(4000)
 
@@ -71,7 +112,7 @@ export const command: Command = {
       .setLabel("Footer Text")
       .setStyle(TextInputStyle.Paragraph)
       .setPlaceholder("Closing message...")
-      .setValue("## Have Fun & Engage!\nBe friendly, make new friends, and contribute positively to the community. Respect others and enjoy your stay!")
+      .setValue(footer || "## Have Fun!")
       .setRequired(true)
       .setMaxLength(500)
 
