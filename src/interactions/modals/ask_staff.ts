@@ -18,28 +18,20 @@ export async function handle_ask_staff_modal(interaction: ModalSubmitInteraction
     return
   }
 
-  const message = build_question_panel(user.id, user_avatar, question)
+  const message = build_question_panel(user.id, user_avatar, question, true)
   const response = await api.send_components_v2(
     ask_channel_id,
     api.get_token(),
     message
   )
 
-  if (response.error) {
+  if (response.error || !response.id) {
     console.log("[ask_modal] API Error:", JSON.stringify(response, null, 2))
     await interaction.editReply({ content: "Failed to send your question." })
     return
   }
 
-  const sent_message = await channel.messages.fetch(response.id as string)
-  const thread = await sent_message.startThread({
-    name: `Answer - ${user.username}`,
-    autoArchiveDuration: 1440,
+  await interaction.editReply({ 
+    content: `Your question has been sent! Staff can click "Answer" to create a thread.` 
   })
-
-  await thread.send({
-    content: `<@${user.id}> Staff will answer your question here.`,
-  })
-
-  await interaction.editReply({ content: `Your question has been sent! Check <#${thread.id}>` })
 }

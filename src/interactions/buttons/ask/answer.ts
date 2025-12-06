@@ -1,10 +1,139 @@
-import { ButtonInteraction, TextChannel } from "discord.js"
-import { component, api } from "../../../utils"
+import { ButtonInteraction, TextChannel, GuildMember, ChannelType, ThreadChannel } from "discord.js"
+import { component, api, file } from "../../../utils"
+import { join } from "path"
 import { 
   ask_channel_id, 
   create_thread_for_message,
   build_question_panel_no_answer 
 } from "../../../commands/tools/ask"
+import { is_staff, is_admin_or_mod } from "../../../functions/permissions"
+
+const ANSWER_LOG_CHANNEL_ID = "1446894637980713090"
+const STATS_PATH = join(__dirname, "../../../data/answer_stats.json")
+
+interface AnswerStats {
+  [staff_id: string]: {
+    weekly: { [week_key: string]: number }
+    total: number
+  }
+}
+
+function get_week_key(): string {
+  const now   = new Date()
+  const year  = now.getFullYear()
+  const start = new Date(year, 0, 1)
+  const diff  = now.getTime() - start.getTime()
+  const week  = Math.ceil((diff / 86400000 + start.getDay() + 1) / 7)
+  return `${year}-W${week}`
+}
+
+function load_stats(): AnswerStats {
+  try {
+    if (file.exists(STATS_PATH)) {
+      return file.read_json<AnswerStats>(STATS_PATH)
+    }
+  } catch {}
+  return {}
+}
+
+function save_stats(stats: AnswerStats): void {
+  file.ensure_dir(join(__dirname, "../../../data"))
+  file.write_json(STATS_PATH, stats)
+}
+
+function increment_stat(staff_id: string): number {
+  const stats    = load_stats()
+  const week_key = get_week_key()
+
+  if (!stats[staff_id]) {
+    stats[staff_id] = { weekly: {}, total: 0 }
+  }
+
+  stats[staff_id].weekly[week_key] = (stats[staff_id].weekly[week_key] || 0) + 1
+  stats[staff_id].total++
+
+  save_stats(stats)
+
+  return stats[staff_id].weekly[week_key]
+}
+
+async function get_or_create_staff_thread(
+  log_channel: TextChannel,
+  staff_id: string,
+  staff_name: string
+): Promise<ThreadChannel | null> {
+  const threads = await log_channel.threads.fetch()
+  
+  for (const [, thread] of threads.threads) {
+    if (thread.name.startsWith(staff_id)) {
+      return thread
+    }
+  }
+
+  const archived = await log_channel.threads.fetchArchived()
+  for (const [, thread] of archived.threads) {
+    if (thread.name.startsWith(staff_id)) {
+      await thread.setArchived(false)
+      return thread
+    }
+  }
+
+  try {
+    const thread = await log_channel.threads.create({
+      name: `${staff_id} - ${staff_name}`,
+      type: ChannelType.PublicThread,
+      autoArchiveDuration: 10080,
+    })
+    return thread
+  } catch {
+    return null
+  }
+}
+
+async function log_answer(
+  interaction: ButtonInteraction,
+  question_user_id: string,
+  question: string,
+  thread_id: string,
+  weekly_count: number
+): Promise<void> {
+  const log_channel = interaction.client.channels.cache.get(ANSWER_LOG_CHANNEL_ID) as TextChannel
+  if (!log_channel) return
+
+  const staff        = interaction.member as GuildMember
+  const staff_thread = await get_or_create_staff_thread(log_channel, staff.id, staff.displayName)
+  if (!staff_thread) return
+
+  const timestamp   = Math.floor(Date.now() / 1000)
+  const staff_avatar = staff.displayAvatarURL({ extension: "png", size: 128 })
+
+  const message = component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.section({
+            content: [
+              `## Answer Log`,
+              `**Staff:** <@${staff.id}>`,
+              `**Time:** <t:${timestamp}:F>`,
+            ],
+            thumbnail: staff_avatar,
+          }),
+          component.divider(),
+          component.text([
+            `**Question from:** <@${question_user_id}>`,
+            `**Question:** ${question.slice(0, 200)}${question.length > 200 ? "..." : ""}`,
+            `**Thread:** <#${thread_id}>`,
+          ]),
+          component.divider(),
+          component.text(`**Weekly Stats:** ${weekly_count} answers this week`),
+        ],
+      }),
+    ],
+  })
+
+  await api.send_components_v2(staff_thread.id, api.get_token(), message)
+}
 
 function extract_question_data(interaction: ButtonInteraction): {
   user_id: string
@@ -34,6 +163,16 @@ function extract_question_data(interaction: ButtonInteraction): {
 }
 
 export async function handle_ask_answer(interaction: ButtonInteraction): Promise<void> {
+  const member = interaction.member as GuildMember
+
+  if (!is_staff(member) && !is_admin_or_mod(member)) {
+    await interaction.reply({
+      content: "Only staff can answer questions.",
+      ephemeral: true,
+    })
+    return
+  }
+
   await interaction.deferUpdate()
 
   const message = interaction.message
@@ -46,11 +185,9 @@ export async function handle_ask_answer(interaction: ButtonInteraction): Promise
   if (!channel) return
 
   const data = extract_question_data(interaction)
-  if (!data) {
-    return
-  }
+  if (!data) return
 
-  const user = await interaction.client.users.fetch(data.user_id).catch(() => null)
+  const user     = await interaction.client.users.fetch(data.user_id).catch(() => null)
   const username = user?.username ?? "Unknown"
 
   const thread_id = await create_thread_for_message(
@@ -74,5 +211,8 @@ export async function handle_ask_answer(interaction: ButtonInteraction): Promise
       api.get_token(),
       updated_message
     )
+
+    const weekly_count = increment_stat(member.id)
+    await log_answer(interaction, data.user_id, data.question, thread_id, weekly_count)
   }
 }

@@ -36,7 +36,7 @@ client.once("ready", async () => {
   console.log(`Logged in as ${client.user?.tag}`)
 
   update_presence()
-  setInterval(update_presence, 30000)
+  setInterval(update_presence, 3000)
 
   const commands_data = await load_commands(client)
   await register_commands(commands_data)

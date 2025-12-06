@@ -126,7 +126,7 @@ export const command: Command = {
       return
     }
 
-    const message = build_question_panel(user.id, user_avatar, question)
+    const message = build_question_panel(user.id, user_avatar, question, true)
     const response = await api.send_components_v2(
       ask_channel_id,
       api.get_token(),
@@ -139,28 +139,8 @@ export const command: Command = {
       return
     }
 
-    const thread_id = await create_thread_for_message(
-      channel,
-      response.id as string,
-      user.id,
-      user.username
-    )
-
-    if (!thread_id) {
-      const message_with_answer = build_question_panel(user.id, user_avatar, question, true)
-      await api.edit_components_v2(
-        ask_channel_id,
-        response.id as string,
-        api.get_token(),
-        message_with_answer
-      )
-      
-      await interaction.editReply({ 
-        content: `Your question has been sent! Staff can click "Answer" to create a thread.` 
-      })
-      return
-    }
-
-    await interaction.editReply({ content: `Your question has been sent! Check <#${thread_id}>` })
+    await interaction.editReply({ 
+      content: `Your question has been sent! Staff can click "Answer" to create a thread.` 
+    })
   },
 }
