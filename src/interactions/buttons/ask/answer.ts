@@ -1,6 +1,5 @@
 import { ButtonInteraction, TextChannel, GuildMember, ChannelType, ThreadChannel } from "discord.js"
-import { component, api, file } from "../../../utils"
-import { join } from "path"
+import { component, api, db } from "../../../utils"
 import { 
   ask_channel_id, 
   create_thread_for_message,
@@ -9,13 +8,12 @@ import {
 import { is_staff, is_admin_or_mod } from "../../../functions/permissions"
 
 const ANSWER_LOG_CHANNEL_ID = "1446894637980713090"
-const STATS_PATH = join(__dirname, "../../../data/answer_stats.json")
+const COLLECTION_NAME = "answer_stats"
 
-interface AnswerStats {
-  [staff_id: string]: {
-    weekly: { [week_key: string]: number }
-    total: number
-  }
+interface AnswerStat {
+  staff_id: string
+  weekly: { [week_key: string]: number }
+  total: number
 }
 
 function get_week_key(): string {
@@ -27,34 +25,23 @@ function get_week_key(): string {
   return `${year}-W${week}`
 }
 
-function load_stats(): AnswerStats {
-  try {
-    if (file.exists(STATS_PATH)) {
-      return file.read_json<AnswerStats>(STATS_PATH)
-    }
-  } catch {}
-  return {}
-}
-
-function save_stats(stats: AnswerStats): void {
-  file.ensure_dir(join(__dirname, "../../../data"))
-  file.write_json(STATS_PATH, stats)
-}
-
-function increment_stat(staff_id: string): number {
-  const stats    = load_stats()
+async function increment_stat(staff_id: string): Promise<number> {
   const week_key = get_week_key()
+  const coll     = db.collection<AnswerStat>(COLLECTION_NAME)
+  
+  await coll.updateOne(
+    { staff_id },
+    { 
+      $inc: { 
+        [`weekly.${week_key}`]: 1,
+        total: 1 
+      } 
+    },
+    { upsert: true }
+  )
 
-  if (!stats[staff_id]) {
-    stats[staff_id] = { weekly: {}, total: 0 }
-  }
-
-  stats[staff_id].weekly[week_key] = (stats[staff_id].weekly[week_key] || 0) + 1
-  stats[staff_id].total++
-
-  save_stats(stats)
-
-  return stats[staff_id].weekly[week_key]
+  const stat = await db.find_one<AnswerStat>(COLLECTION_NAME, { staff_id })
+  return stat?.weekly?.[week_key] ?? 1
 }
 
 async function get_or_create_staff_thread(
@@ -212,7 +199,7 @@ export async function handle_ask_answer(interaction: ButtonInteraction): Promise
       updated_message
     )
 
-    const weekly_count = increment_stat(member.id)
+    const weekly_count = await increment_stat(member.id)
     await log_answer(interaction, data.user_id, data.question, thread_id, weekly_count)
   }
 }

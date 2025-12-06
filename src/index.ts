@@ -4,6 +4,7 @@ import { Command } from "./types/command"
 import { load_commands, register_commands } from "./handlers/command_handler"
 import { handle_interaction } from "./events/interaction_create"
 import { start_roblox_update_checker } from "./functions/roblox_update"
+import { db } from "./utils"
 
 config()
 
@@ -34,6 +35,9 @@ function update_presence(): void {
 
 client.once("ready", async () => {
   console.log(`Logged in as ${client.user?.tag}`)
+
+  await db.connect()
+  console.log("Connected to MongoDB")
 
   update_presence()
   setInterval(update_presence, 3000)
