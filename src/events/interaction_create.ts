@@ -8,6 +8,7 @@ import * as devlog_modal from "../interactions/modals/devlog";
 import * as review_modal from "../interactions/modals/review";
 import * as purchase_close_reason_modal from "../interactions/modals/purchase_close_reason";
 import * as edit_rules_modal from "../interactions/modals/edit_rules";
+import * as ask_staff_modal from "../interactions/modals/ask_staff";
 import * as join_ticket from "../interactions/buttons/ticket/join";
 import * as close_ticket from "../interactions/buttons/ticket/close";
 import * as review_submit from "../interactions/buttons/review/submit";
@@ -17,6 +18,7 @@ import * as purchase_close_reason from "../interactions/buttons/purchase/close_r
 import * as purchase_claim from "../interactions/buttons/purchase/claim";
 import * as purchase_join from "../interactions/buttons/purchase/join";
 import * as purchase_add_member from "../interactions/buttons/purchase/add_member";
+import * as ask_staff_button from "../interactions/buttons/ask/ask_staff";
 import { handle_role_permission_select } from "../commands/tools/get_role_permission";
 
 export async function handle_interaction(
@@ -105,6 +107,10 @@ export async function handle_interaction(
         await purchase_add_member.handle_purchase_add_member(interaction);
         return;
       }
+      if (interaction.customId === "ask_staff_button") {
+        await ask_staff_button.handle_ask_staff_button(interaction);
+        return;
+      }
     } catch (err) {
       console.log("[button] Error:", err);
     }
@@ -125,6 +131,10 @@ export async function handle_interaction(
       }
       if (interaction.customId.startsWith("edit_rules:")) {
         await edit_rules_modal.handle_edit_rules_modal(interaction);
+        return;
+      }
+      if (interaction.customId === "ask_staff_modal") {
+        await ask_staff_modal.handle_ask_staff_modal(interaction);
         return;
       }
     } catch (err) {
