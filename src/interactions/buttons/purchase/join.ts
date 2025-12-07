@@ -5,12 +5,15 @@ import {
   purchase_owners,
   purchase_log_channel_id,
   purchase_ticket_ids,
+  purchase_claimed_by,
+  save_purchase_ticket,
 } from "../../shared/ticket_state"
-import { is_admin } from "../../../functions/permissions"
+import { is_admin, is_staff } from "../../../functions/permissions"
 import { component, api, format } from "../../../utils"
 
 export async function handle_join_purchase(interaction: ButtonInteraction) {
-  if (!is_admin(interaction.member as GuildMember)) {
+  const member = interaction.member as GuildMember
+  if (!is_admin(member) && !is_staff(member)) {
     await interaction.reply({
       content: "Only staff can join tickets.",
       flags: 64,
@@ -21,7 +24,6 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
   await interaction.deferReply({ flags: 64 })
 
   const thread_id = interaction.customId.replace("join_purchase_", "")
-  const member = interaction.member as GuildMember
   const guild = interaction.guild!
 
   const thread = guild.channels.cache.get(thread_id) as ThreadChannel
@@ -30,13 +32,16 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
     return
   }
 
+  let staff_list = purchase_staff.get(thread_id) || []
+  if (staff_list.includes(member.id)) {
+    await interaction.editReply({ content: "You have already joined this ticket." })
+    return
+  }
+
   await thread.members.add(member.id)
 
-  let staff_list = purchase_staff.get(thread_id) || []
-  if (!staff_list.includes(member.id)) {
-    staff_list.push(member.id)
-    purchase_staff.set(thread_id, staff_list)
-  }
+  staff_list.push(member.id)
+  purchase_staff.set(thread_id, staff_list)
 
   const staff_mentions = staff_list.map((id: string) => `<@${id}>`)
   const owner_id = purchase_owners.get(thread_id) || "Unknown"
@@ -51,6 +56,9 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
         const owner = await guild.members.fetch(owner_id).catch(() => null)
         const avatar_url = owner?.displayAvatarURL({ size: 128 }) || format.default_avatar
 
+        const claimed_by = purchase_claimed_by.get(thread_id)
+        const claimed_line = claimed_by ? `- **Claimed by:** <@${claimed_by}>` : `- **Claimed by:** Not claimed`
+
         const message = component.build_message({
           components: [
             component.container({
@@ -62,6 +70,7 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
                     ``,
                     `- **Ticket ID:** ${format.code(ticket_id)}`,
                     `- **Opened by:** <@${owner_id}>`,
+                    claimed_line,
                   ],
                   thumbnail: avatar_url,
                 }),
@@ -83,6 +92,8 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
       } catch {}
     }
   }
+
+  await save_purchase_ticket(thread_id)
 
   await thread.send({
     content: `<@${member.id}> has joined the ticket.`,

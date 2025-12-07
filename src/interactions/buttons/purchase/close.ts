@@ -12,6 +12,7 @@ import {
   purchase_claimed_by,
   purchase_open_time,
   purchase_log_channel_id,
+  delete_purchase_ticket,
 } from "../../shared/ticket_state"
 import { component, time, api, format } from "../../../utils"
 
@@ -44,6 +45,8 @@ export async function handle_purchase_close(interaction: ButtonInteraction) {
   purchase_ticket_ids.delete(thread.id)
   purchase_claimed_by.delete(thread.id)
   purchase_open_time.delete(thread.id)
+
+  await delete_purchase_ticket(thread.id)
 
   const timestamp = time.now()
   const token = api.get_token()

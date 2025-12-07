@@ -1,15 +1,22 @@
-import { Client, Collection, GatewayIntentBits, ActivityType } from "discord.js"
+import { Client, Collection, GatewayIntentBits, ActivityType, Message } from "discord.js"
 import { config } from "dotenv"
 import { Command } from "./types/command"
 import { load_commands, register_commands } from "./handlers/command_handler"
 import { handle_interaction } from "./events/interaction_create"
 import { start_roblox_update_checker } from "./functions/roblox_update"
+import { load_close_requests } from "./commands/tools/close_request"
+import { load_all_purchase_tickets } from "./interactions/shared/ticket_state"
 import { db } from "./utils"
 
 config()
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+  ],
 }) as Client & { commands: Collection<string, Command> }
 
 export { client }
@@ -39,6 +46,8 @@ client.once("ready", async () => {
   const mongo = await db.connect()
   if (mongo) {
     console.log("Connected to MongoDB")
+    await load_close_requests()
+    await load_all_purchase_tickets()
   }
 
   update_presence()
@@ -55,5 +64,13 @@ client.once("ready", async () => {
 client.on("interactionCreate", (interaction) => {
   handle_interaction(interaction, client);
 });
+
+client.on("messageCreate", async (message: Message) => {
+  if (message.author.bot) return
+  if (message.reference) return
+  if (message.mentions.has(client.user!)) {
+    await message.reply("hi niggaas")
+  }
+})
 
 client.login(process.env.DISCORD_TOKEN);

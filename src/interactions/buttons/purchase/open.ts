@@ -13,6 +13,7 @@ import {
   purchase_open_time,
   generate_ticket_id,
   purchase_ticket_parent_id,
+  save_purchase_ticket,
 } from "../../shared/ticket_state"
 import { component, time, api, format } from "../../../utils"
 
@@ -100,6 +101,7 @@ export async function handle_purchase_open(interaction: ButtonInteraction) {
                 ``,
                 `- **Ticket ID:** ${format.code(ticket_id)}`,
                 `- **Opened by:** <@${user_id}>`,
+                `- **Claimed by:** Not claimed`,
               ],
               thumbnail: avatar_url,
             }),
@@ -120,6 +122,8 @@ export async function handle_purchase_open(interaction: ButtonInteraction) {
       purchase_logs.set(thread.id, log_data.id)
     }
   }
+
+  await save_purchase_ticket(thread.id)
 
   try {
     const dm_channel = await interaction.user.createDM()
