@@ -1,4 +1,5 @@
 import { message_payload } from "./components"
+import { ButtonInteraction, CommandInteraction } from "discord.js"
 
 const base_url = "https://discord.com/api/v10"
 
@@ -86,6 +87,54 @@ export async function edit_interaction_response(
 ): Promise<api_response> {
   const response = await fetch(
     `${base_url}/webhooks/${application_id}/${interaction_token}/messages/@original`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  )
+
+  const data = (await response.json()) as api_response
+
+  if (!response.ok) {
+    return { error: true, ...data }
+  }
+
+  return data
+}
+
+export async function send_components_v2_followup(
+  interaction: ButtonInteraction | CommandInteraction,
+  payload: message_payload
+): Promise<api_response> {
+  const response = await fetch(
+    `${base_url}/webhooks/${interaction.applicationId}/${interaction.token}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  )
+
+  const data = (await response.json()) as api_response
+
+  if (!response.ok) {
+    return { error: true, ...data }
+  }
+
+  return data
+}
+
+export async function edit_deferred_reply(
+  interaction: ButtonInteraction | CommandInteraction,
+  payload: message_payload
+): Promise<api_response> {
+  const response = await fetch(
+    `${base_url}/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
     {
       method: "PATCH",
       headers: {

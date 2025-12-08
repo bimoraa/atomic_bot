@@ -19,14 +19,46 @@ import { component, time, api, format } from "../../../utils"
 
 const open_tickets: Map<string, string> = new Map()
 
+function get_user_open_ticket(user_id: string): string | null {
+  if (open_tickets.has(user_id)) {
+    return open_tickets.get(user_id)!
+  }
+  
+  for (const [thread_id, owner_id] of purchase_owners.entries()) {
+    if (owner_id === user_id) {
+      open_tickets.set(user_id, thread_id)
+      return thread_id
+    }
+  }
+  
+  return null
+}
+
 export async function handle_purchase_open(interaction: ButtonInteraction) {
   const user_id = interaction.user.id
+  const existing_ticket_id = get_user_open_ticket(user_id)
 
-  if (open_tickets.has(user_id)) {
-    await interaction.reply({
-      content: "You already have an open purchase ticket. Please close it first before opening a new one.",
-      flags: 64,
+  if (existing_ticket_id) {
+    await interaction.deferReply({ flags: 64 })
+
+    const already_open_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text([
+              `## Already Have Ticket`,
+              `You already have an open purchase ticket.`,
+              `Please close it first before opening a new one.`,
+            ]),
+            component.action_row(
+              component.link_button("Jump to Ticket", format.channel_url(interaction.guildId!, existing_ticket_id))
+            ),
+          ],
+        }),
+      ],
     })
+
+    await api.edit_deferred_reply(interaction, already_open_message)
     return
   }
 
@@ -150,9 +182,23 @@ export async function handle_purchase_open(interaction: ButtonInteraction) {
     await api.send_components_v2(dm_channel.id, token, dm_message)
   } catch {}
 
-  await interaction.editReply({
-    content: `Your purchase ticket has been created: <#${thread.id}>`,
+  const reply_message = component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text([
+            `## Purchase Ticket Created`,
+            `Your purchase ticket has been created.`,
+          ]),
+          component.action_row(
+            component.link_button("Jump to Ticket", format.channel_url(interaction.guildId!, thread.id))
+          ),
+        ],
+      }),
+    ],
   })
+
+  await api.edit_deferred_reply(interaction, reply_message)
 }
 
 export function remove_open_ticket(user_id: string) {

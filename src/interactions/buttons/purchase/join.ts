@@ -34,7 +34,23 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
 
   let staff_list = purchase_staff.get(thread_id) || []
   if (staff_list.includes(member.id)) {
-    await interaction.editReply({ content: "You have already joined this ticket." })
+    const already_joined_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text([
+              `## Already Joined`,
+              `You have already joined this ticket.`,
+            ]),
+            component.action_row(
+              component.link_button("Jump to Ticket", format.channel_url(interaction.guildId!, thread_id))
+            ),
+          ],
+        }),
+      ],
+    })
+
+    await api.edit_deferred_reply(interaction, already_joined_message)
     return
   }
 
