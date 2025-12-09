@@ -29,7 +29,7 @@ export const command: Command = {
       return
     }
 
-    await interaction.deferReply({ flags: 32768 })
+    await interaction.deferReply({ flags: 32768 as any })
 
     const member = interaction.options.getMember("member") as GuildMember | null
     const role = interaction.options.getRole("role") as Role | null
