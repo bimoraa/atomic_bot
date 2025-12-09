@@ -13,7 +13,7 @@ export interface ParsedButton {
 }
 
 function load_guide(name: string): string | null {
-  const guide_path = path.join(__dirname, "../../guide", `${name}.md`)
+  const guide_path = path.join(process.cwd(), "src/guide", `${name}.md`)
   if (!fs.existsSync(guide_path)) return null
   return fs.readFileSync(guide_path, "utf-8")
 }
