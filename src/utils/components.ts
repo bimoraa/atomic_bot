@@ -234,3 +234,41 @@ export function build_message(options: {
 export function emoji_object(name: string, id?: string): { id?: string; name: string } {
   return id ? { id, name } : { name }
 }
+
+export interface gallery_item {
+  media: { url: string }
+  description?: string
+  spoiler?: boolean
+}
+
+export interface media_gallery_component {
+  type: number
+  items: gallery_item[]
+}
+
+export function media_gallery(items: gallery_item[]): media_gallery_component {
+  return {
+    type: component_type.media_gallery,
+    items,
+  }
+}
+
+export function gallery_item(url: string, description?: string, spoiler?: boolean): gallery_item {
+  return {
+    media: { url },
+    description,
+    spoiler,
+  }
+}
+
+export interface file_component {
+  type: number
+  file: { url: string }
+}
+
+export function file(url: string): file_component {
+  return {
+    type: component_type.file,
+    file: { url },
+  }
+}

@@ -5,11 +5,13 @@
   "scripts": {
     "build": "tsc && cp -r src/configuration dist/",
     "start": "node dist/index.js",
-    "dev": "nodemon --exec ts-node src/index.ts --ext ts"
+    "dev": "NODE_ENV=development nodemon --exec ts-node src/index.ts --ext ts"
   },
   "dependencies": {
+    "@types/form-data": "^2.2.1",
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
+    "form-data": "^4.0.5",
     "mongodb": "^7.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.2"

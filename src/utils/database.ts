@@ -108,3 +108,10 @@ export async function increment(
     { upsert: true }
   )
 }
+
+export async function count(
+  coll: string,
+  filter: object = {}
+): Promise<number> {
+  return collection(coll).countDocuments(filter as any)
+}

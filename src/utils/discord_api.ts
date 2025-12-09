@@ -153,6 +153,76 @@ export async function edit_deferred_reply(
   return data
 }
 
+export async function edit_deferred_reply_v2_with_file(
+  interaction: ButtonInteraction | CommandInteraction,
+  components: object[],
+  file_content: string,
+  filename: string
+): Promise<void> {
+  const form_data = new FormData()
+
+  form_data.append(
+    "payload_json",
+    JSON.stringify({
+      flags: 32768,
+      components,
+      attachments: [{ id: 0, filename }],
+    })
+  )
+
+  const blob = new Blob([file_content], { type: "text/plain" })
+  form_data.append("files[0]", blob, filename)
+
+  const url = `${base_url}/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`
+
+  await fetch(url, {
+    method: "PATCH",
+    body: form_data,
+  })
+}
+
+export interface file_attachment {
+  name:    string
+  content: Buffer
+}
+
+export async function edit_deferred_reply_with_files(
+  interaction: ButtonInteraction | CommandInteraction,
+  payload: message_payload,
+  files: file_attachment[]
+): Promise<api_response> {
+  const FormData = (await import("form-data")).default
+  const form     = new FormData()
+
+  const payload_json = {
+    ...payload,
+    attachments: files.map((f, i) => ({ id: i, filename: f.name })),
+  }
+
+  form.append("payload_json", JSON.stringify(payload_json))
+
+  files.forEach((file, index) => {
+    form.append(`files[${index}]`, file.content, { filename: file.name })
+  })
+
+  const response = await fetch(
+    `${base_url}/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
+    {
+      method: "PATCH",
+      headers: form.getHeaders(),
+      body: form as any,
+    }
+  )
+
+  const data = (await response.json()) as api_response
+
+  if (!response.ok) {
+    return { error: true, ...data }
+  }
+
+  return data
+}
+
 export async function bulk_delete_messages(
   channel_id: string,
   message_ids: string[],
@@ -442,7 +512,41 @@ export async function create_thread(
 }
 
 export function get_token(): string {
-  return process.env.DISCORD_TOKEN!
+  const is_dev = process.env.NODE_ENV === "development"
+  return is_dev ? process.env.DEV_DISCORD_TOKEN! : process.env.DISCORD_TOKEN!
+}
+
+export async function upload_image(
+  channel_id: string,
+  token: string,
+  file_path: string,
+  filename: string = "image.png"
+): Promise<string | null> {
+  const fs = await import("fs")
+  const path = await import("path")
+  const FormData = (await import("form-data")).default
+
+  const file_buffer = fs.readFileSync(file_path)
+  const form = new FormData()
+  form.append("file", file_buffer, { filename })
+
+  const response = await fetch(`${base_url}/channels/${channel_id}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bot ${token}`,
+      ...form.getHeaders(),
+    },
+    body: form as any,
+  })
+
+  if (!response.ok) return null
+
+  const data = (await response.json()) as any
+  if (data.attachments && data.attachments.length > 0) {
+    return data.attachments[0].url
+  }
+
+  return null
 }
 
 export function avatar_url(user_id: string, avatar_hash: string, format: string = "png"): string {

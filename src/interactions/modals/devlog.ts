@@ -46,18 +46,18 @@ export async function handle(interaction: ModalSubmitInteraction) {
   }
 
   const message = component.build_message({
-    content: format.role_mention(priority_role_id),
     components: [
       component.container({
         components: [
           component.section({
             content: [
               `## Atomicals Script Update Logs`,
+              `${format.role_mention(priority_role_id)}`,
               `- **${script}**`,
               `- **Version:** v${version}`,
               `- **Developer Notes:**`,
-              `> Found any bugs or issues? Feel free to report them to the developers! 💙`,
-              `> Got ideas or suggestions for new scripts? We'd love to hear them! 🚀`,
+              `> Found any bugs or issues? Feel free to report them to the developers!`,
+              `> Got ideas or suggestions for new scripts? We'd love to hear them!`,
             ],
             thumbnail: format.logo_url,
           }),

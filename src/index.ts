@@ -10,6 +10,13 @@ import { db } from "./utils"
 
 config()
 
+const is_dev = process.env.NODE_ENV === "development"
+
+const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN
+const client_id = is_dev ? process.env.DEV_CLIENT_ID : process.env.CLIENT_ID
+
+export { client_id, is_dev }
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -18,6 +25,8 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
   ],
 }) as Client & { commands: Collection<string, Command> }
+
+client.commands = new Collection()
 
 export { client }
 
@@ -73,4 +82,5 @@ client.on("messageCreate", async (message: Message) => {
   }
 })
 
-client.login(process.env.DISCORD_TOKEN);
+console.log(`[MODE] Running in ${is_dev ? "DEVELOPMENT" : "PRODUCTION"} mode`)
+client.login(discord_token)

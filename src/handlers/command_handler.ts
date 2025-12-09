@@ -2,6 +2,7 @@ import { Client, Collection, REST, Routes } from "discord.js";
 import { Command } from "../types/command";
 import { readdirSync } from "fs";
 import { join } from "path";
+import { client_id, is_dev } from "../index";
 
 export async function load_commands(client: Client & { commands: Collection<string, Command> }) {
   client.commands = new Collection();
@@ -33,9 +34,10 @@ export async function load_commands(client: Client & { commands: Collection<stri
 }
 
 export async function register_commands(commands_data: object[]) {
-  const rest = new REST().setToken(process.env.DISCORD_TOKEN!);
+  const token = is_dev ? process.env.DEV_DISCORD_TOKEN! : process.env.DISCORD_TOKEN!
+  const rest = new REST().setToken(token);
 
-  await rest.put(Routes.applicationCommands(process.env.CLIENT_ID!), {
+  await rest.put(Routes.applicationCommands(client_id!), {
     body: commands_data,
   });
 }
