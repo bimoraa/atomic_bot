@@ -44,9 +44,7 @@ Cek statistik kerja kamu pake `/work-stats`
 - Cek lagi nominal sebelum submit
 - Pastiin bukti tf keliatan jelas
 
-##-kiara:make_button
-Title: Contoh Penggunaan
-Customer beli script **CDID** seharga **Rp 100.000** via **Dana**
+kiara:make_button("Contoh Penggunaan", "Customer beli script **CDID** seharga **Rp 100.000** via **Dana**
 
 ```
 /submit-payment
@@ -56,4 +54,4 @@ customer: @NamaCustomer
 method: Dana
 details: CDID Script
 proof1: [upload bukti tf]
-```
+```");

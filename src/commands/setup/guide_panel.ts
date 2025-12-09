@@ -20,7 +20,7 @@ function load_guide(name: string): string | null {
 
 function parse_buttons(content: string): { cleaned: string; buttons: ParsedButton[] } {
   const buttons: ParsedButton[] = []
-  const button_regex = /##-kiara:make_button\nTitle:\s*(.+?)\n([\s\S]*?)(?=##-kiara:|$)/g
+  const button_regex = /kiara:make_button\("([^"]+)",\s*"([\s\S]*?)"\);/g
 
   const cleaned = content.replace(button_regex, (_, title, buttonContent) => {
     buttons.push({
