@@ -49,7 +49,7 @@ export function get_year(): number {
 export function format_date_id(): string {
   const days   = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"]
   const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
-  const now    = new Date()
+  const now    = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" }))
   const day    = days[now.getDay()]
   const date   = now.getDate()
   const month  = months[now.getMonth()]
