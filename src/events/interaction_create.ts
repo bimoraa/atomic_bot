@@ -24,6 +24,7 @@ import * as ask_answer from "../interactions/buttons/ask/answer";
 import * as close_request_handlers from "../interactions/buttons/close_request/handlers";
 import * as reaction_role from "../interactions/buttons/reaction/role";
 import * as payment_handlers from "../interactions/buttons/payment/handlers";
+import * as guide_example from "../interactions/buttons/guide/example";
 import { handle_role_permission_select } from "../commands/tools/get_role_permission";
 
 export async function handle_interaction(
@@ -142,6 +143,10 @@ export async function handle_interaction(
       }
       if (interaction.customId.startsWith("payment_reject_")) {
         await payment_handlers.handle_payment_reject(interaction);
+        return;
+      }
+      if (interaction.customId.startsWith("guide_btn_")) {
+        await guide_example.handle_guide_button(interaction);
         return;
       }
     } catch (err) {
