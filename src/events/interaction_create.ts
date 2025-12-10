@@ -29,6 +29,7 @@ import * as guide_example from "../interactions/buttons/guide/example";
 import { handle_role_permission_select } from "../commands/tools/get_role_permission";
 
 import * as payment_method_select from "../interactions/select_menus/payment_method";
+import * as guide_select from "../interactions/select_menus/guide_select";
 
 export async function handle_interaction(
   interaction: Interaction,
@@ -46,6 +47,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "payment_method_select") {
         await payment_method_select.handle_payment_method_select(interaction);
+        return;
+      }
+      if (interaction.customId === "guide_select") {
+        await guide_select.handle_guide_select(interaction);
         return;
       }
       if (await ticket_select.handle(interaction)) return;
