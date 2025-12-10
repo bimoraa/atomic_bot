@@ -8,6 +8,8 @@ import {
 } from "./state"
 import { component, api, format } from "../../utils"
 
+const HELPER_ROLE_ID = "1357767950421065981"
+
 export async function join_ticket(interaction: ButtonInteraction, ticket_type: string, thread_id: string): Promise<void> {
   const config = get_ticket_config(ticket_type)
   if (!config) {
@@ -15,8 +17,11 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
     return
   }
 
-  const member = interaction.member as GuildMember
-  if (!is_admin(member) && !is_staff(member)) {
+  const member     = interaction.member as GuildMember
+  const is_helper  = member.roles.cache.has(HELPER_ROLE_ID)
+  const can_join   = is_admin(member) || is_staff(member) || is_helper
+  
+  if (!can_join) {
     await interaction.reply({ content: "Only staff can join tickets.", flags: 64 })
     return
   }
