@@ -1,9 +1,9 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
-import { Command } from "../../types/command"
-import { is_admin } from "../../functions/permissions"
-import { api, component } from "../../utils"
-import fs from "fs"
-import path from "path"
+import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember }  from "discord.js"
+import { Command }                                                        from "../../types/command"
+import { is_admin }                                                       from "../../functions/permissions"
+import { api, component }                                                 from "../../utils"
+import fs                                                                 from "fs"
+import path                                                               from "path"
 
 export const guide_buttons = new Map<string, ParsedButton[]>()
 
@@ -72,6 +72,7 @@ export const command: Command = {
         .setRequired(true)
         .addChoices(
           { name: "Submit Payment", value: "submit-payment" },
+          { name: "Purchase Ticket", value: "ticket" },
         )
     ) as SlashCommandBuilder,
 

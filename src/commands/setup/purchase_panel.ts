@@ -7,6 +7,7 @@ import {
 import { Command } from "../../types/command"
 import { is_admin } from "../../functions/permissions"
 import { component, api } from "../../utils"
+import { purchase_panel_channel_id } from "../../interactions/shared/ticket_state"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -24,10 +25,16 @@ export const command: Command = {
 
     await interaction.deferReply({ flags: 64 })
 
-    const channel = interaction.client.channels.cache.get("1395947216375513298") as TextChannel
+    let channel: TextChannel | null = null
+    try {
+      channel = await interaction.client.channels.fetch(purchase_panel_channel_id) as TextChannel
+    } catch {
+      channel = null
+    }
+
     if (!channel) {
       await interaction.editReply({
-        content: "Panel channel not found.",
+        content: `Panel channel not found. ID: ${purchase_panel_channel_id}`,
       })
       return
     }
@@ -54,7 +61,7 @@ export const command: Command = {
                 "<:dana:1251913282923790379> - Dana",
                 "<:ovo:1251913316092088404> - Ovo",
               ],
-              thumbnail: "https://cdn.discordapp.com/icons/1250337227582472243/a_b68981606529e316b31e92e4eb67b498.gif",
+              thumbnail: "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
             }),
             component.divider(),
             component.action_row(

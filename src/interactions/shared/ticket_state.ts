@@ -24,7 +24,9 @@ const ticket_cfg = load_config<{
 
 const purchase_cfg = load_config<{
   log_channel_id: string;
+  closed_log_channel_id: string;
   ticket_parent_id: string;
+  panel_channel_id: string;
 }>("purchase");
 
 export const priority_role_id = ticket_cfg.priority_role_id;
@@ -33,7 +35,9 @@ export const closed_log_channel_id = ticket_cfg.closed_log_channel_id;
 export const ticket_channel_id = ticket_cfg.ticket_category_id;
 
 export const purchase_log_channel_id = purchase_cfg.log_channel_id;
+export const purchase_closed_log_channel_id = purchase_cfg.closed_log_channel_id;
 export const purchase_ticket_parent_id = purchase_cfg.ticket_parent_id;
+export const purchase_panel_channel_id = purchase_cfg.panel_channel_id;
 
 export const issue_labels: Record<string, string> = {
   script_issue: "Script Issue",

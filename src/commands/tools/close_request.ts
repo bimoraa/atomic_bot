@@ -2,18 +2,8 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, ThreadChannel, TextCh
 import { Command } from "../../types/command"
 import { component, time, api, format, db } from "../../utils"
 import { client } from "../../index"
-import {
-  purchase_owners,
-  purchase_staff,
-  purchase_logs,
-  purchase_ticket_ids,
-  purchase_claimed_by,
-  purchase_open_time,
-  purchase_log_channel_id,
-  purchase_ticket_parent_id,
-  delete_purchase_ticket,
-} from "../../interactions/shared/ticket_state"
-import { remove_open_ticket } from "../../interactions/buttons/purchase/open"
+import { purchase_ticket_parent_id } from "../../interactions/shared/ticket_state"
+import { close_purchase_ticket_fn } from "../../interactions/buttons/purchase/close_function"
 import { is_staff, is_admin_or_mod } from "../../functions/permissions"
 
 const COLLECTION_NAME = "close_requests"
@@ -45,90 +35,12 @@ function format_duration(seconds: number): string {
 }
 
 export async function close_purchase_ticket(thread: ThreadChannel, reason: string = "Deadline reached"): Promise<void> {
-  const owner_id    = purchase_owners.get(thread.id)
-  const ticket_id   = purchase_ticket_ids.get(thread.id) || "Unknown"
-  const claimed_by  = purchase_claimed_by.get(thread.id)
-  const open_time   = purchase_open_time.get(thread.id)
-  const open_log_id = purchase_logs.get(thread.id)
-
-  if (owner_id) {
-    remove_open_ticket(owner_id)
-    purchase_owners.delete(thread.id)
-  }
-
-  purchase_staff.delete(thread.id)
-  purchase_logs.delete(thread.id)
-  purchase_ticket_ids.delete(thread.id)
-  purchase_claimed_by.delete(thread.id)
-  purchase_open_time.delete(thread.id)
-
-  await delete_purchase_ticket(thread.id)
-
-  const timestamp = time.now()
-  const token     = api.get_token()
-
-  const log_channel = client.channels.cache.get(purchase_log_channel_id) as TextChannel
-  if (log_channel) {
-    if (open_log_id) {
-      await api.delete_message(log_channel.id, open_log_id, token)
-    }
-
-    let owner_avatar = format.default_avatar
-    if (owner_id) {
-      try {
-        const owner = await client.users.fetch(owner_id)
-        owner_avatar = owner.displayAvatarURL({ size: 128 })
-      } catch {}
-    }
-
-    const duration = open_time ? format_duration(timestamp - open_time) : "Unknown"
-
-    const log_message = component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.section({
-              content: [
-                `## Purchase Ticket Closed`,
-                `A purchase ticket has been closed.`,
-              ],
-              thumbnail: owner_avatar,
-            }),
-            component.divider(),
-            component.text([
-              `- **Ticket ID:** ${format.code(ticket_id)}`,
-              `- **Opened By:** ${owner_id ? `<@${owner_id}>` : "Unknown"}`,
-              `- **Closed By:** System`,
-              `- **Reason:** ${reason}`,
-              `- **Claimed By:** ${claimed_by ? `<@${claimed_by}>` : "Not claimed"}`,
-              `- **Open Time:** <t:${open_time || timestamp}:F>`,
-              `- **Duration:** ${duration}`,
-            ]),
-          ],
-        }),
-      ],
-    })
-
-    await api.send_components_v2(log_channel.id, token, log_message)
-  }
-
-  const close_message = component.build_message({
-    components: [
-      component.container({
-        components: [
-          component.text([
-            `## Ticket Closed`,
-            `This ticket has been closed.`,
-            ``,
-            `**Reason:** ${reason}`,
-          ]),
-        ],
-      }),
-    ],
+  await close_purchase_ticket_fn({
+    thread,
+    client,
+    closed_by: "System",
+    reason,
   })
-
-  await api.send_components_v2(thread.id, token, close_message)
-  await thread.setArchived(true)
 
   if (db.is_connected()) {
     await db.delete_one(COLLECTION_NAME, { thread_id: thread.id })

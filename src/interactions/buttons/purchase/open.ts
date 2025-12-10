@@ -19,15 +19,32 @@ import { component, time, api, format } from "../../../utils"
 
 const open_tickets: Map<string, string> = new Map()
 
-function get_user_open_ticket(user_id: string): string | null {
+async function get_user_open_ticket(interaction: ButtonInteraction, user_id: string): Promise<string | null> {
   if (open_tickets.has(user_id)) {
-    return open_tickets.get(user_id)!
+    const thread_id = open_tickets.get(user_id)!
+    try {
+      const thread = await interaction.client.channels.fetch(thread_id)
+      if (thread && thread.isThread() && !thread.locked && !thread.archived) {
+        return thread_id
+      }
+      open_tickets.delete(user_id)
+    } catch {
+      open_tickets.delete(user_id)
+    }
   }
   
   for (const [thread_id, owner_id] of purchase_owners.entries()) {
     if (owner_id === user_id) {
-      open_tickets.set(user_id, thread_id)
-      return thread_id
+      try {
+        const thread = await interaction.client.channels.fetch(thread_id)
+        if (thread && thread.isThread() && !thread.locked && !thread.archived) {
+          open_tickets.set(user_id, thread_id)
+          return thread_id
+        }
+        purchase_owners.delete(thread_id)
+      } catch {
+        purchase_owners.delete(thread_id)
+      }
     }
   }
   
@@ -35,12 +52,12 @@ function get_user_open_ticket(user_id: string): string | null {
 }
 
 export async function handle_purchase_open(interaction: ButtonInteraction) {
+  await interaction.deferReply({ flags: 64 })
+
   const user_id = interaction.user.id
-  const existing_ticket_id = get_user_open_ticket(user_id)
+  const existing_ticket_id = await get_user_open_ticket(interaction, user_id)
 
   if (existing_ticket_id) {
-    await interaction.deferReply({ flags: 64 })
-
     const already_open_message = component.build_message({
       components: [
         component.container({
@@ -61,8 +78,6 @@ export async function handle_purchase_open(interaction: ButtonInteraction) {
     await api.edit_deferred_reply(interaction, already_open_message)
     return
   }
-
-  await interaction.deferReply({ flags: 64 })
 
   const ticket_channel = interaction.client.channels.cache.get(purchase_ticket_parent_id) as TextChannel
   if (!ticket_channel) {

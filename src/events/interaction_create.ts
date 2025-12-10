@@ -19,6 +19,7 @@ import * as purchase_close_reason from "../interactions/buttons/purchase/close_r
 import * as purchase_claim from "../interactions/buttons/purchase/claim";
 import * as purchase_join from "../interactions/buttons/purchase/join";
 import * as purchase_add_member from "../interactions/buttons/purchase/add_member";
+import * as purchase_reopen from "../interactions/buttons/purchase/reopen";
 import * as ask_staff_button from "../interactions/buttons/ask/ask_staff";
 import * as ask_answer from "../interactions/buttons/ask/answer";
 import * as close_request_handlers from "../interactions/buttons/close_request/handlers";
@@ -115,6 +116,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "purchase_add_member") {
         await purchase_add_member.handle_purchase_add_member(interaction);
+        return;
+      }
+      if (interaction.customId === "purchase_reopen") {
+        await purchase_reopen.handle_purchase_reopen(interaction);
         return;
       }
       if (interaction.customId === "ask_staff_button") {
