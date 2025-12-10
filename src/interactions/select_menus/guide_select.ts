@@ -1,8 +1,8 @@
-import { StringSelectMenuInteraction } from "discord.js"
-import { component }                   from "../../utils"
-import { guide_buttons, ParsedButton } from "../../commands/setup/guide_panel"
-import fs                              from "fs"
-import path                            from "path"
+import { StringSelectMenuInteraction, TextChannel } from "discord.js"
+import { component, api }                           from "../../utils"
+import { guide_buttons, ParsedButton }              from "../../commands/setup/guide_panel"
+import fs                                           from "fs"
+import path                                         from "path"
 
 function load_guide(name: string): string | null {
   const guide_path = path.join(process.cwd(), "src/guide", `${name}.md`)
@@ -81,6 +81,57 @@ export async function handle_guide_select(interaction: StringSelectMenuInteracti
   guide_buttons.set(selected, buttons)
 
   const guide_components = parse_guide_to_components(cleaned, selected, buttons)
+
+  const message = {
+    flags:      32832,
+    components: [
+      {
+        type:       17,
+        components: guide_components,
+      },
+    ],
+  }
+
+  await fetch(
+    `https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
+    {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(message),
+    }
+  )
+}
+
+export async function handle_guide_language_select(interaction: StringSelectMenuInteraction): Promise<void> {
+  const language   = interaction.values[0]
+  const guide_type = interaction.customId.replace("guide_lang_", "")
+  const guide_file = language === "id" ? `${guide_type}-id` : guide_type
+
+  await interaction.deferReply({ flags: 32832 } as any)
+
+  let guide_content = load_guide(guide_file)
+  
+  if (!guide_content) {
+    guide_content = load_guide(guide_type)
+  }
+
+  if (!guide_content) {
+    await fetch(
+      `https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
+      {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ flags: 32832, content: "Guide not found." }),
+      }
+    )
+    return
+  }
+
+  const { cleaned, buttons } = parse_buttons(guide_content)
+
+  guide_buttons.set(guide_file, buttons)
+
+  const guide_components = parse_guide_to_components(cleaned, guide_file, buttons)
 
   const message = {
     flags:      32832,

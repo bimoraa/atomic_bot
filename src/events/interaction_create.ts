@@ -46,6 +46,10 @@ export async function handle_interaction(
         await guide_select.handle_guide_select(interaction);
         return;
       }
+      if (interaction.customId.startsWith("guide_lang_")) {
+        await guide_select.handle_guide_language_select(interaction);
+        return;
+      }
       if (await handle_ticket_select_menu(interaction)) return;
     } catch (err) {
       console.log("[select] Error:", err);

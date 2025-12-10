@@ -27,6 +27,22 @@ export async function handle_ticket_button(interaction: ButtonInteraction): Prom
     const prefix = config.prefix
 
     if (custom_id === `${prefix}_open`) {
+      if (type_key === "helper") {
+        const helper_modal = modal.create_modal(
+          `${prefix}_issue_modal`,
+          "Helper/Supporter Ticket",
+          modal.create_text_input({
+            custom_id:   "helper_issue",
+            label:       "What issue are you experiencing?",
+            style:       "paragraph",
+            placeholder: "Please describe your issue clearly so our Helper/Staff team can assist you...",
+            required:    true,
+            max_length:  1000,
+          })
+        )
+        await interaction.showModal(helper_modal)
+        return true
+      }
       await interaction.deferReply({ flags: 64 })
       await open_ticket({ interaction, ticket_type: type_key })
       return true
@@ -105,6 +121,18 @@ export async function handle_ticket_modal(interaction: ModalSubmitInteraction): 
 
       await close_ticket({ thread, client: interaction.client, closed_by: interaction.user, reason: close_reason })
       await interaction.editReply({ content: "Ticket closed." })
+      return true
+    }
+
+    if (custom_id === `${prefix}_issue_modal`) {
+      const issue_description = interaction.fields.getTextInputValue("helper_issue")
+
+      await interaction.deferReply({ ephemeral: true })
+      await open_ticket({
+        interaction: interaction as any,
+        ticket_type: type_key,
+        description: issue_description,
+      })
       return true
     }
 
