@@ -19,11 +19,17 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
 
   const member     = interaction.member as GuildMember
   const is_helper  = member.roles.cache.has(HELPER_ROLE_ID)
-  const can_join   = is_admin(member) || is_staff(member) || is_helper
   
-  if (!can_join) {
-    await interaction.reply({ content: "Only staff can join tickets.", flags: 64 })
-    return
+  if (ticket_type === "helper") {
+    if (!is_admin(member) && !is_staff(member) && !is_helper) {
+      await interaction.reply({ content: "Only staff and helpers can join helper tickets.", flags: 64 })
+      return
+    }
+  } else {
+    if (!is_admin(member) && !is_staff(member)) {
+      await interaction.reply({ content: "Only staff can join tickets.", flags: 64 })
+      return
+    }
   }
 
   await interaction.deferReply({ flags: 32832 } as any)

@@ -13,6 +13,8 @@ import {
 } from "./state"
 import { component, api, format } from "../../utils"
 
+const HELPER_ROLE_ID = "1357767950421065981"
+
 export async function claim_ticket(interaction: ButtonInteraction, ticket_type: string): Promise<void> {
   const config = get_ticket_config(ticket_type)
   if (!config) {
@@ -20,10 +22,19 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
     return
   }
 
-  const member = interaction.member as GuildMember
-  if (!is_admin(member) && !is_staff(member)) {
-    await interaction.reply({ content: "Only staff can claim tickets.", flags: 64 })
-    return
+  const member    = interaction.member as GuildMember
+  const is_helper = member.roles.cache.has(HELPER_ROLE_ID)
+  
+  if (ticket_type === "helper") {
+    if (!is_admin(member) && !is_staff(member) && !is_helper) {
+      await interaction.reply({ content: "Only staff and helpers can claim helper tickets.", flags: 64 })
+      return
+    }
+  } else {
+    if (!is_admin(member) && !is_staff(member)) {
+      await interaction.reply({ content: "Only staff can claim tickets.", flags: 64 })
+      return
+    }
   }
 
   const thread = interaction.channel as ThreadChannel
