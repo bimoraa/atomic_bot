@@ -6,9 +6,9 @@ Selamat datang! Panduan ini berisi semua yang perlu kamu ketahui tentang Helper 
 
 ### Helper Tickets - Apa Itu?
 Tersedia untuk semua member yang butuh bantuan dengan:
-- Fitur dan penggunaan script
-- Pertanyaan umum tentang produk Atomic
-- Support teknis (bukan pembelian)
+1. Fitur dan penggunaan script
+2. Pertanyaan umum tentang produk Atomic
+3. Support teknis (bukan pembelian)
 
 **Bukan untuk:** Masalah pembayaran, refund, atau moderasi
 
@@ -17,35 +17,34 @@ Tersedia untuk semua member yang butuh bantuan dengan:
 ### Peranmu (Sukarela)
 
 Helper adalah **relawan**. Kamu membantu kapan kamu mau dan bisa.
-
-<:checkmark:1417196825110253780> Join ticket saat ada waktu
-<:checkmark:1417196825110253780> Bagikan pengetahuan dan pengalamanmu
-<:checkmark:1417196825110253780> Pilih ticket mana yang mau kamu bantu
-<:checkmark:1417196825110253780> Mundur kapan saja jika sibuk atau tidak yakin
+1. Join ticket saat ada waktu
+2.  Bagikan pengetahuan dan pengalamanmu
+3. Pilih ticket mana yang mau kamu bantu
+4. Mundur kapan saja jika sibuk atau tidak yakin
 
 Tidak ada tekanan. Tidak ada kewajiban. Bantu sesuai kemampuanmu.
 
 ---
 
 ### Tidak Bisa Handle? Arahkan:
-
-- Refund → Customer Support
-- Izin sharing → Staff
-- Key/link executor → Resource publik
-- Masalah pembayaran → Customer Support
-- Laporan member → Moderasi
+1. Refund → Customer Support
+2. Izin sharing → Staff
+3. Key/link executor → Staff
+4. Masalah pembayaran → Customer Support
+5. Laporan member → Moderasi
 
 Contoh: "Ini di luar wewenang Helper. Silakan hubungi Staff/Customer Support."
+
+**Arahkan ke <#1260623558175096897>**
 
 ---
 
 ### Tips
-
-<:checkmark:1417196825110253780> Bantu hanya saat nyaman
-<:checkmark:1417196825110253780> Sopan dan jelas
-<:checkmark:1417196825110253780> Tidak tahu semuanya? Tidak apa-apa
-<:checkmark:1417196825110253780> Tanya Staff jika tidak yakin
-<:checkmark:1417196825110253780> Kualitas lebih penting dari kuantitas
+1. Bantu hanya saat nyaman
+2. Sopan dan jelas
+3. Tidak tahu semuanya? Tidak apa-apa
+4. Tanya Staff jika tidak yakin
+5. Kualitas lebih penting dari kuantitas
 
 ---
 
