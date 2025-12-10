@@ -28,6 +28,8 @@ import * as payment_handlers from "../interactions/buttons/payment/handlers";
 import * as guide_example from "../interactions/buttons/guide/example";
 import { handle_role_permission_select } from "../commands/tools/get_role_permission";
 
+import * as payment_method_select from "../interactions/select_menus/payment_method";
+
 export async function handle_interaction(
   interaction: Interaction,
   client: Client & { commands: Collection<string, Command> }
@@ -40,6 +42,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "answer_stats_select") {
         await answer_stats_select.handle_answer_stats_select(interaction);
+        return;
+      }
+      if (interaction.customId === "payment_method_select") {
+        await payment_method_select.handle_payment_method_select(interaction);
         return;
       }
       if (await ticket_select.handle(interaction)) return;

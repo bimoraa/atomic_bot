@@ -135,6 +135,88 @@ export async function handle_purchase_open(interaction: ButtonInteraction) {
   const welcome_data = await api.send_components_v2(thread.id, token, welcome_message)
   console.log("[purchase] Welcome panel sent:", welcome_data.id ? "success" : "failed")
 
+  const payment_message: component.message_payload = {
+    flags: 32768,
+    components: [
+      {
+        type: 17,
+        components: [
+          {
+            type: 10,
+            content: [
+              `## <:rbx:1447976733050667061> | Payment`,
+              ``,
+              `Hello! While you wait for a staff member, please complete your payment to speed up the process.`,
+              ``,
+              `> **Important:**`,
+              `> Make sure the account name matches exactly. Incorrect payments **are non-refundable**.`,
+            ].join("\n"),
+          },
+          {
+            type: 14,
+            spacing: 2,
+          },
+          {
+            type: 10,
+            content: `### Payment Methods\nSelect a payment method below to view details:`,
+          },
+          {
+            type: 1,
+            components: [
+              {
+                type: 3,
+                custom_id: "payment_method_select",
+                placeholder: "Select Payment Method",
+                options: [
+                  {
+                    label: "QRIS",
+                    value: "qris",
+                    description: "Scan QR code for instant payment",
+                    emoji: { name: "qris", id: "1251913366713139303" },
+                  },
+                  {
+                    label: "Dana",
+                    value: "dana",
+                    description: "0895418425934 — Nurlaela / Rian Febriansyah",
+                    emoji: { name: "dana", id: "1251913282923790379" },
+                  },
+                  {
+                    label: "GoPay",
+                    value: "gopay",
+                    description: "0895418425934 — Nurlaela / Rian Febriansyah",
+                    emoji: { name: "gopay", id: "1251913342646489181" },
+                  },
+                  {
+                    label: "PayPal",
+                    value: "paypal",
+                    description: "starrykitsch@gmail.com — Rian Febriansyah",
+                    emoji: { name: "paypal", id: "1251913398816604381" },
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            type: 14,
+            spacing: 2,
+          },
+          {
+            type: 10,
+            content: [
+              `### Notes:`,
+              `• Double-check the name before sending`,
+              `• No refunds for wrong details`,
+              `• Send a screenshot after payment`,
+              `• All fees are covered by the sender`,
+            ].join("\n"),
+          },
+        ],
+      },
+    ],
+  }
+
+  await api.send_components_v2(thread.id, token, payment_message)
+
   const log_channel = interaction.client.channels.cache.get(purchase_log_channel_id) as TextChannel
   if (log_channel) {
     const log_message = component.build_message({
