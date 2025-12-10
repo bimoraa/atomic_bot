@@ -11,7 +11,7 @@ const payment_details: Record<string, { title: string; content: string[]; image?
       ``,
       `> **Supported:** All banks, e-wallets (Dana, GoPay, OVO, ShopeePay, etc.)`,
     ],
-    image: "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/QRIS.png?raw=true",
+    image: "https://raw.githubusercontent.com/bimoraa/atomic_bot/main/assets/images/QRIS.png",
   },
   dana: {
     title: "Dana Payment",
@@ -61,32 +61,54 @@ export async function handle_payment_method_select(interaction: StringSelectMenu
     return
   }
 
-  await interaction.deferReply({ flags: 64 })
+  await interaction.deferReply({ flags: 32832 } as any)
 
-  const components: any[] = [
-    {
-      type: 10,
-      content: details.content.join("\n"),
-    },
-  ]
+  let message: any
 
   if (details.image) {
-    components.push({
-      type: 12,
-      media: {
-        url: details.image,
-      },
-    })
-  }
-
-  const message: component.message_payload = {
-    flags: 32768,
-    components: [
-      {
-        type: 17,
-        components,
-      },
-    ],
+    message = {
+      flags: 32832,
+      components: [
+        {
+          type: 17,
+          components: [
+            {
+              type: 10,
+              content: details.content.join("\n"),
+            },
+            {
+              type: 14,
+              spacing: 2,
+            },
+            {
+              type: 12,
+              items: [
+                {
+                  media: {
+                    url: details.image,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+  } else {
+    message = {
+      flags: 32832,
+      components: [
+        {
+          type: 17,
+          components: [
+            {
+              type: 10,
+              content: details.content.join("\n"),
+            },
+          ],
+        },
+      ],
+    }
   }
 
   const token = api.get_token()
