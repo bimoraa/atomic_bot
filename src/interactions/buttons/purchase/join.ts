@@ -21,7 +21,7 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
     return
   }
 
-  await interaction.deferReply({ flags: 64 })
+  await interaction.deferReply({ flags: 32832 } as any)
 
   const thread_id = interaction.customId.replace("join_purchase_", "")
   const guild = interaction.guild!
@@ -115,5 +115,19 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
     content: `<@${member.id}> has joined the ticket.`,
   })
 
-  await interaction.editReply({ content: `You have joined the ticket! <#${thread_id}>` })
+  const reply_message = component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text(`You have joined the ticket!`),
+          component.divider(2),
+          component.action_row(
+            component.link_button("Jump to Ticket", `https://discord.com/channels/${guild.id}/${thread_id}`)
+          ),
+        ],
+      }),
+    ],
+  })
+
+  await api.edit_deferred_reply(interaction, { ...reply_message, flags: 32832 })
 }
