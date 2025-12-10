@@ -195,21 +195,7 @@ export async function handle_purchase_open(interaction: ButtonInteraction) {
                 ],
               },
             ],
-          },
-          {
-            type: 14,
-            spacing: 2,
-          },
-          {
-            type: 10,
-            content: [
-              `### Notes:`,
-              `• Double-check the name before sending`,
-              `• No refunds for wrong details`,
-              `• Send a screenshot after payment`,
-              `• All fees are covered by the sender`,
-            ].join("\n"),
-          },
+          }
         ],
       },
     ],
