@@ -1,39 +1,43 @@
 import { ButtonInteraction, GuildMember, TextChannel, ThreadChannel } from "discord.js"
+import { is_admin, is_staff } from "../permissions"
 import {
-  purchase_logs,
-  purchase_staff,
-  purchase_owners,
-  purchase_log_channel_id,
-  purchase_ticket_ids,
-  purchase_claimed_by,
-  save_purchase_ticket,
-} from "../../shared/ticket_state"
-import { is_admin, is_staff } from "../../../functions/permissions"
-import { component, api, format } from "../../../utils"
+  get_ticket_config,
+  get_ticket,
+  set_ticket,
+  save_ticket,
+} from "./state"
+import { component, api, format } from "../../utils"
 
-export async function handle_join_purchase(interaction: ButtonInteraction) {
+export async function join_ticket(interaction: ButtonInteraction, ticket_type: string, thread_id: string): Promise<void> {
+  const config = get_ticket_config(ticket_type)
+  if (!config) {
+    await interaction.reply({ content: "Invalid ticket type.", flags: 64 })
+    return
+  }
+
   const member = interaction.member as GuildMember
   if (!is_admin(member) && !is_staff(member)) {
-    await interaction.reply({
-      content: "Only staff can join tickets.",
-      flags: 64,
-    })
+    await interaction.reply({ content: "Only staff can join tickets.", flags: 64 })
     return
   }
 
   await interaction.deferReply({ flags: 32832 } as any)
 
-  const thread_id = interaction.customId.replace("join_purchase_", "")
-  const guild = interaction.guild!
-
+  const guild  = interaction.guild!
   const thread = guild.channels.cache.get(thread_id) as ThreadChannel
+
   if (!thread) {
     await interaction.editReply({ content: "Ticket thread not found." })
     return
   }
 
-  let staff_list = purchase_staff.get(thread_id) || []
-  if (staff_list.includes(member.id)) {
+  const data = get_ticket(thread_id)
+  if (!data) {
+    await interaction.editReply({ content: "Ticket data not found." })
+    return
+  }
+
+  if (data.staff.includes(member.id)) {
     const already_joined_message = component.build_message({
       components: [
         component.container({
@@ -56,38 +60,41 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
 
   await thread.members.add(member.id)
 
-  staff_list.push(member.id)
-  purchase_staff.set(thread_id, staff_list)
+  data.staff.push(member.id)
+  set_ticket(thread_id, data)
 
-  const staff_mentions = staff_list.map((id: string) => `<@${id}>`)
-  const owner_id = purchase_owners.get(thread_id) || "Unknown"
-  const ticket_id = purchase_ticket_ids.get(thread_id) || "Unknown"
-
-  const log_message_id = purchase_logs.get(thread_id)
+  const staff_mentions = data.staff.map((id: string) => `<@${id}>`)
+  const log_message_id = data.log_message_id
 
   if (log_message_id) {
-    const log_channel = guild.channels.cache.get(purchase_log_channel_id) as TextChannel
+    const log_channel = guild.channels.cache.get(config.log_channel_id) as TextChannel
     if (log_channel) {
       try {
-        const owner = await guild.members.fetch(owner_id).catch(() => null)
+        const owner      = await guild.members.fetch(data.owner_id).catch(() => null)
         const avatar_url = owner?.displayAvatarURL({ size: 128 }) || format.default_avatar
 
-        const claimed_by = purchase_claimed_by.get(thread_id)
-        const claimed_line = claimed_by ? `- **Claimed by:** <@${claimed_by}>` : `- **Claimed by:** Not claimed`
+        const claimed_line = data.claimed_by ? `- **Claimed by:** <@${data.claimed_by}>` : `- **Claimed by:** Not claimed`
+
+        let log_content = [
+          `## Join Ticket`,
+          `A ${config.name} Ticket is Opened!`,
+          ``,
+          `- **Ticket ID:** ${format.code(data.ticket_id)}`,
+          `- **Opened by:** <@${data.owner_id}>`,
+        ]
+
+        if (data.issue_type) {
+          log_content.push(`- **Issue:** ${data.issue_type}`)
+        }
+
+        log_content.push(claimed_line)
 
         const message = component.build_message({
           components: [
             component.container({
               components: [
                 component.section({
-                  content: [
-                    `## Join Ticket`,
-                    `a Purchase Ticket is Opened!`,
-                    ``,
-                    `- **Ticket ID:** ${format.code(ticket_id)}`,
-                    `- **Opened by:** <@${owner_id}>`,
-                    claimed_line,
-                  ],
+                  content: log_content,
                   thumbnail: avatar_url,
                 }),
                 component.divider(),
@@ -97,7 +104,7 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
                 ]),
                 component.divider(),
                 component.action_row(
-                  component.success_button("Join Ticket", `join_purchase_${thread_id}`)
+                  component.success_button("Join Ticket", `${config.prefix}_join_${thread_id}`)
                 ),
               ],
             }),
@@ -109,11 +116,7 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
     }
   }
 
-  await save_purchase_ticket(thread_id)
-
-  await thread.send({
-    content: `<@${member.id}> has joined the ticket.`,
-  })
+  await save_ticket(thread_id)
 
   const reply_message = component.build_message({
     components: [
@@ -122,7 +125,7 @@ export async function handle_join_purchase(interaction: ButtonInteraction) {
           component.text(`You have joined the ticket!`),
           component.divider(2),
           component.action_row(
-            component.link_button("Jump to Ticket", `https://discord.com/channels/${guild.id}/${thread_id}`)
+            component.link_button("Jump to Ticket", format.channel_url(guild.id, thread_id))
           ),
         ],
       }),

@@ -7,7 +7,7 @@ import {
 import { Command } from "../../types/command"
 import { is_admin } from "../../functions/permissions"
 import { component, api } from "../../utils"
-import { purchase_panel_channel_id } from "../../interactions/shared/ticket_state"
+import { get_ticket_config } from "../../functions/unified_ticket"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -25,16 +25,22 @@ export const command: Command = {
 
     await interaction.deferReply({ flags: 64 })
 
+    const config = get_ticket_config("purchase")
+    if (!config) {
+      await interaction.editReply({ content: "Purchase ticket config not found." })
+      return
+    }
+
     let channel: TextChannel | null = null
     try {
-      channel = await interaction.client.channels.fetch(purchase_panel_channel_id) as TextChannel
+      channel = await interaction.client.channels.fetch(config.panel_channel_id) as TextChannel
     } catch {
       channel = null
     }
 
     if (!channel) {
       await interaction.editReply({
-        content: `Panel channel not found. ID: ${purchase_panel_channel_id}`,
+        content: `Panel channel not found. ID: ${config.panel_channel_id}`,
       })
       return
     }

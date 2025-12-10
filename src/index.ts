@@ -5,7 +5,7 @@ import { load_commands, register_commands } from "./handlers/command_handler"
 import { handle_interaction } from "./events/interaction_create"
 import { start_roblox_update_checker } from "./functions/roblox_update"
 import { load_close_requests } from "./commands/tools/close_request"
-import { load_all_purchase_tickets } from "./interactions/shared/ticket_state"
+import { load_all_tickets } from "./functions/unified_ticket"
 import { db } from "./utils"
 
 config()
@@ -56,7 +56,7 @@ client.once("ready", async () => {
   if (mongo) {
     console.log("Connected to MongoDB")
     await load_close_requests()
-    await load_all_purchase_tickets()
+    await load_all_tickets()
   }
 
   update_presence()

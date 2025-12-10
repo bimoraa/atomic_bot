@@ -1,21 +1,26 @@
 import { ButtonInteraction, ThreadChannel, GuildMember } from "discord.js"
 import { component, api, db } from "../../../utils"
-import { purchase_owners, purchase_ticket_parent_id } from "../../shared/ticket_state"
-import { close_purchase_ticket, cancel_close_request, get_close_request } from "../../../commands/tools/close_request"
+import { get_ticket, ticket_types } from "../../../functions/unified_ticket"
+import { close_ticket_by_deadline, cancel_close_request, get_close_request } from "../../../commands/tools/close_request"
+
+function get_ticket_parent_ids(): string[] {
+  return Object.values(ticket_types).map(config => config.ticket_parent_id)
+}
 
 export async function handle_close_request_accept(interaction: ButtonInteraction): Promise<void> {
   const thread = interaction.channel as ThreadChannel
   const member = interaction.member as GuildMember
 
-  if (!thread.isThread() || thread.parentId !== purchase_ticket_parent_id) {
+  if (!thread.isThread() || !get_ticket_parent_ids().includes(thread.parentId || "")) {
     await interaction.reply({
-      content: "This button can only be used in a purchase ticket thread.",
+      content: "This button can only be used in a ticket thread.",
       ephemeral: true,
     })
     return
   }
 
-  const owner_id = purchase_owners.get(thread.id)
+  const data     = get_ticket(thread.id)
+  const owner_id = data?.owner_id
   if (member.id !== owner_id) {
     await interaction.reply({
       content: "Only the ticket owner can accept or deny close requests.",
@@ -33,22 +38,23 @@ export async function handle_close_request_accept(interaction: ButtonInteraction
     await api.delete_message(thread.id, request.message_id, api.get_token())
   }
 
-  await close_purchase_ticket(thread, reason)
+  await close_ticket_by_deadline(thread, reason)
 }
 
 export async function handle_close_request_deny(interaction: ButtonInteraction): Promise<void> {
   const thread = interaction.channel as ThreadChannel
   const member = interaction.member as GuildMember
 
-  if (!thread.isThread() || thread.parentId !== purchase_ticket_parent_id) {
+  if (!thread.isThread() || !get_ticket_parent_ids().includes(thread.parentId || "")) {
     await interaction.reply({
-      content: "This button can only be used in a purchase ticket thread.",
+      content: "This button can only be used in a ticket thread.",
       ephemeral: true,
     })
     return
   }
 
-  const owner_id = purchase_owners.get(thread.id)
+  const data     = get_ticket(thread.id)
+  const owner_id = data?.owner_id
   if (member.id !== owner_id) {
     await interaction.reply({
       content: "Only the ticket owner can accept or deny close requests.",

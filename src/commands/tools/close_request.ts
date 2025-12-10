@@ -2,19 +2,19 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, ThreadChannel, TextCh
 import { Command } from "../../types/command"
 import { component, time, api, format, db } from "../../utils"
 import { client } from "../../index"
-import { purchase_ticket_parent_id } from "../../interactions/shared/ticket_state"
-import { close_purchase_ticket_fn } from "../../interactions/buttons/purchase/close_function"
+import { ticket_types, get_ticket } from "../../functions/unified_ticket"
+import { close_ticket } from "../../functions/unified_ticket/close"
 import { is_staff, is_admin_or_mod } from "../../functions/permissions"
 
 const COLLECTION_NAME = "close_requests"
 
 interface CloseRequest {
-  thread_id: string
-  deadline: number
+  thread_id:    string
+  deadline:     number
   requested_by: string
-  reason: string
-  created_at: number
-  message_id?: string
+  reason:       string
+  created_at:   number
+  message_id?:  string
 }
 
 const active_timeouts: Map<string, NodeJS.Timeout> = new Map()
@@ -34,8 +34,12 @@ function format_duration(seconds: number): string {
   return parts.join(" ")
 }
 
-export async function close_purchase_ticket(thread: ThreadChannel, reason: string = "Deadline reached"): Promise<void> {
-  await close_purchase_ticket_fn({
+function get_ticket_parent_ids(): string[] {
+  return Object.values(ticket_types).map(config => config.ticket_parent_id)
+}
+
+export async function close_ticket_by_deadline(thread: ThreadChannel, reason: string = "Deadline reached"): Promise<void> {
+  await close_ticket({
     thread,
     client,
     closed_by: "System",
@@ -55,14 +59,14 @@ function schedule_close(thread_id: string, deadline: number, reason: string): vo
   const delay = deadline - Date.now()
   if (delay <= 0) {
     const thread = client.channels.cache.get(thread_id) as ThreadChannel
-    if (thread) close_purchase_ticket(thread, reason)
+    if (thread) close_ticket_by_deadline(thread, reason)
     return
   }
 
   const timeout = setTimeout(async () => {
     const thread = client.channels.cache.get(thread_id) as ThreadChannel
     if (thread && !thread.archived) {
-      await close_purchase_ticket(thread, reason)
+      await close_ticket_by_deadline(thread, reason)
     }
     active_timeouts.delete(thread_id)
   }, delay)
@@ -80,7 +84,7 @@ export async function load_close_requests(): Promise<void> {
     if (req.deadline <= now) {
       const thread = client.channels.cache.get(req.thread_id) as ThreadChannel
       if (thread && !thread.archived) {
-        await close_purchase_ticket(thread, req.reason || "Deadline reached")
+        await close_ticket_by_deadline(thread, req.reason || "Deadline reached")
       }
       await db.delete_one(COLLECTION_NAME, { thread_id: req.thread_id })
     } else {
@@ -203,9 +207,9 @@ const command: Command = {
       return
     }
 
-    if (!thread.isThread() || thread.parentId !== purchase_ticket_parent_id) {
+    if (!thread.isThread() || !get_ticket_parent_ids().includes(thread.parentId || "")) {
       await interaction.reply({
-        content: "This command can only be used in a purchase ticket thread.",
+        content: "This command can only be used in a ticket thread.",
         ephemeral: true,
       })
       return
