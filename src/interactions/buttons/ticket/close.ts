@@ -1,8 +1,8 @@
 import { ButtonInteraction, ThreadChannel } from "discord.js"
-import { close_priority_ticket_fn } from "./close_function"
+import { close_ticket } from "../../../functions/unified_ticket"
 
 export async function handle(interaction: ButtonInteraction) {
-  if (interaction.customId !== "ticket_close") return false
+  if (interaction.customId !== "priority_close") return false
 
   await interaction.deferReply({ flags: 64 })
 
@@ -13,7 +13,7 @@ export async function handle(interaction: ButtonInteraction) {
     return true
   }
 
-  await close_priority_ticket_fn({
+  await close_ticket({
     thread,
     client:    interaction.client,
     closed_by: interaction.user,
