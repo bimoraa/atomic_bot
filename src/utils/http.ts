@@ -1,4 +1,4 @@
-export type method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
+export type method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD"
 
 export type options = {
   method?: method
@@ -55,6 +55,21 @@ export async function request<T>(url: string, opts: options = {}): Promise<respo
 export async function get<T>(url: string, headers?: Record<string, string>): Promise<T> {
   const res = await request<T>(url, { method: "GET", headers })
   return res.data
+}
+
+export async function get_text(url: string, headers?: Record<string, string>): Promise<string> {
+  const controller = new AbortController()
+  
+  const init: RequestInit = {
+    method  : "GET",
+    headers : headers,
+    signal  : controller.signal,
+  }
+
+  const res  = await fetch(url, init)
+  const text = await res.text()
+  
+  return text
 }
 
 export async function post<T>(url: string, body?: any, headers?: Record<string, string>): Promise<T> {

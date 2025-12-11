@@ -21,15 +21,16 @@ export const command: Command = {
 
     await interaction.deferReply({ ephemeral: true });
 
-    const version_info = await test_roblox_update_notification();
+    const versions = await test_roblox_update_notification();
 
-    if (version_info) {
+    if (versions && versions.length > 0) {
+      const lines = versions.map(v => `- ${v.platform}: \`${v.version}\` (client: \`${v.client_version}\`)`)
       await interaction.editReply({
-        content: `Test notification sent!\n**Version:** \`${version_info.version}\`\n**Client Version:** \`${version_info.client_version}\``,
+        content: `Test notifications sent!\n${lines.join("\n")}`,
       });
     } else {
       await interaction.editReply({
-        content: "Failed to fetch Roblox version.",
+        content: "Failed to fetch Roblox versions (all platforms returned empty).",
       });
     }
   },

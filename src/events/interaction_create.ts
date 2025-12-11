@@ -23,6 +23,7 @@ import { handle_role_permission_select } from "../commands/tools/get_role_permis
 
 import * as payment_method_select from "../interactions/select_menus/payment_method";
 import * as guide_select          from "../interactions/select_menus/guide_select";
+import * as version_select        from "../interactions/select_menus/version/select";
 
 export async function handle_interaction(
   interaction: Interaction,
@@ -48,6 +49,10 @@ export async function handle_interaction(
       }
       if (interaction.customId.startsWith("guide_lang_")) {
         await guide_select.handle_guide_language_select(interaction);
+        return;
+      }
+      if (interaction.customId === "version_platform_select") {
+        await version_select.handle_version_platform_select(interaction);
         return;
       }
       if (await handle_ticket_select_menu(interaction)) return;
