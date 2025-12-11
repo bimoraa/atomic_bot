@@ -34,12 +34,9 @@ export async function handle_version_platform_select(interaction: StringSelectMe
           component.section({
             content: [
               `## ${platform_name} Version`,
-              ``,
-              `**Version:** ${format.code(version_info.version)}`,
-              ``,
-              `**Client Version:** ${format.code(version_info.client_version)}`,
-              ``,
-              `**Updated:** ${time.full_date_time(updated_timestamp)} (${time.relative_time(updated_timestamp)})`,
+              `Version: ${format.code(version_info.version)}`,
+              `Client Version: ${format.code(version_info.client_version)}`,
+              `Updated: ${time.full_date_time(updated_timestamp)} (${time.relative_time(updated_timestamp)})`,
             ],
             thumbnail: format.logo_url,
           }),
