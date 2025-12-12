@@ -1,5 +1,5 @@
 import { message_payload } from "./components"
-import { ButtonInteraction, CommandInteraction } from "discord.js"
+import { ButtonInteraction, CommandInteraction, StringSelectMenuInteraction } from "discord.js"
 
 const base_url = "https://discord.com/api/v10"
 
@@ -154,7 +154,7 @@ export async function edit_deferred_reply(
 }
 
 export async function edit_deferred_reply_v2_with_file(
-  interaction: ButtonInteraction | CommandInteraction,
+  interaction: ButtonInteraction | CommandInteraction | StringSelectMenuInteraction,
   components: object[],
   file_content: string,
   filename: string
