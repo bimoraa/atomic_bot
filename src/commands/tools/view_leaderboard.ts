@@ -81,7 +81,7 @@ export const command: Command = {
       const user_tag = user.discord_id ? `<@${user.discord_id}>` : `\`${user.user_key.slice(0, 8)}...\``
 
       leaderboard_lines.push(
-        `${rank}. ${user_tag} has executed script **${user.total_executions}x**`
+        `${rank}. ${user_tag} has executed the **${user.total_executions} times**`
       )
     }
 
