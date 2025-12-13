@@ -7,18 +7,24 @@ import {
   handle_ticket_select_menu,
   handle_ticket_user_select,
 } from "../functions/unified_ticket";
-import * as answer_stats_select from "../interactions/select_menus/answer_stats";
-import * as devlog_modal        from "../interactions/modals/devlog";
-import * as review_modal        from "../interactions/modals/review";
-import * as edit_rules_modal    from "../interactions/modals/edit_rules";
-import * as ask_staff_modal     from "../interactions/modals/ask_staff";
-import * as review_submit       from "../interactions/buttons/review/submit";
-import * as ask_staff_button    from "../interactions/buttons/ask/ask_staff";
-import * as ask_answer          from "../interactions/buttons/ask/answer";
+import * as answer_stats_select    from "../interactions/select_menus/answer_stats";
+import * as devlog_modal           from "../interactions/modals/devlog";
+import * as review_modal           from "../interactions/modals/review";
+import * as edit_rules_modal       from "../interactions/modals/edit_rules";
+import * as ask_staff_modal        from "../interactions/modals/ask_staff";
+import * as script_redeem_modal    from "../interactions/modals/script_redeem";
+import * as review_submit          from "../interactions/buttons/review/submit";
+import * as ask_staff_button       from "../interactions/buttons/ask/ask_staff";
+import * as ask_answer             from "../interactions/buttons/ask/answer";
 import * as close_request_handlers from "../interactions/buttons/close_request/handlers";
-import * as reaction_role       from "../interactions/buttons/reaction/role";
-import * as payment_handlers    from "../interactions/buttons/payment/handlers";
-import * as guide_example       from "../interactions/buttons/guide/example";
+import * as reaction_role          from "../interactions/buttons/reaction/role";
+import * as payment_handlers       from "../interactions/buttons/payment/handlers";
+import * as guide_example          from "../interactions/buttons/guide/example";
+import * as script_redeem_key      from "../interactions/buttons/script/redeem_key";
+import * as script_get_script      from "../interactions/buttons/script/get_script";
+import * as script_get_role        from "../interactions/buttons/script/get_role";
+import * as script_reset_hwid      from "../interactions/buttons/script/reset_hwid";
+import * as script_get_stats       from "../interactions/buttons/script/get_stats";
 import { handle_role_permission_select } from "../commands/tools/get_role_permission";
 
 import * as payment_method_select from "../interactions/select_menus/payment_method";
@@ -113,6 +119,30 @@ export async function handle_interaction(
         await guide_example.handle_guide_button(interaction);
         return;
       }
+      if (interaction.customId === "script_redeem_key") {
+        await script_redeem_key.handle_redeem_key(interaction);
+        return;
+      }
+      if (interaction.customId === "script_get_script") {
+        await script_get_script.handle_get_script(interaction);
+        return;
+      }
+      if (interaction.customId === "script_get_role") {
+        await script_get_role.handle_get_role(interaction);
+        return;
+      }
+      if (interaction.customId === "script_reset_hwid") {
+        await script_reset_hwid.handle_reset_hwid(interaction);
+        return;
+      }
+      if (interaction.customId === "script_get_stats") {
+        await script_get_stats.handle_get_stats(interaction);
+        return;
+      }
+      if (interaction.customId === "script_mobile_copy") {
+        await script_get_script.handle_mobile_copy(interaction);
+        return;
+      }
     } catch (err) {
       console.log("[button] Error:", err);
     }
@@ -134,6 +164,7 @@ export async function handle_interaction(
         await ask_staff_modal.handle_ask_staff_modal(interaction);
         return;
       }
+      if (await script_redeem_modal.handle_script_redeem_modal(interaction)) return;
     } catch (err) {
       console.log("[modal] Error:", err);
     }

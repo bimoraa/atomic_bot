@@ -1,5 +1,5 @@
 import { message_payload } from "./components"
-import { ButtonInteraction, CommandInteraction, StringSelectMenuInteraction } from "discord.js"
+import { ButtonInteraction, CommandInteraction, StringSelectMenuInteraction, ModalSubmitInteraction } from "discord.js"
 
 const base_url = "https://discord.com/api/v10"
 
@@ -130,7 +130,7 @@ export async function send_components_v2_followup(
 }
 
 export async function edit_deferred_reply(
-  interaction: ButtonInteraction | CommandInteraction,
+  interaction: ButtonInteraction | CommandInteraction | ModalSubmitInteraction,
   payload: message_payload
 ): Promise<api_response> {
   const response = await fetch(
