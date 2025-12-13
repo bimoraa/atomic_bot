@@ -15,6 +15,13 @@ function get_project_id(): string {
   return env.required("LUARMOR_PROJECT_ID")
 }
 
+function check_rate_limit(response: any): string | null {
+  if (response.message?.toLowerCase().includes("ratelimit")) {
+    return "Failed to connect to server. Please try again in a minute."
+  }
+  return null
+}
+
 export interface luarmor_user {
   user_key         : string
   identifier       : string | null
@@ -97,6 +104,11 @@ export async function get_user_by_discord(discord_id: string): Promise<luarmor_r
 
     __log.info("Luarmor get_user_by_discord response:", JSON.stringify(response))
 
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
+
     if (response.users && Array.isArray(response.users) && response.users.length > 0) {
       return { success: true, data: response.users[0] }
     }
@@ -112,7 +124,7 @@ export async function get_user_by_discord(discord_id: string): Promise<luarmor_r
     return { success: false, error: response.message || "User not found" }
   } catch (error) {
     __log.error("Failed to get user:", error)
-    return { success: false, error: "Request failed" }
+    return { success: false, error: "Failed to connect to server." }
   }
 }
 
@@ -122,6 +134,11 @@ export async function get_user_by_key(user_key: string): Promise<luarmor_respons
     const response = await http.get<any>(url, get_headers())
 
     __log.info("Luarmor get_user_by_key response:", JSON.stringify(response))
+
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
 
     if (response.users && Array.isArray(response.users) && response.users.length > 0) {
       return { success: true, data: response.users[0] }
@@ -138,7 +155,7 @@ export async function get_user_by_key(user_key: string): Promise<luarmor_respons
     return { success: false, error: response.message || "User not found" }
   } catch (error) {
     __log.error("Failed to get user by key:", error)
-    return { success: false, error: "Request failed" }
+    return { success: false, error: "Failed to connect to server." }
   }
 }
 
@@ -148,6 +165,11 @@ export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor
     const body     = { discord_id }
     const response = await http.post<any>(url, body, get_headers())
 
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
+
     if (response.success === true || response.message?.toLowerCase().includes("success")) {
       return { success: true, message: "HWID reset successfully" }
     }
@@ -155,7 +177,7 @@ export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor
     return { success: false, error: response.message || "Failed to reset HWID" }
   } catch (error) {
     __log.error("Failed to reset HWID:", error)
-    return { success: false, error: "Request failed" }
+    return { success: false, error: "Failed to connect to server." }
   }
 }
 
@@ -165,6 +187,11 @@ export async function reset_hwid_by_key(user_key: string): Promise<luarmor_respo
     const body     = { user_key }
     const response = await http.post<any>(url, body, get_headers())
 
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
+
     if (response.success === true || response.message?.toLowerCase().includes("success")) {
       return { success: true, message: "HWID reset successfully" }
     }
@@ -172,7 +199,7 @@ export async function reset_hwid_by_key(user_key: string): Promise<luarmor_respo
     return { success: false, error: response.message || "Failed to reset HWID" }
   } catch (error) {
     __log.error("Failed to reset HWID:", error)
-    return { success: false, error: "Request failed" }
+    return { success: false, error: "Failed to connect to server." }
   }
 }
 
@@ -182,6 +209,11 @@ export async function link_discord(user_key: string, discord_id: string): Promis
     const body     = { user_key, discord_id }
     const response = await http.post<any>(url, body, get_headers())
 
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
+
     if (response.success === true || response.message?.toLowerCase().includes("success")) {
       return { success: true, message: "Discord linked successfully" }
     }
@@ -189,7 +221,7 @@ export async function link_discord(user_key: string, discord_id: string): Promis
     return { success: false, error: response.message || "Failed to link Discord" }
   } catch (error) {
     __log.error("Failed to link Discord:", error)
-    return { success: false, error: "Request failed" }
+    return { success: false, error: "Failed to connect to server." }
   }
 }
 
@@ -198,6 +230,11 @@ export async function get_stats(): Promise<luarmor_response<luarmor_stats>> {
     const url      = `${__base_url}/keys/${get_api_key()}/stats`
     const response = await http.get<any>(url, get_headers())
 
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
+
     if (response.total_users !== undefined) {
       return { success: true, data: response }
     }
@@ -205,7 +242,7 @@ export async function get_stats(): Promise<luarmor_response<luarmor_stats>> {
     return { success: false, error: response.message || "Failed to get stats" }
   } catch (error) {
     __log.error("Failed to get stats:", error)
-    return { success: false, error: "Request failed" }
+    return { success: false, error: "Failed to connect to server." }
   }
 }
 
@@ -219,6 +256,11 @@ export async function get_all_users(): Promise<luarmor_response<luarmor_user[]>>
   try {
     const url      = `${__base_url}/projects/${get_project_id()}/users`
     const response = await http.get<any>(url, get_headers())
+
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
 
     if (response.users && Array.isArray(response.users)) {
       __users_cache     = response.users
@@ -235,7 +277,7 @@ export async function get_all_users(): Promise<luarmor_response<luarmor_user[]>>
     return { success: false, error: response.message || "Failed to get users" }
   } catch (error) {
     __log.error("Failed to get all users:", error)
-    return { success: false, error: "Request failed" }
+    return { success: false, error: "Failed to connect to server." }
   }
 }
 
