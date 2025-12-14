@@ -210,8 +210,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
       description_section = [
         component.divider(),
         component.text([
-          `**Description:**`,
-          `${description}`,
+          `- **Description:** ${description}`,
         ]),
       ]
     }
