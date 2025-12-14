@@ -16,7 +16,8 @@ function get_project_id(): string {
 }
 
 function check_rate_limit(response: any): string | null {
-  if (response.message?.toLowerCase().includes("ratelimit")) {
+  const message = response.message?.toLowerCase() || ""
+  if (message.includes("ratelimit") || message.includes("too many requests")) {
     return "Failed to connect to server. Please try again in a minute."
   }
   return null
@@ -43,10 +44,11 @@ export interface luarmor_user {
 }
 
 export interface luarmor_response<T> {
-  success : boolean
-  data?   : T
-  error?  : string
-  message?: string
+  success   : boolean
+  data?     : T
+  error?    : string
+  message?  : string
+  is_error? : boolean
 }
 
 export interface luarmor_stats {
@@ -106,7 +108,7 @@ export async function get_user_by_discord(discord_id: string): Promise<luarmor_r
 
     const rate_limit_error = check_rate_limit(response)
     if (rate_limit_error) {
-      return { success: false, error: rate_limit_error }
+      return { success: false, error: rate_limit_error, is_error: true }
     }
 
     if (response.users && Array.isArray(response.users) && response.users.length > 0) {
@@ -121,10 +123,10 @@ export async function get_user_by_discord(discord_id: string): Promise<luarmor_r
       return { success: true, data: response[0] }
     }
 
-    return { success: false, error: response.message || "User not found" }
+    return { success: false, error: "User not found", is_error: false }
   } catch (error) {
     __log.error("Failed to get user:", error)
-    return { success: false, error: "Failed to connect to server." }
+    return { success: false, error: "Failed to connect to server.", is_error: true }
   }
 }
 

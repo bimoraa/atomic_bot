@@ -13,6 +13,27 @@ export async function handle_get_role(interaction: ButtonInteraction): Promise<v
   const user_result = await luarmor.get_user_by_discord(member.id)
 
   if (!user_result.success || !user_result.data) {
+    if (user_result.is_error) {
+      const message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.section({
+                content: [
+                  `## Error`,
+                  `${user_result.error}`,
+                ],
+                thumbnail: format.logo_url,
+              }),
+            ],
+          }),
+        ],
+      })
+
+      await api.edit_deferred_reply(interaction, message)
+      return
+    }
+
     const message = component.build_message({
       components: [
         component.container({

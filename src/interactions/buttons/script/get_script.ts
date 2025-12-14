@@ -8,6 +8,14 @@ export async function handle_get_script(interaction: ButtonInteraction): Promise
   const user_result = await luarmor.get_user_by_discord(member.id)
 
   if (!user_result.success || !user_result.data) {
+    if (user_result.is_error) {
+      await interaction.reply({
+        content   : `## Error\n${user_result.error}`,
+        ephemeral : true,
+      })
+      return
+    }
+
     const redeem_modal = modal.create_modal(
       "script_redeem_modal",
       "Redeem Your Key",
@@ -63,6 +71,14 @@ export async function handle_mobile_copy(interaction: ButtonInteraction): Promis
   const user_result = await luarmor.get_user_by_discord(member.id)
 
   if (!user_result.success || !user_result.data) {
+    if (user_result.is_error) {
+      await interaction.reply({
+        content   : `## Error\n${user_result.error}`,
+        ephemeral : true,
+      })
+      return
+    }
+
     await interaction.reply({
       content   : "You don't have a key linked to your Discord account.",
       ephemeral : true,
