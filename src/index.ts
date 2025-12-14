@@ -1,19 +1,19 @@
 import { Client, Collection, GatewayIntentBits, ActivityType, Message } from "discord.js"
-import { config } from "dotenv"
-import { Command } from "./types/command"
-import { load_commands, register_commands } from "./handlers/command_handler"
-import { handle_interaction } from "./events/interaction_create"
-import { start_roblox_update_checker } from "./functions/roblox_update"
-import { load_close_requests } from "./commands/tools/close_request"
-import { load_all_tickets } from "./functions/unified_ticket"
-import { db } from "./utils"
+import { config }                                                        from "dotenv"
+import { Command }                                                       from "./types/command"
+import { load_commands, register_commands }                              from "./handlers/command_handler"
+import { handle_interaction }                                            from "./events/interaction_create"
+import { start_roblox_update_checker }                                   from "./functions/roblox_update"
+import { load_close_requests }                                           from "./commands/tools/close_request"
+import { load_all_tickets }                                              from "./functions/unified_ticket"
+import { db }                                                            from "./utils"
 
 config()
 
 const is_dev = process.env.NODE_ENV === "development"
 
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN
-const client_id = is_dev ? process.env.DEV_CLIENT_ID : process.env.CLIENT_ID
+const client_id     = is_dev ? process.env.DEV_CLIENT_ID     : process.env.CLIENT_ID
 
 export { client_id, is_dev }
 
@@ -23,6 +23,7 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,
   ],
 }) as Client & { commands: Collection<string, Command> }
 
@@ -31,6 +32,7 @@ client.commands = new Collection()
 export { client }
 
 import "./events/guild_member_add"
+import "./events/voice_state_update"
 
 function get_total_members(): number {
   return client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)

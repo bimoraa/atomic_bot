@@ -169,6 +169,27 @@ export function select_menu(custom_id: string, placeholder: string, options: sel
   }
 }
 
+export interface user_select_component {
+  type       : number
+  custom_id  : string
+  placeholder: string
+  min_values?: number
+  max_values?: number
+}
+
+export function user_select(custom_id: string, placeholder: string): action_row_component {
+  return {
+    type: component_type.action_row,
+    components: [
+      {
+        type        : component_type.user_select,
+        custom_id,
+        placeholder,
+      },
+    ],
+  }
+}
+
 export function thumbnail(url: string): thumbnail_component {
   return {
     type: component_type.thumbnail,

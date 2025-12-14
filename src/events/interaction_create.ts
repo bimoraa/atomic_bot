@@ -1,31 +1,35 @@
-import { Client, Collection, Interaction, ThreadChannel, GuildMember } from "discord.js";
-import { Command } from "../types/command";
-import { can_use_command } from "../functions/command_permissions";
+import { Client, Collection, Interaction, ThreadChannel, GuildMember } from "discord.js"
+import { Command }                                                     from "../types/command"
+import { can_use_command }                                             from "../functions/command_permissions"
 import {
   handle_ticket_button,
   handle_ticket_modal,
   handle_ticket_select_menu,
   handle_ticket_user_select,
-} from "../functions/unified_ticket";
-import * as answer_stats_select    from "../interactions/select_menus/answer_stats";
-import * as devlog_modal           from "../interactions/modals/devlog";
-import * as review_modal           from "../interactions/modals/review";
-import * as edit_rules_modal       from "../interactions/modals/edit_rules";
-import * as ask_staff_modal        from "../interactions/modals/ask_staff";
-import * as script_redeem_modal    from "../interactions/modals/script_redeem";
-import * as review_submit          from "../interactions/buttons/review/submit";
-import * as ask_staff_button       from "../interactions/buttons/ask/ask_staff";
-import * as ask_answer             from "../interactions/buttons/ask/answer";
-import * as close_request_handlers from "../interactions/buttons/close_request/handlers";
-import * as reaction_role          from "../interactions/buttons/reaction/role";
-import * as payment_handlers       from "../interactions/buttons/payment/handlers";
-import * as guide_example          from "../interactions/buttons/guide/example";
-import * as script_redeem_key      from "../interactions/buttons/script/redeem_key";
-import * as script_get_script      from "../interactions/buttons/script/get_script";
-import * as script_get_role        from "../interactions/buttons/script/get_role";
-import * as script_reset_hwid      from "../interactions/buttons/script/reset_hwid";
-import * as script_get_stats       from "../interactions/buttons/script/get_stats";
-import { handle_role_permission_select } from "../commands/tools/get_role_permission";
+}                                        from "../functions/unified_ticket"
+import * as answer_stats_select          from "../interactions/select_menus/answer_stats"
+import * as devlog_modal                 from "../interactions/modals/devlog"
+import * as review_modal                 from "../interactions/modals/review"
+import * as edit_rules_modal             from "../interactions/modals/edit_rules"
+import * as ask_staff_modal              from "../interactions/modals/ask_staff"
+import * as script_redeem_modal          from "../interactions/modals/script_redeem"
+import * as tempvoice_modal              from "../interactions/modals/tempvoice"
+import * as review_submit                from "../interactions/buttons/review/submit"
+import * as ask_staff_button             from "../interactions/buttons/ask/ask_staff"
+import * as ask_answer                   from "../interactions/buttons/ask/answer"
+import * as close_request_handlers       from "../interactions/buttons/close_request/handlers"
+import * as reaction_role                from "../interactions/buttons/reaction/role"
+import * as payment_handlers             from "../interactions/buttons/payment/handlers"
+import * as guide_example                from "../interactions/buttons/guide/example"
+import * as script_redeem_key            from "../interactions/buttons/script/redeem_key"
+import * as script_get_script            from "../interactions/buttons/script/get_script"
+import * as script_get_role              from "../interactions/buttons/script/get_role"
+import * as script_reset_hwid            from "../interactions/buttons/script/reset_hwid"
+import * as script_get_stats             from "../interactions/buttons/script/get_stats"
+import * as tempvoice_handlers           from "../interactions/buttons/tempvoice/handlers"
+import * as tempvoice_user_select        from "../interactions/select_menus/tempvoice/user_select"
+import * as tempvoice_region_select      from "../interactions/select_menus/tempvoice/region_select"
+import { handle_role_permission_select } from "../commands/tools/get_role_permission"
 
 import * as payment_method_select from "../interactions/select_menus/payment_method";
 import * as guide_select          from "../interactions/select_menus/guide_select";
@@ -66,6 +70,7 @@ export async function handle_interaction(
         await work_stats_select.handle_work_stats_week_select(interaction);
         return;
       }
+      if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return;
       if (await handle_ticket_select_menu(interaction)) return;
     } catch (err) {
       console.log("[select] Error:", err);
@@ -75,6 +80,7 @@ export async function handle_interaction(
   if (interaction.isUserSelectMenu()) {
     try {
       if (await handle_ticket_user_select(interaction)) return;
+      if (await tempvoice_user_select.handle_tempvoice_user_select(interaction)) return;
     } catch (err) {
       console.log("[user_select] Error:", err);
     }
@@ -140,21 +146,82 @@ export async function handle_interaction(
         return;
       }
       if (interaction.customId === "script_mobile_copy") {
-        await script_get_script.handle_mobile_copy(interaction);
-        return;
+        await script_get_script.handle_mobile_copy(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_name") {
+        await tempvoice_handlers.handle_tempvoice_name(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_limit") {
+        await tempvoice_handlers.handle_tempvoice_limit(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_privacy") {
+        await tempvoice_handlers.handle_tempvoice_privacy(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_waitingroom") {
+        await tempvoice_handlers.handle_tempvoice_waitingroom(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_chat") {
+        await tempvoice_handlers.handle_tempvoice_chat(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_trust") {
+        await tempvoice_handlers.handle_tempvoice_trust(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_untrust") {
+        await tempvoice_handlers.handle_tempvoice_untrust(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_invite") {
+        await tempvoice_handlers.handle_tempvoice_invite(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_kick") {
+        await tempvoice_handlers.handle_tempvoice_kick(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_region") {
+        await tempvoice_handlers.handle_tempvoice_region(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_block") {
+        await tempvoice_handlers.handle_tempvoice_block(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_unblock") {
+        await tempvoice_handlers.handle_tempvoice_unblock(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_claim") {
+        await tempvoice_handlers.handle_tempvoice_claim(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_transfer") {
+        await tempvoice_handlers.handle_tempvoice_transfer(interaction)
+        return
+      }
+      if (interaction.customId === "tempvoice_delete") {
+        await tempvoice_handlers.handle_tempvoice_delete(interaction)
+        return
       }
     } catch (err) {
-      console.log("[button] Error:", err);
+      console.log("[button] Error:", err)
     }
   }
 
   if (interaction.isModalSubmit()) {
     try {
-      if (await handle_ticket_modal(interaction)) return;
-      if (await devlog_modal.handle(interaction)) return;
+      if (await handle_ticket_modal(interaction)) return
+      if (await devlog_modal.handle(interaction)) return
+      if (await tempvoice_modal.handle_tempvoice_modal(interaction)) return
       if (interaction.customId === "review_modal") {
-        await review_modal.handle_review_modal(interaction);
-        return;
+        await review_modal.handle_review_modal(interaction)
+        return
       }
       if (interaction.customId.startsWith("edit_rules:")) {
         await edit_rules_modal.handle_edit_rules_modal(interaction);
