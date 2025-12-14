@@ -44,10 +44,17 @@ function update_presence(): void {
 
   client.user?.setPresence({
     status: "dnd",
-    activities: [{
-      name: `Response: ${ping}ms | Members: ${members.toLocaleString()}`,
-      type: ActivityType.Watching,
-    }],
+    activities: [
+      {
+        name : "Made with ❤️ by Atomic Team",
+        type : ActivityType.Custom,
+        state: "Made with ❤️ by Atomic Team",
+      },
+      {
+        name: `Response: ${ping}ms | Members: ${members.toLocaleString()}`,
+        type: ActivityType.Watching,
+      },
+    ],
   })
 }
 

@@ -91,6 +91,7 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
           `A ${config.name} Ticket is Opened!`,
           ``,
           `- **Ticket ID:** ${format.code(data.ticket_id)}`,
+          `- **Type:** ${config.name}`,
           `- **Opened by:** <@${data.owner_id}>`,
         ]
 
@@ -100,6 +101,17 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
 
         log_content.push(claimed_line)
 
+        let description_section: any[] = []
+        if (data.description) {
+          description_section = [
+            component.divider(),
+            component.text([
+              `**Description:**`,
+              `${data.description}`,
+            ]),
+          ]
+        }
+
         const message = component.build_message({
           components: [
             component.container({
@@ -108,6 +120,7 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
                   content: log_content,
                   thumbnail: avatar_url,
                 }),
+                ...description_section,
                 component.divider(),
                 component.text([
                   `- **Staff in Ticket:** ${staff_mentions.length}`,

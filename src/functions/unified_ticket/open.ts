@@ -195,6 +195,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
       `A ${config.name} Ticket is Opened!`,
       ``,
       `- **Ticket ID:** ${format.code(ticket_id)}`,
+      `- **Type:** ${config.name}`,
       `- **Opened by:** <@${user_id}>`,
     ]
 
@@ -204,6 +205,17 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
 
     log_content.push(`- **Claimed by:** Not claimed`)
 
+    let description_section: any[] = []
+    if (description) {
+      description_section = [
+        component.divider(),
+        component.text([
+          `**Description:**`,
+          `${description}`,
+        ]),
+      ]
+    }
+
     const log_message = component.build_message({
       components: [
         component.container({
@@ -212,6 +224,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
               content: log_content,
               thumbnail: avatar_url,
             }),
+            ...description_section,
             component.divider(),
             component.text([
               `- **Staff in Ticket:** 0`,
