@@ -12,8 +12,10 @@ import { logger }      from "../utils"
 import { load_config } from "../configuration/loader"
 
 interface tempvoice_config {
-  category_name  : string
-  generator_name : string
+  category_name         : string
+  generator_name        : string
+  generator_channel_id? : string
+  category_id?          : string
 }
 
 const __log    = logger.create_logger("tempvoice")
@@ -29,8 +31,8 @@ const __blocked_users: Map<string, Set<string>>         = new Map()
 const __waiting_rooms: Map<string, boolean>             = new Map()
 const __text_channels: Map<string, string>              = new Map()
 
-let __generator_channel_id : string | null = null
-let __category_id          : string | null = null
+let __generator_channel_id : string | null = __config.generator_channel_id || null
+let __category_id          : string | null = __config.category_id || null
 let __interface_channel_id : string | null = null
 
 interface setup_result {
@@ -551,24 +553,7 @@ export async function handle_voice_state_update(old_state: VoiceState, new_state
   const member = new_state.member || old_state.member
   if (!member) return
 
-  if (!__generator_channel_id && new_state.channel) {
-    const channel = new_state.channel
-    if (channel.name === __generator_name) {
-      __generator_channel_id = channel.id
-      __category_id          = channel.parentId || null
-      __log.info(`Auto-detected generator channel: ${channel.id}`)
-    }
-  }
-
   if (new_state.channelId === __generator_channel_id) {
-    await create_temp_channel(member)
-    return
-  }
-
-  if (new_state.channel && new_state.channel.name === __generator_name && new_state.channelId !== __generator_channel_id) {
-    __generator_channel_id = new_state.channelId
-    __category_id          = new_state.channel.parentId || null
-    __log.info(`Updated generator channel: ${new_state.channelId}`)
     await create_temp_channel(member)
     return
   }
