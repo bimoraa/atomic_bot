@@ -8,7 +8,7 @@ import {
   CategoryChannel,
   OverwriteType,
 }                      from "discord.js"
-import { logger }      from "../utils"
+import { logger, component, api } from "../utils"
 import { load_config } from "../configuration/loader"
 
 interface tempvoice_config {
@@ -379,8 +379,9 @@ export async function trust_user(channel: VoiceChannel, user_id: string): Promis
     __trusted_users.set(channel.id, trusted)
 
     await channel.permissionOverwrites.edit(user_id, {
-      Connect : true,
-      Speak   : true,
+      ViewChannel : true,
+      Connect     : true,
+      Speak       : true,
     })
 
     return true
@@ -469,8 +470,38 @@ export async function kick_user(channel: VoiceChannel, user_id: string): Promise
 export async function invite_user(channel: VoiceChannel, user_id: string): Promise<boolean> {
   try {
     await channel.permissionOverwrites.edit(user_id, {
-      Connect: true,
+      ViewChannel : true,
+      Connect     : true,
     })
+
+    try {
+      const user = await channel.guild.members.fetch(user_id)
+      if (user) {
+        const dm_channel = await user.createDM()
+        
+        const invite_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  `## <:unblock:1449851467304534017> Voice Channel Invitation`,
+                  `You've been invited to join **${channel.name}**!`,
+                ]),
+                component.divider(2),
+                component.action_row(
+                  component.link_button("Join Voice", `https://discord.com/channels/${channel.guild.id}/${channel.id}`)
+                ),
+              ],
+            }),
+          ],
+        })
+
+        await api.send_components_v2(dm_channel.id, api.get_token(), { ...invite_message, flags: 32768 })
+      }
+    } catch (dm_error) {
+      __log.warn(`Failed to send invite DM to user ${user_id}:`, dm_error)
+    }
+
     return true
   } catch (error) {
     __log.error("Failed to invite user:", error)
