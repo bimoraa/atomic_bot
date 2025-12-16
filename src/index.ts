@@ -6,6 +6,7 @@ import { handle_interaction }                                            from ".
 import { start_roblox_update_checker }                                   from "./functions/roblox_update"
 import { load_close_requests }                                           from "./commands/tools/close_request"
 import { load_all_tickets }                                              from "./functions/unified_ticket"
+import * as tempvoice                                                    from "./functions/tempvoice"
 import { db }                                                            from "./utils"
 
 config()
@@ -75,6 +76,10 @@ client.once("ready", async () => {
   await register_commands(commands_data)
 
   start_roblox_update_checker(client)
+
+  for (const guild of client.guilds.cache.values()) {
+    await tempvoice.reconcile_tempvoice_guild(guild)
+  }
 
   console.log("Commands registered successfully")
 })

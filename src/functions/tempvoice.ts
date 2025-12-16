@@ -35,6 +35,82 @@ let __generator_channel_id : string | null = __config.generator_channel_id || nu
 let __category_id          : string | null = __config.category_id || null
 let __interface_channel_id : string | null = null
 
+function get_category_from_generator(guild: Guild): CategoryChannel | null {
+  if (__category_id) {
+    const category = guild.channels.cache.get(__category_id) as CategoryChannel
+    if (category) return category
+  }
+
+  if (__generator_channel_id) {
+    const generator = guild.channels.cache.get(__generator_channel_id) as VoiceChannel
+    if (generator && generator.parentId) {
+      const category = guild.channels.cache.get(generator.parentId) as CategoryChannel
+      if (category) {
+        __category_id = generator.parentId
+        return category
+      }
+    }
+  }
+
+  return null
+}
+
+function get_owner_id_from_overwrites(channel: VoiceChannel): string | null {
+  for (const overwrite of channel.permissionOverwrites.cache.values()) {
+    if (overwrite.type !== OverwriteType.Member) continue
+
+    const allow = overwrite.allow
+    if (
+      allow.has(PermissionFlagsBits.ManageChannels) ||
+      allow.has(PermissionFlagsBits.MoveMembers)   ||
+      allow.has(PermissionFlagsBits.MuteMembers)   ||
+      allow.has(PermissionFlagsBits.DeafenMembers)
+    ) {
+      return overwrite.id
+    }
+  }
+
+  return null
+}
+
+function register_existing_channel(channel: VoiceChannel, owner_id: string): void {
+  __temp_channels.set(channel.id, owner_id)
+  __channel_owners.set(channel.id, owner_id)
+  __trusted_users.set(channel.id, __trusted_users.get(channel.id) || new Set())
+  __blocked_users.set(channel.id, __blocked_users.get(channel.id) || new Set())
+  __waiting_rooms.set(channel.id, __waiting_rooms.get(channel.id) || false)
+}
+
+export async function reconcile_tempvoice_guild(guild: Guild): Promise<void> {
+  try {
+    const category = get_category_from_generator(guild)
+    if (!category) return
+
+    const voice_channels = guild.channels.cache.filter(c =>
+      c.type === ChannelType.GuildVoice &&
+      c.parentId === category.id &&
+      c.id !== __generator_channel_id
+    )
+
+    for (const ch of voice_channels.values()) {
+      const channel = ch as VoiceChannel
+
+      if (channel.members.size === 0) {
+        await channel.delete().catch(() => {})
+        cleanup_channel_data(channel.id)
+        continue
+      }
+
+      const owner_id = get_owner_id_from_overwrites(channel)
+      if (owner_id) {
+        register_existing_channel(channel, owner_id)
+      }
+    }
+  } catch (error) {
+    __log.error("Failed to reconcile tempvoice guild:", error)
+  }
+}
+
 interface setup_result {
   success             : boolean
   error?              : string
@@ -137,6 +213,23 @@ export function get_user_temp_channel(guild: Guild, user_id: string): VoiceChann
       if (channel) return channel
     }
   }
+
+  const category = get_category_from_generator(guild)
+  if (!category) return null
+
+  for (const ch of guild.channels.cache.values()) {
+    if (ch.type !== ChannelType.GuildVoice) continue
+    if (ch.parentId !== category.id) continue
+    if (ch.id === __generator_channel_id) continue
+
+    const channel  = ch as VoiceChannel
+    const owner_id = get_owner_id_from_overwrites(channel)
+    if (owner_id === user_id) {
+      register_existing_channel(channel, user_id)
+      return channel
+    }
+  }
+
   return null
 }
 
@@ -181,6 +274,14 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
       type                 : ChannelType.GuildVoice,
       parent               : category.id,
       permissionOverwrites : [
+        {
+          id    : guild.roles.everyone.id,
+          type  : OverwriteType.Role,
+          allow : [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.Connect,
+          ],
+        },
         {
           id    : member.id,
           type  : OverwriteType.Member,
