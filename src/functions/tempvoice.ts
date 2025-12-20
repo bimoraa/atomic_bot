@@ -7,6 +7,7 @@ import {
   VoiceState,
   CategoryChannel,
   OverwriteType,
+  VideoQualityMode,
 }                      from "discord.js"
 import { logger, component, api } from "../utils"
 import { load_config } from "../configuration/loader"
@@ -273,6 +274,7 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
       name                 : channel_name,
       type                 : ChannelType.GuildVoice,
       parent               : category.id,
+      videoQualityMode     : VideoQualityMode.Auto,
       permissionOverwrites : [
         {
           id    : guild.roles.everyone.id,
