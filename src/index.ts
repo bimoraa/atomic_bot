@@ -3,6 +3,7 @@ import { config }                                                        from "d
 import { Command }                                                       from "./types/command"
 import { load_commands, register_commands }                              from "./handlers/command_handler"
 import { handle_interaction }                                            from "./events/interaction_create"
+import { handle_auto_reply }                                             from "./functions/auto_reply"
 import { start_roblox_update_checker }                                   from "./functions/roblox_update"
 import { load_close_requests }                                           from "./commands/tools/close_request"
 import { load_all_tickets }                                              from "./functions/unified_ticket"
@@ -93,6 +94,9 @@ client.on("interactionCreate", (interaction) => {
 
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
+  
+  if (await handle_auto_reply(message, client)) return
+  
   if (message.reference) return
   if (message.mentions.has(client.user!)) {
     await message.reply("hi niggaas")
