@@ -50,28 +50,28 @@ export const command: Command = {
       components: [
         component.container({
           components: [
-            component.text([
-              "## Free Script Access",
-              "",
-              "Click the button below to get your free script access.",
-              "You will be automatically whitelisted and receive the script role.",
-              "",
-              "-# This is a one-time setup. Click \"Get Script\" to receive your loader.",
-            ]),
-            component.divider(),
+            component.section({
+              content: [
+                "## Free Script Control Panel",
+                "Click the button below to get your free script access.",
+                "You will be automatically whitelisted and receive the script role.",
+              ],
+              thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
+            }),
+          ],
+        }),
+        component.container({
+          components: [
+            component.text("**This is a one-time setup. Click \"Get Script\" to receive your loader.**"),
+          ],
+        }),
+        component.container({
+          components: [
             component.action_row(
-              component.success_button(
-                "Get Script",
-                "free_get_script"
-              ),
-              component.secondary_button(
-                "Reset HWID",
-                "free_reset_hwid"
-              ),
-              component.primary_button(
-                "Stats",
-                "free_get_stats"
-              )
+              component.success_button("Get Script", "free_get_script"),
+              component.secondary_button("Reset HWID", "free_reset_hwid"),
+              component.secondary_button("Get Stats", "free_get_stats"),
+              component.primary_button("Execution Leaderboard", "free_leaderboard")
             ),
           ],
         }),

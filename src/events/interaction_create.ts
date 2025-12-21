@@ -30,6 +30,7 @@ import * as script_get_stats             from "../interactions/buttons/script/ge
 import * as free_get_script              from "../interactions/buttons/free/get_script"
 import * as free_reset_hwid              from "../interactions/buttons/free/reset_hwid"
 import * as free_get_stats               from "../interactions/buttons/free/get_stats"
+import * as free_leaderboard             from "../interactions/buttons/free/leaderboard"
 import * as tempvoice_handlers           from "../interactions/buttons/tempvoice/handlers"
 import * as tempvoice_user_select        from "../interactions/select_menus/tempvoice/user_select"
 import * as tempvoice_region_select      from "../interactions/select_menus/tempvoice/region_select"
@@ -171,6 +172,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "free_get_stats") {
         await free_get_stats.handle_free_get_stats(interaction)
+        return
+      }
+      if (interaction.customId === "free_leaderboard") {
+        await free_leaderboard.handle_free_leaderboard(interaction)
         return
       }
       if (interaction.customId === "tempvoice_name") {
