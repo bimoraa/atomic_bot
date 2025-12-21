@@ -21,16 +21,15 @@ const log            = logger.create_logger("audit_log")
 const LOG_CHANNEL_ID = "1452086939866894420"
 
 const COLOR = {
-  MESSAGE   : 0x5865F2,
-  MEMBER    : 0x57F287,
-  MODERATION: 0xED4245,
-  CHANNEL   : 0xFEE75C,
-  ROLE      : 0xEB459E,
-  VOICE     : 0x9B59B6,
-  EMOJI     : 0xF1C40F,
-  STICKER   : 0xE67E22,
-  INVITE    : 0x3498DB,
-  THREAD    : 0x1ABC9C,
+  CREATE : 0x57F287,
+  UPDATE : 0xFEE75C,
+  DELETE : 0xED4245,
+  JOIN   : 0x57F287,
+  LEAVE  : 0xED4245,
+  BAN    : 0xED4245,
+  UNBAN  : 0x57F287,
+  TIMEOUT: 0xFEE75C,
+  INFO   : 0x5865F2,
 }
 
 async function send_log(client: Client, log_message: any): Promise<void> {
@@ -54,19 +53,18 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.MESSAGE,
+          accent_color: COLOR.UPDATE,
           components: [
             component.section({
-              content   : "### Message Edited",
-              thumbnail : avatar_url,
+              content: [
+                "### Message Edited",
+                `- Author: <@${old_message.author?.id}>`,
+                `- Channel: <#${old_message.channel.id}>`,
+                `- Before: ${old_message.content || "(empty)"}`,
+                `- After: ${new_message.content || "(empty)"}`,
+              ].join("\n"),
+              thumbnail: avatar_url,
             }),
-            component.divider(),
-            component.text([
-              `- Author: <@${old_message.author?.id}>`,
-              `- Channel: <#${old_message.channel.id}>`,
-              `- Before: ${old_message.content || "(empty)"}`,
-              `- After: ${new_message.content || "(empty)"}`,
-            ]),
           ],
         }),
       ],
@@ -83,18 +81,17 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.MESSAGE,
+          accent_color: COLOR.DELETE,
           components: [
             component.section({
-              content   : "### Message Deleted",
-              thumbnail : avatar_url,
+              content: [
+                "### Message Deleted",
+                `- Author: <@${message.author?.id}>`,
+                `- Channel: <#${message.channel.id}>`,
+                `- Content: ${message.content || "(empty)"}`,
+              ].join("\n"),
+              thumbnail: avatar_url,
             }),
-            component.divider(),
-            component.text([
-              `- Author: <@${message.author?.id}>`,
-              `- Channel: <#${message.channel.id}>`,
-              `- Content: ${message.content || "(empty)"}`,
-            ]),
           ],
         }),
       ],
@@ -109,17 +106,16 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.MEMBER,
+          accent_color: COLOR.JOIN,
           components: [
             component.section({
-              content   : "### Member Joined",
-              thumbnail : avatar_url,
+              content: [
+                "### Member Joined",
+                `- Member: <@${member.id}>`,
+                `- Account Created: <t:${Math.floor(member.user.createdTimestamp / 1000)}:F>`,
+              ].join("\n"),
+              thumbnail: avatar_url,
             }),
-            component.divider(),
-            component.text([
-              `- Member: <@${member.id}>`,
-              `- Account Created: <t:${Math.floor(member.user.createdTimestamp / 1000)}:F>`,
-            ]),
           ],
         }),
       ],
@@ -147,17 +143,16 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.MEMBER,
+          accent_color: COLOR.LEAVE,
           components: [
             component.section({
-              content   : "### Member Left",
-              thumbnail : avatar_url,
+              content: [
+                "### Member Left",
+                `- Member: <@${member.id}>`,
+                `- Roles: ${member.roles.cache.map(r => r.name).join(", ") || "None"}${kick_info}`,
+              ].join("\n"),
+              thumbnail: avatar_url,
             }),
-            component.divider(),
-            component.text([
-              `- Member: <@${member.id}>`,
-              `- Roles: ${member.roles.cache.map(r => r.name).join(", ") || "None"}${kick_info}`,
-            ]),
           ],
         }),
       ],
@@ -195,18 +190,17 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.MEMBER,
+            accent_color: COLOR.UPDATE,
             components: [
               component.section({
-                content   : "### Member Roles Updated",
-                thumbnail : avatar_url,
+                content: [
+                  "### Member Roles Updated",
+                  `- Member: <@${new_member.id}>`,
+                  `- Updated by: ${executor_text}`,
+                  `- Changes: ${changes.join(" | ")}`,
+                ].join("\n"),
+                thumbnail: avatar_url,
               }),
-              component.divider(),
-              component.text([
-                `- Member: <@${new_member.id}>`,
-                `- Updated by: ${executor_text}`,
-                `- Changes: ${changes.join(" | ")}`,
-              ]),
             ],
           }),
         ],
@@ -233,19 +227,18 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.MEMBER,
+            accent_color: COLOR.UPDATE,
             components: [
               component.section({
-                content   : "### Nickname Changed",
-                thumbnail : avatar_url,
+                content: [
+                  "### Nickname Changed",
+                  `- Member: <@${new_member.id}>`,
+                  `- Changed by: ${executor_text}`,
+                  `- Before: ${old_member.nickname || "(none)"}`,
+                  `- After: ${new_member.nickname || "(none)"}`,
+                ].join("\n"),
+                thumbnail: avatar_url,
               }),
-              component.divider(),
-              component.text([
-                `- Member: <@${new_member.id}>`,
-                `- Changed by: ${executor_text}`,
-                `- Before: ${old_member.nickname || "(none)"}`,
-                `- After: ${new_member.nickname || "(none)"}`,
-              ]),
             ],
           }),
         ],
@@ -279,19 +272,18 @@ export function register_audit_logs(client: Client): void {
         const log_message = component.build_message({
           components: [
             component.container({
-              accent_color: COLOR.MODERATION,
+              accent_color: COLOR.TIMEOUT,
               components: [
                 component.section({
-                  content   : "### Member Timed Out",
-                  thumbnail : avatar_url,
+                  content: [
+                    "### Member Timed Out",
+                    `- Member: <@${new_member.id}>`,
+                    `- Timed out by: ${executor_text}`,
+                    `- Until: <t:${until}:F>`,
+                    `- Reason: ${reason_text}`,
+                  ].join("\n"),
+                  thumbnail: avatar_url,
                 }),
-                component.divider(),
-                component.text([
-                  `- Member: <@${new_member.id}>`,
-                  `- Timed out by: ${executor_text}`,
-                  `- Until: <t:${until}:F>`,
-                  `- Reason: ${reason_text}`,
-                ]),
               ],
             }),
           ],
@@ -302,17 +294,16 @@ export function register_audit_logs(client: Client): void {
         const log_message = component.build_message({
           components: [
             component.container({
-              accent_color: COLOR.MODERATION,
+              accent_color: COLOR.UPDATE,
               components: [
                 component.section({
-                  content   : "### Member Timeout Removed",
-                  thumbnail : avatar_url,
+                  content: [
+                    "### Member Timeout Removed",
+                    `- Member: <@${new_member.id}>`,
+                    `- Removed by: ${executor_text}`,
+                  ].join("\n"),
+                  thumbnail: avatar_url,
                 }),
-                component.divider(),
-                component.text([
-                  `- Member: <@${new_member.id}>`,
-                  `- Removed by: ${executor_text}`,
-                ]),
               ],
             }),
           ],
@@ -341,18 +332,17 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.MODERATION,
+          accent_color: COLOR.BAN,
           components: [
             component.section({
-              content   : "### Member Banned",
-              thumbnail : avatar_url,
+              content: [
+                "### Member Banned",
+                `- Member: <@${ban.user.id}>`,
+                `- Banned by: ${executor_text}`,
+                `- Reason: ${ban.reason || "No reason provided"}`,
+              ].join("\n"),
+              thumbnail: avatar_url,
             }),
-            component.divider(),
-            component.text([
-              `- Member: <@${ban.user.id}>`,
-              `- Banned by: ${executor_text}`,
-              `- Reason: ${ban.reason || "No reason provided"}`,
-            ]),
           ],
         }),
       ],
@@ -379,17 +369,16 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.MODERATION,
+          accent_color: COLOR.UNBAN,
           components: [
             component.section({
-              content   : "### Member Unbanned",
-              thumbnail : avatar_url,
+              content: [
+                "### Member Unbanned",
+                `- Member: <@${ban.user.id}>`,
+                `- Unbanned by: ${executor_text}`,
+              ].join("\n"),
+              thumbnail: avatar_url,
             }),
-            component.divider(),
-            component.text([
-              `- Member: <@${ban.user.id}>`,
-              `- Unbanned by: ${executor_text}`,
-            ]),
           ],
         }),
       ],
@@ -404,14 +393,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.CHANNEL,
+          accent_color: COLOR.CREATE,
           components: [
-            component.text("### Channel Created"),
-            component.divider(),
-            component.text([
-              `- Channel: <#${channel.id}>`,
-              `- Type: ${channel.type}`,
-            ]),
+            component.section({
+              content: [
+                "### Channel Created",
+                `- Channel: <#${channel.id}>`,
+                `- Type: ${channel.type}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -426,14 +416,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.CHANNEL,
+          accent_color: COLOR.DELETE,
           components: [
-            component.text("### Channel Deleted"),
-            component.divider(),
-            component.text([
-              `- Channel: ${channel.name}`,
-              `- Type: ${channel.type}`,
-            ]),
+            component.section({
+              content: [
+                "### Channel Deleted",
+                `- Channel: ${channel.name}`,
+                `- Type: ${channel.type}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -449,15 +440,16 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.CHANNEL,
+            accent_color: COLOR.UPDATE,
             components: [
-              component.text("### Channel Renamed"),
-              component.divider(),
-              component.text([
-                `- Channel: <#${new_channel.id}>`,
-                `- Before: ${old_channel.name}`,
-                `- After: ${new_channel.name}`,
-              ]),
+              component.section({
+                content: [
+                  "### Channel Renamed",
+                  `- Channel: <#${new_channel.id}>`,
+                  `- Before: ${old_channel.name}`,
+                  `- After: ${new_channel.name}`,
+                ].join("\n"),
+              }),
             ],
           }),
         ],
@@ -471,14 +463,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.ROLE,
+          accent_color: COLOR.CREATE,
           components: [
-            component.text("### Role Created"),
-            component.divider(),
-            component.text([
-              `- Role: <@&${role.id}>`,
-              `- Name: ${role.name}`,
-            ]),
+            component.section({
+              content: [
+                "### Role Created",
+                `- Role: <@&${role.id}>`,
+                `- Name: ${role.name}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -491,13 +484,14 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.ROLE,
+          accent_color: COLOR.DELETE,
           components: [
-            component.text("### Role Deleted"),
-            component.divider(),
-            component.text([
-              `- Name: ${role.name}`,
-            ]),
+            component.section({
+              content: [
+                "### Role Deleted",
+                `- Name: ${role.name}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -511,15 +505,16 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.ROLE,
+            accent_color: COLOR.UPDATE,
             components: [
-              component.text("### Role Renamed"),
-              component.divider(),
-              component.text([
-                `- Role: <@&${new_role.id}>`,
-                `- Before: ${old_role.name}`,
-                `- After: ${new_role.name}`,
-              ]),
+              component.section({
+                content: [
+                  "### Role Renamed",
+                  `- Role: <@&${new_role.id}>`,
+                  `- Before: ${old_role.name}`,
+                  `- After: ${new_role.name}`,
+                ].join("\n"),
+              }),
             ],
           }),
         ],
@@ -536,14 +531,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.MESSAGE,
+          accent_color: COLOR.DELETE,
           components: [
-            component.text("### Bulk Message Delete"),
-            component.divider(),
-            component.text([
-              `- Channel: <#${first.channel.id}>`,
-              `- Count: ${messages.size} messages`,
-            ]),
+            component.section({
+              content: [
+                "### Bulk Message Delete",
+                `- Channel: <#${first.channel.id}>`,
+                `- Count: ${messages.size} messages`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -561,17 +557,16 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.VOICE,
+            accent_color: COLOR.JOIN,
             components: [
               component.section({
-                content   : "### Voice Channel Joined",
-                thumbnail : avatar_url,
+                content: [
+                  "### Voice Channel Joined",
+                  `- Member: <@${new_state.member?.id}>`,
+                  `- Channel: ${new_state.channel.name}`,
+                ].join("\n"),
+                thumbnail: avatar_url,
               }),
-              component.divider(),
-              component.text([
-                `- Member: <@${new_state.member?.id}>`,
-                `- Channel: ${new_state.channel.name}`,
-              ]),
             ],
           }),
         ],
@@ -584,17 +579,16 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.VOICE,
+            accent_color: COLOR.LEAVE,
             components: [
               component.section({
-                content   : "### Voice Channel Left",
-                thumbnail : avatar_url,
+                content: [
+                  "### Voice Channel Left",
+                  `- Member: <@${old_state.member?.id}>`,
+                  `- Channel: ${old_state.channel.name}`,
+                ].join("\n"),
+                thumbnail: avatar_url,
               }),
-              component.divider(),
-              component.text([
-                `- Member: <@${old_state.member?.id}>`,
-                `- Channel: ${old_state.channel.name}`,
-              ]),
             ],
           }),
         ],
@@ -607,18 +601,17 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.VOICE,
+            accent_color: COLOR.UPDATE,
             components: [
               component.section({
-                content   : "### Voice Channel Switched",
-                thumbnail : avatar_url,
+                content: [
+                  "### Voice Channel Switched",
+                  `- Member: <@${new_state.member?.id}>`,
+                  `- From: ${old_state.channel.name}`,
+                  `- To: ${new_state.channel.name}`,
+                ].join("\n"),
+                thumbnail: avatar_url,
               }),
-              component.divider(),
-              component.text([
-                `- Member: <@${new_state.member?.id}>`,
-                `- From: ${old_state.channel.name}`,
-                `- To: ${new_state.channel.name}`,
-              ]),
             ],
           }),
         ],
@@ -633,17 +626,16 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.VOICE,
+            accent_color: COLOR.UPDATE,
             components: [
               component.section({
-                content   : "### Server Mute Updated",
-                thumbnail : avatar_url,
+                content: [
+                  "### Server Mute Updated",
+                  `- Member: <@${new_state.member?.id}>`,
+                  `- Status: ${new_state.serverMute ? "Muted" : "Unmuted"}`,
+                ].join("\n"),
+                thumbnail: avatar_url,
               }),
-              component.divider(),
-              component.text([
-                `- Member: <@${new_state.member?.id}>`,
-                `- Status: ${new_state.serverMute ? "Muted" : "Unmuted"}`,
-              ]),
             ],
           }),
         ],
@@ -658,17 +650,16 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.VOICE,
+            accent_color: COLOR.UPDATE,
             components: [
               component.section({
-                content   : "### Server Deafen Updated",
-                thumbnail : avatar_url,
+                content: [
+                  "### Server Deafen Updated",
+                  `- Member: <@${new_state.member?.id}>`,
+                  `- Status: ${new_state.serverDeaf ? "Deafened" : "Undeafened"}`,
+                ].join("\n"),
+                thumbnail: avatar_url,
               }),
-              component.divider(),
-              component.text([
-                `- Member: <@${new_state.member?.id}>`,
-                `- Status: ${new_state.serverDeaf ? "Deafened" : "Undeafened"}`,
-              ]),
             ],
           }),
         ],
@@ -682,14 +673,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.EMOJI,
+          accent_color: COLOR.CREATE,
           components: [
-            component.text("### Emoji Created"),
-            component.divider(),
-            component.text([
-              `- Name: ${emoji.name}`,
-              `- ID: ${emoji.id}`,
-            ]),
+            component.section({
+              content: [
+                "### Emoji Created",
+                `- Name: ${emoji.name}`,
+                `- ID: ${emoji.id}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -702,14 +694,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.EMOJI,
+          accent_color: COLOR.DELETE,
           components: [
-            component.text("### Emoji Deleted"),
-            component.divider(),
-            component.text([
-              `- Name: ${emoji.name}`,
-              `- ID: ${emoji.id}`,
-            ]),
+            component.section({
+              content: [
+                "### Emoji Deleted",
+                `- Name: ${emoji.name}`,
+                `- ID: ${emoji.id}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -723,14 +716,15 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.EMOJI,
+            accent_color: COLOR.UPDATE,
             components: [
-              component.text("### Emoji Renamed"),
-              component.divider(),
-              component.text([
-                `- Before: ${old_emoji.name}`,
-                `- After: ${new_emoji.name}`,
-              ]),
+              component.section({
+                content: [
+                  "### Emoji Renamed",
+                  `- Before: ${old_emoji.name}`,
+                  `- After: ${new_emoji.name}`,
+                ].join("\n"),
+              }),
             ],
           }),
         ],
@@ -744,14 +738,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.STICKER,
+          accent_color: COLOR.CREATE,
           components: [
-            component.text("### Sticker Created"),
-            component.divider(),
-            component.text([
-              `- Name: ${sticker.name}`,
-              `- ID: ${sticker.id}`,
-            ]),
+            component.section({
+              content: [
+                "### Sticker Created",
+                `- Name: ${sticker.name}`,
+                `- ID: ${sticker.id}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -764,14 +759,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.STICKER,
+          accent_color: COLOR.DELETE,
           components: [
-            component.text("### Sticker Deleted"),
-            component.divider(),
-            component.text([
-              `- Name: ${sticker.name}`,
-              `- ID: ${sticker.id}`,
-            ]),
+            component.section({
+              content: [
+                "### Sticker Deleted",
+                `- Name: ${sticker.name}`,
+                `- ID: ${sticker.id}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -785,14 +781,15 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.STICKER,
+            accent_color: COLOR.UPDATE,
             components: [
-              component.text("### Sticker Renamed"),
-              component.divider(),
-              component.text([
-                `- Before: ${old_sticker.name}`,
-                `- After: ${new_sticker.name}`,
-              ]),
+              component.section({
+                content: [
+                  "### Sticker Renamed",
+                  `- Before: ${old_sticker.name}`,
+                  `- After: ${new_sticker.name}`,
+                ].join("\n"),
+              }),
             ],
           }),
         ],
@@ -806,17 +803,18 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.INVITE,
+          accent_color: COLOR.CREATE,
           components: [
-            component.text("### Invite Created"),
-            component.divider(),
-            component.text([
-              `- Code: ${invite.code}`,
-              `- Inviter: <@${invite.inviter?.id}>`,
-              `- Channel: <#${invite.channel?.id}>`,
-              `- Max Uses: ${invite.maxUses || "Unlimited"}`,
-              `- Expires: ${invite.expiresTimestamp ? `<t:${Math.floor(invite.expiresTimestamp / 1000)}:F>` : "Never"}`,
-            ]),
+            component.section({
+              content: [
+                "### Invite Created",
+                `- Code: ${invite.code}`,
+                `- Inviter: <@${invite.inviter?.id}>`,
+                `- Channel: <#${invite.channel?.id}>`,
+                `- Max Uses: ${invite.maxUses || "Unlimited"}`,
+                `- Expires: ${invite.expiresTimestamp ? `<t:${Math.floor(invite.expiresTimestamp / 1000)}:F>` : "Never"}`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -829,14 +827,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.INVITE,
+          accent_color: COLOR.DELETE,
           components: [
-            component.text("### Invite Deleted"),
-            component.divider(),
-            component.text([
-              `- Code: ${invite.code}`,
-              `- Channel: <#${invite.channel?.id}>`,
-            ]),
+            component.section({
+              content: [
+                "### Invite Deleted",
+                `- Code: ${invite.code}`,
+                `- Channel: <#${invite.channel?.id}>`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -849,15 +848,16 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.THREAD,
+          accent_color: COLOR.CREATE,
           components: [
-            component.text("### Thread Created"),
-            component.divider(),
-            component.text([
-              `- Thread: <#${thread.id}>`,
-              `- Name: ${thread.name}`,
-              `- Parent: <#${thread.parentId}>`,
-            ]),
+            component.section({
+              content: [
+                "### Thread Created",
+                `- Thread: <#${thread.id}>`,
+                `- Name: ${thread.name}`,
+                `- Parent: <#${thread.parentId}>`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -870,14 +870,15 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.THREAD,
+          accent_color: COLOR.DELETE,
           components: [
-            component.text("### Thread Deleted"),
-            component.divider(),
-            component.text([
-              `- Name: ${thread.name}`,
-              `- Parent: <#${thread.parentId}>`,
-            ]),
+            component.section({
+              content: [
+                "### Thread Deleted",
+                `- Name: ${thread.name}`,
+                `- Parent: <#${thread.parentId}>`,
+              ].join("\n"),
+            }),
           ],
         }),
       ],
@@ -891,15 +892,16 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.THREAD,
+            accent_color: COLOR.UPDATE,
             components: [
-              component.text("### Thread Renamed"),
-              component.divider(),
-              component.text([
-                `- Thread: <#${new_thread.id}>`,
-                `- Before: ${old_thread.name}`,
-                `- After: ${new_thread.name}`,
-              ]),
+              component.section({
+                content: [
+                  "### Thread Renamed",
+                  `- Thread: <#${new_thread.id}>`,
+                  `- Before: ${old_thread.name}`,
+                  `- After: ${new_thread.name}`,
+                ].join("\n"),
+              }),
             ],
           }),
         ],
@@ -912,14 +914,15 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.THREAD,
+            accent_color: COLOR.UPDATE,
             components: [
-              component.text("### Thread Archive Status"),
-              component.divider(),
-              component.text([
-                `- Thread: <#${new_thread.id}>`,
-                `- Status: ${new_thread.archived ? "Archived" : "Unarchived"}`,
-              ]),
+              component.section({
+                content: [
+                  "### Thread Archive Status",
+                  `- Thread: <#${new_thread.id}>`,
+                  `- Status: ${new_thread.archived ? "Archived" : "Unarchived"}`,
+                ].join("\n"),
+              }),
             ],
           }),
         ],
@@ -932,14 +935,15 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.THREAD,
+            accent_color: COLOR.UPDATE,
             components: [
-              component.text("### Thread Lock Status"),
-              component.divider(),
-              component.text([
-                `- Thread: <#${new_thread.id}>`,
-                `- Status: ${new_thread.locked ? "Locked" : "Unlocked"}`,
-              ]),
+              component.section({
+                content: [
+                  "### Thread Lock Status",
+                  `- Thread: <#${new_thread.id}>`,
+                  `- Status: ${new_thread.locked ? "Locked" : "Unlocked"}`,
+                ].join("\n"),
+              }),
             ],
           }),
         ],
