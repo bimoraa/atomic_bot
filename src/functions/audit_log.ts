@@ -149,7 +149,7 @@ export function register_audit_logs(client: Client): void {
               content: [
                 "### Member Left",
                 `- Member: <@${member.id}>`,
-                `- Roles: ${member.roles.cache.map(r => r.name).join(", ") || "None"}${kick_info}`,
+                `- Roles: ${member.roles.cache.filter(r => r.name !== "@everyone").map(r => r.name).join(", ") || "None"}${kick_info}`,
               ].join("\n"),
               thumbnail: avatar_url,
             }),
