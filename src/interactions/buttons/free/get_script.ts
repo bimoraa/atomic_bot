@@ -46,7 +46,7 @@ export async function handle_free_get_script(interaction: ButtonInteraction): Pr
       const create_url = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users`
       const create_body = {
         discord_id : member.id,
-        note       : `Free user - ${member.user.tag}`,
+        note       : "tab_limit 1234;",
       }
 
       const create_res = await http.post<any>(create_url, create_body, get_headers())
