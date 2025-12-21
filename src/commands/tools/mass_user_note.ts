@@ -73,9 +73,10 @@ export const command: Command = {
         const user = users[i]
         
         try {
-          const update_url  = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users/${user.user_key}`
+          const update_url  = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users`
           const update_body = {
-            note : note,
+            user_key : user.user_key,
+            note     : note,
           }
 
           const update_res = await http.patch<any>(update_url, update_body, get_headers())
