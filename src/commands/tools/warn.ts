@@ -3,9 +3,10 @@ import {
   SlashCommandBuilder,
   GuildMember,
   PermissionFlagsBits,
-}                      from "discord.js"
-import { Command }     from "../../types/command"
-import { component }   from "../../utils"
+}                        from "discord.js"
+import { Command }       from "../../types/command"
+import { component }     from "../../utils"
+import { add_warning }   from "./warnings"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -96,6 +97,8 @@ export const command: Command = {
         await target.send(dm_message)
       } catch {
       }
+
+      await add_warning(interaction.guild!.id, target.id, executor.id, reason)
 
       const avatar_url = target.user.displayAvatarURL({ size: 512 })
 
