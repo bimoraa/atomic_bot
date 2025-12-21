@@ -395,13 +395,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.CREATE,
           components: [
-            component.section({
-              content: [
-                "### Channel Created",
-                `- Channel: <#${channel.id}>`,
-                `- Type: ${channel.type}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Channel Created",
+              `- Channel: <#${channel.id}>`,
+              `- Type: ${channel.type}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -418,13 +416,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.DELETE,
           components: [
-            component.section({
-              content: [
-                "### Channel Deleted",
-                `- Channel: ${channel.name}`,
-                `- Type: ${channel.type}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Channel Deleted",
+              `- Channel: ${channel.name}`,
+              `- Type: ${channel.type}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -442,14 +438,12 @@ export function register_audit_logs(client: Client): void {
           component.container({
             accent_color: COLOR.UPDATE,
             components: [
-              component.section({
-                content: [
-                  "### Channel Renamed",
-                  `- Channel: <#${new_channel.id}>`,
-                  `- Before: ${old_channel.name}`,
-                  `- After: ${new_channel.name}`,
-                ].join("\n"),
-              }),
+              component.text([
+                "### Channel Renamed",
+                `- Channel: <#${new_channel.id}>`,
+                `- Before: ${old_channel.name}`,
+                `- After: ${new_channel.name}`,
+              ].join("\n")),
             ],
           }),
         ],
@@ -465,13 +459,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.CREATE,
           components: [
-            component.section({
-              content: [
-                "### Role Created",
-                `- Role: <@&${role.id}>`,
-                `- Name: ${role.name}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Role Created",
+              `- Role: <@&${role.id}>`,
+              `- Name: ${role.name}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -486,12 +478,10 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.DELETE,
           components: [
-            component.section({
-              content: [
-                "### Role Deleted",
-                `- Name: ${role.name}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Role Deleted",
+              `- Name: ${role.name}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -507,14 +497,12 @@ export function register_audit_logs(client: Client): void {
           component.container({
             accent_color: COLOR.UPDATE,
             components: [
-              component.section({
-                content: [
-                  "### Role Renamed",
-                  `- Role: <@&${new_role.id}>`,
-                  `- Before: ${old_role.name}`,
-                  `- After: ${new_role.name}`,
-                ].join("\n"),
-              }),
+              component.text([
+                "### Role Renamed",
+                `- Role: <@&${new_role.id}>`,
+                `- Before: ${old_role.name}`,
+                `- After: ${new_role.name}`,
+              ].join("\n")),
             ],
           }),
         ],
@@ -675,13 +663,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.CREATE,
           components: [
-            component.section({
-              content: [
-                "### Emoji Created",
-                `- Name: ${emoji.name}`,
-                `- ID: ${emoji.id}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Emoji Created",
+              `- Name: ${emoji.name}`,
+              `- ID: ${emoji.id}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -696,13 +682,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.DELETE,
           components: [
-            component.section({
-              content: [
-                "### Emoji Deleted",
-                `- Name: ${emoji.name}`,
-                `- ID: ${emoji.id}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Emoji Deleted",
+              `- Name: ${emoji.name}`,
+              `- ID: ${emoji.id}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -718,13 +702,11 @@ export function register_audit_logs(client: Client): void {
           component.container({
             accent_color: COLOR.UPDATE,
             components: [
-              component.section({
-                content: [
-                  "### Emoji Renamed",
-                  `- Before: ${old_emoji.name}`,
-                  `- After: ${new_emoji.name}`,
-                ].join("\n"),
-              }),
+              component.text([
+                "### Emoji Renamed",
+                `- Before: ${old_emoji.name}`,
+                `- After: ${new_emoji.name}`,
+              ].join("\n")),
             ],
           }),
         ],
@@ -740,13 +722,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.CREATE,
           components: [
-            component.section({
-              content: [
-                "### Sticker Created",
-                `- Name: ${sticker.name}`,
-                `- ID: ${sticker.id}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Sticker Created",
+              `- Name: ${sticker.name}`,
+              `- ID: ${sticker.id}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -761,13 +741,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.DELETE,
           components: [
-            component.section({
-              content: [
-                "### Sticker Deleted",
-                `- Name: ${sticker.name}`,
-                `- ID: ${sticker.id}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Sticker Deleted",
+              `- Name: ${sticker.name}`,
+              `- ID: ${sticker.id}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -783,13 +761,11 @@ export function register_audit_logs(client: Client): void {
           component.container({
             accent_color: COLOR.UPDATE,
             components: [
-              component.section({
-                content: [
-                  "### Sticker Renamed",
-                  `- Before: ${old_sticker.name}`,
-                  `- After: ${new_sticker.name}`,
-                ].join("\n"),
-              }),
+              component.text([
+                "### Sticker Renamed",
+                `- Before: ${old_sticker.name}`,
+                `- After: ${new_sticker.name}`,
+              ].join("\n")),
             ],
           }),
         ],
@@ -805,16 +781,14 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.CREATE,
           components: [
-            component.section({
-              content: [
-                "### Invite Created",
-                `- Code: ${invite.code}`,
-                `- Inviter: <@${invite.inviter?.id}>`,
-                `- Channel: <#${invite.channel?.id}>`,
-                `- Max Uses: ${invite.maxUses || "Unlimited"}`,
-                `- Expires: ${invite.expiresTimestamp ? `<t:${Math.floor(invite.expiresTimestamp / 1000)}:F>` : "Never"}`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Invite Created",
+              `- Code: ${invite.code}`,
+              `- Inviter: <@${invite.inviter?.id}>`,
+              `- Channel: <#${invite.channel?.id}>`,
+              `- Max Uses: ${invite.maxUses || "Unlimited"}`,
+              `- Expires: ${invite.expiresTimestamp ? `<t:${Math.floor(invite.expiresTimestamp / 1000)}:F>` : "Never"}`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -829,13 +803,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.DELETE,
           components: [
-            component.section({
-              content: [
-                "### Invite Deleted",
-                `- Code: ${invite.code}`,
-                `- Channel: <#${invite.channel?.id}>`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Invite Deleted",
+              `- Code: ${invite.code}`,
+              `- Channel: <#${invite.channel?.id}>`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -850,14 +822,12 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.CREATE,
           components: [
-            component.section({
-              content: [
-                "### Thread Created",
-                `- Thread: <#${thread.id}>`,
-                `- Name: ${thread.name}`,
-                `- Parent: <#${thread.parentId}>`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Thread Created",
+              `- Thread: <#${thread.id}>`,
+              `- Name: ${thread.name}`,
+              `- Parent: <#${thread.parentId}>`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -872,13 +842,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.DELETE,
           components: [
-            component.section({
-              content: [
-                "### Thread Deleted",
-                `- Name: ${thread.name}`,
-                `- Parent: <#${thread.parentId}>`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Thread Deleted",
+              `- Name: ${thread.name}`,
+              `- Parent: <#${thread.parentId}>`,
+            ].join("\n")),
           ],
         }),
       ],
@@ -894,14 +862,12 @@ export function register_audit_logs(client: Client): void {
           component.container({
             accent_color: COLOR.UPDATE,
             components: [
-              component.section({
-                content: [
-                  "### Thread Renamed",
-                  `- Thread: <#${new_thread.id}>`,
-                  `- Before: ${old_thread.name}`,
-                  `- After: ${new_thread.name}`,
-                ].join("\n"),
-              }),
+              component.text([
+                "### Thread Renamed",
+                `- Thread: <#${new_thread.id}>`,
+                `- Before: ${old_thread.name}`,
+                `- After: ${new_thread.name}`,
+              ].join("\n")),
             ],
           }),
         ],
@@ -916,13 +882,11 @@ export function register_audit_logs(client: Client): void {
           component.container({
             accent_color: COLOR.UPDATE,
             components: [
-              component.section({
-                content: [
-                  "### Thread Archive Status",
-                  `- Thread: <#${new_thread.id}>`,
-                  `- Status: ${new_thread.archived ? "Archived" : "Unarchived"}`,
-                ].join("\n"),
-              }),
+              component.text([
+                "### Thread Archive Status",
+                `- Thread: <#${new_thread.id}>`,
+                `- Status: ${new_thread.archived ? "Archived" : "Unarchived"}`,
+              ].join("\n")),
             ],
           }),
         ],
@@ -937,13 +901,11 @@ export function register_audit_logs(client: Client): void {
           component.container({
             accent_color: COLOR.UPDATE,
             components: [
-              component.section({
-                content: [
-                  "### Thread Lock Status",
-                  `- Thread: <#${new_thread.id}>`,
-                  `- Status: ${new_thread.locked ? "Locked" : "Unlocked"}`,
-                ].join("\n"),
-              }),
+              component.text([
+                "### Thread Lock Status",
+                `- Thread: <#${new_thread.id}>`,
+                `- Status: ${new_thread.locked ? "Locked" : "Unlocked"}`,
+              ].join("\n")),
             ],
           }),
         ],
