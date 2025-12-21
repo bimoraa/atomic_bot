@@ -28,6 +28,8 @@ import * as script_get_role              from "../interactions/buttons/script/ge
 import * as script_reset_hwid            from "../interactions/buttons/script/reset_hwid"
 import * as script_get_stats             from "../interactions/buttons/script/get_stats"
 import * as free_get_script              from "../interactions/buttons/free/get_script"
+import * as free_reset_hwid              from "../interactions/buttons/free/reset_hwid"
+import * as free_get_stats               from "../interactions/buttons/free/get_stats"
 import * as tempvoice_handlers           from "../interactions/buttons/tempvoice/handlers"
 import * as tempvoice_user_select        from "../interactions/select_menus/tempvoice/user_select"
 import * as tempvoice_region_select      from "../interactions/select_menus/tempvoice/region_select"
@@ -161,6 +163,14 @@ export async function handle_interaction(
       }
       if (interaction.customId === "free_mobile_copy") {
         await free_get_script.handle_free_mobile_copy(interaction)
+        return
+      }
+      if (interaction.customId === "free_reset_hwid") {
+        await free_reset_hwid.handle_free_reset_hwid(interaction)
+        return
+      }
+      if (interaction.customId === "free_get_stats") {
+        await free_get_stats.handle_free_get_stats(interaction)
         return
       }
       if (interaction.customId === "tempvoice_name") {

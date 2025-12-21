@@ -62,8 +62,15 @@ export const command: Command = {
             component.action_row(
               component.success_button(
                 "Get Script",
-                "free_get_script",
-                component.emoji_object("script", "1411878131366891580")
+                "free_get_script"
+              ),
+              component.secondary_button(
+                "Reset HWID",
+                "free_reset_hwid"
+              ),
+              component.primary_button(
+                "Stats",
+                "free_get_stats"
               )
             ),
           ],
