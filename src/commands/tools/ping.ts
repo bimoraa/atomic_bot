@@ -3,7 +3,7 @@ import {
   SlashCommandBuilder,
 }                      from "discord.js"
 import { Command }     from "../../types/command"
-import { component }   from "../../utils"
+import { component, api } from "../../utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -11,20 +11,7 @@ export const command: Command = {
     .setDescription("Check bot latency"),
 
   async execute(interaction: ChatInputCommandInteraction) {
-    const initial_message = component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.text("Pinging..."),
-          ],
-        }),
-      ],
-    })
-
-    await interaction.reply({
-      ...initial_message,
-      flags : 64,
-    })
+    await interaction.deferReply({ ephemeral: true })
 
     const sent = await interaction.fetchReply()
 
@@ -46,6 +33,6 @@ export const command: Command = {
       ],
     })
 
-    await interaction.editReply(ping_message)
+    await api.edit_deferred_reply(interaction, ping_message)
   },
 }
