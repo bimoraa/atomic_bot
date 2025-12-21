@@ -1,6 +1,7 @@
 import { Client, Collection, Interaction, ThreadChannel, GuildMember } from "discord.js"
 import { Command }                                                     from "../types/command"
 import { can_use_command }                                             from "../functions/command_permissions"
+import { log_error }                                                   from "../utils/error_logger"
 import {
   handle_ticket_button,
   handle_ticket_modal,
@@ -83,6 +84,10 @@ export async function handle_interaction(
       if (await tempvoice_user_select.handle_tempvoice_user_select(interaction)) return;
     } catch (err) {
       console.log("[user_select] Error:", err);
+      await log_error(client, err as Error, "UserSelectMenu", {
+        customId: interaction.customId,
+        user: interaction.user.tag,
+      });
     }
   }
 
@@ -211,6 +216,10 @@ export async function handle_interaction(
       }
     } catch (err) {
       console.log("[button] Error:", err)
+      await log_error(client, err as Error, "Button", {
+        customId: interaction.customId,
+        user: interaction.user.tag,
+      });
     }
   }
 
@@ -234,6 +243,10 @@ export async function handle_interaction(
       if (await script_redeem_modal.handle_script_redeem_modal(interaction)) return;
     } catch (err) {
       console.log("[modal] Error:", err);
+      await log_error(client, err as Error, "ModalSubmit", {
+        customId: interaction.customId,
+        user: interaction.user.tag,
+      });
     }
   }
 
@@ -253,7 +266,15 @@ export async function handle_interaction(
 
   try {
     await command.execute(interaction);
-  } catch {
+  } catch (error) {
+    console.error("[Command Error]:", error);
+    
+    await log_error(client, error as Error, `Command: ${interaction.commandName}`, {
+      user: interaction.user.tag,
+      guild: interaction.guild?.name || "DM",
+      channel: interaction.channel?.id,
+    });
+
     const content = "There was an error executing this command.";
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({ content, ephemeral: true });
