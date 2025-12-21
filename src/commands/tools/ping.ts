@@ -11,11 +11,12 @@ export const command: Command = {
     .setDescription("Check bot latency"),
 
   async execute(interaction: ChatInputCommandInteraction) {
-    const sent = await interaction.reply({
+    await interaction.reply({
       content   : "Pinging...",
-      fetchReply: true,
       ephemeral : true,
     })
+
+    const sent = await interaction.fetchReply()
 
     const ws_latency  = interaction.client.ws.ping
     const api_latency = sent.createdTimestamp - interaction.createdTimestamp
