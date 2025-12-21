@@ -108,15 +108,13 @@ export const command: Command = {
         components: [
           component.container({
             components: [
-              component.section({
-                content: [
-                  "### Messages Purged",
-                  `- Deleted: ${deleted.size} messages`,
-                  `- Channel: <#${channel.id}>`,
-                  target ? `- User: <@${target.id}>` : "",
-                  `- Purged by: <@${executor.id}>`,
-                ].filter(line => line).join("\n"),
-              }),
+              component.text([
+                "### Messages Purged",
+                `- Deleted: ${deleted.size} messages`,
+                `- Channel: <#${channel.id}>`,
+                target ? `- User: <@${target.id}>` : "",
+                `- Purged by: <@${executor.id}>`,
+              ].filter(line => line).join("\n")),
             ],
           }),
         ],
