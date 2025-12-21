@@ -3,11 +3,15 @@ import { component }        from "../utils"
 import * as fs              from "fs"
 import * as path            from "path"
 
+interface LanguageConfig {
+  keywords    : string[]
+  response    : string[]
+  button_text : string
+}
+
 interface AutoReplyConfig {
-  keywords             : string[]
-  response             : string
-  navigate_to          : string
-  navigate_button_text : string
+  languages   : Record<string, LanguageConfig>
+  navigate_to : string
 }
 
 const channel_cooldowns = new Map<string, number>()
@@ -27,8 +31,13 @@ function load_auto_reply_configs(): AutoReplyConfig[] {
         const content     = fs.readFileSync(config_path, "utf-8")
         const config      = JSON.parse(content) as AutoReplyConfig
 
-        if (config.keywords?.length > 0 && config.response && config.navigate_to) {
-          config.keywords = config.keywords.map(k => k.toLowerCase())
+        if (config.languages && config.navigate_to) {
+          for (const lang_key in config.languages) {
+            const lang = config.languages[lang_key]
+            if (lang.keywords?.length > 0) {
+              lang.keywords = lang.keywords.map(k => k.toLowerCase())
+            }
+          }
           configs.push(config)
         }
       } catch {
@@ -60,32 +69,36 @@ export async function handle_auto_reply(message: Message, client: Client): Promi
   const content_lower = message.content.toLowerCase()
 
   for (const config of configs) {
-    const matched = config.keywords.some(keyword => content_lower.includes(keyword))
-    if (!matched) continue
+    for (const lang_key in config.languages) {
+      const lang    = config.languages[lang_key]
+      const matched = lang.keywords.some(keyword => content_lower.includes(keyword))
+      
+      if (!matched) continue
 
-    const guide_message = component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.text(config.response),
-          ],
-        }),
-        component.container({
-          components: [
-            component.action_row(
-              component.link_button(
-                config.navigate_button_text,
-                `https://discord.com/channels/${message.guild.id}/${config.navigate_to}`
+      const guide_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text(lang.response.join("\n")),
+            ],
+          }),
+          component.container({
+            components: [
+              component.action_row(
+                component.link_button(
+                  lang.button_text,
+                  `https://discord.com/channels/${message.guild.id}/${config.navigate_to}`
+                )
               )
-            )
-          ],
-        }),
-      ],
-    })
+            ],
+          }),
+        ],
+      })
 
-    await message.reply(guide_message)
-    channel_cooldowns.set(channel_id, now)
-    return true
+      await message.reply(guide_message)
+      channel_cooldowns.set(channel_id, now)
+      return true
+    }
   }
 
   return false
