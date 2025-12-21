@@ -11,9 +11,19 @@ export const command: Command = {
     .setDescription("Check bot latency"),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    const initial_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text("Pinging..."),
+          ],
+        }),
+      ],
+    })
+
     await interaction.reply({
-      content   : "Pinging...",
-      ephemeral : true,
+      ...initial_message,
+      flags : 64,
     })
 
     const sent = await interaction.fetchReply()
