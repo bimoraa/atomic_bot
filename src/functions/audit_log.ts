@@ -20,6 +20,19 @@ import { logger, component } from "../utils"
 const log            = logger.create_logger("audit_log")
 const LOG_CHANNEL_ID = "1452086939866894420"
 
+const COLOR = {
+  MESSAGE   : 0x5865F2,
+  MEMBER    : 0x57F287,
+  MODERATION: 0xED4245,
+  CHANNEL   : 0xFEE75C,
+  ROLE      : 0xEB459E,
+  VOICE     : 0x9B59B6,
+  EMOJI     : 0xF1C40F,
+  STICKER   : 0xE67E22,
+  INVITE    : 0x3498DB,
+  THREAD    : 0x1ABC9C,
+}
+
 async function send_log(client: Client, log_message: any): Promise<void> {
   try {
     const log_channel = await client.channels.fetch(LOG_CHANNEL_ID) as TextChannel
@@ -36,11 +49,17 @@ export function register_audit_logs(client: Client): void {
     if (!old_message.guild || old_message.author?.bot) return
     if (old_message.content === new_message.content) return
 
+    const avatar_url = old_message.author?.displayAvatarURL({ size: 512 }) || ""
+
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.MESSAGE,
           components: [
-            component.text("### Message Edited"),
+            component.section({
+              content   : "### Message Edited",
+              thumbnail : avatar_url,
+            }),
             component.divider(),
             component.text([
               `- Author: <@${old_message.author?.id}>`,
@@ -59,11 +78,17 @@ export function register_audit_logs(client: Client): void {
   client.on("messageDelete", async (message) => {
     if (!message.guild || message.author?.bot) return
 
+    const avatar_url = message.author?.displayAvatarURL({ size: 512 }) || ""
+
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.MESSAGE,
           components: [
-            component.text("### Message Deleted"),
+            component.section({
+              content   : "### Message Deleted",
+              thumbnail : avatar_url,
+            }),
             component.divider(),
             component.text([
               `- Author: <@${message.author?.id}>`,
@@ -79,11 +104,17 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("guildMemberAdd", async (member) => {
+    const avatar_url = member.user.displayAvatarURL({ size: 512 })
+
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.MEMBER,
           components: [
-            component.text("### Member Joined"),
+            component.section({
+              content   : "### Member Joined",
+              thumbnail : avatar_url,
+            }),
             component.divider(),
             component.text([
               `- Member: <@${member.id}>`,
@@ -98,15 +129,34 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("guildMemberRemove", async (member) => {
+    const avatar_url = member.user.displayAvatarURL({ size: 512 })
+
+    let kick_info = ""
+    try {
+      const audit_logs = await member.guild.fetchAuditLogs({
+        type   : AuditLogEvent.MemberKick,
+        limit  : 1,
+      })
+      const kick_log = audit_logs.entries.first()
+      if (kick_log && kick_log.target?.id === member.id && Date.now() - kick_log.createdTimestamp < 5000) {
+        kick_info = `\n- Kicked by: <@${kick_log.executor?.id}>`
+        if (kick_log.reason) kick_info += `\n- Reason: ${kick_log.reason}`
+      }
+    } catch {}
+
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.MEMBER,
           components: [
-            component.text("### Member Left"),
+            component.section({
+              content   : "### Member Left",
+              thumbnail : avatar_url,
+            }),
             component.divider(),
             component.text([
               `- Member: <@${member.id}>`,
-              `- Roles: ${member.roles.cache.map(r => r.name).join(", ") || "None"}`,
+              `- Roles: ${member.roles.cache.map(r => r.name).join(", ") || "None"}${kick_info}`,
             ]),
           ],
         }),
@@ -128,14 +178,33 @@ export function register_audit_logs(client: Client): void {
       if (added.length > 0) changes.push(`Added: ${added.join(", ")}`)
       if (removed.length > 0) changes.push(`Removed: ${removed.join(", ")}`)
 
+      const avatar_url = new_member.user.displayAvatarURL({ size: 512 })
+
+      let executor_text = "Unknown"
+      try {
+        const audit_logs = await new_member.guild.fetchAuditLogs({
+          type   : AuditLogEvent.MemberRoleUpdate,
+          limit  : 1,
+        })
+        const role_log = audit_logs.entries.first()
+        if (role_log && role_log.target?.id === new_member.id) {
+          executor_text = `<@${role_log.executor?.id}>`
+        }
+      } catch {}
+
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.MEMBER,
             components: [
-              component.text("### Member Roles Updated"),
+              component.section({
+                content   : "### Member Roles Updated",
+                thumbnail : avatar_url,
+              }),
               component.divider(),
               component.text([
                 `- Member: <@${new_member.id}>`,
+                `- Updated by: ${executor_text}`,
                 `- Changes: ${changes.join(" | ")}`,
               ]),
             ],
@@ -147,14 +216,33 @@ export function register_audit_logs(client: Client): void {
     }
 
     if (old_member.nickname !== new_member.nickname) {
+      const avatar_url = new_member.user.displayAvatarURL({ size: 512 })
+
+      let executor_text = "Self"
+      try {
+        const audit_logs = await new_member.guild.fetchAuditLogs({
+          type   : AuditLogEvent.MemberUpdate,
+          limit  : 1,
+        })
+        const nick_log = audit_logs.entries.first()
+        if (nick_log && nick_log.target?.id === new_member.id && nick_log.executor?.id !== new_member.id) {
+          executor_text = `<@${nick_log.executor?.id}>`
+        }
+      } catch {}
+
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.MEMBER,
             components: [
-              component.text("### Nickname Changed"),
+              component.section({
+                content   : "### Nickname Changed",
+                thumbnail : avatar_url,
+              }),
               component.divider(),
               component.text([
                 `- Member: <@${new_member.id}>`,
+                `- Changed by: ${executor_text}`,
                 `- Before: ${old_member.nickname || "(none)"}`,
                 `- After: ${new_member.nickname || "(none)"}`,
               ]),
@@ -165,17 +253,104 @@ export function register_audit_logs(client: Client): void {
 
       await send_log(client, log_message)
     }
+
+    if (old_member.communicationDisabledUntil !== new_member.communicationDisabledUntil) {
+      const avatar_url = new_member.user.displayAvatarURL({ size: 512 })
+
+      let executor_text = "Unknown"
+      let reason_text   = "No reason provided"
+      try {
+        const audit_logs = await new_member.guild.fetchAuditLogs({
+          type   : AuditLogEvent.MemberUpdate,
+          limit  : 1,
+        })
+        const timeout_log = audit_logs.entries.first()
+        if (timeout_log && timeout_log.target?.id === new_member.id) {
+          executor_text = `<@${timeout_log.executor?.id}>`
+          if (timeout_log.reason) reason_text = timeout_log.reason
+        }
+      } catch {}
+
+      const is_timeout = new_member.communicationDisabledUntil && new_member.communicationDisabledUntil > new Date()
+
+      if (is_timeout) {
+        const until = Math.floor(new_member.communicationDisabledUntil.getTime() / 1000)
+
+        const log_message = component.build_message({
+          components: [
+            component.container({
+              accent_color: COLOR.MODERATION,
+              components: [
+                component.section({
+                  content   : "### Member Timed Out",
+                  thumbnail : avatar_url,
+                }),
+                component.divider(),
+                component.text([
+                  `- Member: <@${new_member.id}>`,
+                  `- Timed out by: ${executor_text}`,
+                  `- Until: <t:${until}:F>`,
+                  `- Reason: ${reason_text}`,
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        await send_log(client, log_message)
+      } else {
+        const log_message = component.build_message({
+          components: [
+            component.container({
+              accent_color: COLOR.MODERATION,
+              components: [
+                component.section({
+                  content   : "### Member Timeout Removed",
+                  thumbnail : avatar_url,
+                }),
+                component.divider(),
+                component.text([
+                  `- Member: <@${new_member.id}>`,
+                  `- Removed by: ${executor_text}`,
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        await send_log(client, log_message)
+      }
+    }
   })
 
   client.on("guildBanAdd", async (ban) => {
+    const avatar_url = ban.user.displayAvatarURL({ size: 512 })
+
+    let executor_text = "Unknown"
+    try {
+      const audit_logs = await ban.guild.fetchAuditLogs({
+        type   : AuditLogEvent.MemberBanAdd,
+        limit  : 1,
+      })
+      const ban_log = audit_logs.entries.first()
+      if (ban_log && ban_log.target?.id === ban.user.id) {
+        executor_text = `<@${ban_log.executor?.id}>`
+      }
+    } catch {}
+
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.MODERATION,
           components: [
-            component.text("### Member Banned"),
+            component.section({
+              content   : "### Member Banned",
+              thumbnail : avatar_url,
+            }),
             component.divider(),
             component.text([
               `- Member: <@${ban.user.id}>`,
+              `- Banned by: ${executor_text}`,
               `- Reason: ${ban.reason || "No reason provided"}`,
             ]),
           ],
@@ -187,14 +362,33 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("guildBanRemove", async (ban) => {
+    const avatar_url = ban.user.displayAvatarURL({ size: 512 })
+
+    let executor_text = "Unknown"
+    try {
+      const audit_logs = await ban.guild.fetchAuditLogs({
+        type   : AuditLogEvent.MemberBanRemove,
+        limit  : 1,
+      })
+      const unban_log = audit_logs.entries.first()
+      if (unban_log && unban_log.target?.id === ban.user.id) {
+        executor_text = `<@${unban_log.executor?.id}>`
+      }
+    } catch {}
+
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.MODERATION,
           components: [
-            component.text("### Member Unbanned"),
+            component.section({
+              content   : "### Member Unbanned",
+              thumbnail : avatar_url,
+            }),
             component.divider(),
             component.text([
               `- Member: <@${ban.user.id}>`,
+              `- Unbanned by: ${executor_text}`,
             ]),
           ],
         }),
@@ -210,6 +404,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.CHANNEL,
           components: [
             component.text("### Channel Created"),
             component.divider(),
@@ -231,6 +426,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.CHANNEL,
           components: [
             component.text("### Channel Deleted"),
             component.divider(),
@@ -253,6 +449,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.CHANNEL,
             components: [
               component.text("### Channel Renamed"),
               component.divider(),
@@ -274,6 +471,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.ROLE,
           components: [
             component.text("### Role Created"),
             component.divider(),
@@ -293,6 +491,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.ROLE,
           components: [
             component.text("### Role Deleted"),
             component.divider(),
@@ -312,6 +511,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.ROLE,
             components: [
               component.text("### Role Renamed"),
               component.divider(),
@@ -336,6 +536,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.MESSAGE,
           components: [
             component.text("### Bulk Message Delete"),
             component.divider(),
@@ -355,11 +556,17 @@ export function register_audit_logs(client: Client): void {
     if (!old_state.guild) return
 
     if (!old_state.channel && new_state.channel) {
+      const avatar_url = new_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.VOICE,
             components: [
-              component.text("### Voice Channel Joined"),
+              component.section({
+                content   : "### Voice Channel Joined",
+                thumbnail : avatar_url,
+              }),
               component.divider(),
               component.text([
                 `- Member: <@${new_state.member?.id}>`,
@@ -372,11 +579,17 @@ export function register_audit_logs(client: Client): void {
 
       await send_log(client, log_message)
     } else if (old_state.channel && !new_state.channel) {
+      const avatar_url = old_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.VOICE,
             components: [
-              component.text("### Voice Channel Left"),
+              component.section({
+                content   : "### Voice Channel Left",
+                thumbnail : avatar_url,
+              }),
               component.divider(),
               component.text([
                 `- Member: <@${old_state.member?.id}>`,
@@ -389,11 +602,17 @@ export function register_audit_logs(client: Client): void {
 
       await send_log(client, log_message)
     } else if (old_state.channel && new_state.channel && old_state.channel.id !== new_state.channel.id) {
+      const avatar_url = new_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.VOICE,
             components: [
-              component.text("### Voice Channel Switched"),
+              component.section({
+                content   : "### Voice Channel Switched",
+                thumbnail : avatar_url,
+              }),
               component.divider(),
               component.text([
                 `- Member: <@${new_state.member?.id}>`,
@@ -409,11 +628,17 @@ export function register_audit_logs(client: Client): void {
     }
 
     if (old_state.serverMute !== new_state.serverMute) {
+      const avatar_url = new_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.VOICE,
             components: [
-              component.text("### Server Mute Updated"),
+              component.section({
+                content   : "### Server Mute Updated",
+                thumbnail : avatar_url,
+              }),
               component.divider(),
               component.text([
                 `- Member: <@${new_state.member?.id}>`,
@@ -428,11 +653,17 @@ export function register_audit_logs(client: Client): void {
     }
 
     if (old_state.serverDeaf !== new_state.serverDeaf) {
+      const avatar_url = new_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.VOICE,
             components: [
-              component.text("### Server Deafen Updated"),
+              component.section({
+                content   : "### Server Deafen Updated",
+                thumbnail : avatar_url,
+              }),
               component.divider(),
               component.text([
                 `- Member: <@${new_state.member?.id}>`,
@@ -451,6 +682,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.EMOJI,
           components: [
             component.text("### Emoji Created"),
             component.divider(),
@@ -470,6 +702,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.EMOJI,
           components: [
             component.text("### Emoji Deleted"),
             component.divider(),
@@ -490,6 +723,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.EMOJI,
             components: [
               component.text("### Emoji Renamed"),
               component.divider(),
@@ -510,6 +744,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.STICKER,
           components: [
             component.text("### Sticker Created"),
             component.divider(),
@@ -529,6 +764,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.STICKER,
           components: [
             component.text("### Sticker Deleted"),
             component.divider(),
@@ -549,6 +785,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.STICKER,
             components: [
               component.text("### Sticker Renamed"),
               component.divider(),
@@ -569,6 +806,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.INVITE,
           components: [
             component.text("### Invite Created"),
             component.divider(),
@@ -591,6 +829,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.INVITE,
           components: [
             component.text("### Invite Deleted"),
             component.divider(),
@@ -610,6 +849,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.THREAD,
           components: [
             component.text("### Thread Created"),
             component.divider(),
@@ -630,6 +870,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
+          accent_color: COLOR.THREAD,
           components: [
             component.text("### Thread Deleted"),
             component.divider(),
@@ -650,6 +891,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.THREAD,
             components: [
               component.text("### Thread Renamed"),
               component.divider(),
@@ -670,6 +912,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.THREAD,
             components: [
               component.text("### Thread Archive Status"),
               component.divider(),
@@ -689,6 +932,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
+            accent_color: COLOR.THREAD,
             components: [
               component.text("### Thread Lock Status"),
               component.divider(),
