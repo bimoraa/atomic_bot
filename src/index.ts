@@ -9,7 +9,8 @@ import { load_close_requests }                                           from ".
 import { load_all_tickets }                                              from "./functions/unified_ticket"
 import * as tempvoice                                                    from "./functions/tempvoice"
 import { register_audit_logs }                                           from "./functions/audit_log"
-import { db }                                                            from "./utils"
+import { get_afk, remove_afk, is_afk }                                   from "./functions/afk"
+import { db, component }                                                 from "./utils"
 
 config()
 
@@ -94,6 +95,39 @@ client.on("interactionCreate", (interaction) => {
 
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
+  
+  const afk_removed = remove_afk(message.author.id)
+  if (afk_removed) {
+    const welcome_back = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text(`Welcome back! You were AFK for <t:${Math.floor(afk_removed.timestamp / 1000)}:R>`),
+          ],
+        }),
+      ],
+    })
+    await message.reply(welcome_back).catch(() => {})
+  }
+
+  for (const mentioned of message.mentions.users.values()) {
+    if (is_afk(mentioned.id)) {
+      const afk_data = get_afk(mentioned.id)
+      if (afk_data) {
+        const afk_notice = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text(`<@${mentioned.id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`),
+              ],
+            }),
+          ],
+        })
+        await message.reply({ ...afk_notice, allowedMentions: { users: [] } }).catch(() => {})
+        break
+      }
+    }
+  }
   
   if (await handle_auto_reply(message, client)) return
   
