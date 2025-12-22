@@ -139,7 +139,9 @@ client.on("messageCreate", async (message: Message) => {
             }),
           ],
         })
-        await message.reply({ ...afk_notice, allowedMentions: { users: [] } }).catch(() => {})
+        await message.reply({ ...afk_notice, allowedMentions: { users: [] } })
+          .then(msg => setTimeout(() => msg.delete().catch(() => {}), 10000))
+          .catch(() => {})
         break
       }
     }

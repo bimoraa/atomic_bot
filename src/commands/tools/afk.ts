@@ -47,6 +47,9 @@ export const command: Command = {
       ],
     })
 
-    await interaction.reply(afk_confirmation)
+    await interaction.reply({
+      ...afk_confirmation,
+      flags: (afk_confirmation.flags ?? 0) | 64,
+    })
   },
 }
