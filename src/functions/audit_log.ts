@@ -16,6 +16,7 @@ import {
   ThreadChannel,
 }                      from "discord.js"
 import { logger, component } from "../utils"
+import { track_deleted_message } from "./snipe"
 
 const log            = logger.create_logger("audit_log")
 const LOG_CHANNEL_ID = "1452086939866894420"
@@ -75,6 +76,8 @@ export function register_audit_logs(client: Client): void {
 
   client.on("messageDelete", async (message) => {
     if (!message.guild || message.author?.bot) return
+
+    track_deleted_message(message)
 
     const avatar_url = message.author?.displayAvatarURL({ size: 512 }) || ""
 
