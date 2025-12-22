@@ -1,16 +1,18 @@
 interface AfkData {
-  user_id    : string
-  reason     : string
-  timestamp  : number
+  user_id           : string
+  reason            : string
+  timestamp         : number
+  original_nickname : string | null
 }
 
 const afk_users = new Map<string, AfkData>()
 
-export function set_afk(user_id: string, reason: string): void {
+export function set_afk(user_id: string, reason: string, original_nickname: string | null): void {
   afk_users.set(user_id, {
     user_id,
     reason,
-    timestamp : Date.now(),
+    timestamp         : Date.now(),
+    original_nickname,
   })
 }
 

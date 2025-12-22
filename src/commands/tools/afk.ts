@@ -19,12 +19,37 @@ export const command: Command = {
 
   async execute(interaction: ChatInputCommandInteraction) {
     const reason = interaction.options.getString("reason") || "AFK"
+    const member = interaction.guild?.members.cache.get(interaction.user.id)
+    
+    if (member) {
+      const original_nickname = member.nickname
+      const display_name      = member.displayName
+      
+      set_afk(interaction.user.id, reason, original_nickname)
+      
+      try {
+        await member.setNickname(`[AFK] - ${display_name}`)
+      } catch {}
+    } else {
+      set_afk(interaction.user.id, reason, null)
+    }
 
-    set_afk(interaction.user.id, reason)
+    const afk_confirmation = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.section({
+              content   : `You are now AFK: **${reason}**`,
+              thumbnail : interaction.user.displayAvatarURL(),
+            }),
+          ],
+        }),
+      ],
+    })
 
     await interaction.reply({
-      content : `You are now AFK: **${reason}**`,
-      flags   : 64,
+      ...afk_confirmation,
+      flags : 64,
     })
   },
 }

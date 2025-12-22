@@ -98,16 +98,29 @@ client.on("messageCreate", async (message: Message) => {
   
   const afk_removed = remove_afk(message.author.id)
   if (afk_removed) {
+    const member = message.guild?.members.cache.get(message.author.id)
+    if (member) {
+      try {
+        await member.setNickname(afk_removed.original_nickname)
+      } catch {}
+    }
+    
+    const duration_seconds = Math.floor((Date.now() - afk_removed.timestamp) / 1000)
     const welcome_back = component.build_message({
       components: [
         component.container({
           components: [
-            component.text(`Welcome back! You were AFK for <t:${Math.floor(afk_removed.timestamp / 1000)}:R>`),
+            component.section({
+              content: `Welcome back! You were AFK for ${duration_seconds} seconds ago`,
+              thumbnail: message.author.displayAvatarURL(),
+            }),
           ],
         }),
       ],
     })
-    await message.reply(welcome_back).catch(() => {})
+    await message.reply(welcome_back)
+      .then(msg => setTimeout(() => msg.delete().catch(() => {}), 10000))
+      .catch(() => {})
   }
 
   for (const mentioned of message.mentions.users.values()) {
@@ -118,7 +131,10 @@ client.on("messageCreate", async (message: Message) => {
           components: [
             component.container({
               components: [
-                component.text(`<@${mentioned.id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`),
+                component.section({
+                  content: `<@${mentioned.id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`,
+                  thumbnail: mentioned.displayAvatarURL(),
+                }),
               ],
             }),
           ],
