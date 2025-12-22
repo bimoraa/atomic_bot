@@ -105,14 +105,12 @@ client.on("messageCreate", async (message: Message) => {
       } catch {}
     }
     
-    const duration_seconds = Math.floor((Date.now() - afk_removed.timestamp) / 1000)
     const welcome_back = component.build_message({
       components: [
         component.container({
           components: [
             component.section({
-              content: `Welcome back! You were AFK for ${duration_seconds} seconds ago`,
-              thumbnail: message.author.displayAvatarURL(),
+              content: `Welcome back! You were AFK for <t:${Math.floor(afk_removed.timestamp / 1000)}:R>`,
             }),
           ],
         }),
