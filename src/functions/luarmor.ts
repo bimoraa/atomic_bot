@@ -127,6 +127,46 @@ export async function create_key_for_project(project_id: string, options: create
   }
 }
 
+export async function delete_user_from_project(project_id: string, discord_id: string): Promise<boolean> {
+  try {
+    const check_url = `${__base_url}/projects/${project_id}/users?discord_id=${discord_id}`
+    const check_res = await http.get<any>(check_url, get_headers())
+
+    const user_keys: string[] = []
+
+    if (check_res?.users && Array.isArray(check_res.users)) {
+      for (const user of check_res.users) {
+        if (user.user_key) user_keys.push(user.user_key)
+      }
+    } else if (Array.isArray(check_res) && check_res.length > 0) {
+      for (const user of check_res) {
+        if (user.user_key) user_keys.push(user.user_key)
+      }
+    } else if (check_res?.user_key) {
+      user_keys.push(check_res.user_key)
+    }
+
+    if (user_keys.length === 0) return true
+
+    let failed = 0
+
+    for (const key of user_keys) {
+      const delete_url = `${__base_url}/projects/${project_id}/users?user_key=${key}`
+      const delete_res = await http.del<any>(delete_url, get_headers())
+
+      const success = delete_res?.success === true
+        || delete_res?.message?.toLowerCase().includes("deleted")
+
+      if (!success) failed += 1
+    }
+
+    return failed === 0
+  } catch (error) {
+    __log.error("Failed to delete user:", error)
+    return false
+  }
+}
+
 export async function get_user_by_discord(discord_id: string): Promise<luarmor_response<luarmor_user>> {
   const now             = Date.now()
   const cached_user     = __user_cache.get(discord_id)

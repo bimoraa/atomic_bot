@@ -1,6 +1,6 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { api, component, time } from "../../../utils"
-import { create_key_for_project } from "../../../functions/luarmor"
+import { create_key_for_project, delete_user_from_project } from "../../../functions/luarmor"
 import { add_work_log } from "../../../functions/work_tracker"
 
 const ADMIN_ROLE_ID = "1277272542914281512"
@@ -131,6 +131,11 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
 
   const submitter  = await interaction.guild?.members.fetch(submitter_id).catch(() => null)
   const staff_name = submitter?.user.username || `Unknown (${submitter_id})`
+
+  await delete_user_from_project(
+    "6958841b2d9e5e049a24a23e376e0d77",
+    customer_id,
+  )
 
   await create_key_for_project(
     "6958841b2d9e5e049a24a23e376e0d77",
