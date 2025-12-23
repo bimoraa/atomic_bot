@@ -1,5 +1,6 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { api, component, time } from "../../../utils"
+import { create_key_for_project } from "../../../functions/luarmor"
 import { add_work_log } from "../../../functions/work_tracker"
 
 const ADMIN_ROLE_ID = "1277272542914281512"
@@ -103,6 +104,7 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
   const thread_id    = parts[5]
   const message_link = `https://discord.com/channels/${interaction.guildId}/${interaction.channelId}/${interaction.message.id}`
   const thread_link  = `https://discord.com/channels/${interaction.guildId}/${thread_id}`
+  const whitelist_note = `WHITELISTED by <@${interaction.user.id}> - at ${time.full_date_time(time.now())}`
 
   const payment_data = parse_payment_message(interaction.message)
   const payment_id   = generate_payment_id()
@@ -129,6 +131,14 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
 
   const submitter  = await interaction.guild?.members.fetch(submitter_id).catch(() => null)
   const staff_name = submitter?.user.username || `Unknown (${submitter_id})`
+
+  await create_key_for_project(
+    "6958841b2d9e5e049a24a23e376e0d77",
+    {
+      discord_id : customer_id,
+      note       : whitelist_note,
+    }
+  )
 
   await add_work_log(
     submitter_id,

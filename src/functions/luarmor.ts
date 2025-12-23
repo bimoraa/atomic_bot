@@ -103,6 +103,30 @@ export async function create_key(options: create_key_options = {}): Promise<luar
   }
 }
 
+export async function create_key_for_project(project_id: string, options: create_key_options = {}): Promise<luarmor_response<luarmor_user>> {
+  try {
+    const url = `${__base_url}/projects/${project_id}/users`
+
+    const body: Record<string, any> = {}
+
+    if (options.discord_id)  body.discord_id  = options.discord_id
+    if (options.identifier)  body.identifier  = options.identifier
+    if (options.note)        body.note        = options.note
+    if (options.auth_expire) body.auth_expire = options.auth_expire
+
+    const response = await http.post<any>(url, body, get_headers())
+
+    if (response.user_key) {
+      return { success: true, data: response }
+    }
+
+    return { success: false, error: response.message || "Failed to create key" }
+  } catch (error) {
+    __log.error("Failed to create key for project:", error)
+    return { success: false, error: "Request failed" }
+  }
+}
+
 export async function get_user_by_discord(discord_id: string): Promise<luarmor_response<luarmor_user>> {
   const now             = Date.now()
   const cached_user     = __user_cache.get(discord_id)
