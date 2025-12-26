@@ -25,6 +25,24 @@ export const command: Command = {
         .setName("version")
         .setDescription("Version number")
         .setRequired(true)
+    )
+    .addRoleOption(option =>
+      option
+        .setName("role1")
+        .setDescription("Role to tag (required)")
+        .setRequired(true)
+    )
+    .addRoleOption(option =>
+      option
+        .setName("role2")
+        .setDescription("Role to tag (optional)")
+        .setRequired(false)
+    )
+    .addRoleOption(option =>
+      option
+        .setName("role3")
+        .setDescription("Role to tag (optional)")
+        .setRequired(false)
     ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -38,11 +56,26 @@ export const command: Command = {
       return;
     }
 
-    const script = interaction.options.getString("script", true);
-    const version = interaction.options.getString("version", true);
+    const script  = interaction.options.getString("script", true)
+    const version = interaction.options.getString("version", true)
+
+    const role_ids = [
+      interaction.options.getRole("role1", true)?.id,
+      interaction.options.getRole("role2", false)?.id,
+      interaction.options.getRole("role3", false)?.id,
+    ].filter(Boolean) as string[]
+
+    const unique_roles = Array.from(new Set(role_ids)).slice(0, 3)
+
+    const modal_custom_id = [
+      "devlog_modal",
+      `s=${encodeURIComponent(script)}`,
+      `v=${encodeURIComponent(version)}`,
+      `r=${unique_roles.join(",")}`,
+    ].join("|")
 
     const modal = new ModalBuilder()
-      .setCustomId(`devlog_modal_${script}_${version}`)
+      .setCustomId(modal_custom_id)
       .setTitle("Developer Logs");
 
     const added_input = new TextInputBuilder()

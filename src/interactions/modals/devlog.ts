@@ -17,11 +17,27 @@ function format_list(items: string, prefix: string): string {
 }
 
 export async function handle(interaction: ModalSubmitInteraction) {
-  if (!interaction.customId.startsWith("devlog_modal_")) return false
+  if (!interaction.customId.startsWith("devlog_modal")) return false
 
-  const parts = interaction.customId.replace("devlog_modal_", "").split("_")
-  const version = parts.pop()!
-  const script = parts.join("_")
+  let script  = ""
+  let version = ""
+  let role_ids: string[] = []
+
+  if (interaction.customId.startsWith("devlog_modal|")) {
+    const segments = interaction.customId.split("|").slice(1)
+    for (const segment of segments) {
+      const [key, value] = segment.split("=")
+      if (key === "s") script = decodeURIComponent(value || "")
+      if (key === "v") version = decodeURIComponent(value || "")
+      if (key === "r" && value) role_ids = value.split(",").filter(Boolean)
+    }
+  } else if (interaction.customId.startsWith("devlog_modal_")) {
+    const parts = interaction.customId.replace("devlog_modal_", "").split("_")
+    version = parts.pop() || ""
+    script  = parts.join("_")
+  }
+
+  if (!script || !version) return false
 
   const added = interaction.fields.getTextInputValue("added")
   const improved = interaction.fields.getTextInputValue("improved")
@@ -64,6 +80,10 @@ export async function handle(interaction: ModalSubmitInteraction) {
     changelog_components.push(component.text("No changes specified."))
   }
 
+  const role_mentions = (role_ids.length > 0 ? role_ids : [priority_role_id])
+    .map(id => format.role_mention(id))
+    .join(" ")
+
   const message = component.build_message({
     components: [
       component.container({
@@ -71,7 +91,7 @@ export async function handle(interaction: ModalSubmitInteraction) {
           component.section({
             content: [
               "## Atomicals Script Update Logs",
-              `${format.role_mention(priority_role_id)}`,
+              role_mentions,
               `- **Place:** ${script}`,
               `- **Version:** v${version}`,
               "- **Developer Notes:**",
