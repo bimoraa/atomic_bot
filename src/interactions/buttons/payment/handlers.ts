@@ -137,13 +137,18 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
     customer_id,
   )
 
-  await create_key_for_project(
+  const whitelist_result = await create_key_for_project(
     "6958841b2d9e5e049a24a23e376e0d77",
     {
       discord_id : customer_id,
       note       : whitelist_note,
     }
   )
+
+  if (!whitelist_result.success || !whitelist_result.data?.user_key) {
+    await interaction.editReply({ content: "Failed to whitelist user. Please try again." })
+    return
+  }
 
   await add_work_log(
     submitter_id,

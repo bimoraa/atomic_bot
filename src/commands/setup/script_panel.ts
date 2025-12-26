@@ -41,20 +41,14 @@ export const command: Command = {
             component.section({
               content: [
                 `## Script Control Panel`,
-                `Manage your script access for **Service Provider** project.`,
+                `Manage your script access for Service Provider project.`,
               ],
-              thumbnail: format.logo_url,
+              thumbnail: "https://github.com/bimoraa/Euphoria/blob/main/aaaaa.png?raw=true",
             }),
-            component.divider(),
-            component.text([
-              `### Actions:`,
-              `- **Redeem Key** - Link your purchased key to Discord`,
-              `- **Get Script** - Get your loader script`,
-              `- **Get Role** - Claim your script buyer role`,
-              `- **Reset HWID** - Reset your hardware ID`,
-              `- **Get Stats** - View your script statistics`,
-            ]),
-            component.divider(),
+          ],
+        }),
+        component.container({
+          components: [
             component.action_row(
               component.primary_button("Redeem Key", "script_redeem_key"),
               component.success_button("Get Script", "script_get_script"),
