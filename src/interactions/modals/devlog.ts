@@ -5,6 +5,7 @@ import { component, api, format } from "../../utils"
 const config = load_config<{ devlog_channel_id: string; priority_role_id: string }>("devlog")
 const devlog_channel_id = config.devlog_channel_id
 const priority_role_id = config.priority_role_id
+const devlog_thumb_url  = "https://github.com/bimoraa/Euphoria/blob/main/aaaaa.png?raw=true"
 
 function format_list(items: string, prefix: string): string {
   if (!items.trim()) return ""
@@ -29,20 +30,38 @@ export async function handle(interaction: ModalSubmitInteraction) {
 
   await interaction.deferReply({ ephemeral: true })
 
-  let changelog = "## Changelogs\n"
-
-  const added_list = format_list(added, "[ + ]")
+  const added_list    = format_list(added, "[ + ]")
   const improved_list = format_list(improved, "[ / ]")
-  const removed_list = format_list(removed, "[ - ]")
-  const fixed_list = format_list(fixed, "[ ! ]")
+  const removed_list  = format_list(removed, "[ - ]")
+  const fixed_list    = format_list(fixed, "[ ! ]")
 
-  if (added_list) changelog += `\n### - Added:\n${added_list}\n`
-  if (improved_list) changelog += `\n### - Improved:\n${improved_list}\n`
-  if (removed_list) changelog += `\n### - Removed:\n${removed_list}\n`
-  if (fixed_list) changelog += `\n### - Fixed:\n${fixed_list}\n`
+  const changelog_components = [] as ReturnType<typeof component.text | typeof component.divider>[]
 
-  if (!added_list && !improved_list && !removed_list && !fixed_list) {
-    changelog += "\nNo changes specified."
+  if (added_list) {
+    changelog_components.push(component.text(`### - Added:\n${added_list}`))
+    changelog_components.push(component.divider(2))
+  }
+
+  if (removed_list) {
+    changelog_components.push(component.text(`### - Deleted:\n${removed_list}`))
+    changelog_components.push(component.divider(2))
+  }
+
+  if (fixed_list) {
+    changelog_components.push(component.text(`### - Fixed:\n${fixed_list}`))
+    changelog_components.push(component.divider(2))
+  }
+
+  if (improved_list) {
+    changelog_components.push(component.text(`### - Improved:\n${improved_list}`))
+  }
+
+  if (changelog_components.length > 0 && changelog_components[changelog_components.length - 1].type === component.component_type.divider) {
+    changelog_components.pop()
+  }
+
+  if (changelog_components.length === 0) {
+    changelog_components.push(component.text("No changes specified."))
   }
 
   const message = component.build_message({
@@ -51,22 +70,26 @@ export async function handle(interaction: ModalSubmitInteraction) {
         components: [
           component.section({
             content: [
-              `## Atomicals Script Update Logs`,
+              "## Atomicals Script Update Logs",
               `${format.role_mention(priority_role_id)}`,
-              `- **${script}**`,
+              `- **Place:** ${script}`,
               `- **Version:** v${version}`,
-              `- **Developer Notes:**`,
-              `> Found any bugs or issues? Feel free to report them to the developers!`,
-              `> Got ideas or suggestions for new scripts? We'd love to hear them!`,
+              "- **Developer Notes:**",
+              "> Found any bugs or issues? Feel free to report them to the developers!",
+              "> Got ideas or suggestions for new scripts? We'd love to hear them!",
             ],
-            thumbnail: format.logo_url,
+            thumbnail: devlog_thumb_url,
           }),
-          component.divider(),
-          component.text(changelog),
-          component.divider(),
+        ],
+      }),
+      component.container({
+        components: changelog_components,
+      }),
+      component.container({
+        components: [
           component.action_row(
             component.link_button("Report Bugs", "https://discord.com/channels/1250337227582472243/1320078429110145114"),
-            component.link_button("Suggest a Feature", "https://discord.com/channels/1250337227582472243/1351980309557542962")
+            component.link_button("Suggest a Feature", "https://discord.com/channels/1250337227582472243/1351980309557542962"),
           ),
         ],
       }),
