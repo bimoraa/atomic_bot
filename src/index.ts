@@ -1,4 +1,4 @@
-import { Client, Collection, GatewayIntentBits, ActivityType, Message, PermissionFlagsBits } from "discord.js"
+import { Client, Collection, GatewayIntentBits, ActivityType, Message, PermissionFlagsBits, Partials } from "discord.js"
 import { config }                                                        from "dotenv"
 import { Command }                                                       from "./types/command"
 import { load_commands, register_commands }                              from "./handlers/command_handler"
@@ -29,6 +29,10 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildVoiceStates,
   ],
+  partials: [
+    Partials.Message,
+    Partials.Channel,
+  ],
 }) as Client & { commands: Collection<string, Command> }
 
 client.commands = new Collection()
@@ -37,6 +41,7 @@ export { client }
 
 import "./events/guild_member_add"
 import "./events/voice_state_update"
+import "./events/message_delete"
 
 function get_total_members(): number {
   return client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)
@@ -96,97 +101,6 @@ client.on("interactionCreate", (interaction) => {
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
 
-  const content_lower = message.content.toLowerCase().trim()
-  const member        = message.member
-
-  if (content_lower.startsWith("?tutorial")) {
-    if (!member?.permissions.has(PermissionFlagsBits.ModerateMembers)) return
-
-    const tutorial_message = {
-      flags     : 32768,
-      components: [
-        {
-          type      : 17,
-          components: [
-            {
-              type   : 10,
-              content: "## TUTORIAL PEMAKAIAN SCRIPT",
-            },
-          ],
-        },
-        {
-          type      : 17,
-          components: [
-            {
-              type   : 10,
-              content: "Halo! Akun kaka nya sudah ter-Whitelist!\n",
-            },
-            {
-              type   : 14,
-              spacing: 2,
-            },
-            {
-              type   : 10,
-              content: "Cara penggunaan script bisa kamu lihat di **<#1448200027204747335> ** dan **<#1251799587966947358>**.\nDi sana sudah tersedia panduan lengkap yang bakal ngebantu kamu step by step.\n\nSetelah itu, kamu bisa akses menu <#1398305885029273752> untuk mendapatkan script-nya.\n\nKalau masih ada yang bikin bingung atau butuh bantuan, jangan ragu buat tanya di sini yaaa! kami siap bantu.",
-            },
-            {
-              type   : 14,
-              spacing: 2,
-            },
-            {
-              type   : 10,
-              content: "\n### PENTING:\nJangan lupa baca <#1305489446392565781> yaa!\n",
-            },
-            {
-              type   : 14,
-              spacing: 2,
-            },
-            {
-              type   : 10,
-              content: "Pilih aja tutorial yang kamu butuhin lewat dropdown di bawah. Kita udah siapin banyak panduan biar makin gampang.",
-            },
-            {
-              type      : 1,
-              components: [
-                {
-                  flows: {
-                    tdIDJuXWrm: {
-                      actions: [
-                        {
-                          type: 0,
-                        },
-                      ],
-                    },
-                  },
-                  type     : 3,
-                  options  : [
-                    {
-                      label: "Tutorial Video",
-                      value: "fPgdGIBjhr",
-                    },
-                    {
-                      label: "Tutorial",
-                      value: "tdIDJuXWrm",
-                    },
-                    {
-                      label: "Tutorial penggunaan script di Emulator dan Android",
-                      value: "Q9JyplHCwe",
-                    },
-                  ],
-                  flowIds  : {},
-                  custom_id: "p_251888334018711556",
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    }
-
-    await message.reply(tutorial_message as any)
-    return
-  }
-  
   const afk_removed = remove_afk(message.author.id)
   if (afk_removed) {
     const member = message.guild?.members.cache.get(message.author.id)

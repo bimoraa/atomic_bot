@@ -48,18 +48,18 @@ export const command: Command = {
         .setDescription("Payment method")
         .setRequired(true)
         .addChoices(
-          { name: "Bank Jago", value: "Bank Jago" },
-          { name: "BCA", value: "BCA" },
-          { name: "BRI", value: "BRI" },
-          { name: "BNI", value: "BNI" },
-          { name: "Mandiri", value: "Mandiri" },
-          { name: "Dana", value: "Dana" },
-          { name: "OVO", value: "OVO" },
-          { name: "GoPay", value: "GoPay" },
-          { name: "ShopeePay", value: "ShopeePay" },
-          { name: "QRIS", value: "QRIS" },
-          { name: "PayPal", value: "PayPal" },
-          { name: "Other", value: "Other" },
+          { name: "Bank Jago",  value: "Bank Jago" },
+          { name: "BCA",        value: "BCA" },
+          { name: "BRI",        value: "BRI" },
+          { name: "BNI",        value: "BNI" },
+          { name: "Mandiri",    value: "Mandiri" },
+          { name: "Dana",       value: "Dana" },
+          { name: "OVO",        value: "OVO" },
+          { name: "GoPay",      value: "GoPay" },
+          { name: "ShopeePay",  value: "ShopeePay" },
+          { name: "QRIS",       value: "QRIS" },
+          { name: "PayPal",     value: "PayPal" },
+          { name: "Other",      value: "Other" },
         )
     )
     .addStringOption(opt =>
