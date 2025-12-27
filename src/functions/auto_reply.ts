@@ -5,13 +5,14 @@ import * as path            from "path"
 
 interface LanguageConfig {
   keywords    : string[]
-  response    : string[]
-  button_text : string
+  response   ?: string[]
+  button_text?: string
+  message    ?: Record<string, unknown>
 }
 
 interface AutoReplyConfig {
   languages   : Record<string, LanguageConfig>
-  navigate_to : string
+  navigate_to?: string
 }
 
 const channel_cooldowns = new Map<string, number>()
@@ -31,7 +32,7 @@ function load_auto_reply_configs(): AutoReplyConfig[] {
         const content     = fs.readFileSync(config_path, "utf-8")
         const config      = JSON.parse(content) as AutoReplyConfig
 
-        if (config.languages && config.navigate_to) {
+        if (config.languages) {
           for (const lang_key in config.languages) {
             const lang = config.languages[lang_key]
             if (lang.keywords?.length > 0) {
@@ -74,6 +75,14 @@ export async function handle_auto_reply(message: Message, client: Client): Promi
       const matched = lang.keywords.some(keyword => content_lower.includes(keyword))
       
       if (!matched) continue
+
+      if (lang.message) {
+        await message.reply(lang.message as any)
+        channel_cooldowns.set(channel_id, now)
+        return true
+      }
+
+      if (!config.navigate_to || !lang.response || !lang.button_text) continue
 
       const guide_message = component.build_message({
         components: [
