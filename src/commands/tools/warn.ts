@@ -77,17 +77,20 @@ export const command: Command = {
       const dm_message = component.build_message({
         components: [
           component.container({
-            accent_color: 0xFEE75C,
+            components: [
+              component.text(`### You have been warned in ${interaction.guild?.name}\n`),
+            ],
+          }),
+          component.container({
             components: [
               component.section({
-                content   : `### You have been warned in ${interaction.guild?.name}`,
-                thumbnail : server_icon,
+                content  : [
+                  "### Details",
+                  `- **Reason:** ${reason}`,
+                  `- **Warned by:** ${executor.id}`,
+                ].join("\n"),
+                thumbnail: "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
               }),
-              component.divider(),
-              component.text([
-                `- Reason: ${reason}`,
-                `- Warned by: <@${executor.id}>`,
-              ]),
             ],
           }),
         ],
