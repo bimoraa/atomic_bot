@@ -1,5 +1,6 @@
 import { Client, Message, GuildMember, PermissionFlagsBits } from "discord.js"
 import { component, format, time }                          from "../utils"
+import { log_error }                                        from "../utils/error_logger"
 
 interface spam_tracker {
   messages    : { content: string; timestamp: number }[]
@@ -50,53 +51,71 @@ function is_suspicious_content(content: string): string | null {
 }
 
 export function check_spam(message: Message, client: Client): boolean {
-  if (!message.guild || message.author.bot) return false
-  
-  const member = message.member
-  if (!member) return false
-  
-  if (member.permissions.has(PermissionFlagsBits.ManageMessages)) return false
-  
-  const user_id = message.author.id
-  const now     = Date.now()
-  
-  if (!user_message_tracker.has(user_id)) {
-    user_message_tracker.set(user_id, {
-      messages    : [],
-      warnings    : 0,
-      last_warning: 0,
-    })
+  try {
+    if (!message.guild || message.author.bot) return false
+    
+    const member = message.member
+    if (!member) return false
+    
+    if (member.permissions.has(PermissionFlagsBits.ManageMessages)) return false
+    
+    if (!message.content || message.content.trim().length === 0) return false
+    
+    const user_id = message.author.id
+    const now     = Date.now()
+    
+    if (!user_message_tracker.has(user_id)) {
+      user_message_tracker.set(user_id, {
+        messages    : [],
+        warnings    : 0,
+        last_warning: 0,
+      })
+    }
+    
+    const tracker = user_message_tracker.get(user_id)!
+    
+    tracker.messages = tracker.messages.filter(msg => now - msg.timestamp < SPAM_CONFIG.time_window)
+    tracker.messages.push({ content: message.content, timestamp: now })
+    
+    console.log(`[anti_spam] Checking message from ${message.author.tag}: "${message.content.slice(0, 50)}"`)
+    
+    const suspicious_pattern = is_suspicious_content(message.content)
+    if (suspicious_pattern) {
+      console.log(`[anti_spam] Suspicious pattern detected: ${suspicious_pattern}`)
+      handle_suspicious_message(message, client, suspicious_pattern, member)
+      return true
+    }
+    
+    const mention_count = message.mentions.users.size + message.mentions.roles.size
+    if (mention_count >= SPAM_CONFIG.mention_limit) {
+      console.log(`[anti_spam] Mention spam detected: ${mention_count} mentions`)
+      handle_mention_spam(message, client, mention_count, member)
+      return true
+    }
+    
+    const duplicate_count = tracker.messages.filter(msg => msg.content === message.content).length
+    if (duplicate_count >= SPAM_CONFIG.duplicate_limit) {
+      console.log(`[anti_spam] Duplicate spam detected: ${duplicate_count} duplicates`)
+      handle_duplicate_spam(message, client, duplicate_count, member, tracker)
+      return true
+    }
+    
+    if (tracker.messages.length >= SPAM_CONFIG.message_limit) {
+      console.log(`[anti_spam] Rapid spam detected: ${tracker.messages.length} messages`)
+      handle_rapid_spam(message, client, tracker.messages.length, member, tracker)
+      return true
+    }
+    
+    return false
+  } catch (error) {
+    console.error("[anti_spam] Error in check_spam:", error)
+    log_error(client, error as Error, "Anti-Spam Check", {
+      user   : message.author.tag,
+      channel: message.channel.id,
+      content: message.content?.slice(0, 100) || "No content",
+    }).catch(() => {})
+    return false
   }
-  
-  const tracker = user_message_tracker.get(user_id)!
-  
-  tracker.messages = tracker.messages.filter(msg => now - msg.timestamp < SPAM_CONFIG.time_window)
-  tracker.messages.push({ content: message.content, timestamp: now })
-  
-  const suspicious_pattern = is_suspicious_content(message.content)
-  if (suspicious_pattern) {
-    handle_suspicious_message(message, client, suspicious_pattern, member)
-    return true
-  }
-  
-  const mention_count = message.mentions.users.size + message.mentions.roles.size
-  if (mention_count >= SPAM_CONFIG.mention_limit) {
-    handle_mention_spam(message, client, mention_count, member)
-    return true
-  }
-  
-  const duplicate_count = tracker.messages.filter(msg => msg.content === message.content).length
-  if (duplicate_count >= SPAM_CONFIG.duplicate_limit) {
-    handle_duplicate_spam(message, client, duplicate_count, member, tracker)
-    return true
-  }
-  
-  if (tracker.messages.length >= SPAM_CONFIG.message_limit) {
-    handle_rapid_spam(message, client, tracker.messages.length, member, tracker)
-    return true
-  }
-  
-  return false
 }
 
 async function handle_suspicious_message(
@@ -136,6 +155,12 @@ async function handle_suspicious_message(
     await send_alert(client, alert)
   } catch (error) {
     console.error("[anti_spam] Error handling suspicious message:", error)
+    await log_error(client, error as Error, "Anti-Spam: Suspicious Message Handler", {
+      user   : member.user.tag,
+      channel: message.channel.id,
+      pattern: pattern,
+      content: message.content?.slice(0, 100) || "No content",
+    }).catch(() => {})
   }
 }
 
@@ -174,6 +199,11 @@ async function handle_mention_spam(
     await send_alert(client, alert)
   } catch (error) {
     console.error("[anti_spam] Error handling mention spam:", error)
+    await log_error(client, error as Error, "Anti-Spam: Mention Spam Handler", {
+      user         : member.user.tag,
+      channel      : message.channel.id,
+      mention_count: mention_count,
+    }).catch(() => {})
   }
 }
 
@@ -221,6 +251,12 @@ async function handle_duplicate_spam(
     }
   } catch (error) {
     console.error("[anti_spam] Error handling duplicate spam:", error)
+    await log_error(client, error as Error, "Anti-Spam: Duplicate Spam Handler", {
+      user           : member.user.tag,
+      channel        : message.channel.id,
+      duplicate_count: duplicate_count,
+      warnings       : tracker.warnings,
+    }).catch(() => {})
   }
 }
 
@@ -268,6 +304,12 @@ async function handle_rapid_spam(
     }
   } catch (error) {
     console.error("[anti_spam] Error handling rapid spam:", error)
+    await log_error(client, error as Error, "Anti-Spam: Rapid Spam Handler", {
+      user         : member.user.tag,
+      channel      : message.channel.id,
+      message_count: message_count,
+      warnings     : tracker.warnings,
+    }).catch(() => {})
   }
 }
 
