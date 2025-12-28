@@ -1,7 +1,7 @@
 import { Client, Collection, Interaction, ThreadChannel, GuildMember, ButtonInteraction } from "discord.js"
 import { Command }                                                     from "../types/command"
 import { can_use_command }                                             from "../functions/command_permissions"
-import { log_error }                                                   from "../utils/error_logger"
+import { log_error, handle_error_log_button }                          from "../utils/error_logger"
 import {
   handle_ticket_button,
   handle_ticket_modal,
@@ -170,6 +170,7 @@ export async function handle_interaction(
 
   if (interaction.isButton()) {
     try {
+      if (await handle_error_log_button(interaction, client)) return
       if (interaction.customId.startsWith("anti_spam_")) {
         await handle_anti_spam_button(interaction, client)
         return
