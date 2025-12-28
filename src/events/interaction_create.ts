@@ -79,6 +79,12 @@ export async function handle_interaction(
       if (await handle_ticket_select_menu(interaction)) return;
     } catch (err) {
       console.log("[select] Error:", err);
+      await log_error(client, err as Error, "StringSelectMenu", {
+        custom_id: interaction.customId,
+        user     : interaction.user.tag,
+        guild    : interaction.guild?.name || "DM",
+        channel  : interaction.channel?.id,
+      });
     }
   }
 
@@ -89,8 +95,10 @@ export async function handle_interaction(
     } catch (err) {
       console.log("[user_select] Error:", err);
       await log_error(client, err as Error, "UserSelectMenu", {
-        customId: interaction.customId,
-        user: interaction.user.tag,
+        custom_id: interaction.customId,
+        user     : interaction.user.tag,
+        guild    : interaction.guild?.name || "DM",
+        channel  : interaction.channel?.id,
       });
     }
   }
@@ -241,8 +249,10 @@ export async function handle_interaction(
     } catch (err) {
       console.log("[button] Error:", err)
       await log_error(client, err as Error, "Button", {
-        customId: interaction.customId,
-        user: interaction.user.tag,
+        custom_id: interaction.customId,
+        user     : interaction.user.tag,
+        guild    : interaction.guild?.name || "DM",
+        channel  : interaction.channel?.id,
       });
     }
   }
@@ -268,8 +278,10 @@ export async function handle_interaction(
     } catch (err) {
       console.log("[modal] Error:", err);
       await log_error(client, err as Error, "ModalSubmit", {
-        customId: interaction.customId,
-        user: interaction.user.tag,
+        custom_id: interaction.customId,
+        user     : interaction.user.tag,
+        guild    : interaction.guild?.name || "DM",
+        channel  : interaction.channel?.id,
       });
     }
   }

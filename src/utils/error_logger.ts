@@ -1,5 +1,5 @@
-import { Client }   from "discord.js"
-import { component } from "./index"
+import { Client }        from "discord.js"
+import { component, format } from "./index"
 
 const error_log_channel_id = "1452322637609963530"
 
@@ -14,19 +14,21 @@ export async function log_error(
     if (!channel?.isTextBased() || !("send" in channel)) return
 
     const error_details = [
-      `### Error in ${context}`,
-      `- Time: <t:${Math.floor(Date.now() / 1000)}:F>`,
-      `- Error: ${error.message}`,
+      `## Error in ${context}`,
+      `${format.bold("Time:")} <t:${Math.floor(Date.now() / 1000)}:F>`,
+      `${format.bold("Error:")} ${format.code_block(error.message)}`,
     ]
 
     if (error.stack) {
-      const stack_preview = error.stack.split('\n').slice(0, 5).join('\n')
-      error_details.push(`- Stack: \`\`\`\n${stack_preview}\n\`\`\``)
+      const stack_lines   = error.stack.split('\n')
+      const stack_preview = stack_lines.slice(0, 8).join('\n')
+      error_details.push(`${format.bold("Stack:")} ${format.code_block(stack_preview, 'javascript')}`)
     }
 
     if (additional_info) {
       Object.entries(additional_info).forEach(([key, value]) => {
-        error_details.push(`- ${key}: ${JSON.stringify(value)}`)
+        const formatted_value = typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+        error_details.push(`${format.bold(key + ":")} ${format.code(formatted_value)}`)
       })
     }
 
@@ -35,7 +37,10 @@ export async function log_error(
         component.container({
           accent_color: 0xED4245,
           components: [
-            component.text(error_details.join("\n")),
+            component.section({
+              content  : error_details,
+              thumbnail: "https://cdn.discordapp.com/emojis/1234567890.png",
+            }),
           ],
         }),
       ],

@@ -11,6 +11,7 @@ import * as tempvoice                                                    from ".
 import { register_audit_logs }                                           from "./functions/audit_log"
 import { get_afk, remove_afk, is_afk }                                   from "./functions/afk"
 import { db, component }                                                 from "./utils"
+import { log_error }                                                     from "./utils/error_logger"
 
 config()
 
@@ -157,6 +158,25 @@ client.on("messageCreate", async (message: Message) => {
   if (message.mentions.has(client.user!)) {
     await message.reply("hi niggaas")
   }
+})
+
+client.on("error", (error) => {
+  console.error("[Discord Client] Error:", error)
+  log_error(client, error, "Discord Client", {}).catch(() => {})
+})
+
+client.on("warn", (warning) => {
+  console.warn("[Discord Client] Warning:", warning)
+})
+
+process.on("unhandledRejection", (error: Error) => {
+  console.error("[Unhandled Rejection]:", error)
+  log_error(client, error, "Unhandled Rejection", {}).catch(() => {})
+})
+
+process.on("uncaughtException", (error: Error) => {
+  console.error("[Uncaught Exception]:", error)
+  log_error(client, error, "Uncaught Exception", {}).catch(() => {})
 })
 
 console.log(`[MODE] Running in ${is_dev ? "DEVELOPMENT" : "PRODUCTION"} mode`)

@@ -14,9 +14,9 @@ import {
   Sticker,
   Invite,
   ThreadChannel,
-}                      from "discord.js"
-import { logger, component } from "../utils"
-import { track_deleted_message } from "./snipe"
+}                                from "discord.js"
+import { logger, component, format } from "../utils"
+import { track_deleted_message }     from "./snipe"
 
 const log            = logger.create_logger("audit_log")
 const LOG_CHANNEL_ID = "1452086939866894420"
@@ -145,7 +145,25 @@ export function register_audit_logs(client: Client): void {
 
     track_deleted_message(message)
 
-    const avatar_url = message.author?.displayAvatarURL({ size: 512 }) || ""
+    const avatar_url   = message.author?.displayAvatarURL({ size: 512 }) || ""
+    const content_text = message.content?.trim() || ""
+    const has_content  = content_text.length > 0
+    const attachments  = message.attachments.size > 0 ? `${message.attachments.size} attachment(s)` : ""
+    const embeds       = message.embeds.length > 0 ? `${message.embeds.length} embed(s)` : ""
+    
+    const content_lines = []
+    if (has_content) {
+      content_lines.push(`- Content: ${content_text}`)
+    }
+    if (attachments) {
+      content_lines.push(`- Attachments: ${attachments}`)
+    }
+    if (embeds) {
+      content_lines.push(`- Embeds: ${embeds}`)
+    }
+    if (!has_content && !attachments && !embeds) {
+      content_lines.push(`- Content: ${format.italic("Message had no content (possibly a component message)")}` )
+    }
 
     const log_message = component.build_message({
       components: [
@@ -157,7 +175,7 @@ export function register_audit_logs(client: Client): void {
                 "### Message Deleted",
                 `- Author: <@${message.author?.id}>`,
                 `- Channel: <#${message.channel.id}>`,
-                `- Content: ${message.content || "(empty)"}`,
+                ...content_lines,
               ].join("\n"),
               thumbnail: avatar_url,
             }),
