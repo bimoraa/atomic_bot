@@ -39,7 +39,18 @@ async function send_alert(client: Client, alert_message: any): Promise<void> {
     if (!log_channel?.isTextBased() || !("send" in log_channel)) return
     await log_channel.send(alert_message)
   } catch (error) {
-    console.error("[anti_spam] Failed to send alert:", error)
+    const payload_preview = (() => {
+      try {
+        return JSON.stringify(alert_message).slice(0, 500)
+      } catch {
+        return "unserializable payload"
+      }
+    })()
+    console.error("[anti_spam] Error sending alert:", error)
+    await log_error(client, error as Error, "Anti-Spam: Send Alert", {
+      log_channel_id : LOG_CHANNEL_ID,
+      payload_preview: payload_preview,
+    }).catch(() => {})
   }
 }
 
@@ -147,6 +158,12 @@ async function handle_suspicious_message(
     const timeout_duration = 5 * 60 * 1000
     await member.timeout(timeout_duration, "Suspicious message (potential scam/spam)")
     
+    const content_block = format.code_block(message.content.slice(0, 500) || "(empty)")
+    const created_ts    = Math.floor(message.createdTimestamp / 1000)
+    const now_ts        = Math.floor(Date.now() / 1000)
+    const target_id     = member.id
+    const message_id    = message.id
+
     const alert = component.build_message({
       components: [
         component.container({
@@ -155,15 +172,36 @@ async function handle_suspicious_message(
             component.section({
               content: [
                 `## Suspicious Message Detected`,
-                `${format.bold("User:")} ${format.user_mention(member.id)} (${format.code(member.user.tag)})`,
+                `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
                 `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
-                `${format.bold("Pattern:")} ${format.code(pattern)}`,
-                `${format.bold("Content:")} ${format.code_block(message.content.slice(0, 500))}`,
+                `${format.bold("Pattern:")} ${pattern}`,
+                `${format.bold("Content:")}`,
+              ],
+            }),
+            component.section({
+              content: content_block,
+            }),
+            component.action_row(
+              component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
+            ),
+            component.divider(2),
+            component.section({
+              content: [
                 `${format.bold("Action:")} Message deleted, user timed out for 5 minutes`,
+                `${format.bold("Date:")} <t:${now_ts}:F>`,
                 `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+                `${format.bold("Message Created:")} <t:${created_ts}:F>`,
               ],
               thumbnail: member.user.displayAvatarURL({ size: 256 }),
             }),
+          ],
+        }),
+        component.container({
+          components: [
+            component.action_row(
+              component.secondary_button("Un-Timeout", `anti_spam_untimeout:${target_id}`),
+              component.danger_button("Ban Users", `anti_spam_ban:${target_id}`)
+            ),
           ],
         }),
       ],
@@ -193,6 +231,12 @@ async function handle_mention_spam(
     const timeout_duration = 10 * 60 * 1000
     await member.timeout(timeout_duration, "Mention spam")
     
+    const content_block = format.code_block(message.content.slice(0, 500) || "(empty)")
+    const created_ts    = Math.floor(message.createdTimestamp / 1000)
+    const now_ts        = Math.floor(Date.now() / 1000)
+    const target_id     = member.id
+    const message_id    = message.id
+
     const alert = component.build_message({
       components: [
         component.container({
@@ -201,13 +245,36 @@ async function handle_mention_spam(
             component.section({
               content: [
                 `## Mention Spam Detected`,
-                `${format.bold("User:")} ${format.user_mention(member.id)} (${format.code(member.user.tag)})`,
+                `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
                 `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
                 `${format.bold("Mentions:")} ${mention_count} mentions`,
+                `${format.bold("Content:")}`,
+              ],
+            }),
+            component.section({
+              content: content_block,
+            }),
+            component.action_row(
+              component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
+            ),
+            component.divider(2),
+            component.section({
+              content: [
                 `${format.bold("Action:")} Message deleted, user timed out for 10 minutes`,
+                `${format.bold("Date:")} <t:${now_ts}:F>`,
+                `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+                `${format.bold("Message Created:")} <t:${created_ts}:F>`,
               ],
               thumbnail: member.user.displayAvatarURL({ size: 256 }),
             }),
+          ],
+        }),
+        component.container({
+          components: [
+            component.action_row(
+              component.secondary_button("Un-Timeout", `anti_spam_untimeout:${target_id}`),
+              component.danger_button("Ban Users", `anti_spam_ban:${target_id}`)
+            ),
           ],
         }),
       ],
@@ -243,6 +310,12 @@ async function handle_duplicate_spam(
       const timeout_duration = Math.min(tracker.warnings * 5 * 60 * 1000, 60 * 60 * 1000)
       await member.timeout(timeout_duration, `Duplicate spam (warning ${tracker.warnings})`)
       
+      const content_block = format.code_block(message.content.slice(0, 500) || "(empty)")
+      const created_ts    = Math.floor(message.createdTimestamp / 1000)
+      const now_ts        = Math.floor(Date.now() / 1000)
+      const target_id     = member.id
+      const message_id    = message.id
+
       const alert = component.build_message({
         components: [
           component.container({
@@ -251,14 +324,37 @@ async function handle_duplicate_spam(
               component.section({
                 content: [
                   `## Duplicate Message Spam`,
-                  `${format.bold("User:")} ${format.user_mention(member.id)} (${format.code(member.user.tag)})`,
+                  `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
                   `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
                   `${format.bold("Duplicates:")} ${duplicate_count} identical messages`,
                   `${format.bold("Warnings:")} ${tracker.warnings}`,
+                  `${format.bold("Content:")}`,
+                ],
+              }),
+              component.section({
+                content: content_block,
+              }),
+              component.action_row(
+                component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
+              ),
+              component.divider(2),
+              component.section({
+                content: [
                   `${format.bold("Action:")} Timed out for ${Math.floor(timeout_duration / 60000)} minutes`,
+                  `${format.bold("Date:")} <t:${now_ts}:F>`,
+                  `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+                  `${format.bold("Message Created:")} <t:${created_ts}:F>`,
                 ],
                 thumbnail: member.user.displayAvatarURL({ size: 256 }),
               }),
+            ],
+          }),
+          component.container({
+            components: [
+              component.action_row(
+                component.secondary_button("Un-Timeout", `anti_spam_untimeout:${target_id}`),
+                component.danger_button("Ban Users", `anti_spam_ban:${target_id}`)
+              ),
             ],
           }),
         ],
@@ -296,6 +392,12 @@ async function handle_rapid_spam(
       const timeout_duration = Math.min(tracker.warnings * 3 * 60 * 1000, 30 * 60 * 1000)
       await member.timeout(timeout_duration, `Rapid messaging (warning ${tracker.warnings})`)
       
+      const content_block = format.code_block(message.content.slice(0, 500) || "(empty)")
+      const created_ts    = Math.floor(message.createdTimestamp / 1000)
+      const now_ts        = Math.floor(Date.now() / 1000)
+      const target_id     = member.id
+      const message_id    = message.id
+
       const alert = component.build_message({
         components: [
           component.container({
@@ -304,14 +406,37 @@ async function handle_rapid_spam(
               component.section({
                 content: [
                   `## Rapid Message Spam`,
-                  `${format.bold("User:")} ${format.user_mention(member.id)} (${format.code(member.user.tag)})`,
+                  `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
                   `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
                   `${format.bold("Messages:")} ${message_count} messages in ${SPAM_CONFIG.time_window / 1000}s`,
                   `${format.bold("Warnings:")} ${tracker.warnings}`,
+                  `${format.bold("Content:")}`,
+                ],
+              }),
+              component.section({
+                content: content_block,
+              }),
+              component.action_row(
+                component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
+              ),
+              component.divider(2),
+              component.section({
+                content: [
                   `${format.bold("Action:")} Timed out for ${Math.floor(timeout_duration / 60000)} minutes`,
+                  `${format.bold("Date:")} <t:${now_ts}:F>`,
+                  `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+                  `${format.bold("Message Created:")} <t:${created_ts}:F>`,
                 ],
                 thumbnail: member.user.displayAvatarURL({ size: 256 }),
               }),
+            ],
+          }),
+          component.container({
+            components: [
+              component.action_row(
+                component.secondary_button("Un-Timeout", `anti_spam_untimeout:${target_id}`),
+                component.danger_button("Ban Users", `anti_spam_ban:${target_id}`)
+              ),
             ],
           }),
         ],

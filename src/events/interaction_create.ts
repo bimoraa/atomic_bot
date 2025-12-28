@@ -1,4 +1,4 @@
-import { Client, Collection, Interaction, ThreadChannel, GuildMember } from "discord.js"
+import { Client, Collection, Interaction, ThreadChannel, GuildMember, ButtonInteraction } from "discord.js"
 import { Command }                                                     from "../types/command"
 import { can_use_command }                                             from "../functions/command_permissions"
 import { log_error }                                                   from "../utils/error_logger"
@@ -40,6 +40,71 @@ import * as payment_method_select from "../interactions/select_menus/payment_met
 import * as guide_select          from "../interactions/select_menus/guide_select";
 import * as version_select        from "../interactions/select_menus/version/select";
 import * as work_stats_select     from "../interactions/select_menus/work_stats/week_select";
+
+async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
+  try {
+    const parts       = interaction.customId.split(":")
+    const action      = parts[0]
+    const target_id   = parts[1]
+    const message_id  = parts[2]
+
+    if (!target_id) {
+      await interaction.reply({ content: "Target not found", ephemeral: true })
+      return
+    }
+
+    const guild = interaction.guild
+    if (!guild) {
+      await interaction.reply({ content: "Guild not found", ephemeral: true })
+      return
+    }
+
+    if (action === "anti_spam_untimeout") {
+      const member = await guild.members.fetch(target_id).catch(() => null)
+      if (!member) {
+        await interaction.reply({ content: "User not found in guild", ephemeral: true })
+        return
+      }
+      await member.timeout(null, "Anti-Spam untimeout")
+      await interaction.reply({ content: "User un-timed out", ephemeral: true })
+      return
+    }
+
+    if (action === "anti_spam_ban") {
+      const member = await guild.members.fetch(target_id).catch(() => null)
+      if (member) {
+        await member.ban({ reason: "Anti-Spam ban" })
+      } else {
+        await guild.bans.create(target_id, { reason: "Anti-Spam ban" }).catch(async () => {
+          await interaction.reply({ content: "Failed to ban user", ephemeral: true })
+        })
+      }
+      if (!interaction.replied) await interaction.reply({ content: "User banned", ephemeral: true })
+      return
+    }
+
+    if (action === "anti_spam_download") {
+      await interaction.reply({
+        content  : `Target: <@${target_id}>\nMessage ID: ${message_id || "N/A"}`,
+        ephemeral: true,
+      })
+      return
+    }
+
+    await interaction.reply({ content: "Unknown action", ephemeral: true })
+  } catch (err) {
+    console.log("[anti_spam_button] Error:", err)
+    await log_error(client, err as Error, "Anti-Spam Button", {
+      custom_id: interaction.customId,
+      user     : interaction.user.tag,
+      guild    : interaction.guild?.name || "DM",
+      channel  : interaction.channel?.id,
+    })
+    if (!interaction.replied) {
+      await interaction.reply({ content: "Error handling action", ephemeral: true }).catch(() => {})
+    }
+  }
+}
 
 export async function handle_interaction(
   interaction: Interaction,
@@ -105,6 +170,10 @@ export async function handle_interaction(
 
   if (interaction.isButton()) {
     try {
+      if (interaction.customId.startsWith("anti_spam_")) {
+        await handle_anti_spam_button(interaction, client)
+        return
+      }
       if (await handle_ticket_button(interaction)) return;
       if (interaction.customId === "review_submit") {
         await review_submit.handle_review_submit(interaction);
