@@ -115,7 +115,8 @@ client.on("messageCreate", async (message: Message) => {
         component.container({
           components: [
             component.section({
-              content: `Welcome back! You were AFK for <t:${Math.floor(afk_removed.timestamp / 1000)}:R>`,
+              content  : `Welcome back! You were AFK for <t:${Math.floor(afk_removed.timestamp / 1000)}:R>`,
+              thumbnail: message.author.displayAvatarURL({ extension: "png", size: 256 }),
             }),
           ],
         }),
@@ -135,7 +136,8 @@ client.on("messageCreate", async (message: Message) => {
             component.container({
               components: [
                 component.section({
-                  content: `<@${mentioned.id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`,
+                  content  : `<@${mentioned.id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`,
+                  thumbnail: mentioned.displayAvatarURL({ extension: "png", size: 256 }),
                 }),
               ],
             }),

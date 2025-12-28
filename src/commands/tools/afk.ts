@@ -40,6 +40,7 @@ export const command: Command = {
           components: [
             component.section({
               content   : `You are now AFK: **${reason}**`,
+              thumbnail : interaction.user.displayAvatarURL({ extension: "png", size: 256 }),
             }),
           ],
         }),

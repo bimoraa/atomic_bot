@@ -110,6 +110,10 @@ export function register_audit_logs(client: Client): void {
         const author_text   = message.author ? `<@${message.author.id}> (${message.author.tag})` : "Unknown"
         const executor_text = executor_id === "Unknown" ? "Unknown" : `<@${executor_id}> (${executor_tag})`
 
+        const executor_avatar = executor_id === "Unknown" 
+          ? "https://cdn.discordapp.com/embed/avatars/0.png"
+          : `https://cdn.discordapp.com/avatars/${executor_id}/${(await client.users.fetch(executor_id).catch(() => null))?.avatar || "0"}.png`
+
         const warning_message = component.build_message({
           components: [
             component.container({
@@ -126,6 +130,7 @@ export function register_audit_logs(client: Client): void {
                     `- Deleted: <t:${deleted_ts}:F>`,
                     `- Content: ${content_text}`,
                   ].join("\n"),
+                  thumbnail: executor_avatar,
                 }),
               ],
             }),
