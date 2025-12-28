@@ -20,16 +20,26 @@ const SPAM_CONFIG = {
 }
 
 const SUSPICIOUS_PATTERNS = [
-  /discord\.(?:gg|com\/invite)\/[a-zA-Z0-9]+/gi,
-  /discord\.com\/gift\/[a-zA-Z0-9]+/gi,
-  /disc(?:o|0)rd(?:app)?\.(?:gg|com)\/(?:gift|invite|nitro)\/[a-zA-Z0-9]+/gi,
-  /free\s*(?:discord\s*)?nitro/gi,
-  /claim\s*(?:your|free)\s*(?:nitro|discord)/gi,
-  /(?:https?:\/\/)?(?:www\.)?(?:steamcommunity|steampowered|steam-\w+)\.[a-z]+\/\S+/gi,
-  /@everyone.*(?:nitro|free|gift|giveaway)/gi,
-  /(?:airdrop|nft|crypto|bitcoin|eth|token).*(?:claim|free|win)/gi,
-  /https?:\/\/(?:www\.)?imgur\.com\/\S+/gi,
-]
+  // Fake Discord Nitro / Gift
+  /discord\.(?:gg|com)\/(?:gift|nitro)\/[a-zA-Z0-9]+/i,
+  /discord\.com\/gift\/[a-zA-Z0-9]+/i,
+
+  // Obfuscated discord domains
+  /disc(?:o|0)rd(?:app)?\.(?:gg|com)\/(?:gift|nitro|invite)\/[a-zA-Z0-9]+/i,
+
+  // Text-based scam
+  /\bfree\s+(?:discord\s+)?nitro\b/i,
+  /\bclaim\s+(?:your\s+)?(?:nitro|discord)\b/i,
+
+  // Steam phishing
+  /\b(?:steamcommunity|steampowered|steam-\w+)\.[a-z]+\/\S+/i,
+
+  // Mass mention scam
+  /@everyone.*\b(?:nitro|free|gift|giveaway)\b/i,
+
+  // Crypto / NFT scam
+  /\b(?:airdrop|nft|crypto|bitcoin|eth|token).*\b(?:claim|free|win)\b/i,
+];
 
 const LOG_CHANNEL_ID = "1452086939866894420"
 
