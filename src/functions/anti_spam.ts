@@ -21,12 +21,14 @@ const SPAM_CONFIG = {
 
 const SUSPICIOUS_PATTERNS = [
   /discord\.(?:gg|com\/invite)\/[a-zA-Z0-9]+/gi,
-  /free\s*nitro/gi,
+  /discord\.com\/gift\/[a-zA-Z0-9]+/gi,
+  /disc(?:o|0)rd(?:app)?\.(?:gg|com)\/(?:gift|invite|nitro)\/[a-zA-Z0-9]+/gi,
+  /free\s*(?:discord\s*)?nitro/gi,
   /claim\s*(?:your|free)\s*(?:nitro|discord)/gi,
   /(?:https?:\/\/)?(?:www\.)?(?:steamcommunity|steampowered|steam-\w+)\.[a-z]+\/\S+/gi,
-  /(?:https?:\/\/)?(?:www\.)?disc(?:o|0)rd(?:app)?\.(?:gg|com|gift)/gi,
   /@everyone.*(?:nitro|free|gift|giveaway)/gi,
   /(?:airdrop|nft|crypto|bitcoin|eth|token).*(?:claim|free|win)/gi,
+  /https?:\/\/(?:www\.)?imgur\.com\/\S+/gi,
 ]
 
 const LOG_CHANNEL_ID = "1452086939866894420"
@@ -42,6 +44,17 @@ async function send_alert(client: Client, alert_message: any): Promise<void> {
 }
 
 function is_suspicious_content(content: string): string | null {
+  const zero_width_chars = /[\u200B-\u200F\u2060-\u2064]/g
+  const zero_width_count = (content.match(zero_width_chars) || []).length
+  if (zero_width_count >= 10) return "zero_width_flood"
+
+  const url_regex  = /https?:\/\/\S+/gi
+  const url_matches = content.match(url_regex) || []
+  if (url_matches.length >= 4) return "multiple_links"
+
+  const pipe_flood = /\|{20,}/
+  if (pipe_flood.test(content)) return "pipe_flood"
+
   for (const pattern of SUSPICIOUS_PATTERNS) {
     if (pattern.test(content)) {
       return pattern.source
@@ -55,11 +68,15 @@ export function check_spam(message: Message, client: Client): boolean {
     if (!message.guild || message.author.bot) return false
     
     const member = message.member
-    if (!member) return false
+    if (!member) {
+      console.log("[anti_spam] Skip: no member found")
+      return false
+    }
     
-    if (member.permissions.has(PermissionFlagsBits.ManageMessages)) return false
-    
-    if (!message.content || message.content.trim().length === 0) return false
+    if (!message.content || message.content.trim().length === 0) {
+      console.log("[anti_spam] Skip: empty content")
+      return false
+    }
     
     const user_id = message.author.id
     const now     = Date.now()
