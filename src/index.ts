@@ -12,6 +12,7 @@ import { register_audit_logs }                                           from ".
 import { get_afk, remove_afk, is_afk }                                   from "./functions/afk"
 import { db, component }                                                 from "./utils"
 import { log_error }                                                     from "./utils/error_logger"
+import { check_spam }                                                    from "./functions/anti_spam"
 
 config()
 
@@ -101,6 +102,8 @@ client.on("interactionCreate", (interaction) => {
 
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
+
+  if (check_spam(message, client)) return
 
   const afk_removed = remove_afk(message.author.id)
   if (afk_removed) {
