@@ -1,18 +1,18 @@
-import { Events, GuildMember } from "discord.js"
-import { client } from ".."
-import { load_config } from "../configuration/loader"
-import { component, api, format } from "../utils"
+import { Events, GuildMember }      from "discord.js"
+import { client }                   from ".."
+import { load_config }              from "../configuration/loader"
+import { component, api, format }   from "../utils"
 
-interface WelcomerConfig {
+interface welcomer_config {
   welcome_channel_id: string
-  rules_channel_id: string
+  rules_channel_id  : string
 }
 
-const config = load_config<WelcomerConfig>("welcomer")
+const config = load_config<welcomer_config>("welcomer")
 
 client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
   try {
-    const channel = await member.guild.channels.fetch(config.welcome_channel_id)
+    const channel      = await member.guild.channels.fetch(config.welcome_channel_id)
     if (!channel || !channel.isTextBased()) return
 
     const user_avatar = member.user.displayAvatarURL({ extension: "png", size: 256 })
@@ -23,7 +23,7 @@ client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
         component.container({
           components: [
             component.section({
-              content: [
+              content  : [
                 `## Welcome`,
                 `<@${member.user.id}>, you've just joined **${member.guild.name}**.`,
                 `We're glad to have you here.`,
@@ -32,7 +32,7 @@ client.on(Events.GuildMemberAdd, async (member: GuildMember) => {
             }),
             component.divider(),
             component.section({
-              content: [
+              content  : [
                 `## Start Here`,
                 `Before exploring, please read <#${config.rules_channel_id}> to understand how everything works.`,
               ],

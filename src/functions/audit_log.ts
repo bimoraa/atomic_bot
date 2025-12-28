@@ -20,6 +20,7 @@ import { track_deleted_message } from "./snipe"
 
 const log            = logger.create_logger("audit_log")
 const LOG_CHANNEL_ID = "1452086939866894420"
+const OWNER_ID       = "1118453649727823974"
 
 const COLOR = {
   CREATE : 0x57F287,
@@ -75,7 +76,67 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("messageDelete", async (message) => {
-    if (!message.guild || message.author?.bot) return
+    if (!message.guild) return
+
+    const is_log_channel = message.channel.id === LOG_CHANNEL_ID
+
+    if (is_log_channel) {
+      let executor_id  = "Unknown"
+      let executor_tag = "Unknown"
+
+      try {
+        const audit_logs = await message.guild.fetchAuditLogs({
+          type : AuditLogEvent.MessageDelete,
+          limit: 5,
+        })
+
+        const entry = audit_logs.entries.find((audit) => {
+          const audit_channel = (audit.extra as any)?.channel?.id
+          const recent        = Date.now() - audit.createdTimestamp < 10000
+          return audit_channel === LOG_CHANNEL_ID && recent
+        })
+
+        if (entry?.executor) {
+          executor_id  = entry.executor.id
+          executor_tag = entry.executor.tag || "Unknown"
+        }
+      } catch {}
+
+      try {
+        const owner_user    = await client.users.fetch(OWNER_ID)
+        const content_text  = message.content?.trim() || "(empty)"
+        const created_ts    = message.createdTimestamp ? Math.floor(message.createdTimestamp / 1000) : Math.floor(Date.now() / 1000)
+        const deleted_ts    = Math.floor(Date.now() / 1000)
+        const author_text   = message.author ? `<@${message.author.id}> (${message.author.tag})` : "Unknown"
+        const executor_text = executor_id === "Unknown" ? "Unknown" : `<@${executor_id}> (${executor_tag})`
+
+        const warning_message = component.build_message({
+          components: [
+            component.container({
+              accent_color: COLOR.DELETE,
+              components: [
+                component.section({
+                  content: [
+                    "## Audit Log Message Deleted",
+                    `- Channel: <#${LOG_CHANNEL_ID}>`,
+                    `- Executor: ${executor_text}`,
+                    `- Original Author: ${author_text}`,
+                    `- Message ID: ${message.id}`,
+                    `- Created: <t:${created_ts}:F>`,
+                    `- Deleted: <t:${deleted_ts}:F>`,
+                    `- Content: ${content_text}`,
+                  ].join("\n"),
+                }),
+              ],
+            }),
+          ],
+        })
+
+        await owner_user.send(warning_message)
+      } catch {}
+    }
+
+    if (message.author?.bot) return
 
     track_deleted_message(message)
 
