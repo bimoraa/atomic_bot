@@ -27,7 +27,8 @@ export const command: Command = {
           component.container({
             components: [
               component.section({
-                content: "Database is not connected. This feature requires database connection.",
+                content  : "Database is not connected. This feature requires database connection.",
+                thumbnail: interaction.user.displayAvatarURL({ extension: "png", size: 256 }),
               }),
             ],
           }),
@@ -53,7 +54,8 @@ export const command: Command = {
           component.container({
             components: [
               component.section({
-                content: "No ghost pings found where you were mentioned.",
+                content  : "No ghost pings found where you were mentioned.",
+                thumbnail: interaction.user.displayAvatarURL({ extension: "png", size: 256 }),
               }),
             ],
           }),
@@ -88,12 +90,13 @@ export const command: Command = {
         component.container({
           components: [
             component.section({
-              content: [
+              content  : [
                 `## Your Ghost Pings`,
                 format.italic(showing_text),
                 "",
                 ghost_ping_entries.join("\n\n" + format.subtext("─".repeat(40)) + "\n\n"),
               ],
+              thumbnail: interaction.user.displayAvatarURL({ extension: "png", size: 256 }),
             }),
           ],
         }),
