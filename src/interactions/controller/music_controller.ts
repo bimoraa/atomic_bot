@@ -1,7 +1,6 @@
 import { Client, GuildMember, VoiceChannel, TextChannel, Guild } from "discord.js"
 import { Player, Track, GuildQueue, QueueRepeatMode, QueryType } from "discord-player"
 import { AttachmentExtractor, SoundCloudExtractor, SpotifyExtractor, VimeoExtractor, ReverbnationExtractor, AppleMusicExtractor } from "@discord-player/extractor"
-import { YoutubeiExtractor }                                   from "discord-player-youtubei"
 import { component }                                           from "../../utils"
 import { log_error }                                           from "../../utils/error_logger"
 
@@ -54,12 +53,8 @@ export async function get_player(client: Client): Promise<Player> {
   }
   
   if (!extractors_loaded) {
-    await player.extractors.register(YoutubeiExtractor, {
-      authentication  : process.env.YOUTUBE_COOKIES || undefined,
-      streamOptions   : {
-        useClient     : 'WEB',
-      },
-    })
+    const { YouTubeExtractor } = await import("@discord-player/extractor")
+    await player.extractors.register(YouTubeExtractor, {})
     await player.extractors.register(SoundCloudExtractor, {})
     await player.extractors.register(SpotifyExtractor, {})
     await player.extractors.register(AppleMusicExtractor, {})
@@ -67,7 +62,7 @@ export async function get_player(client: Client): Promise<Player> {
     await player.extractors.register(VimeoExtractor, {})
     await player.extractors.register(ReverbnationExtractor, {})
     extractors_loaded = true
-    console.log("[PLAYER] Extractors registered with WEB client")
+    console.log("[PLAYER] Extractors registered with YouTube extractor")
   }
   
   return player
