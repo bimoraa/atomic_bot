@@ -166,29 +166,24 @@ async function handle_suspicious_message(
         component.container({
           accent_color: 0xED4245,
           components: [
-            component.section({
-              content: [
-                `## Suspicious Message Detected`,
-                `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
-                `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
-                `${format.bold("Pattern:")} ${pattern}`,
-                `${format.bold("Content:")}`,
-              ],
-            }),
+            component.text([
+              `## Suspicious Message Detected`,
+              `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
+              `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
+              `${format.bold("Pattern:")} ${pattern}`,
+              `${format.bold("Content:")}`,
+            ]),
             component.text(content_block),
             component.action_row(
               component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
             ),
             component.divider(2),
-            component.section({
-              content: [
-                `${format.bold("Action:")} Message deleted, user timed out for 5 minutes`,
-                `${format.bold("Date:")} <t:${now_ts}:F>`,
-                `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
-                `${format.bold("Message Created:")} <t:${created_ts}:F>`,
-              ],
-              thumbnail: member.user.displayAvatarURL({ size: 256 }),
-            }),
+            component.text([
+              `${format.bold("Action:")} Message deleted, user timed out for 5 minutes`,
+              `${format.bold("Date:")} <t:${now_ts}:F>`,
+              `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+              `${format.bold("Message Created:")} <t:${created_ts}:F>`,
+            ]),
           ],
         }),
         component.container({
@@ -237,29 +232,24 @@ async function handle_mention_spam(
         component.container({
           accent_color: 0xFEE75C,
           components: [
-            component.section({
-              content: [
-                `## Mention Spam Detected`,
-                `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
-                `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
-                `${format.bold("Mentions:")} ${mention_count} mentions`,
-                `${format.bold("Content:")}`,
-              ],
-            }),
+            component.text([
+              `## Mention Spam Detected`,
+              `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
+              `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
+              `${format.bold("Mentions:")} ${mention_count} mentions`,
+              `${format.bold("Content:")}`,
+            ]),
             component.text(content_block),
             component.action_row(
               component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
             ),
             component.divider(2),
-            component.section({
-              content: [
-                `${format.bold("Action:")} Message deleted, user timed out for 10 minutes`,
-                `${format.bold("Date:")} <t:${now_ts}:F>`,
-                `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
-                `${format.bold("Message Created:")} <t:${created_ts}:F>`,
-              ],
-              thumbnail: member.user.displayAvatarURL({ size: 256 }),
-            }),
+            component.text([
+              `${format.bold("Action:")} Message deleted, user timed out for 10 minutes`,
+              `${format.bold("Date:")} <t:${now_ts}:F>`,
+              `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+              `${format.bold("Message Created:")} <t:${created_ts}:F>`,
+            ]),
           ],
         }),
         component.container({
@@ -314,30 +304,25 @@ async function handle_duplicate_spam(
           component.container({
             accent_color: 0xFEE75C,
             components: [
-              component.section({
-                content: [
-                  `## Duplicate Message Spam`,
-                  `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
-                  `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
-                  `${format.bold("Duplicates:")} ${duplicate_count} identical messages`,
-                  `${format.bold("Warnings:")} ${tracker.warnings}`,
-                  `${format.bold("Content:")}`,
-                ],
-              }),
+              component.text([
+                `## Duplicate Message Spam`,
+                `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
+                `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
+                `${format.bold("Duplicates:")} ${duplicate_count} identical messages`,
+                `${format.bold("Warnings:")} ${tracker.warnings}`,
+                `${format.bold("Content:")}`,
+              ]),
               component.text(content_block),
               component.action_row(
                 component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
               ),
               component.divider(2),
-              component.section({
-                content: [
-                  `${format.bold("Action:")} Timed out for ${Math.floor(timeout_duration / 60000)} minutes`,
-                  `${format.bold("Date:")} <t:${now_ts}:F>`,
-                  `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
-                  `${format.bold("Message Created:")} <t:${created_ts}:F>`,
-                ],
-                thumbnail: member.user.displayAvatarURL({ size: 256 }),
-              }),
+              component.text([
+                `${format.bold("Action:")} Timed out for ${Math.floor(timeout_duration / 60000)} minutes`,
+                `${format.bold("Date:")} <t:${now_ts}:F>`,
+                `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+                `${format.bold("Message Created:")} <t:${created_ts}:F>`,
+              ]),
             ],
           }),
           component.container({
@@ -394,30 +379,25 @@ async function handle_rapid_spam(
           component.container({
             accent_color: 0xFEE75C,
             components: [
-              component.section({
-                content: [
-                  `## Rapid Message Spam`,
-                  `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
-                  `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
-                  `${format.bold("Messages:")} ${message_count} messages in ${SPAM_CONFIG.time_window / 1000}s`,
-                  `${format.bold("Warnings:")} ${tracker.warnings}`,
-                  `${format.bold("Content:")}`,
-                ],
-              }),
+              component.text([
+                `## Rapid Message Spam`,
+                `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
+                `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
+                `${format.bold("Messages:")} ${message_count} messages in ${SPAM_CONFIG.time_window / 1000}s`,
+                `${format.bold("Warnings:")} ${tracker.warnings}`,
+                `${format.bold("Content:")}`,
+              ]),
               component.text(content_block),
               component.action_row(
                 component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
               ),
               component.divider(2),
-              component.section({
-                content: [
-                  `${format.bold("Action:")} Timed out for ${Math.floor(timeout_duration / 60000)} minutes`,
-                  `${format.bold("Date:")} <t:${now_ts}:F>`,
-                  `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
-                  `${format.bold("Message Created:")} <t:${created_ts}:F>`,
-                ],
-                thumbnail: member.user.displayAvatarURL({ size: 256 }),
-              }),
+              component.text([
+                `${format.bold("Action:")} Timed out for ${Math.floor(timeout_duration / 60000)} minutes`,
+                `${format.bold("Date:")} <t:${now_ts}:F>`,
+                `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+                `${format.bold("Message Created:")} <t:${created_ts}:F>`,
+              ]),
             ],
           }),
           component.container({
