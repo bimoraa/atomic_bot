@@ -131,6 +131,10 @@ export async function play_track(options: play_track_options) {
       await queue.node.play()
     }
 
+    const position_text = queue.tracks.size === 0 
+      ? "Now playing" 
+      : `Position in queue: ${queue.tracks.size + 1}`
+
     const message = component.build_message({
       components: [
         component.container({
@@ -138,13 +142,27 @@ export async function play_track(options: play_track_options) {
           components  : [
             component.section({
               content: [
-                "## Track Added",
+                `## ${queue.tracks.size === 0 ? "Now Playing" : "Track Added to Queue"}`,
                 `**${track.title}**`,
-                `- Duration: ${track.duration}`,
-                `- Requested by: <@${member.id}>`,
-                `- Position in queue: ${queue.tracks.size + 1}`,
-              ],
+                `by ${track.author}`,
+                "",
+                `Duration: ${track.duration}`,
+                `Requested by: <@${member.id}>`,
+                queue.tracks.size > 0 ? position_text : "",
+              ].filter(Boolean),
               thumbnail: track.thumbnail || undefined,
+            }),
+          ],
+        }),
+        component.container({
+          components: [
+            component.section({
+              content: [
+                "### Status",
+                `Queue: ${queue.tracks.size + 1} track(s)`,
+                `Volume: ${queue.node.volume || 50}%`,
+                `Loop: ${queue.repeatMode === 0 ? "Off" : queue.repeatMode === 1 ? "Track" : "Queue"}`,
+              ],
             }),
           ],
         }),
