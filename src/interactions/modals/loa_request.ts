@@ -3,18 +3,19 @@ import { component, time, db }    from "../../utils"
 import { log_error }              from "../../utils/error_logger"
 
 interface loa_data {
-  _id?        : any
-  message_id  : string
-  user_id     : string
-  user_tag    : string
-  start_date  : number
-  end_date    : number
-  type        : string
-  reason      : string
-  status      : "pending" | "approved" | "rejected"
-  created_at  : number
-  guild_id?   : string
-  channel_id? : string
+  _id?              : any
+  message_id        : string
+  user_id           : string
+  user_tag          : string
+  start_date        : number
+  end_date          : number
+  type              : string
+  reason            : string
+  status            : "pending" | "approved" | "rejected"
+  original_nickname?: string
+  created_at        : number
+  guild_id?         : string
+  channel_id?       : string
 }
 
 export async function handle_loa_request_modal(interaction: ModalSubmitInteraction): Promise<boolean> {

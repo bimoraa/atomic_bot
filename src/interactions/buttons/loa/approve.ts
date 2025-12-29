@@ -10,20 +10,21 @@ const loa_manager_roles = [
 ]
 
 interface loa_data {
-  _id?         : any
-  message_id   : string
-  user_id      : string
-  user_tag     : string
-  start_date   : number
-  end_date     : number
-  type         : string
-  reason       : string
-  status       : "pending" | "approved" | "rejected"
-  approved_by? : string
-  rejected_by? : string
-  created_at   : number
-  guild_id?    : string
-  channel_id?  : string
+  _id?              : any
+  message_id        : string
+  user_id           : string
+  user_tag          : string
+  start_date        : number
+  end_date          : number
+  type              : string
+  reason            : string
+  status            : "pending" | "approved" | "rejected"
+  approved_by?      : string
+  rejected_by?      : string
+  original_nickname?: string
+  created_at        : number
+  guild_id?         : string
+  channel_id?       : string
 }
 
 export async function handle_loa_approve(interaction: ButtonInteraction): Promise<void> {
@@ -73,12 +74,27 @@ export async function handle_loa_approve(interaction: ButtonInteraction): Promis
       "loa_requests",
       { message_id: interaction.message.id },
       {
-        $set: {
-          status     : "approved",
-          approved_by: interaction.user.id,
-        },
+        status     : "approved",
+        approved_by: interaction.user.id,
       }
     )
+
+    try {
+      const guild = interaction.guild
+      const member = await guild.members.fetch(loa.user_id)
+      const original_nickname = member.nickname || member.user.username
+
+      await db.update_one(
+        "loa_requests",
+        { message_id: interaction.message.id },
+        { original_nickname }
+      )
+
+      await member.roles.add("1274580813912211477")
+      await member.setNickname(`[LOA] - ${original_nickname}`)
+    } catch (role_err) {
+      console.error("[LOA] Failed to set role/nickname:", role_err)
+    }
 
     const updated_message = component.build_message({
       components: [

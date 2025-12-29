@@ -14,6 +14,7 @@ import { db, component }                                                 from ".
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./functions/anti_spam"
 import { load_reminders_from_db }                                        from "./commands/tools/reminder"
+import { start_loa_checker }                                             from "./functions/loa_checker"
 import { start_webhook_server }                                          from "./server"
 
 config()
@@ -82,6 +83,7 @@ client.once("ready", async () => {
     await load_close_requests()
     await load_all_tickets()
     await load_reminders_from_db(client)
+    start_loa_checker(client)
   }
 
   update_presence()

@@ -10,20 +10,21 @@ const loa_manager_roles = [
 ]
 
 interface loa_data {
-  _id?         : any
-  message_id   : string
-  user_id      : string
-  user_tag     : string
-  start_date   : number
-  end_date     : number
-  type         : string
-  reason       : string
-  status       : "pending" | "approved" | "rejected"
-  approved_by? : string
-  rejected_by? : string
-  created_at   : number
-  guild_id?    : string
-  channel_id?  : string
+  _id?              : any
+  message_id        : string
+  user_id           : string
+  user_tag          : string
+  start_date        : number
+  end_date          : number
+  type              : string
+  reason            : string
+  status            : "pending" | "approved" | "rejected"
+  approved_by?      : string
+  rejected_by?      : string
+  original_nickname?: string
+  created_at        : number
+  guild_id?         : string
+  channel_id?       : string
 }
 
 export async function handle_loa_reject(interaction: ButtonInteraction): Promise<void> {
@@ -73,10 +74,8 @@ export async function handle_loa_reject(interaction: ButtonInteraction): Promise
       "loa_requests",
       { message_id: interaction.message.id },
       {
-        $set: {
-          status     : "rejected",
-          rejected_by: interaction.user.id,
-        },
+        status     : "rejected",
+        rejected_by: interaction.user.id,
       }
     )
 
