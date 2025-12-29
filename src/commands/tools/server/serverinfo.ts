@@ -109,8 +109,7 @@ export const command: Command = {
     })
 
     await interaction.reply({
-      ...server_message,
-      ephemeral: true,
+      ...server_message
     })
   },
 }
