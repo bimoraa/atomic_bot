@@ -1,6 +1,9 @@
 import { ButtonInteraction } from "discord.js"
-import { db, component, time } from "../../../utils"
-import { log_error }           from "../../../utils/error_logger"
+import { db, component, time, api } from "../../../utils"
+import { log_error }                from "../../../utils/error_logger"
+
+const is_dev        = process.env.NODE_ENV === "development"
+const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN
 
 const loa_manager_roles = [
   "1316021423206039596",
@@ -18,7 +21,7 @@ interface loa_data {
   end_date          : number
   type              : string
   reason            : string
-  status            : "pending" | "approved" | "rejected"
+  status            : "pending" | "approved" | "rejected" | "ended"
   approved_by?      : string
   rejected_by?      : string
   original_nickname?: string
@@ -27,7 +30,7 @@ interface loa_data {
   channel_id?       : string
 }
 
-export async function handle_loa_reject(interaction: ButtonInteraction): Promise<void> {
+export async function handle_loa_end(interaction: ButtonInteraction): Promise<void> {
   if (!interaction.guild || !interaction.member) {
     await interaction.reply({
       content  : "This can only be used in a server",
@@ -43,7 +46,7 @@ export async function handle_loa_reject(interaction: ButtonInteraction): Promise
 
   if (!has_permission) {
     await interaction.reply({
-      content  : "You don't have permission to reject LOA requests",
+      content  : "You don't have permission to end LOA requests",
       ephemeral: true,
     })
     return
@@ -62,29 +65,59 @@ export async function handle_loa_reject(interaction: ButtonInteraction): Promise
       return
     }
 
-    if (loa.status !== "pending") {
+    if (loa.status !== "approved") {
       await interaction.reply({
-        content  : `This request has already been ${loa.status}`,
+        content  : `This LOA is ${loa.status}, cannot end`,
         ephemeral: true,
       })
       return
     }
 
-    await db.update_one(
-      "loa_requests",
-      { message_id: interaction.message.id },
-      {
-        status     : "rejected",
-        rejected_by: interaction.user.id,
+    const member = await interaction.guild.members.fetch(loa.user_id).catch(() => null)
+    if (member) {
+      await member.roles.remove("1274580813912211477").catch(() => {})
+      
+      if (loa.original_nickname) {
+        await member.setNickname(loa.original_nickname).catch(() => {})
       }
-    )
+    }
+
+    if (discord_token) {
+      const dm_message = component.build_message({
+        components: [
+          component.container({
+            accent_color: component.from_hex("57F287"),
+            components  : [
+              component.text("## Leave of Absence Ended"),
+            ],
+          }),
+          component.container({
+            components: [
+              component.text([
+                "Your leave of absence has been ended by staff.",
+                `- Type: ${loa.type}`,
+                `- Duration: ${time.full_date_time(loa.start_date)} to ${time.full_date_time(loa.end_date)}`,
+              ]),
+              component.divider(2),
+              component.text(`- Ended by: <@${interaction.user.id}>`),
+              component.divider(2),
+              component.text("Your role and nickname have been restored."),
+            ],
+          }),
+        ],
+      })
+
+      await api.send_dm(loa.user_id, discord_token, dm_message).catch(() => {})
+    }
+
+    await db.update_one("loa_requests", { message_id: interaction.message.id }, { status: "ended" })
 
     const updated_message = component.build_message({
       components: [
         component.container({
-          accent_color: component.from_hex("ED4245"),
+          accent_color: component.from_hex("95A5A6"),
           components  : [
-            component.text("## Leave of Absence - Rejected"),
+            component.text("## Leave of Absence - Ended"),
           ],
         }),
         component.container({
@@ -100,7 +133,8 @@ export async function handle_loa_reject(interaction: ButtonInteraction): Promise
               `- Reason: ${loa.reason}`,
             ]),
             component.divider(2),
-            component.text(`- Rejected by: <@${interaction.user.id}>`),
+            component.text(`- Approved by: <@${loa.approved_by}>`),
+            component.text(`- Ended by: <@${interaction.user.id}>`),
           ],
         }),
         component.container({
@@ -115,14 +149,14 @@ export async function handle_loa_reject(interaction: ButtonInteraction): Promise
 
     await interaction.update(updated_message)
   } catch (err) {
-    await log_error(interaction.client, err as Error, "LOA Reject", {
+    await log_error(interaction.client, err as Error, "LOA End", {
       user      : interaction.user.tag,
       user_id   : interaction.user.id,
       message_id: interaction.message.id,
     }).catch(() => {})
 
     await interaction.reply({
-      content  : "Failed to reject LOA request",
+      content  : "Failed to end LOA request",
       ephemeral: true,
     }).catch(() => {})
   }

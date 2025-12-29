@@ -41,6 +41,7 @@ import * as reminder_cancel              from "../interactions/buttons/reminder/
 import * as loa_request                  from "../interactions/buttons/loa/request"
 import * as loa_approve                  from "../interactions/buttons/loa/approve"
 import * as loa_reject                   from "../interactions/buttons/loa/reject"
+import * as loa_end                      from "../interactions/buttons/loa/end"
 
 import * as payment_method_select        from "../interactions/select_menus/payment_method";
 import * as guide_select                 from "../interactions/select_menus/guide_select";
@@ -351,6 +352,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "loa_reject") {
         await loa_reject.handle_loa_reject(interaction)
+        return
+      }
+      if (interaction.customId === "loa_end") {
+        await loa_end.handle_loa_end(interaction)
         return
       }
     } catch (err) {

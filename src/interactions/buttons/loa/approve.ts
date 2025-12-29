@@ -120,6 +120,14 @@ export async function handle_loa_approve(interaction: ButtonInteraction): Promis
             component.text(`- Approved by: <@${interaction.user.id}>`),
           ],
         }),
+        component.container({
+          components: [
+            component.action_row(
+              component.secondary_button("Request LOA", "loa_request"),
+              component.danger_button("End LOA", "loa_end")
+            ),
+          ],
+        }),
       ],
     })
 
