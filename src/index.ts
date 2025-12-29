@@ -13,6 +13,7 @@ import { get_afk, remove_afk, is_afk }                                   from ".
 import { db, component }                                                 from "./utils"
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./functions/anti_spam"
+import { load_reminders_from_db }                                        from "./commands/tools/reminder"
 
 config()
 
@@ -77,6 +78,7 @@ client.once("ready", async () => {
     console.log("Connected to MongoDB")
     await load_close_requests()
     await load_all_tickets()
+    await load_reminders_from_db(client)
   }
 
   update_presence()

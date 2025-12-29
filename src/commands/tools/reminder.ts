@@ -1,12 +1,96 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
+import { ChatInputCommandInteraction, SlashCommandBuilder, Client } from "discord.js"
 import { Command }                                           from "../../types/command"
-import { api, component, format, time }                      from "../../utils"
+import { api, component, format, time, db }                  from "../../utils"
 import { log_error }                                         from "../../utils/error_logger"
 
 const is_dev        = process.env.NODE_ENV === "development"
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN
-const reminder_tasks = new Map<string, ReturnType<typeof setTimeout>>()
-const max_minutes    = 10080
+const max_minutes   = 10080
+
+interface reminder_data {
+  _id?        : any
+  user_id     : string
+  note        : string
+  remind_at   : number
+  created_at  : number
+  guild_id?   : string
+}
+
+export const active_reminders = new Map<string, ReturnType<typeof setTimeout>>()
+
+export async function load_reminders_from_db(client: Client): Promise<void> {
+  try {
+    const reminders = await db.find_many<reminder_data>("reminders", {})
+    const now       = Math.floor(Date.now() / 1000)
+
+    for (const reminder of reminders) {
+      if (reminder.remind_at <= now) {
+        await db.delete_one("reminders", { _id: reminder._id })
+        continue
+      }
+
+      schedule_reminder(client, reminder)
+    }
+
+    console.log(`[Reminder] Loaded ${active_reminders.size} active reminders from database`)
+  } catch (err) {
+    console.error("[Reminder] Failed to load reminders:", err)
+  }
+}
+
+function schedule_reminder(client: Client, reminder: reminder_data): void {
+  const now       = Date.now()
+  const delay_ms  = (reminder.remind_at * 1000) - now
+  const key       = `${reminder.user_id}:${reminder.remind_at}`
+
+  if (delay_ms <= 0) {
+    db.delete_one("reminders", { _id: reminder._id }).catch(() => {})
+    return
+  }
+
+  const timeout = setTimeout(async () => {
+    try {
+      if (!discord_token) return
+
+      const dm_payload = component.build_message({
+        components: [
+          component.container({
+            accent_color: 0x5865F2,
+            components: [
+              component.text("## Reminder Notification"),
+              component.divider(2),
+              component.text([
+                `${format.bold("Message:")}`,
+                `${reminder.note}`,
+              ]),
+              component.divider(2),
+              component.text([
+                `${format.bold("Originally Scheduled:")} ${time.full_date_time(reminder.remind_at)}`,
+                `${format.bold("Time Now:")} <t:${Math.floor(Date.now() / 1000)}:F>`,
+              ]),
+            ],
+          }),
+        ],
+      })
+
+      const result = await api.send_dm(reminder.user_id, discord_token, dm_payload)
+      if ((result as any)?.error) {
+        throw new Error("Failed to send reminder DM")
+      }
+    } catch (err) {
+      await log_error(client, err as Error, "Reminder DM", {
+        user_id  : reminder.user_id,
+        remind_at: reminder.remind_at,
+        note     : reminder.note,
+      }).catch(() => {})
+    } finally {
+      active_reminders.delete(key)
+      await db.delete_one("reminders", { _id: reminder._id }).catch(() => {})
+    }
+  }, delay_ms)
+
+  active_reminders.set(key, timeout)
+}
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -40,65 +124,59 @@ export const command: Command = {
     const minutes   = Math.max(1, Math.min(minutes_option, max_minutes))
     const note      = note_option.slice(0, 500)
     const remind_at = Math.floor((Date.now() + minutes * 60000) / 1000)
-    const key       = `${interaction.user.id}:${remind_at}`
+    const now       = Math.floor(Date.now() / 1000)
 
-    const confirmation = component.build_message({
-      components: [
-        component.container({
-          accent_color: 0x57F287,
-          components: [
-            component.text("### Reminder scheduled"),
-            component.divider(),
-            component.text([
-              `${format.bold("Note:")} ${note}`,
-              `${format.bold("Will DM at:")} ${time.full_date_time(remind_at)} (${time.relative_time(remind_at)})`,
-            ]),
-          ],
-        }),
-      ],
-    })
+    const reminder: reminder_data = {
+      user_id   : interaction.user.id,
+      note      : note,
+      remind_at : remind_at,
+      created_at: now,
+      guild_id  : interaction.guild?.id,
+    }
 
-    await interaction.reply({
-      ...confirmation,
-      flags: (confirmation.flags ?? 0) | 64,
-    })
+    try {
+      await db.insert_one("reminders", reminder)
+      schedule_reminder(interaction.client, reminder)
 
-    const timeout = setTimeout(async () => {
-      try {
-        const dm_payload = component.build_message({
-          components: [
-            component.container({
-              accent_color: 0x5865F2,
-              components: [
-                component.text([
-                  `## Reminder`,
-                  `${format.bold("Note:")} ${note}`,
-                  `${format.bold("Requested by:")} ${format.user_mention(interaction.user.id)}`,
-                  `${format.bold("Scheduled:")} ${time.full_date_time(remind_at)}`,
-                  `${format.bold("Relative:")} ${time.relative_time(remind_at)}`,
-                ]),
-              ],
-            }),
-          ],
-        })
+      const confirmation = component.build_message({
+        components: [
+          component.container({
+            accent_color: 0x57F287,
+            components: [
+              component.text("## Reminder Created"),
+              component.divider(2),
+              component.text([
+                `${format.bold("Message:")}`,
+                `${note}`,
+              ]),
+              component.divider(2),
+              component.text([
+                `${format.bold("Scheduled Time:")} ${time.full_date_time(remind_at)}`,
+                `${format.bold("From Now:")} ${time.relative_time(remind_at)}`,
+                `${format.bold("Delivery:")} Direct Message`,
+              ]),
+            ],
+          }),
+        ],
+      })
 
-        const result = await api.send_dm(interaction.user.id, discord_token, dm_payload)
-        if ((result as any)?.error) {
-          throw new Error("Failed to send reminder DM")
-        }
-      } catch (err) {
-        await log_error(interaction.client, err as Error, "Reminder DM", {
-          user      : interaction.user.tag,
-          user_id   : interaction.user.id,
-          remind_at : remind_at,
-          minutes   : minutes,
-          note      : note,
-        }).catch(() => {})
-      } finally {
-        reminder_tasks.delete(key)
-      }
-    }, minutes * 60000)
+      await interaction.reply({
+        ...confirmation,
+        flags: (confirmation.flags ?? 0) | 64,
+      })
+    } catch (err) {
+      await log_error(interaction.client, err as Error, "Reminder Create", {
+        user      : interaction.user.tag,
+        user_id   : interaction.user.id,
+        remind_at : remind_at,
+        minutes   : minutes,
+        note      : note,
+      }).catch(() => {})
 
-    reminder_tasks.set(key, timeout)
+      await interaction.reply({
+        content  : "Failed to create reminder",
+        ephemeral: true,
+      })
+    }
   },
 }

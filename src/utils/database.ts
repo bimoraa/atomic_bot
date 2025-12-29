@@ -96,6 +96,14 @@ export async function delete_one(
   return result.deletedCount > 0
 }
 
+export async function delete_many(
+  coll: string,
+  filter: object
+): Promise<number> {
+  const result = await collection(coll).deleteMany(filter as any)
+  return result.deletedCount
+}
+
 export async function increment(
   coll: string,
   filter: object,
