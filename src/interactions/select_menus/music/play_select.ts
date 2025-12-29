@@ -3,7 +3,7 @@ import {
   GuildMember,
   VoiceChannel,
 }                    from "discord.js"
-import { play_track } from "../../controller/music_controller"
+import { play_track } from "../../controller/music_controller_distube"
 
 const search_cache = new Map<string, any[]>()
 
@@ -67,7 +67,7 @@ export async function handle_music_play_select(interaction: StringSelectMenuInte
 
     await interaction.deferReply({ ephemeral: true })
 
-    const result = await play_track({
+    await play_track({
       client        : interaction.client,
       guild,
       member,
@@ -77,15 +77,9 @@ export async function handle_music_play_select(interaction: StringSelectMenuInte
 
     search_cache.delete(user_id)
 
-    if (result.success) {
-      await interaction.editReply({
-        content: `Now playing: ${selected_track.title} by ${selected_track.author}`,
-      })
-    } else {
-      await interaction.editReply({
-        content: result.error || "Failed to play track",
-      })
-    }
+    await interaction.editReply({
+      content: `Now playing: ${selected_track.title} by ${selected_track.author}`,
+    })
   } catch (error) {
     console.error("[music_play_select] Error:", error)
     

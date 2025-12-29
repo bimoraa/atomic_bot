@@ -8,7 +8,7 @@ import {
 }                     from "discord.js"
 import { Command }    from "../../../types/command"
 import { component }  from "../../../utils"
-import { search_tracks } from "../../../interactions/controller/music_controller"
+import { search_tracks } from "../../../interactions/controller/music_controller_distube"
 import { cache_search_results } from "../../../interactions/select_menus/music/play_select"
 
 export const command: Command = {
@@ -55,24 +55,22 @@ export const command: Command = {
 
     await interaction.deferReply({ ephemeral: true })
 
-    const search_result = await search_tracks(query, interaction.client)
+    const search_result = await search_tracks({ query, limit: 10, client: interaction.client })
 
-    if (!search_result.success || !search_result.tracks || search_result.tracks.length === 0) {
+    if (!search_result || search_result.length === 0) {
       await interaction.editReply({
         content: `No results found for "${query}"`,
       })
       return
     }
 
-    const tracks = search_result.tracks.slice(0, 10)
-
-    cache_search_results(interaction.user.id, tracks)
+    cache_search_results(interaction.user.id, search_result)
 
     const select_menu = new StringSelectMenuBuilder()
       .setCustomId(`music_play_select:${interaction.user.id}`)
       .setPlaceholder("Select a track to play")
       .addOptions(
-        tracks.map((track: any, index: number) => ({
+        search_result.map((track: any, index: number) => ({
           label      : track.title.length > 100 ? track.title.substring(0, 97) + "..." : track.title,
           description: `${track.author} - ${track.duration}`,
           value      : `${index}`,
@@ -88,7 +86,7 @@ export const command: Command = {
               content: [
                 `Search Results for "${query}"`,
                 "",
-                `Found ${tracks.length} track${tracks.length > 1 ? "s" : ""}`,
+                `Found ${search_result.length} track${search_result.length > 1 ? "s" : ""}`,
                 "Select a track from the dropdown below",
               ],
             }),
