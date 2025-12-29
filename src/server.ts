@@ -2,7 +2,8 @@ import express, { Request, Response } from "express"
 import { Client }                     from "discord.js"
 import { handle_github_webhook }      from "./webhooks/github"
 
-const port = parseInt(process.env.PORT || process.env.WEBHOOK_PORT || "3456", 10)
+const port        = parseInt(process.env.PORT || process.env.WEBHOOK_PORT || "3456", 10)
+const public_url  = process.env.PUBLIC_URL || "http://ballast.proxy.rlwy.net:30832"
 
 export function start_webhook_server(client: Client): void {
   const app = express()
@@ -28,7 +29,7 @@ export function start_webhook_server(client: Client): void {
 
   app.get("/health", (req: Request, res: Response) => {
     console.log("[Webhook] Health check requested")
-    res.status(200).json({ status: "ok", port })
+    res.status(200).json({ status: "ok", port, url: public_url })
   })
 
   app.get("/", (req: Request, res: Response) => {
@@ -37,16 +38,18 @@ export function start_webhook_server(client: Client): void {
       status: "running",
       service: "atomic_bot",
       port,
+      url: public_url,
       endpoints: {
-        health: "/health",
-        webhook: "/webhook/github"
+        health: `${public_url}/health`,
+        webhook: `${public_url}/webhook/github`
       }
     })
   })
 
   const server = app.listen(port, "0.0.0.0", () => {
     console.log(`[Webhook] Server listening on 0.0.0.0:${port}`)
-    console.log(`[Webhook] Health check: http://0.0.0.0:${port}/health`)
+    console.log(`[Webhook] Public URL: ${public_url}`)
+    console.log(`[Webhook] Health check: ${public_url}/health`)
   })
 
   server.on("error", (err) => {

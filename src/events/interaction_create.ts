@@ -36,6 +36,7 @@ import * as tempvoice_user_select        from "../interactions/select_menus/temp
 import * as tempvoice_region_select      from "../interactions/select_menus/tempvoice/region_select"
 import { handle_role_permission_select } from "../commands/tools/get_role_permission"
 import * as reminder_add_new             from "../interactions/buttons/reminder/add_new"
+import * as reminder_list                from "../interactions/buttons/reminder/list"
 
 import * as payment_method_select from "../interactions/select_menus/payment_method";
 import * as guide_select          from "../interactions/select_menus/guide_select";
@@ -320,6 +321,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "reminder_add_new") {
         await reminder_add_new.handle_reminder_add_new(interaction)
+        return
+      }
+      if (interaction.customId === "reminder_list") {
+        await reminder_list.handle_reminder_list(interaction)
         return
       }
     } catch (err) {
