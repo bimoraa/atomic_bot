@@ -58,11 +58,8 @@ export async function get_player(client: Client): Promise<Player> {
     await player.extractors.register(YoutubeiExtractor, {
       authentication: process.env.YOUTUBE_COOKIE || undefined,
       streamOptions: {
-        useClient      : "IOS",
-        highWaterMark  : 1 << 25,
-        downloadOptions: {
-          quality: "highestaudio"
-        }
+        useClient     : "IOS",
+        highWaterMark : 1 << 25
       }
     })
     
