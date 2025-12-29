@@ -50,32 +50,3 @@ export async function handle(interaction: ModalSubmitInteraction) {
 
   return true
 }
-            thumbnail: devlog_thumb_url,
-          }),
-        ],
-      }),
-      component.container({
-        components: changelog_components,
-      }),
-      component.container({
-        components: [
-          component.action_row(
-            component.link_button("Report Bugs", "https://discord.com/channels/1250337227582472243/1320078429110145114"),
-            component.link_button("Suggest a Feature", "https://discord.com/channels/1250337227582472243/1351980309557542962"),
-          ),
-        ],
-      }),
-    ],
-  })
-
-  const response = await api.send_components_v2(devlog_channel_id, api.get_token(), message)
-
-  if (!response.error) {
-    await interaction.editReply({ content: `Developer log sent for **${script}** v${version}!` })
-  } else {
-    console.error("[devlog] Error:", response)
-    await interaction.editReply({ content: "Failed to send developer log." })
-  }
-
-  return true
-}

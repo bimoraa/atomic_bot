@@ -32,4 +32,3 @@ export async function handle_review_modal(interaction: ModalSubmitInteraction) {
     await interaction.editReply({ content: result.error || "Failed to submit review." })
   }
 }
-}
