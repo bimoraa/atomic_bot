@@ -70,31 +70,39 @@ export async function handle_loa_approve(interaction: ButtonInteraction): Promis
       return
     }
 
+    let original_nickname: string | null = null
+
+    try {
+      const guild  = interaction.guild
+      const member = await guild.members.fetch(loa.user_id)
+      
+      original_nickname = member.nickname || member.user.displayName || member.user.username
+
+      console.log(`[LOA] Processing approval for ${loa.user_tag}`)
+      console.log(`[LOA] Original nickname: ${original_nickname}`)
+
+      await member.roles.add("1274580813912211477")
+      console.log(`[LOA] Role added`)
+
+      await member.setNickname(`[LOA] - ${original_nickname}`)
+      console.log(`[LOA] Nickname set to: [LOA] - ${original_nickname}`)
+    } catch (role_err) {
+      console.error("[LOA] Failed to set role/nickname:", role_err)
+      await log_error(interaction.client, role_err as Error, "LOA Role/Nickname", {
+        user_id: loa.user_id,
+        user_tag: loa.user_tag,
+      }).catch(() => {})
+    }
+
     await db.update_one(
       "loa_requests",
       { message_id: interaction.message.id },
       {
-        status     : "approved",
-        approved_by: interaction.user.id,
+        status           : "approved",
+        approved_by      : interaction.user.id,
+        original_nickname: original_nickname || undefined,
       }
     )
-
-    try {
-      const guild = interaction.guild
-      const member = await guild.members.fetch(loa.user_id)
-      const original_nickname = member.nickname || member.user.username
-
-      await db.update_one(
-        "loa_requests",
-        { message_id: interaction.message.id },
-        { original_nickname }
-      )
-
-      await member.roles.add("1274580813912211477")
-      await member.setNickname(`[LOA] - ${original_nickname}`)
-    } catch (role_err) {
-      console.error("[LOA] Failed to set role/nickname:", role_err)
-    }
 
     const updated_message = component.build_message({
       components: [
