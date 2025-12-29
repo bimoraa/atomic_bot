@@ -1,58 +1,13 @@
 import { Client, GuildMember, VoiceChannel, TextChannel, Guild } from "discord.js"
+import { Player, Track, Queue, QueueRepeatMode }               from "discord-player"
 import { component }                                           from "../../utils"
 import { log_error }                                           from "../../utils/error_logger"
 
-type Track = any
-type Queue = any
+let player: Player | null = null
 
-const QueueRepeatMode = {
-  OFF   : 0,
-  TRACK : 1,
-  QUEUE : 2,
-}
-
-class QueueStub {
-  connection   : any = null
-  currentTrack : any = null
-  tracks       : any = { 
-    toArray: () => [], 
-    size   : 0 
-  }
-  node         : any = { 
-    play: (track: any) => {} 
-  }
-  metadata     : any = {}
-  
-  connect(channel: any) { return Promise.resolve() }
-  delete() {}
-  addTrack(track: any) {}
-  isPlaying() { return false }
-  skip() {}
-  pause() {}
-  resume() {}
-  stop() {}
-  setVolume(volume: number) {}
-  setRepeatMode(mode: number) {}
-}
-
-class PlayerStub {
-  nodes: any = {
-    create: (guild: any, options: any) => new QueueStub(),
-    get   : (guild: any) => null,
-  }
-  
-  constructor(client: any, options: any) {}
-  
-  search(query: string, options?: any): Promise<{ tracks: Track[] }> { 
-    return Promise.resolve({ tracks: [] as Track[] }) 
-  }
-}
-
-let player: PlayerStub | null = null
-
-export function get_player(client: Client): PlayerStub {
+export function get_player(client: Client): Player {
   if (!player) {
-    player = new PlayerStub(client, {
+    player = new Player(client, {
       ytdlOptions: {
         quality        : "highestaudio",
         highWaterMark  : 1 << 25,
