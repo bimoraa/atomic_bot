@@ -1,5 +1,5 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
-import { getVoiceConnection, joinVoiceChannel, entersState, VoiceConnectionStatus } from "@discordjs/voice"
+import { getVoiceConnection, joinVoiceChannel, entersState, VoiceConnectionStatus, DiscordGatewayAdapterCreator } from "@discordjs/voice"
 import { DisTube, Song, Queue, Events } from "distube"
 import yts from "yt-search"
 import ffmpeg from "ffmpeg-static"
@@ -97,7 +97,7 @@ export async function play_track(options: play_track_options) {
       voice_connection = joinVoiceChannel({
         channelId      : voice_channel.id,
         guildId        : voice_channel.guild.id,
-        adapterCreator : voice_channel.guild.voiceAdapterCreator,
+        adapterCreator : voice_channel.guild.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator,
         selfDeaf       : true,
         selfMute       : false,
       })
