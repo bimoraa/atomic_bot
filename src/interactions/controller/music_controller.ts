@@ -1,5 +1,6 @@
 import { Client, GuildMember, VoiceChannel, TextChannel, Guild } from "discord.js"
-import { Player, Track, GuildQueue, QueueRepeatMode }          from "discord-player"
+import { Player, Track, GuildQueue, QueueRepeatMode, QueryType } from "discord-player"
+import { YoutubeiExtractor }                                   from "discord-player-youtubei"
 import { component }                                           from "../../utils"
 import { log_error }                                           from "../../utils/error_logger"
 
@@ -14,6 +15,8 @@ export function get_player(client: Client): Player {
         filter         : "audioonly",
       },
     })
+    
+    player.extractors.register(YoutubeiExtractor, {})
   }
   return player
 }
@@ -529,7 +532,10 @@ export async function search_tracks(query: string) {
       }
     }
 
-    const result = await player.search(query)
+    const result = await player.search(query, {
+      requestedBy: "system",
+      searchEngine: QueryType.AUTO,
+    })
 
     if (!result || !result.tracks.length) {
       return {
@@ -538,7 +544,7 @@ export async function search_tracks(query: string) {
       }
     }
 
-    const tracks = result.tracks.map((track: Track) => ({
+    const tracks = result.tracks.slice(0, 10).map((track: Track) => ({
       title    : track.title,
       author   : track.author,
       duration : track.duration,
