@@ -95,7 +95,7 @@ client.once("ready", async () => {
   }
 
   register_audit_logs(client)
-start_webhook_server()
+  start_webhook_server(client)
 
   
   console.log("Commands registered successfully")
