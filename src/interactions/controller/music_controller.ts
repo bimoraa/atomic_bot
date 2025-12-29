@@ -53,8 +53,8 @@ export async function get_player(client: Client): Promise<Player> {
   }
   
   if (!extractors_loaded) {
-    const { YouTubeExtractor } = await import("@discord-player/extractor")
-    await player.extractors.register(YouTubeExtractor, {})
+    const { YoutubeiExtractor } = await import("discord-player-youtubei")
+    await player.extractors.register(YoutubeiExtractor, {})
     await player.extractors.register(SoundCloudExtractor, {})
     await player.extractors.register(SpotifyExtractor, {})
     await player.extractors.register(AppleMusicExtractor, {})
@@ -62,7 +62,7 @@ export async function get_player(client: Client): Promise<Player> {
     await player.extractors.register(VimeoExtractor, {})
     await player.extractors.register(ReverbnationExtractor, {})
     extractors_loaded = true
-    console.log("[PLAYER] Extractors registered with YouTube extractor")
+    console.log("[PLAYER] Extractors registered with Youtubei extractor")
   }
   
   return player
