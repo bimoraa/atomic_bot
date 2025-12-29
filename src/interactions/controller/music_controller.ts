@@ -1,6 +1,6 @@
 import { Client, GuildMember, VoiceChannel, TextChannel, Guild } from "discord.js"
 import { Player, Track, GuildQueue, QueueRepeatMode, QueryType } from "discord-player"
-import { DefaultExtractors }                                   from "@discord-player/extractor"
+import { AttachmentExtractor, SoundCloudExtractor, SpotifyExtractor, VimeoExtractor, ReverbnationExtractor, AppleMusicExtractor } from "@discord-player/extractor"
 import { component }                                           from "../../utils"
 import { log_error }                                           from "../../utils/error_logger"
 
@@ -19,7 +19,12 @@ export async function get_player(client: Client): Promise<Player> {
   }
   
   if (!extractors_loaded) {
-    await player.extractors.loadMulti(DefaultExtractors)
+    await player.extractors.register(SoundCloudExtractor, {})
+    await player.extractors.register(AttachmentExtractor, {})
+    await player.extractors.register(VimeoExtractor, {})
+    await player.extractors.register(ReverbnationExtractor, {})
+    await player.extractors.register(AppleMusicExtractor, {})
+    await player.extractors.register(SpotifyExtractor, {})
     extractors_loaded = true
   }
   
