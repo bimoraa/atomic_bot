@@ -68,6 +68,7 @@ export async function handle_get_script(interaction: ButtonInteraction): Promise
             `\`\`\``,
           ]),
           component.divider(2),
+          component.text("-# Dont share your key or script with anyone else"),
         ],
       }),
       component.container({
