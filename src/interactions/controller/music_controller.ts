@@ -54,12 +54,7 @@ export async function get_player(client: Client): Promise<Player> {
   }
   
   if (!extractors_loaded) {
-    await player.extractors.register(YoutubeiExtractor, {
-      authentication : undefined,
-      streamOptions  : {
-        useClient    : 'ANDROID',
-      },
-    })
+    await player.extractors.register(YoutubeiExtractor, {})
     await player.extractors.register(SoundCloudExtractor, {})
     await player.extractors.register(SpotifyExtractor, {})
     await player.extractors.register(AppleMusicExtractor, {})
