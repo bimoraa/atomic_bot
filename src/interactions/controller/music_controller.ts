@@ -1,4 +1,5 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
+import { getVoiceConnection, joinVoiceChannel, entersState, VoiceConnectionStatus } from "@discordjs/voice"
 import { DisTube, Song, Queue, Events } from "distube"
 import yts from "yt-search"
 import ffmpeg from "ffmpeg-static"
@@ -84,6 +85,46 @@ export async function play_track(options: play_track_options) {
       }
     }
 
+    const existing_connection = getVoiceConnection(voice_channel.guild.id)
+
+    if (existing_connection && existing_connection.joinConfig.channelId !== voice_channel.id) {
+      existing_connection.destroy()
+    }
+
+    let voice_connection = getVoiceConnection(voice_channel.guild.id)
+
+    if (!voice_connection) {
+      voice_connection = joinVoiceChannel({
+        channelId      : voice_channel.id,
+        guildId        : voice_channel.guild.id,
+        adapterCreator : voice_channel.guild.voiceAdapterCreator,
+        selfDeaf       : true,
+        selfMute       : false,
+      })
+    }
+
+    try {
+      if (voice_connection) {
+        await entersState(voice_connection, VoiceConnectionStatus.Ready, 15000)
+      }
+    } catch (connect_error: any) {
+      await log_error(client, connect_error as Error, "play_track_connect", {
+        query,
+        guild        : options.guild.id,
+        member       : member.id,
+        channel_id   : voice_channel.id,
+        channel_name : voice_channel.name,
+        state        : voice_connection?.state.status,
+      })
+
+      voice_connection?.destroy()
+
+      return {
+        success : false,
+        error   : "Failed to connect to the voice channel. Please retry.",
+      }
+    }
+
     const distube_instance = get_distube(client)
 
     await distube_instance.play(voice_channel, query, {
@@ -95,8 +136,10 @@ export async function play_track(options: play_track_options) {
   } catch (error: any) {
     await log_error(client, error, "play_track", {
       query,
-      guild  : options.guild.id,
-      member : member.id,
+      guild        : options.guild.id,
+      member       : member.id,
+      channel_id   : voice_channel.id,
+      channel_name : voice_channel.name,
     })
     return {
       success : false,
@@ -157,7 +200,9 @@ export async function pause_track(options: { client: Client; guild: Guild }) {
       message : "Music paused",
     }
   } catch (error: any) {
-    console.error("[pause_track] Error:", error)
+    await log_error(client, error, "pause_track", {
+      guild : guild.id,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to pause",
@@ -185,7 +230,9 @@ export async function resume_track(options: { client: Client; guild: Guild }) {
       message : "Music resumed",
     }
   } catch (error: any) {
-    console.error("[resume_track] Error:", error)
+    await log_error(client, error, "resume_track", {
+      guild : guild.id,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to resume",
@@ -213,7 +260,9 @@ export async function skip_track(options: { client: Client; guild: Guild }) {
       message : `Skipped: ${skipped.name}`,
     }
   } catch (error: any) {
-    console.error("[skip_track] Error:", error)
+    await log_error(client, error, "skip_track", {
+      guild : guild.id,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to skip",
@@ -241,7 +290,9 @@ export async function stop_track(options: { client: Client; guild: Guild }) {
       message : "Music stopped and queue cleared",
     }
   } catch (error: any) {
-    console.error("[stop_track] Error:", error)
+    await log_error(client, error, "stop_track", {
+      guild : guild.id,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to stop",
@@ -295,7 +346,9 @@ export async function get_queue(options: { client: Client; guild: Guild }) {
       message,
     }
   } catch (error: any) {
-    console.error("[get_queue] Error:", error)
+    await log_error(client, error, "get_queue", {
+      guild : guild.id,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to get queue",
@@ -350,7 +403,9 @@ export async function now_playing(options: { client: Client; guild: Guild }) {
       message,
     }
   } catch (error: any) {
-    console.error("[now_playing] Error:", error)
+    await log_error(client, error, "now_playing", {
+      guild : guild.id,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to get now playing",
@@ -378,7 +433,10 @@ export async function set_volume(options: { client: Client; guild: Guild; volume
       message : `Volume set to ${volume}%`,
     }
   } catch (error: any) {
-    console.error("[set_volume] Error:", error)
+    await log_error(client, error, "set_volume", {
+      guild  : guild.id,
+      volume : volume,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to set volume",
@@ -408,7 +466,10 @@ export async function set_loop(options: { client: Client; guild: Guild; mode: "o
       message : `Loop mode set to: ${mode}`,
     }
   } catch (error: any) {
-    console.error("[set_loop] Error:", error)
+    await log_error(client, error, "set_loop", {
+      guild : guild.id,
+      mode  : mode,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to set loop mode",
