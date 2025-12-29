@@ -1,5 +1,6 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
-import { DisTube, Song, Queue, SearchResultVideo } from "distube"
+import { DisTube, Song, Queue } from "distube"
+import { YtDlpPlugin } from "@distube/yt-dlp"
 import { component } from "../../utils"
 
 let distube: DisTube | null = null
@@ -8,11 +9,11 @@ export function get_distube(client: Client): DisTube {
   if (!distube) {
     distube = new DisTube(client, {
       emitNewSongOnly : false,
-      leaveOnEmpty    : 60000,
       leaveOnFinish   : false,
       leaveOnStop     : true,
       nsfw            : false,
       searchSongs     : 10,
+      plugins         : [new YtDlpPlugin()],
     })
 
     distube.on("playSong", (queue: Queue, song: Song) => {
@@ -67,28 +68,25 @@ interface search_tracks_options {
 }
 
 export async function search_tracks(options: search_tracks_options) {
-  const { query, limit = 10, client } = options
+  const { query, client } = options
 
   if (!client) {
     throw new Error("Client is required for search")
   }
 
   try {
-    const distube_instance = get_distube(client)
-    const results = await distube_instance.search(query, {
-      limit,
-      type: 0,
-    })
+    const ytdl = require("@distube/yt-dlp")
+    const search_results = await ytdl.search(query, { limit: 10 })
 
-    if (!results || results.length === 0) {
+    if (!search_results || search_results.length === 0) {
       return []
     }
 
-    return results.map((video: SearchResultVideo) => ({
-      title     : video.name,
-      author    : video.uploader?.name || "Unknown",
+    return search_results.map((video: any) => ({
+      title     : video.title,
+      author    : video.uploader || "Unknown",
       url       : video.url,
-      duration  : video.formattedDuration,
+      duration  : video.duration_string || "Unknown",
       thumbnail : video.thumbnail,
     }))
   } catch (error) {

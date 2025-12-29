@@ -4,7 +4,7 @@ import {
   GuildMember,
 }                     from "discord.js"
 import { Command }   from "../../../types/command"
-import { now_playing } from "../../../interactions/controller/music_controller_distube"
+import { get_now_playing } from "../../../interactions/controller/music_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

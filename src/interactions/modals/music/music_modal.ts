@@ -50,7 +50,7 @@ export async function handle_music_modal(interaction: ModalSubmitInteraction) {
 
     if (result.success) {
       await interaction.editReply({
-        content: `✅ ${result.message}`,
+        content: `✅ Now playing your requested track!`,
       })
     } else {
       await interaction.editReply({
