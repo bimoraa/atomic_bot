@@ -206,11 +206,11 @@ export function text(content: string | string[]): text_component {
 
 export function section(options: { content: string | string[]; thumbnail?: string }): section_component {
   const result: section_component = {
-    type: component_type.section,
-    components: [text(options.content)],
+    type       : component_type.section,
+    components : [text(options.content)],
   }
 
-  if (options.thumbnail) {
+  if (options.thumbnail && options.thumbnail.trim().length > 0) {
     result.accessory = thumbnail(options.thumbnail)
   }
 

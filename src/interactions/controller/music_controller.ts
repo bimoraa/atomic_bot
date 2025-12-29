@@ -17,6 +17,33 @@ export async function get_player(client: Client): Promise<Player> {
         filter         : "audioonly",
       },
     })
+
+    player.events.on("playerStart", (queue, track) => {
+      console.log(`[PLAYER] Started playing: ${track.title}`)
+    })
+
+    player.events.on("audioTrackAdd", (queue, track) => {
+      console.log(`[PLAYER] Track added to queue: ${track.title}`)
+    })
+
+    player.events.on("error", (queue, error) => {
+      console.error("[PLAYER ERROR]", error)
+      log_error(client, error as Error, "Player Error", {
+        guild_id: queue.guild.id,
+      }).catch(() => {})
+    })
+
+    player.events.on("playerError", (queue, error) => {
+      console.error("[PLAYER ERROR] Failed to play track:", error)
+      log_error(client, error as Error, "Player Track Error", {
+        guild_id : queue.guild.id,
+        track    : queue.currentTrack?.title || "unknown",
+      }).catch(() => {})
+    })
+
+    player.events.on("debug", (queue, message) => {
+      console.log(`[PLAYER DEBUG] [${queue.guild.name}] ${message}`)
+    })
   }
   
   if (!extractors_loaded) {
@@ -28,6 +55,7 @@ export async function get_player(client: Client): Promise<Player> {
     await player.extractors.register(SpotifyExtractor, {})
     await player.extractors.register(YoutubeiExtractor, {})
     extractors_loaded = true
+    console.log("[PLAYER] Extractors registered successfully")
   }
   
   return player
@@ -101,22 +129,30 @@ export async function play_track(options: play_track_options) {
       }
     }
 
-    const queue = player_instance.nodes.create(guild, {
-      metadata: {
-        channel: voice_channel,
-      },
-      leaveOnEnd          : true,
-      leaveOnStop         : true,
-      leaveOnEmpty        : true,
-      leaveOnEmptyCooldown: 60000,
-      volume              : 50,
-    })
+    let queue = player_instance.nodes.get(guild.id)
+    
+    if (!queue) {
+      queue = player_instance.nodes.create(guild, {
+        metadata: {
+          channel: voice_channel,
+        },
+        leaveOnEnd          : true,
+        leaveOnStop         : true,
+        leaveOnEmpty        : true,
+        leaveOnEmptyCooldown: 60000,
+        selfDeaf            : true,
+        volume              : 80,
+      })
+    }
 
     try {
       if (!queue.connection) {
+        console.log("[play_track] Connecting to voice channel:", voice_channel.name)
         await queue.connect(voice_channel)
+        console.log("[play_track] Successfully connected to voice")
       }
-    } catch {
+    } catch (error) {
+      console.error("[play_track] Failed to connect to voice:", error)
       queue.delete()
       return {
         success : false,
@@ -125,10 +161,20 @@ export async function play_track(options: play_track_options) {
     }
 
     const track = result.tracks[0]
+    console.log("[play_track] Adding track to queue:", track.title)
     queue.addTrack(track)
 
     if (!queue.isPlaying()) {
-      await queue.node.play()
+      console.log("[play_track] Starting playback...")
+      try {
+        await queue.node.play()
+        console.log("[play_track] Playback started successfully")
+      } catch (error) {
+        console.error("[play_track] Failed to start playback:", error)
+        throw error
+      }
+    } else {
+      console.log("[play_track] Already playing, track added to queue")
     }
 
     const position_text = queue.tracks.size === 0 
