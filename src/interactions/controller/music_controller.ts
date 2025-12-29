@@ -1,5 +1,5 @@
 import { Client, GuildMember, VoiceChannel, TextChannel, Guild } from "discord.js"
-import { Player, Track, Queue, QueueRepeatMode }               from "discord-player"
+import { Player, Track, GuildQueue, QueueRepeatMode }          from "discord-player"
 import { component }                                           from "../../utils"
 import { log_error }                                           from "../../utils/error_logger"
 
@@ -123,7 +123,7 @@ export async function play_track(options: play_track_options) {
                 `- Requested by: <@${member.id}>`,
                 `- Position in queue: ${queue.tracks.size + 1}`,
               ],
-              thumbnail: track.thumbnail || "",
+              thumbnail: track.thumbnail || undefined,
             }),
           ],
         }),
@@ -487,7 +487,7 @@ export async function now_playing(options: queue_options) {
                 ``,
                 progress,
               ],
-              thumbnail: track.thumbnail || "",
+              thumbnail: track.thumbnail || undefined,
             }),
           ],
         }),
