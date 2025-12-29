@@ -12,7 +12,7 @@ export async function handle_script_redeem_modal(interaction: ModalSubmitInterac
   const member   = interaction.member as GuildMember
   const user_key = interaction.fields.getTextInputValue("user_key").trim()
 
-  const result = await redeem_user_key({ client: interaction.client, user_id: member.id, key: user_key })
+  const result = await redeem_user_key({ client: interaction.client, user_id: member.id, user_key })
 
   if (!result.success) {
     const message = component.build_message({
@@ -68,13 +68,9 @@ export async function handle_script_redeem_modal(interaction: ModalSubmitInterac
       }),
       component.container({
         components: [
-          component.action_row([
-            component.button({
-              custom_id : "mobile_copy",
-              label     : "📱 Mobile Copy",
-              style     : "Secondary",
-            }),
-          ]),
+          component.action_row(
+            component.secondary_button("Mobile Copy", "mobile_copy"),
+          ),
         ],
       }),
     ],

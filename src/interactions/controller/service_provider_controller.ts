@@ -209,7 +209,7 @@ export async function get_user_stats(options: { client: Client; user_id: string 
   }
 }
 
-export async function redeem_user_key(options: { client: Client; user_id: string; user_key: string }): Promise<{ success: boolean; message?: string; error?: string }> {
+export async function redeem_user_key(options: { client: Client; user_id: string; user_key: string }): Promise<{ success: boolean; message?: string; error?: string; script?: string }> {
   try {
     const existing_user = await luarmor.get_user_by_discord(options.user_id)
 
@@ -220,12 +220,30 @@ export async function redeem_user_key(options: { client: Client; user_id: string
       }
     }
 
+    const verify_result = await luarmor.get_user_by_key(options.user_key)
+
+    if (!verify_result.success || !verify_result.data) {
+      return {
+        success : false,
+        error   : "Invalid key or key does not exist",
+      }
+    }
+
+    if (verify_result.data.discord_id && verify_result.data.discord_id !== options.user_id) {
+      return {
+        success : false,
+        error   : "This key is already linked to another Discord account",
+      }
+    }
+
     const link_result = await luarmor.link_discord(options.user_key, options.user_id)
 
     if (link_result.success) {
+      const loader_script = luarmor.get_full_loader_script(options.user_key)
       return {
         success : true,
         message : "Key linked successfully",
+        script  : loader_script,
       }
     } else {
       return {
