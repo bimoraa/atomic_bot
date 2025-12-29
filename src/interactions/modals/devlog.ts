@@ -1,20 +1,5 @@
 import { ModalSubmitInteraction } from "discord.js"
-import { load_config } from "../../configuration/loader"
-import { component, api, format } from "../../utils"
-
-const config = load_config<{ devlog_channel_id: string; priority_role_id: string }>("devlog")
-const devlog_channel_id = config.devlog_channel_id
-const priority_role_id = config.priority_role_id
-const devlog_thumb_url  = "https://github.com/bimoraa/Euphoria/blob/main/aaaaa.png?raw=true"
-
-function format_list(items: string, prefix: string): string {
-  if (!items.trim()) return ""
-  return items
-    .split("\n")
-    .filter((line) => line.trim())
-    .map((line) => `${prefix} ${line.trim()}`)
-    .join("\n")
-}
+import { publish_devlog }         from "../controller/devlog_controller"
 
 export async function handle(interaction: ModalSubmitInteraction) {
   if (!interaction.customId.startsWith("devlog_modal")) return false
@@ -39,65 +24,32 @@ export async function handle(interaction: ModalSubmitInteraction) {
 
   if (!script || !version) return false
 
-  const added = interaction.fields.getTextInputValue("added")
+  const added    = interaction.fields.getTextInputValue("added")
   const improved = interaction.fields.getTextInputValue("improved")
-  const removed = interaction.fields.getTextInputValue("removed")
-  const fixed = interaction.fields.getTextInputValue("fixed")
+  const removed  = interaction.fields.getTextInputValue("removed")
+  const fixed    = interaction.fields.getTextInputValue("fixed")
 
   await interaction.deferReply({ ephemeral: true })
 
-  const added_list    = format_list(added, "[ + ]")
-  const improved_list = format_list(improved, "[ / ]")
-  const removed_list  = format_list(removed, "[ - ]")
-  const fixed_list    = format_list(fixed, "[ ! ]")
+  const result = await publish_devlog({
+    client   : interaction.client,
+    script,
+    version,
+    added,
+    improved,
+    removed,
+    fixed,
+    role_ids,
+  })
 
-  const changelog_components = [] as ReturnType<typeof component.text | typeof component.divider>[]
-
-  if (added_list) {
-    changelog_components.push(component.text(`### - Added:\n${added_list}`))
-    changelog_components.push(component.divider(2))
+  if (result.success) {
+    await interaction.editReply({ content: result.message || "Devlog published successfully!" })
+  } else {
+    await interaction.editReply({ content: result.error || "Failed to publish devlog" })
   }
 
-  if (removed_list) {
-    changelog_components.push(component.text(`### - Deleted:\n${removed_list}`))
-    changelog_components.push(component.divider(2))
-  }
-
-  if (fixed_list) {
-    changelog_components.push(component.text(`### - Fixed:\n${fixed_list}`))
-    changelog_components.push(component.divider(2))
-  }
-
-  if (improved_list) {
-    changelog_components.push(component.text(`### - Improved:\n${improved_list}`))
-  }
-
-  if (changelog_components.length > 0 && changelog_components[changelog_components.length - 1].type === component.component_type.divider) {
-    changelog_components.pop()
-  }
-
-  if (changelog_components.length === 0) {
-    changelog_components.push(component.text("No changes specified."))
-  }
-
-  const role_mentions = (role_ids.length > 0 ? role_ids : [priority_role_id])
-    .map(id => format.role_mention(id))
-    .join(" ")
-
-  const message = component.build_message({
-    components: [
-      component.container({
-        components: [
-          component.section({
-            content: [
-              "## Atomicals Script Update Logs",
-              role_mentions,
-              `- **Place:** ${script}`,
-              `- **Version:** v${version}`,
-              "- **Developer Notes:**",
-              "> Found any bugs or issues? Feel free to report them to the developers!",
-              "> Got ideas or suggestions for new scripts? We'd love to hear them!",
-            ],
+  return true
+}
             thumbnail: devlog_thumb_url,
           }),
         ],

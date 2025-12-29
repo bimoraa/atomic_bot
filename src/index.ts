@@ -167,7 +167,7 @@ client.on("messageCreate", async (message: Message) => {
   
   if (message.reference) return
   if (message.mentions.has(client.user!)) {
-    await message.reply("hi niggaas")
+    
   }
 })
 

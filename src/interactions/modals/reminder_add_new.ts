@@ -1,5 +1,5 @@
 import { ModalSubmitInteraction } from "discord.js"
-import { add_reminder }           from "../shared/reminder_controller"
+import { add_reminder }           from "../controller/reminder_controller"
 
 const max_minutes = 10080
 

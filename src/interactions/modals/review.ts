@@ -1,14 +1,11 @@
-import { ModalSubmitInteraction, TextChannel } from "discord.js"
-import { load_config } from "../../configuration/loader"
-import { component, time, api } from "../../utils"
-
-const config = load_config<{ review_channel_id: string }>("review")
+import { ModalSubmitInteraction } from "discord.js"
+import { submit_review }          from "../controller/review_controller"
 
 export async function handle_review_modal(interaction: ModalSubmitInteraction) {
   await interaction.deferReply({ flags: 64 })
 
   const review_text = interaction.fields.getTextInputValue("review_text")
-  const rating_str = interaction.fields.getTextInputValue("review_rating")
+  const rating_str  = interaction.fields.getTextInputValue("review_rating")
 
   const rating = parseInt(rating_str)
   if (isNaN(rating) || rating < 1 || rating > 5) {
@@ -18,61 +15,21 @@ export async function handle_review_modal(interaction: ModalSubmitInteraction) {
     return
   }
 
-  const stars = "⭐".repeat(rating)
-  const timestamp = time.now()
+  const user       = interaction.user
+  const user_avatar = user.displayAvatarURL({ size: 128 })
 
-  const channel = interaction.client.channels.cache.get(config.review_channel_id) as TextChannel
-  if (!channel) {
-    await interaction.editReply({
-      content: "Review channel not found.",
-    })
-    return
+  const result = await submit_review({
+    client      : interaction.client,
+    user_id     : user.id,
+    user_avatar,
+    review_text,
+    rating,
+  })
+
+  if (result.success) {
+    await interaction.editReply({ content: "Thank you for your review!" })
+  } else {
+    await interaction.editReply({ content: result.error || "Failed to submit review." })
   }
-
-  const user = interaction.user
-  const avatar_url = user.displayAvatarURL({ size: 128 })
-
-  try {
-    const message = component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.section({
-              content: [
-                `## New Review from <@${user.id}>`,
-                `**Review:** ${review_text}`,
-                `**Rating:** ${stars}`,
-                `**Reviewed:** ${time.relative_time(timestamp)}`,
-              ],
-              thumbnail: avatar_url,
-            }),
-            component.divider(),
-            component.action_row(
-              component.primary_button("Submit a Review", "review_submit"),
-              component.secondary_button("Useful", `review_useful_${user.id}_${timestamp}`)
-            ),
-          ],
-        }),
-      ],
-    })
-
-    const data = await api.send_components_v2(channel.id, api.get_token(), message)
-
-    if (data.error) {
-      console.log("[review] Error:", data)
-      await interaction.editReply({
-        content: "Failed to submit review. Check console for details.",
-      })
-      return
-    }
-
-    await interaction.editReply({
-      content: "Thank you for your review!",
-    })
-  } catch (err) {
-    console.log("[review] Error:", err)
-    await interaction.editReply({
-      content: "Failed to submit review.",
-    })
-  }
+}
 }

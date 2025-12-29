@@ -4,16 +4,17 @@ import {
   TextChannel,
   ChannelType,
 } from "discord.js"
-import { Command } from "../../types/command"
-import { component, api } from "../../utils"
+import { Command }                      from "../../types/command"
+import { component, api }               from "../../utils"
+import { build_question_panel as build_panel } from "../../interactions/controller/ask_controller"
 
 export const ask_channel_id = "1250786601462923396"
 
 export function build_question_panel(
-  user_id: string,
-  user_avatar: string,
-  question: string,
-  show_answer_button: boolean = false
+  user_id             : string,
+  user_avatar         : string,
+  question            : string,
+  show_answer_button  : boolean = false
 ): component.message_payload {
   const timestamp = Math.floor(Date.now() / 1000)
 

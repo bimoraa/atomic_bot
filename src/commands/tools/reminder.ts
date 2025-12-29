@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, Client } from "discor
 import { Command }                                           from "../../types/command"
 import { component, time, db, api }                          from "../../utils"
 import { log_error }                                         from "../../utils/error_logger"
-import { add_reminder }                                      from "../../interactions/shared/reminder_controller"
+import { add_reminder }                                      from "../../interactions/controller/reminder_controller"
 
 const is_dev        = process.env.NODE_ENV === "development"
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN

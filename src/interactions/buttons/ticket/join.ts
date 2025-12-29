@@ -8,7 +8,7 @@ import {
   ticket_issues,
   priority_log_channel_id,
   save_priority_ticket,
-} from "../../shared/ticket_state"
+} from "../../controller/ticket_controller"
 import { is_admin, is_staff } from "../../../functions/permissions"
 import { component, api, format } from "../../../utils"
 
