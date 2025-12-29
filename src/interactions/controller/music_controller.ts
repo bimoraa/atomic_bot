@@ -1,5 +1,5 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
-import { getVoiceConnection, joinVoiceChannel, entersState, VoiceConnectionStatus, DiscordGatewayAdapterCreator } from "@discordjs/voice"
+import { getVoiceConnection } from "@discordjs/voice"
 import { DisTube, Song, Queue, Events } from "distube"
 import yts from "yt-search"
 import ffmpeg from "ffmpeg-static"
@@ -51,6 +51,44 @@ interface play_track_options {
   member        : GuildMember
   query         : string
   voice_channel : VoiceChannel
+  fallback_query?: string
+}
+
+async function resolve_track_url(client: Client, query: string, fallback_query?: string) {
+  if (ytdl.validateURL(query)) {
+    return query
+  }
+
+  let parsed_host = ""
+
+  try {
+    const parsed = new URL(query)
+    parsed_host = parsed.hostname || ""
+  } catch {}
+
+  const is_youtube_host = parsed_host.includes("youtube.com") || parsed_host.includes("youtu.be")
+
+  if (is_youtube_host) {
+    await log_error(client, new Error("YouTube URL not playable"), "resolve_track_url_yt_invalid", { query })
+  }
+
+  const search_text = fallback_query || query
+
+  try {
+    const search_result = await yts.search({ query: search_text, hl: "en", gl: "US" })
+
+    const first_video = search_result?.videos?.find((video: any) => video?.url && ytdl.validateURL(video.url))
+
+    if (first_video?.url) {
+      return first_video.url
+    }
+
+    await log_error(client, new Error("No playable track found"), "resolve_track_url_no_match", { query: search_text })
+    return null
+  } catch (error) {
+    await log_error(client, error as Error, "resolve_track_url_search", { query: search_text })
+    return null
+  }
 }
 
 export async function play_track(options: play_track_options) {
@@ -87,47 +125,22 @@ export async function play_track(options: play_track_options) {
 
     const existing_connection = getVoiceConnection(voice_channel.guild.id)
 
-    if (existing_connection && existing_connection.joinConfig.channelId !== voice_channel.id) {
+    if (existing_connection) {
       existing_connection.destroy()
     }
 
-    let voice_connection = getVoiceConnection(voice_channel.guild.id)
+    const track_url = await resolve_track_url(client, query, options.fallback_query)
 
-    if (!voice_connection) {
-      voice_connection = joinVoiceChannel({
-        channelId      : voice_channel.id,
-        guildId        : voice_channel.guild.id,
-        adapterCreator : voice_channel.guild.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator,
-        selfDeaf       : true,
-        selfMute       : false,
-      })
-    }
-
-    try {
-      if (voice_connection) {
-        await entersState(voice_connection, VoiceConnectionStatus.Ready, 15000)
-      }
-    } catch (connect_error: any) {
-      await log_error(client, connect_error as Error, "play_track_connect", {
-        query,
-        guild        : options.guild.id,
-        member       : member.id,
-        channel_id   : voice_channel.id,
-        channel_name : voice_channel.name,
-        state        : voice_connection?.state.status,
-      })
-
-      voice_connection?.destroy()
-
+    if (!track_url) {
       return {
         success : false,
-        error   : "Failed to connect to the voice channel. Please retry.",
+        error   : "Could not find a playable track for that query.",
       }
     }
 
     const distube_instance = get_distube(client)
 
-    await distube_instance.play(voice_channel, query, {
+    await distube_instance.play(voice_channel, track_url, {
       member   : member,
       textChannel : undefined,
     })
@@ -140,6 +153,7 @@ export async function play_track(options: play_track_options) {
       member       : member.id,
       channel_id   : voice_channel.id,
       channel_name : voice_channel.name,
+      resolved_url : ytdl.validateURL(query) ? query : undefined,
     })
     return {
       success : false,

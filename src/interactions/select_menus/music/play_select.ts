@@ -68,11 +68,12 @@ export async function handle_music_play_select(interaction: StringSelectMenuInte
     await interaction.deferReply({ ephemeral: true })
 
     await play_track({
-      client        : interaction.client,
+      client         : interaction.client,
       guild,
       member,
-      query         : selected_track.url,
-      voice_channel,
+      query          : selected_track.url,
+      fallback_query : `${selected_track.title} ${selected_track.author}`,
+      voice_channel  : voice_channel,
     })
 
     search_cache.delete(user_id)
