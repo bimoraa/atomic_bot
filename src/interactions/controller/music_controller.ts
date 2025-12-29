@@ -1,7 +1,7 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
 import { DisTube, Song, Queue } from "distube"
-import { YtDlpPlugin } from "@distube/yt-dlp"
 import { component } from "../../utils"
+import ytdl from "ytdl-core"
 
 let distube: DisTube | null = null
 
@@ -13,7 +13,6 @@ export function get_distube(client: Client): DisTube {
       leaveOnStop     : true,
       nsfw            : false,
       searchSongs     : 10,
-      plugins         : [new YtDlpPlugin()],
     })
 
     distube.on("playSong", (queue: Queue, song: Song) => {
@@ -75,20 +74,23 @@ export async function search_tracks(options: search_tracks_options) {
   }
 
   try {
-    const ytdl = require("@distube/yt-dlp")
-    const search_results = await ytdl.search(query, { limit: 10 })
+    const ytsr = require("ytsr")
+    const search_results = await ytsr(query, { limit: 10 })
 
-    if (!search_results || search_results.length === 0) {
+    if (!search_results || !search_results.items) {
       return []
     }
 
-    return search_results.map((video: any) => ({
-      title     : video.title,
-      author    : video.uploader || "Unknown",
-      url       : video.url,
-      duration  : video.duration_string || "Unknown",
-      thumbnail : video.thumbnail,
-    }))
+    return search_results.items
+      .filter((item: any) => item.type === "video")
+      .slice(0, 10)
+      .map((video: any) => ({
+        title     : video.title,
+        author    : video.author?.name || "Unknown",
+        url       : video.url,
+        duration  : video.duration || "Unknown",
+        thumbnail : video.bestThumbnail?.url || video.thumbnails?.[0]?.url,
+      }))
   } catch (error) {
     console.error("[search_tracks] Error:", error)
     return []
