@@ -56,6 +56,34 @@ export async function play_track(options: play_track_options) {
   const { client, query, voice_channel, member } = options
 
   try {
+    if (!voice_channel.joinable) {
+      await log_error(client, new Error("Voice channel not joinable"), "play_track_joinable", {
+        query,
+        guild        : options.guild.id,
+        member       : member.id,
+        channel_id   : voice_channel.id,
+        channel_name : voice_channel.name,
+      })
+      return {
+        success : false,
+        error   : "I cannot join that voice channel (permission or full).",
+      }
+    }
+
+    if (!voice_channel.speakable) {
+      await log_error(client, new Error("Voice channel not speakable"), "play_track_speakable", {
+        query,
+        guild        : options.guild.id,
+        member       : member.id,
+        channel_id   : voice_channel.id,
+        channel_name : voice_channel.name,
+      })
+      return {
+        success : false,
+        error   : "I cannot speak in that voice channel (permission).",
+      }
+    }
+
     const distube_instance = get_distube(client)
 
     await distube_instance.play(voice_channel, query, {
