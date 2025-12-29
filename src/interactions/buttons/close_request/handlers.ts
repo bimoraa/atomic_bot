@@ -1,7 +1,7 @@
 import { ButtonInteraction, ThreadChannel, GuildMember } from "discord.js"
 import { component, api, db } from "../../../utils"
 import { get_ticket, ticket_types } from "../../../functions/unified_ticket"
-import { close_ticket_by_deadline, cancel_close_request, get_close_request } from "../../../commands/tools/close_request"
+import { close_ticket_by_deadline, cancel_close_request, get_close_request } from "../../../commands/tools/staff/close_request"
 
 function get_ticket_parent_ids(): string[] {
   return Object.values(ticket_types).map(config => config.ticket_parent_id)

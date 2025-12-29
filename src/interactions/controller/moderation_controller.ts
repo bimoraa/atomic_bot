@@ -369,7 +369,7 @@ export async function warn_member(options: warn_member_options) {
       await target.send(dm_message)
     } catch {}
 
-    const { add_warning } = await import("../../commands/tools/warnings")
+    const { add_warning } = await import("../../commands/tools/moderation/warnings")
     await add_warning(guild.id, target.id, executor.id, reason)
 
     const avatar_url = target.user.displayAvatarURL({ size: 512 })

@@ -3,10 +3,10 @@ import {
   SlashCommandBuilder,
   MessageFlags,
 } from "discord.js"
-import { Command } from "../../types/command"
+import { Command } from "../../../types/command"
 import { readdirSync } from "fs"
 import { join } from "path"
-import { component, api, file } from "../../utils"
+import { component, api, file } from "../../../utils"
 
 interface RolesMapping {
   [key: string]: string

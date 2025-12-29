@@ -4,9 +4,9 @@ import {
   GuildMember,
   PermissionFlagsBits,
 }                      from "discord.js"
-import { Command }     from "../../types/command"
-import { component }   from "../../utils"
-import * as database   from "../../utils/database"
+import { Command }     from "../../../types/command"
+import { component }   from "../../../utils"
+import * as database   from "../../../utils/database"
 
 interface Warning {
   id          : string

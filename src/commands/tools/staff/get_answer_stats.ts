@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
-import { Command } from "../../types/command"
-import { component, api, db } from "../../utils"
-import { staff_role_id } from "../../functions/permissions"
+import { Command } from "../../../types/command"
+import { component, api, db } from "../../../utils"
+import { staff_role_id } from "../../../functions/permissions"
 
 const COLLECTION_NAME = "answer_stats"
 

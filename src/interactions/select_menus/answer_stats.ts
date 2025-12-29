@@ -1,6 +1,6 @@
 import { StringSelectMenuInteraction, GuildMember } from "discord.js"
 import { api } from "../../utils"
-import { get_staff_stats, build_stats_panel } from "../../commands/tools/get_answer_stats"
+import { get_staff_stats, build_stats_panel } from "../../commands/tools/staff/get_answer_stats"
 
 export async function handle_answer_stats_select(interaction: StringSelectMenuInteraction): Promise<void> {
   await interaction.deferUpdate()

@@ -5,8 +5,8 @@ import {
   PermissionFlagsBits,
   User,
 }                      from "discord.js"
-import { Command }     from "../../types/command"
-import { ban_member }  from "../../interactions/controller/moderation_controller"
+import { Command }     from "../../../types/command"
+import { ban_member }  from "../../../interactions/controller/moderation_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

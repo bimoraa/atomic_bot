@@ -34,7 +34,7 @@ import * as free_leaderboard             from "../interactions/buttons/free/lead
 import * as tempvoice_handlers           from "../interactions/buttons/tempvoice/handlers"
 import * as tempvoice_user_select        from "../interactions/select_menus/tempvoice/user_select"
 import * as tempvoice_region_select      from "../interactions/select_menus/tempvoice/region_select"
-import { handle_role_permission_select } from "../commands/tools/get_role_permission"
+import { handle_role_permission_select } from "../commands/tools/utility/get_role_permission"
 import * as reminder_add_new             from "../interactions/buttons/reminder/add_new"
 import * as reminder_list                from "../interactions/buttons/reminder/list"
 import * as reminder_cancel              from "../interactions/buttons/reminder/cancel"
@@ -46,6 +46,9 @@ import * as music_pause                  from "../interactions/buttons/music/pau
 import * as music_resume                 from "../interactions/buttons/music/resume"
 import * as music_skip                   from "../interactions/buttons/music/skip"
 import * as music_stop                   from "../interactions/buttons/music/stop"
+import * as music_select                 from "../interactions/select_menus/music/music_select"
+import * as music_play_select            from "../interactions/select_menus/music/play_select"
+import * as music_modal                  from "../interactions/modals/music/music_modal"
 
 import * as payment_method_select        from "../interactions/select_menus/payment_method";
 import * as guide_select                 from "../interactions/select_menus/guide_select";
@@ -156,6 +159,14 @@ export async function handle_interaction(
       }
       if (interaction.customId === "reminder_cancel_select") {
         await reminder_cancel_select.handle_reminder_cancel_select(interaction);
+        return;
+      }
+      if (interaction.customId === "music_select") {
+        await music_select.handle_music_select(interaction);
+        return;
+      }
+      if (interaction.customId.startsWith("music_play_select:")) {
+        await music_play_select.handle_music_play_select(interaction);
         return;
       }
       if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return;
@@ -413,6 +424,10 @@ export async function handle_interaction(
       if (await handle_reminder_add_new_modal(interaction)) return;
       if (await handle_loa_request_modal(interaction)) return;
       if (await script_redeem_modal.handle_script_redeem_modal(interaction)) return;
+      if (interaction.customId.startsWith("music_modal:")) {
+        await music_modal.handle_music_modal(interaction);
+        return;
+      }
     } catch (err) {
       console.log("[modal] Error:", err);
       await log_error(client, err as Error, "ModalSubmit", {

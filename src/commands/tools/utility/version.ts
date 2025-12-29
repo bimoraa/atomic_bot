@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
-import { Command } from "../../types/command"
-import { component, version as version_util } from "../../utils"
+import { Command } from "../../../types/command"
+import { component, version as version_util } from "../../../utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

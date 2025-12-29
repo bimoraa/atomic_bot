@@ -5,7 +5,7 @@ import { load_commands, register_commands }                              from ".
 import { handle_interaction }                                            from "./events/interaction_create"
 import { handle_auto_reply }                                             from "./functions/auto_reply"
 import { start_roblox_update_checker }                                   from "./functions/roblox_update"
-import { load_close_requests }                                           from "./commands/tools/close_request"
+import { load_close_requests }                                           from "./commands/tools/staff/close_request"
 import { load_all_tickets }                                              from "./functions/unified_ticket"
 import * as tempvoice                                                    from "./functions/tempvoice"
 import { register_audit_logs }                                           from "./functions/audit_log"
@@ -13,7 +13,7 @@ import { get_afk, remove_afk, is_afk }                                   from ".
 import { db, component }                                                 from "./utils"
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./functions/anti_spam"
-import { load_reminders_from_db }                                        from "./commands/tools/reminder"
+import { load_reminders_from_db }                                        from "./commands/tools/reminder/reminder"
 import { start_loa_checker }                                             from "./functions/loa_checker"
 import { start_webhook_server }                                          from "./server"
 

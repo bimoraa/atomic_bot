@@ -519,3 +519,41 @@ export async function now_playing(options: queue_options) {
     }
   }
 }
+
+export async function search_tracks(query: string) {
+  try {
+    if (!player) {
+      return {
+        success : false,
+        error   : "Music player not initialized",
+      }
+    }
+
+    const result = await player.search(query)
+
+    if (!result || !result.tracks.length) {
+      return {
+        success : false,
+        error   : "No results found",
+      }
+    }
+
+    const tracks = result.tracks.map((track: Track) => ({
+      title    : track.title,
+      author   : track.author,
+      duration : track.duration,
+      url      : track.url,
+    }))
+
+    return {
+      success : true,
+      tracks,
+    }
+  } catch (err) {
+    console.error("[search_tracks] Error:", err)
+    return {
+      success : false,
+      error   : "Failed to search tracks",
+    }
+  }
+}

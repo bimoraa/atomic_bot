@@ -1,6 +1,6 @@
 import { ModalSubmitInteraction } from "discord.js"
 import { post_question }          from "../controller/ask_controller"
-import { ask_channel_id }         from "../../commands/tools/ask"
+import { ask_channel_id }         from "../../commands/tools/staff/ask"
 
 export async function handle_ask_staff_modal(interaction: ModalSubmitInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true })

@@ -3,8 +3,8 @@ import {
   SlashCommandBuilder,
   GuildMember,
 }                   from "discord.js"
-import { Command }  from "../../types/command"
-import { set_loop } from "../../interactions/controller/music_controller"
+import { Command }  from "../../../types/command"
+import { set_loop } from "../../../interactions/controller/music_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

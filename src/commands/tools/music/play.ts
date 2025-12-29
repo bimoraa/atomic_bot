@@ -3,18 +3,22 @@ import {
   SlashCommandBuilder,
   GuildMember,
   VoiceChannel,
+  StringSelectMenuBuilder,
+  ActionRowBuilder,
 }                     from "discord.js"
-import { Command }    from "../../types/command"
-import { play_track } from "../../interactions/controller/music_controller"
+import { Command }    from "../../../types/command"
+import { component }  from "../../../utils"
+import { search_tracks } from "../../../interactions/controller/music_controller"
+import { cache_search_results } from "../../../interactions/select_menus/music/play_select"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
     .setName("play")
-    .setDescription("Play a song from YouTube or Spotify")
+    .setDescription("Search and play music")
     .addStringOption((option) =>
       option
         .setName("query")
-        .setDescription("Song name or URL")
+        .setDescription("Song name or artist")
         .setRequired(true)
     ),
 
@@ -49,22 +53,55 @@ export const command: Command = {
       return
     }
 
-    await interaction.deferReply()
+    await interaction.deferReply({ ephemeral: true })
 
-    const result = await play_track({
-      client        : interaction.client,
-      guild,
-      member,
-      query,
-      voice_channel,
+    const search_result = await search_tracks(query)
+
+    if (!search_result.success || !search_result.tracks || search_result.tracks.length === 0) {
+      await interaction.editReply({
+        content: `No results found for "${query}"`,
+      })
+      return
+    }
+
+    const tracks = search_result.tracks.slice(0, 10)
+
+    cache_search_results(interaction.user.id, tracks)
+
+    const select_menu = new StringSelectMenuBuilder()
+      .setCustomId(`music_play_select:${interaction.user.id}`)
+      .setPlaceholder("Select a track to play")
+      .addOptions(
+        tracks.map((track: any, index: number) => ({
+          label      : track.title.length > 100 ? track.title.substring(0, 97) + "..." : track.title,
+          description: `${track.author} - ${track.duration}`,
+          value      : `${index}`,
+        }))
+      )
+
+    const message = component.build_message({
+      components: [
+        component.container({
+          accent_color: component.from_hex("1DB954"),
+          components  : [
+            component.section({
+              content: [
+                `Search Results for "${query}"`,
+                "",
+                `Found ${tracks.length} track${tracks.length > 1 ? "s" : ""}`,
+                "Select a track from the dropdown below",
+              ],
+            }),
+          ],
+        }),
+      ],
     })
 
-    if (result.success) {
-      await interaction.editReply(result.message!)
-    } else {
-      await interaction.editReply({
-        content: result.error || "Failed to play track",
-      })
-    }
+    await interaction.editReply({
+      ...message,
+      components: [
+        new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select_menu),
+      ],
+    })
   },
 }

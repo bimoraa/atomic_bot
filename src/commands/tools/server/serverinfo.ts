@@ -3,8 +3,8 @@ import {
   SlashCommandBuilder,
   GuildMember,
 }                      from "discord.js"
-import { Command }     from "../../types/command"
-import { component }   from "../../utils"
+import { Command }     from "../../../types/command"
+import { component }   from "../../../utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

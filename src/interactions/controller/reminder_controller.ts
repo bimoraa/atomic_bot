@@ -146,7 +146,7 @@ export async function add_reminder(options: add_reminder_options) {
   try {
     await db.insert_one("reminders", reminder)
 
-    const { schedule_reminder } = await import("../../commands/tools/reminder")
+    const { schedule_reminder } = await import("../../commands/tools/reminder/reminder")
     schedule_reminder(client, reminder)
 
     const confirmation = component.build_message({
@@ -221,7 +221,7 @@ export async function cancel_reminder(options: cancel_reminder_options) {
         }
       }
 
-      const { active_reminders } = await import("../../commands/tools/reminder")
+      const { active_reminders } = await import("../../commands/tools/reminder/reminder")
       const key                  = `${user_id}:${remind_at}`
       const timeout              = active_reminders.get(key)
 
@@ -244,7 +244,7 @@ export async function cancel_reminder(options: cancel_reminder_options) {
         }
       }
 
-      const { active_reminders } = await import("../../commands/tools/reminder")
+      const { active_reminders } = await import("../../commands/tools/reminder/reminder")
       for (const [key, timeout] of active_reminders.entries()) {
         if (key.startsWith(`${user_id}:`)) {
           clearTimeout(timeout)

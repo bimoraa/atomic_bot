@@ -2,9 +2,9 @@ import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
 } from "discord.js"
-import { Command }                   from "../../types/command"
-import { component, api }            from "../../utils"
-import { get_last_deleted_message }  from "../../functions/snipe"
+import { Command }                   from "../../../types/command"
+import { component, api }            from "../../../utils"
+import { get_last_deleted_message }  from "../../../functions/snipe"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

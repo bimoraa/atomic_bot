@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
-import { Command }                                          from "../../types/command"
-import { component, format, db }                            from "../../utils"
-import { log_error }                                        from "../../utils/error_logger"
+import { Command }                                          from "../../../types/command"
+import { component, format, db }                            from "../../../utils"
+import { log_error }                                        from "../../../utils/error_logger"
 import { active_reminders }                                 from "./reminder"
 
 interface reminder_data {

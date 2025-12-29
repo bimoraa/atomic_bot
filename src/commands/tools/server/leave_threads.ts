@@ -5,7 +5,7 @@ import {
   ChannelType,
   ForumChannel,
 } from "discord.js";
-import { Command } from "../../types/command";
+import { Command } from "../../../types/command";
 
 export const command: Command = {
   data: new SlashCommandBuilder()

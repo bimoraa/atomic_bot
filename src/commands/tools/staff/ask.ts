@@ -4,9 +4,9 @@ import {
   TextChannel,
   ChannelType,
 } from "discord.js"
-import { Command }                      from "../../types/command"
-import { component, api }               from "../../utils"
-import { build_question_panel as build_panel } from "../../interactions/controller/ask_controller"
+import { Command }                      from "../../../types/command"
+import { component, api }               from "../../../utils"
+import { build_question_panel as build_panel } from "../../../interactions/controller/ask_controller"
 
 export const ask_channel_id = "1250786601462923396"
 
