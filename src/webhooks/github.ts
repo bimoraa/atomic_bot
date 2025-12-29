@@ -83,10 +83,10 @@ function build_commit_notification(payload: github_push_payload) {
       component.container({
         components: [
           component.text([
-            `**Repository:** [${repo_name}](${repo_url})`,
-            `**Branch:** \`${branch}\``,
-            `**Pusher:** ${pusher} (${sender})`,
-            `**Commits:** ${commit_count}`,
+            `- **Repository:** [${repo_name}](${repo_url})`,
+            `- **Branch:** \`${branch}\``,
+            `- **Pusher:** ${pusher} (${sender})`,
+            `- **Commits:** ${commit_count}`,
           ]),
         ],
       }),

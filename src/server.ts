@@ -52,7 +52,7 @@ export function start_webhook_server(client: Client): void {
     console.log(`[Webhook] Health check: ${public_url}/health`)
   })
 
-  server.on("error", (err) => {
+  server.on("error", (err: Error) => {
     console.error("[Webhook] Server error:", err)
   })
 }
