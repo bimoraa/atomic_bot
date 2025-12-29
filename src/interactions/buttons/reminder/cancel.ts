@@ -51,16 +51,19 @@ export async function handle_reminder_cancel(interaction: ButtonInteraction): Pr
           components: [
             component.text(`Select reminder to cancel (${active.length} total):`),
             component.divider(2),
-            component.action_row([
-              {
-                type       : 3,
-                custom_id  : "reminder_cancel_select",
-                placeholder: "Select a reminder to cancel",
-                options,
-                min_values : 1,
-                max_values : 1,
-              },
-            ] as any),
+            {
+              type      : 1,
+              components: [
+                {
+                  type       : 3,
+                  custom_id  : "reminder_cancel_select",
+                  placeholder: "Select a reminder to cancel",
+                  options,
+                  min_values : 1,
+                  max_values : 1,
+                },
+              ],
+            },
           ],
         }),
       ],
