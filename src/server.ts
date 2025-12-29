@@ -2,7 +2,7 @@ import express, { Request, Response } from "express"
 import { Client }                     from "discord.js"
 import { handle_github_webhook }      from "./webhooks/github"
 
-const port = process.env.PORT || process.env.WEBHOOK_PORT || 3456
+const port = parseInt(process.env.PORT || process.env.WEBHOOK_PORT || "3456", 10)
 
 export function start_webhook_server(client: Client): void {
   const app = express()
