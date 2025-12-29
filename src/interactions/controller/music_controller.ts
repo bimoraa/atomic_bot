@@ -1,15 +1,28 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
 import { DisTube, Song, Queue, Events } from "distube"
+import yts from "yt-search"
+import ffmpeg from "ffmpeg-static"
 import { component } from "../../utils"
+import { log_error } from "../../utils/error_logger"
 import ytdl from "ytdl-core"
 
 let distube: DisTube | null = null
 
 export function get_distube(client: Client): DisTube {
   if (!distube) {
+    const ffmpeg_path = (ffmpeg as string) || "ffmpeg"
+
     distube = new DisTube(client, {
       emitNewSongOnly : false,
       nsfw            : false,
+      ffmpeg          : {
+        path : ffmpeg_path,
+        args : {
+          global : {},
+          input  : {},
+          output : {},
+        },
+      },
     })
 
     distube.on(Events.FINISH_SONG, (queue: Queue, song: Song) => {
@@ -21,9 +34,10 @@ export function get_distube(client: Client): DisTube {
     })
 
     distube.on(Events.ERROR, (error: Error, queue: Queue, song?: Song) => {
-      console.error("[DisTube ERROR]", error)
-      console.error("[Queue]", queue?.id)
-      console.error("[Song]", song?.name)
+      void log_error(client, error, "distube_error", {
+        queue : queue?.id,
+        song  : song?.name,
+      })
     })
   }
 
@@ -51,7 +65,11 @@ export async function play_track(options: play_track_options) {
 
     return { success: true }
   } catch (error: any) {
-    console.error("[play_track] Error:", error)
+    await log_error(client, error, "play_track", {
+      query,
+      guild  : options.guild.id,
+      member : member.id,
+    })
     return {
       success : false,
       error   : error?.message || "Failed to play track",
@@ -73,25 +91,21 @@ export async function search_tracks(options: search_tracks_options) {
   }
 
   try {
-    const ytsr = require("ytsr")
-    const search_results = await ytsr(query, { limit: 10 })
+    const search_result = await yts.search({ query, hl: "en", gl: "US" })
 
-    if (!search_results || !search_results.items) {
+    if (!search_result?.videos?.length) {
       return []
     }
 
-    return search_results.items
-      .filter((item: any) => item.type === "video")
-      .slice(0, 10)
-      .map((video: any) => ({
-        title     : video.title,
-        author    : video.author?.name || "Unknown",
-        url       : video.url,
-        duration  : video.duration || "Unknown",
-        thumbnail : video.bestThumbnail?.url || video.thumbnails?.[0]?.url,
-      }))
+    return search_result.videos.slice(0, 10).map((video: any) => ({
+      title     : video.title,
+      author    : video.author?.name || "Unknown",
+      url       : video.url,
+      duration  : video.timestamp || "Unknown",
+      thumbnail : video.thumbnail,
+    }))
   } catch (error) {
-    console.error("[search_tracks] Error:", error)
+    await log_error(client, error as Error, "search_tracks", { query })
     return []
   }
 }
