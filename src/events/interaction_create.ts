@@ -35,11 +35,13 @@ import * as tempvoice_handlers           from "../interactions/buttons/tempvoice
 import * as tempvoice_user_select        from "../interactions/select_menus/tempvoice/user_select"
 import * as tempvoice_region_select      from "../interactions/select_menus/tempvoice/region_select"
 import { handle_role_permission_select } from "../commands/tools/get_role_permission"
+import * as reminder_add_new             from "../interactions/buttons/reminder/add_new"
 
 import * as payment_method_select from "../interactions/select_menus/payment_method";
 import * as guide_select          from "../interactions/select_menus/guide_select";
 import * as version_select        from "../interactions/select_menus/version/select";
 import * as work_stats_select     from "../interactions/select_menus/work_stats/week_select";
+import { handle_reminder_add_new_modal } from "../interactions/modals/reminder_add_new";
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
   try {
@@ -316,6 +318,10 @@ export async function handle_interaction(
         await tempvoice_handlers.handle_tempvoice_delete(interaction)
         return
       }
+      if (interaction.customId === "reminder_add_new") {
+        await reminder_add_new.handle_reminder_add_new(interaction)
+        return
+      }
     } catch (err) {
       console.log("[button] Error:", err)
       await log_error(client, err as Error, "Button", {
@@ -344,6 +350,7 @@ export async function handle_interaction(
         await ask_staff_modal.handle_ask_staff_modal(interaction);
         return;
       }
+      if (await handle_reminder_add_new_modal(interaction)) return;
       if (await script_redeem_modal.handle_script_redeem_modal(interaction)) return;
     } catch (err) {
       console.log("[modal] Error:", err);

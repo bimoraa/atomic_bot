@@ -18,6 +18,41 @@ interface reminder_data {
 
 export const active_reminders = new Map<string, ReturnType<typeof setTimeout>>()
 
+function build_reminder_dm_notification(reminder: reminder_data) {
+  const now = Math.floor(Date.now() / 1000)
+
+  return component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text("## Reminder Notification\nDing dong! Time for your reminder."),
+        ],
+      }),
+      component.container({
+        components: [
+          component.text([
+            `- Scheduled at: ${time.full_date_time(reminder.remind_at)}`,
+            `- Deadline: ${time.full_date_time(reminder.remind_at)}`,
+          ]),
+          component.divider(2),
+          component.text([
+            `- Message:`,
+            `> ${reminder.note}`,
+          ]),
+        ],
+      }),
+      component.container({
+        components: [
+          component.action_row(
+            component.secondary_button("Reminder List", "reminder_list"),
+            component.secondary_button("Add new Reminder", "reminder_add_new")
+          ),
+        ],
+      }),
+    ],
+  })
+}
+
 export async function load_reminders_from_db(client: Client): Promise<void> {
   try {
     const reminders = await db.find_many<reminder_data>("reminders", {})
@@ -38,7 +73,7 @@ export async function load_reminders_from_db(client: Client): Promise<void> {
   }
 }
 
-function schedule_reminder(client: Client, reminder: reminder_data): void {
+export function schedule_reminder(client: Client, reminder: reminder_data): void {
   const now       = Date.now()
   const delay_ms  = (reminder.remind_at * 1000) - now
   const key       = `${reminder.user_id}:${reminder.remind_at}`
@@ -52,26 +87,7 @@ function schedule_reminder(client: Client, reminder: reminder_data): void {
     try {
       if (!discord_token) return
 
-      const dm_payload = component.build_message({
-        components: [
-          component.container({
-            accent_color: 0x5865F2,
-            components: [
-              component.text("## Reminder Notification"),
-              component.divider(2),
-              component.text([
-                `${format.bold("Message:")}`,
-                `${reminder.note}`,
-              ]),
-              component.divider(2),
-              component.text([
-                `${format.bold("Originally Scheduled:")} ${time.full_date_time(reminder.remind_at)}`,
-                `${format.bold("Time Now:")} <t:${Math.floor(Date.now() / 1000)}:F>`,
-              ]),
-            ],
-          }),
-        ],
-      })
+      const dm_payload = build_reminder_dm_notification(reminder)
 
       const result = await api.send_dm(reminder.user_id, discord_token, dm_payload)
       if ((result as any)?.error) {
