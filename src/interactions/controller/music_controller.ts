@@ -11,10 +11,17 @@ let extractors_loaded = false
 export async function get_player(client: Client): Promise<Player> {
   if (!player) {
     player = new Player(client, {
+      useLegacyFFmpeg: false,
       ytdlOptions: {
-        quality        : "highestaudio",
-        highWaterMark  : 1 << 25,
-        filter         : "audioonly",
+        quality               : "highestaudio",
+        highWaterMark         : 1 << 25,
+        filter                : "audioonly",
+        dlChunkSize           : 0,
+        requestOptions        : {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        },
       },
     })
 
@@ -47,13 +54,19 @@ export async function get_player(client: Client): Promise<Player> {
   }
   
   if (!extractors_loaded) {
+    await player.extractors.register(YoutubeiExtractor, {
+      authentication  : undefined,
+      streamOptions   : {
+        useClient     : 'ANDROID',
+        quality       : 'high',
+      },
+    })
     await player.extractors.register(SoundCloudExtractor, {})
+    await player.extractors.register(SpotifyExtractor, {})
+    await player.extractors.register(AppleMusicExtractor, {})
     await player.extractors.register(AttachmentExtractor, {})
     await player.extractors.register(VimeoExtractor, {})
     await player.extractors.register(ReverbnationExtractor, {})
-    await player.extractors.register(AppleMusicExtractor, {})
-    await player.extractors.register(SpotifyExtractor, {})
-    await player.extractors.register(YoutubeiExtractor, {})
     extractors_loaded = true
     console.log("[PLAYER] Extractors registered successfully")
   }
