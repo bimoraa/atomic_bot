@@ -470,7 +470,7 @@ export async function now_playing(options: queue_options) {
     }
 
     const track    = queue.currentTrack
-    const progress = queue.node.createProgressBar()
+    const progress = queue.node.createProgressBar() || "No progress bar available"
 
     const message = component.build_message({
       components: [
