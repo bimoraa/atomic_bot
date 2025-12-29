@@ -43,8 +43,8 @@ class PlayerStub {
   
   constructor(client: any, options: any) {}
   
-  search(query: string, options?: any) { 
-    return Promise.resolve({ tracks: [] }) 
+  search(query: string, options?: any): Promise<{ tracks: Track[] }> { 
+    return Promise.resolve({ tracks: [] as Track[] }) 
   }
 }
 
