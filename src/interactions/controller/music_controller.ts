@@ -54,6 +54,12 @@ export async function get_player(client: Client): Promise<Player> {
   }
   
   if (!extractors_loaded) {
+    await player.extractors.register(YoutubeiExtractor, {
+      authentication  : process.env.YOUTUBE_COOKIES || undefined,
+      streamOptions   : {
+        useClient     : 'WEB',
+      },
+    })
     await player.extractors.register(SoundCloudExtractor, {})
     await player.extractors.register(SpotifyExtractor, {})
     await player.extractors.register(AppleMusicExtractor, {})
@@ -61,7 +67,7 @@ export async function get_player(client: Client): Promise<Player> {
     await player.extractors.register(VimeoExtractor, {})
     await player.extractors.register(ReverbnationExtractor, {})
     extractors_loaded = true
-    console.log("[PLAYER] Extractors registered (using play-dl for YouTube)")
+    console.log("[PLAYER] Extractors registered with WEB client")
   }
   
   return player
