@@ -541,9 +541,11 @@ export async function now_playing(options: queue_options) {
   }
 }
 
-export async function search_tracks(query: string) {
+export async function search_tracks(query: string, client?: Client) {
   try {
-    if (!player) {
+    const player_instance = client ? await get_player(client) : player
+    
+    if (!player_instance) {
       console.error("[search_tracks] Player not initialized")
       return {
         success : false,
@@ -552,9 +554,9 @@ export async function search_tracks(query: string) {
     }
 
     console.log("[search_tracks] Searching for:", query)
-    console.log("[search_tracks] Registered extractors:", player.extractors.store.map((e: any) => e.identifier).join(", "))
+    console.log("[search_tracks] Registered extractors:", player_instance.extractors.store.map((e: any) => e.identifier).join(", "))
 
-    const result = await player.search(query, {
+    const result = await player_instance.search(query, {
       searchEngine: QueryType.YOUTUBE_SEARCH,
     })
 
