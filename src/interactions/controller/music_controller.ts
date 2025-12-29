@@ -1,13 +1,36 @@
 import { Client, GuildMember, VoiceChannel, TextChannel, Guild } from "discord.js"
-import { Player, Track, Queue, QueueRepeatMode }               from "discord-player"
 import { component }                                           from "../../utils"
 import { log_error }                                           from "../../utils/error_logger"
 
-let player: Player | null = null
+type Track = any
+type Queue = any
 
-export function get_player(client: Client): Player {
+const QueueRepeatMode = {
+  OFF   : 0,
+  TRACK : 1,
+  QUEUE : 2,
+}
+
+class PlayerStub {
+  constructor(client: any, options: any) {}
+  search(query: string, options?: any) { return Promise.resolve({ tracks: [] }) }
+  nodes = {
+    create: (guild: any, options: any) => ({
+      connection   : null,
+      connect      : (channel: any) => Promise.resolve(),
+      delete       : () => {},
+      node         : { play: (track: any) => {} },
+      currentTrack : null,
+      tracks       : { toArray: () => [] },
+    }),
+  }
+}
+
+let player: PlayerStub | null = null
+
+export function get_player(client: Client): PlayerStub {
   if (!player) {
-    player = new Player(client, {
+    player = new PlayerStub(client, {
       ytdlOptions: {
         quality        : "highestaudio",
         highWaterMark  : 1 << 25,
