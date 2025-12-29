@@ -14,8 +14,6 @@ const SPAM_CONFIG = {
   message_limit   : 5,
   time_window     : 5000,
   duplicate_limit : 3,
-  mention_limit   : 5,
-  link_limit      : 3,
   warning_cooldown: 30000,
 }
 
@@ -69,10 +67,6 @@ function is_suspicious_content(content: string): string | null {
   const zero_width_count = (content.match(zero_width_chars) || []).length
   if (zero_width_count >= 10) return "zero_width_flood"
 
-  const url_regex  = /https?:\/\/\S+/gi
-  const url_matches = content.match(url_regex) || []
-  if (url_matches.length >= 4) return "multiple_links"
-
   const pipe_flood = /\|{20,}/
   if (pipe_flood.test(content)) return "pipe_flood"
 
@@ -121,13 +115,6 @@ export function check_spam(message: Message, client: Client): boolean {
     if (suspicious_pattern) {
       console.log(`[anti_spam] Suspicious pattern detected: ${suspicious_pattern}`)
       handle_suspicious_message(message, client, suspicious_pattern, member)
-      return true
-    }
-    
-    const mention_count = message.mentions.users.size + message.mentions.roles.size
-    if (mention_count >= SPAM_CONFIG.mention_limit) {
-      console.log(`[anti_spam] Mention spam detected: ${mention_count} mentions`)
-      handle_mention_spam(message, client, mention_count, member)
       return true
     }
     
@@ -188,9 +175,7 @@ async function handle_suspicious_message(
                 `${format.bold("Content:")}`,
               ],
             }),
-            component.section({
-              content: content_block,
-            }),
+            component.text(content_block),
             component.action_row(
               component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
             ),
@@ -261,9 +246,7 @@ async function handle_mention_spam(
                 `${format.bold("Content:")}`,
               ],
             }),
-            component.section({
-              content: content_block,
-            }),
+            component.text(content_block),
             component.action_row(
               component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
             ),
@@ -341,9 +324,7 @@ async function handle_duplicate_spam(
                   `${format.bold("Content:")}`,
                 ],
               }),
-              component.section({
-                content: content_block,
-              }),
+              component.text(content_block),
               component.action_row(
                 component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
               ),
@@ -423,9 +404,7 @@ async function handle_rapid_spam(
                   `${format.bold("Content:")}`,
                 ],
               }),
-              component.section({
-                content: content_block,
-              }),
+              component.text(content_block),
               component.action_row(
                 component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
               ),
