@@ -11,18 +11,40 @@ const QueueRepeatMode = {
   QUEUE : 2,
 }
 
+class QueueStub {
+  connection   : any = null
+  currentTrack : any = null
+  tracks       : any = { 
+    toArray: () => [], 
+    size   : 0 
+  }
+  node         : any = { 
+    play: (track: any) => {} 
+  }
+  metadata     : any = {}
+  
+  connect(channel: any) { return Promise.resolve() }
+  delete() {}
+  addTrack(track: any) {}
+  isPlaying() { return false }
+  skip() {}
+  pause() {}
+  resume() {}
+  stop() {}
+  setVolume(volume: number) {}
+  setRepeatMode(mode: number) {}
+}
+
 class PlayerStub {
+  nodes: any = {
+    create: (guild: any, options: any) => new QueueStub(),
+    get   : (guild: any) => null,
+  }
+  
   constructor(client: any, options: any) {}
-  search(query: string, options?: any) { return Promise.resolve({ tracks: [] }) }
-  nodes = {
-    create: (guild: any, options: any) => ({
-      connection   : null,
-      connect      : (channel: any) => Promise.resolve(),
-      delete       : () => {},
-      node         : { play: (track: any) => {} },
-      currentTrack : null,
-      tracks       : { toArray: () => [] },
-    }),
+  
+  search(query: string, options?: any) { 
+    return Promise.resolve({ tracks: [] }) 
   }
 }
 
