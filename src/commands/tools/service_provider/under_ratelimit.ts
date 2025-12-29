@@ -5,9 +5,10 @@ import {
 } from "discord.js"
 import { Command } from "../../../types/command"
 import { component, api } from "../../../utils"
-import { is_admin } from "../../../functions/permissions"
 import { log_error } from "../../../utils/error_logger"
 import { set_under_ratelimit } from "../../../interactions/controller/service_provider_controller"
+
+const ALLOWED_ROLE_ID = "1316021423206039596"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -23,7 +24,7 @@ export const command: Command = {
   async execute(interaction: ChatInputCommandInteraction) {
     const member = interaction.member as GuildMember
 
-    if (!is_admin(member)) {
+    if (!member.roles.cache.has(ALLOWED_ROLE_ID)) {
       await interaction.reply({
         content   : "You don't have permission to use this command.",
         ephemeral : true,

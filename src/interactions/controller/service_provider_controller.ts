@@ -23,11 +23,10 @@ export async function set_under_ratelimit(options: { client: Client; under_ratel
   try {
     const now = Date.now()
 
-    const updated = await db.update_one<service_provider_settings>(
+    await db.update_one<service_provider_settings>(
       SETTINGS_COLLECTION,
       { _id: "config" },
       {
-        _id             : "config",
         under_ratelimit : options.under_ratelimit,
         updated_at      : now,
         updated_by      : options.updated_by,
@@ -35,7 +34,7 @@ export async function set_under_ratelimit(options: { client: Client; under_ratel
       true
     )
 
-    return updated
+    return true
   } catch (error) {
     await log_error(options.client, error as Error, "set_under_ratelimit", {
       under_ratelimit: options.under_ratelimit,
