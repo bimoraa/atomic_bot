@@ -135,8 +135,9 @@ export async function add_reminder(options: add_reminder_options) {
     const confirmation = component.build_message({
       components: [
         component.container({
+          accent_color: component.from_hex("#00eeffff"),
           components: [
-            component.text("## Reminder Scheduled"),
+            component.text("## Reminder Scheduled\nWe've scheduled your reminder!"),
           ],
         }),
         component.container({

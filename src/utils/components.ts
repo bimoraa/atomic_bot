@@ -83,7 +83,7 @@ export interface divider_component {
 export interface container_component {
   type: number
   components: (section_component | text_component | divider_component | action_row_component)[]
-  accent_color?: number | null
+  accent_color?: number | { r: number; g: number; b: number } | null
   spoiler?: boolean
 }
 
@@ -235,14 +235,26 @@ export function separator(spacing?: number): divider_component {
 
 export function container(options: {
   components: (section_component | text_component | divider_component | action_row_component)[]
-  accent_color?: number | null
+  accent_color?: number | { r: number; g: number; b: number } | null
   spoiler?: boolean
 }): container_component {
+  let processed_color = options.accent_color
+
+  if (
+    options.accent_color &&
+    typeof options.accent_color === "object" &&
+    "r" in options.accent_color &&
+    "g" in options.accent_color &&
+    "b" in options.accent_color
+  ) {
+    processed_color = (options.accent_color.r << 16) | (options.accent_color.g << 8) | options.accent_color.b
+  }
+
   return {
-    type: component_type.container,
-    components: options.components,
-    accent_color: options.accent_color,
-    spoiler: options.spoiler,
+    type        : component_type.container,
+    components  : options.components,
+    accent_color: processed_color as number | null | undefined,
+    spoiler     : options.spoiler,
   }
 }
 
@@ -285,6 +297,11 @@ export function gallery_item(url: string, description?: string, spoiler?: boolea
     description,
     spoiler,
   }
+}
+
+export function from_hex(hex: string): number {
+  const cleaned = hex.replace(/^#/, "")
+  return parseInt(cleaned, 16)
 }
 
 export interface file_component {
