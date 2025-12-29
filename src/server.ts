@@ -28,7 +28,18 @@ export function start_webhook_server(client: Client): void {
     res.status(200).json({ status: "ok" })
   })
 
-  app.listen(port, () => {
-    console.log(`[Webhook] Server listening on port ${port}`)
+  app.get("/", (req: Request, res: Response) => {
+    res.status(200).json({ 
+      status: "running",
+      service: "atomic_bot",
+      endpoints: {
+        health: "/health",
+        webhook: "/webhook/github"
+      }
+    })
+  })
+
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`[Webhook] Server listening on 0.0.0.0:${port}`)
   })
 }

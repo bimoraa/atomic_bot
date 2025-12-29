@@ -74,6 +74,8 @@ function update_presence(): void {
 client.once("ready", async () => {
   console.log(`Logged in as ${client.user?.tag}`)
 
+  start_webhook_server(client)
+
   const mongo = await db.connect()
   if (mongo) {
     console.log("Connected to MongoDB")
@@ -95,7 +97,6 @@ client.once("ready", async () => {
   }
 
   register_audit_logs(client)
-  start_webhook_server(client)
 
   
   console.log("Commands registered successfully")
