@@ -1,12 +1,13 @@
 import { Client, GuildMember, VoiceChannel, TextChannel, Guild } from "discord.js"
 import { Player, Track, GuildQueue, QueueRepeatMode, QueryType } from "discord-player"
-import { YoutubeiExtractor }                                   from "discord-player-youtubei"
+import { DefaultExtractors }                                   from "@discord-player/extractor"
 import { component }                                           from "../../utils"
 import { log_error }                                           from "../../utils/error_logger"
 
 let player: Player | null = null
+let extractors_loaded = false
 
-export function get_player(client: Client): Player {
+export async function get_player(client: Client): Promise<Player> {
   if (!player) {
     player = new Player(client, {
       ytdlOptions: {
@@ -15,9 +16,13 @@ export function get_player(client: Client): Player {
         filter         : "audioonly",
       },
     })
-    
-    player.extractors.register(YoutubeiExtractor, {})
   }
+  
+  if (!extractors_loaded) {
+    await player.extractors.loadMulti(DefaultExtractors)
+    extractors_loaded = true
+  }
+  
   return player
 }
 
@@ -70,7 +75,7 @@ export async function play_track(options: play_track_options) {
   const { client, guild, member, query, voice_channel } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     
     const result = await player_instance.search(query, {
       requestedBy: member.user,
@@ -155,7 +160,7 @@ export async function get_queue(options: queue_options) {
   const { client, guild } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     const queue           = player_instance.nodes.get(guild.id)
 
     if (!queue || !queue.currentTrack) {
@@ -227,7 +232,7 @@ export async function skip_track(options: skip_track_options) {
   const { client, guild } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     const queue           = player_instance.nodes.get(guild.id)
 
     if (!queue || !queue.currentTrack) {
@@ -274,7 +279,7 @@ export async function pause_track(options: pause_track_options) {
   const { client, guild } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     const queue           = player_instance.nodes.get(guild.id)
 
     if (!queue || !queue.currentTrack) {
@@ -313,7 +318,7 @@ export async function resume_track(options: resume_track_options) {
   const { client, guild } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     const queue           = player_instance.nodes.get(guild.id)
 
     if (!queue || !queue.currentTrack) {
@@ -352,7 +357,7 @@ export async function stop_track(options: stop_track_options) {
   const { client, guild } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     const queue           = player_instance.nodes.get(guild.id)
 
     if (!queue || !queue.currentTrack) {
@@ -384,7 +389,7 @@ export async function set_volume(options: set_volume_options) {
   const { client, guild, volume } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     const queue           = player_instance.nodes.get(guild.id)
 
     if (!queue || !queue.currentTrack) {
@@ -417,7 +422,7 @@ export async function set_loop(options: set_loop_options) {
   const { client, guild, mode } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     const queue           = player_instance.nodes.get(guild.id)
 
     if (!queue || !queue.currentTrack) {
@@ -462,7 +467,7 @@ export async function now_playing(options: queue_options) {
   const { client, guild } = options
 
   try {
-    const player_instance = get_player(client)
+    const player_instance = await get_player(client)
     const queue           = player_instance.nodes.get(guild.id)
 
     if (!queue || !queue.currentTrack) {
