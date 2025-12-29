@@ -5,8 +5,7 @@ import {
   PermissionFlagsBits,
 }                        from "discord.js"
 import { Command }       from "../../types/command"
-import { component }     from "../../utils"
-import { add_warning }   from "./warnings"
+import { warn_member }   from "../../interactions/controller/moderation_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -30,6 +29,15 @@ export const command: Command = {
     const executor = interaction.member as GuildMember
     const target   = interaction.options.getMember("member") as GuildMember
     const reason   = interaction.options.getString("reason", true)
+    const guild    = interaction.guild
+
+    if (!guild) {
+      await interaction.reply({
+        content   : "This command can only be used in a server.",
+        ephemeral : true,
+      })
+      return
+    }
 
     if (!target) {
       await interaction.reply({
@@ -39,65 +47,27 @@ export const command: Command = {
       return
     }
 
-    if (!executor.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+    const result = await warn_member({
+      client   : interaction.client,
+      guild,
+      executor,
+      target,
+      reason,
+    })
+
+    if (result.success) {
       await interaction.reply({
-        content   : "You don't have permission to warn members.",
+        ...result.message,
+        ephemeral: true,
+      })
+    } else {
+      await interaction.reply({
+        content   : result.error || "Failed to warn member",
         ephemeral : true,
       })
-      return
     }
-
-    if (target.id === executor.id) {
-      await interaction.reply({
-        content   : "You cannot warn yourself.",
-        ephemeral : true,
-      })
-      return
-    }
-
-    if (target.user.bot) {
-      await interaction.reply({
-        content   : "You cannot warn bots.",
-        ephemeral : true,
-      })
-      return
-    }
-
-    if (executor.roles.highest.position <= target.roles.highest.position) {
-      await interaction.reply({
-        content   : "You cannot warn a member with equal or higher role.",
-        ephemeral : true,
-      })
-      return
-    }
-
-    try {
-      const server_icon = interaction.guild?.iconURL({ size: 512 }) || ""
-
-      const dm_message = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.text(`### You have been warned in ${interaction.guild?.name}\n`),
-            ],
-          }),
-          component.container({
-            components: [
-              component.section({
-                content  : [
-                  "### Details",
-                  `- **Reason:** ${reason}`,
-                  `- **Warned by:** ${executor.id}`,
-                ].join("\n"),
-                thumbnail: "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
-              }),
-            ],
-          }),
-        ],
-      })
-
-      try {
-        await target.send(dm_message)
+  },
+}
       } catch {
       }
 

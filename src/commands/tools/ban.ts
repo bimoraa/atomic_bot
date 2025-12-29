@@ -6,7 +6,7 @@ import {
   User,
 }                      from "discord.js"
 import { Command }     from "../../types/command"
-import { component }   from "../../utils"
+import { ban_member }  from "../../interactions/controller/moderation_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -57,100 +57,23 @@ export const command: Command = {
       return
     }
 
-    if (!executor.permissions.has(PermissionFlagsBits.BanMembers)) {
+    const result = await ban_member({
+      client      : interaction.client,
+      guild,
+      executor,
+      user,
+      reason,
+      delete_days,
+    })
+
+    if (result.success) {
       await interaction.reply({
-        content   : "You don't have permission to ban members.",
-        ephemeral : true,
-      })
-      return
-    }
-
-    if (user.id === executor.id) {
-      await interaction.reply({
-        content   : "You cannot ban yourself.",
-        ephemeral : true,
-      })
-      return
-    }
-
-    const target = await guild.members.fetch(user.id).catch(() => null)
-
-    if (target) {
-      if (!target.bannable) {
-        await interaction.reply({
-          content   : "I cannot ban this member. They may have a higher role than me.",
-          ephemeral : true,
-        })
-        return
-      }
-
-      if (executor.roles.highest.position <= target.roles.highest.position) {
-        await interaction.reply({
-          content   : "You cannot ban a member with equal or higher role.",
-          ephemeral : true,
-        })
-        return
-      }
-    }
-
-    try {
-      const server_icon = guild.iconURL({ size: 512 }) || ""
-
-      const dm_message = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.section({
-                content   : "### You have been banned",
-                thumbnail : server_icon,
-              }),
-              component.divider(),
-              component.text([
-                `- Server: ${guild.name}`,
-                `- Reason: ${reason}`,
-              ]),
-            ],
-          }),
-        ],
-      })
-
-      await user.send(dm_message).catch(() => {})
-
-      await guild.members.ban(user, {
-        reason,
-        deleteMessageSeconds: delete_days * 24 * 60 * 60,
-      })
-
-      const avatar_url = user.displayAvatarURL({ size: 512 })
-
-      const ban_message = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.section({
-                content   : "### Member Banned",
-                thumbnail : avatar_url,
-              }),
-              component.divider(),
-              component.text([
-                `- Member: <@${user.id}>`,
-                `- Banned by: <@${executor.id}>`,
-                `- Reason: ${reason}`,
-                `- Messages deleted: ${delete_days} days`,
-              ]),
-            ],
-          }),
-        ],
-      })
-
-      await interaction.reply({
-        ...ban_message,
+        ...result.message,
         ephemeral: true,
       })
-    } catch (error) {
-      const error_message = error instanceof Error ? error.message : "Unknown error"
+    } else {
       await interaction.reply({
-        content   : `Failed to ban member: ${error_message}`,
+        content   : result.error || "Failed to ban member",
         ephemeral : true,
       })
     }
