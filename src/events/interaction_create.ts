@@ -39,10 +39,11 @@ import * as reminder_add_new             from "../interactions/buttons/reminder/
 import * as reminder_list                from "../interactions/buttons/reminder/list"
 import * as reminder_cancel              from "../interactions/buttons/reminder/cancel"
 
-import * as payment_method_select from "../interactions/select_menus/payment_method";
-import * as guide_select          from "../interactions/select_menus/guide_select";
-import * as version_select        from "../interactions/select_menus/version/select";
-import * as work_stats_select     from "../interactions/select_menus/work_stats/week_select";
+import * as payment_method_select        from "../interactions/select_menus/payment_method";
+import * as guide_select                 from "../interactions/select_menus/guide_select";
+import * as version_select               from "../interactions/select_menus/version/select";
+import * as work_stats_select            from "../interactions/select_menus/work_stats/week_select";
+import * as reminder_cancel_select       from "../interactions/select_menus/reminder_cancel_select";
 import { handle_reminder_add_new_modal } from "../interactions/modals/reminder_add_new";
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
@@ -142,6 +143,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "work_stats_week_select") {
         await work_stats_select.handle_work_stats_week_select(interaction);
+        return;
+      }
+      if (interaction.customId === "reminder_cancel_select") {
+        await reminder_cancel_select.handle_reminder_cancel_select(interaction);
         return;
       }
       if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return;
@@ -328,7 +333,7 @@ export async function handle_interaction(
         await reminder_list.handle_reminder_list(interaction)
         return
       }
-      if (interaction.customId === "reminder_cancel") {
+      if (interaction.customId === "reminder_cancel_select") {
         await reminder_cancel.handle_reminder_cancel(interaction)
         return
       }

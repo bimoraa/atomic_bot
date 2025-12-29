@@ -48,16 +48,23 @@ export async function get_reminder_list(options: reminder_list_options) {
         message: component.build_message({
           components: [
             component.container({
-              accent_color: 0xE0E0E0,
-              components: [
+              accent_color: component.from_hex("9B59B6"),
+              components  : [
                 component.text("## Active Reminders"),
-                component.divider(2),
-                component.text([
-                  `${format.bold("Status:")} No reminders found`,
-                  `${format.bold("Total:")} 0 active`,
-                ]),
+              ],
+            }),
+            component.container({
+              components: [
+                component.text("- Status: No reminders found"),
                 component.divider(2),
                 component.text("Use /reminder to create a new reminder."),
+              ],
+            }),
+            component.container({
+              components: [
+                component.action_row(
+                  component.secondary_button("Add new Reminder", "reminder_add_new")
+                ),
               ],
             }),
           ],
@@ -67,8 +74,7 @@ export async function get_reminder_list(options: reminder_list_options) {
 
     const sorted = active.sort((a, b) => a.remind_at - b.remind_at)
     const lines  = sorted.slice(0, 10).map((r, i) => {
-      const note_preview = r.note.length > 40 ? r.note.slice(0, 37) + "..." : r.note
-      return `${format.bold((i + 1).toString() + ".")} ${note_preview}\n   ${format.bold("Time:")} ${time.full_date_time(r.remind_at)} (${time.relative_time(r.remind_at)})`
+      return `${i + 1}. ${r.note}\n> Time: ${time.relative_time(r.remind_at)} ||  ${time.full_date_time(r.remind_at)}\n`
     })
 
     return {
@@ -76,16 +82,27 @@ export async function get_reminder_list(options: reminder_list_options) {
       message: component.build_message({
         components: [
           component.container({
-            accent_color: 0x5865F2,
-            components: [
+            accent_color: component.from_hex("9B59B6"),
+            components  : [
               component.text("## Active Reminders"),
+            ],
+          }),
+          component.container({
+            components: [
+              component.text(`- Total: ${active.length} reminder${active.length === 1 ? "" : "s"}`),
               component.divider(2),
               component.text([
-                `${format.bold("Total:")} ${active.length} reminder${active.length === 1 ? "" : "s"}`,
-                `${format.bold("Showing:")} ${Math.min(active.length, 10)} of ${active.length}`,
+                "### Reminder List",
+                ...lines,
               ]),
-              component.divider(2),
-              component.text(lines),
+            ],
+          }),
+          component.container({
+            components: [
+              component.action_row(
+                component.secondary_button("Add new Reminder", "reminder_add_new"),
+                component.danger_button("Cancel Reminder", "reminder_cancel_select")
+              ),
             ],
           }),
         ],
