@@ -546,43 +546,40 @@ export async function search_tracks(query: string) {
     if (!player) {
       console.error("[search_tracks] Player not initialized")
       return {
-        success : false,
-        error   : "Music player not initialized",
-      }
-    }
+      export async function search_tracks(options: { client: Client, query: string }) {
+        const { client, query } = options
 
-    console.log("[search_tracks] Searching for:", query)
-    console.log("[search_tracks] Registered extractors:", player.extractors.store.map(e => e.identifier).join(", "))
+        try {
+          const player_instance = await get_player(client)
 
-    const result = await player.search(query, {
-      searchEngine: QueryType.YOUTUBE_SEARCH,
-    })
+          const result = await player_instance.search(query, {
+            searchEngine: QueryType.YOUTUBE_SEARCH,
+          })
 
-    console.log("[search_tracks] Search result:", result ? `${result.tracks.length} tracks found` : "null result")
+          if (!result || !result.tracks.length) {
+            return {
+              success : false,
+              error   : "No results found",
+            }
+          }
 
-    if (!result || !result.tracks.length) {
-      return {
-        success : false,
-        error   : "No results found",
-      }
-    }
+          const tracks = result.tracks.slice(0, 10).map((track: Track) => ({
+            title    : track.title,
+            author   : track.author,
+            duration : track.duration,
+            url      : track.url,
+          }))
 
-    const tracks = result.tracks.slice(0, 10).map((track: Track) => ({
-      title    : track.title,
-      author   : track.author,
-      duration : track.duration,
-      url      : track.url,
-    }))
-
-    return {
-      success : true,
-      tracks,
-    }
-  } catch (err) {
-    console.error("[search_tracks] Error:", err)
-    return {
-      success : false,
+          return {
+            success : true,
+            tracks,
+          }
       error   : "Failed to search tracks",
-    }
+          await log_error(client, err as Error, "Search Tracks Controller", {
+            query,
+          }).catch(() => {})
   }
 }
+
+            error   : "Failed to search tracks",
+      error   : "Failed to search tracks",
