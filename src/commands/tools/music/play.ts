@@ -55,10 +55,7 @@ export const command: Command = {
 
     await interaction.deferReply({ ephemeral: true })
 
-    const search_result = await search_tracks({
-      client: interaction.client,
-      query,
-    })
+    const search_result = await search_tracks(query)
 
     if (!search_result.success || !search_result.tracks || search_result.tracks.length === 0) {
       await interaction.editReply({
