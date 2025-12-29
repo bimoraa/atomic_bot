@@ -9,26 +9,31 @@ export async function load_commands(client: Client & { commands: Collection<stri
   const commands_data: object[] = [];
 
   const commands_path = join(__dirname, "../commands");
-  const categories = readdirSync(commands_path);
-
-  for (const category of categories) {
-    const category_path = join(commands_path, category);
-    const command_files = readdirSync(category_path).filter((file) => file.endsWith(".ts") || file.endsWith(".js"));
-
-    for (const file of command_files) {
-      const file_path = join(category_path, file);
-      const imported = await import(file_path);
-      const command = imported.default || imported.command;
+  
+  async function load_from_directory(dir_path: string): Promise<void> {
+    const items = readdirSync(dir_path, { withFileTypes: true });
+    
+    for (const item of items) {
+      const item_path = join(dir_path, item.name);
       
-      if (!command?.data) {
-        console.warn(`[command_handler] Skipping ${file} - no valid command export`);
-        continue;
+      if (item.isDirectory()) {
+        await load_from_directory(item_path);
+      } else if (item.isFile() && (item.name.endsWith(".ts") || item.name.endsWith(".js"))) {
+        const imported = await import(item_path);
+        const command = imported.default || imported.command;
+        
+        if (!command?.data) {
+          console.warn(`[command_handler] Skipping ${item.name} - no valid command export`);
+          continue;
+        }
+        
+        client.commands.set(command.data.name, command);
+        commands_data.push(command.data.toJSON());
       }
-      
-      client.commands.set(command.data.name, command);
-      commands_data.push(command.data.toJSON());
     }
   }
+  
+  await load_from_directory(commands_path);
 
   return commands_data;
 }
