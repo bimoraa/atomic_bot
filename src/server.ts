@@ -11,9 +11,11 @@ export function start_webhook_server(client: Client): void {
 
   app.post("/webhook/github", async (req: Request, res: Response) => {
     try {
+      console.log("[Webhook] Received webhook request")
       const event = req.headers["x-github-event"] as string
       
       if (event === "push") {
+        console.log("[Webhook] Processing push event")
         await handle_github_webhook(req.body, client)
       }
 
@@ -25,13 +27,16 @@ export function start_webhook_server(client: Client): void {
   })
 
   app.get("/health", (req: Request, res: Response) => {
-    res.status(200).json({ status: "ok" })
+    console.log("[Webhook] Health check requested")
+    res.status(200).json({ status: "ok", port })
   })
 
   app.get("/", (req: Request, res: Response) => {
+    console.log("[Webhook] Root endpoint requested")
     res.status(200).json({ 
       status: "running",
       service: "atomic_bot",
+      port,
       endpoints: {
         health: "/health",
         webhook: "/webhook/github"
@@ -39,7 +44,12 @@ export function start_webhook_server(client: Client): void {
     })
   })
 
-  app.listen(port, "0.0.0.0", () => {
+  const server = app.listen(port, "0.0.0.0", () => {
     console.log(`[Webhook] Server listening on 0.0.0.0:${port}`)
+    console.log(`[Webhook] Health check: http://0.0.0.0:${port}/health`)
+  })
+
+  server.on("error", (err) => {
+    console.error("[Webhook] Server error:", err)
   })
 }
