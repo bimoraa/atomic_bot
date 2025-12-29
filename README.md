@@ -2,6 +2,70 @@
 jangan karna aku bisa ngoding
 kamu kira aku bisa hack akun pesnuk
 
+## Commands
+
+- **/music**
+  - **/play** - Play a song from YouTube or Spotify
+  - **/pause** - Pause the current song
+  - **/resume** - Resume the paused song
+  - **/skip** - Skip the current song
+  - **/stop** - Stop music and clear the queue
+  - **/queue** - Show the music queue
+  - **/nowplaying** - Show the currently playing song
+  - **/volume** - Set the music volume (0-100)
+  - **/loop** - Set loop mode (off/track/queue)
+
+- **/moderation**
+  - **/ban** - Ban a member from the server
+  - **/kick** - Kick a member from the server
+  - **/timeout** - Timeout a member
+  - **/warn** - Warn a member
+  - **/warnings** - View warnings for a member
+  - **/purge** - Delete multiple messages at once (1-100)
+
+- **/reminder**
+  - **/reminder** - Set a DM reminder
+  - **/reminder-list** - List your active reminders
+  - **/reminder-clear** - Clear all your reminders
+
+- **/staff**
+  - **/ask** - Ask a question to staff
+  - **/get-answer-stats** - View answer stats for staff members
+  - **/work-stats** - Check staff work statistics
+  - **/loa** - View Leave of Absence panel
+  - **/close-request** - Request to close purchase ticket with deadline
+
+- **/server**
+  - **/serverinfo** - Show server information
+  - **/check_messages** - Check message count of a user in a channel
+  - **/leave_threads** - Leave all threads/posts in a channel or forum
+  - **/edit_rules** - Edit the server rules message
+  - **/view_leaderboard** - View script execution leaderboard
+
+- **/utility**
+  - **/afk** - Set your AFK status
+  - **/snipe** - Show the last deleted message in this channel
+  - **/version** - Check Roblox version for specific platform
+  - **/ping** - Check bot latency
+  - **/get_role_permission** - Get role permissions information
+
+- **/setup**
+  - **/free_panel** - Setup free script panel
+  - **/guide_panel** - Setup guide panel
+  - **/guide_select_panel** - Setup guide selection panel
+  - **/helper_panel** - Setup helper panel
+  - **/purchase_panel** - Setup purchase panel
+  - **/reaction_panel** - Setup reaction role panel
+  - **/review_panel** - Setup review panel
+  - **/rules_panel** - Setup rules panel
+  - **/script_panel** - Setup script panel
+  - **/script_price** - Setup script pricing
+  - **/tempvoice_panel** - Setup temporary voice panel
+  - **/ticket_panel** - Setup ticket panel
+
+- **/testing**
+  - **/test_roblox_update** - Test Roblox update notification system
+
 
 ## Structure
 

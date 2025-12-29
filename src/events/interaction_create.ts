@@ -42,6 +42,10 @@ import * as loa_request                  from "../interactions/buttons/loa/reque
 import * as loa_approve                  from "../interactions/buttons/loa/approve"
 import * as loa_reject                   from "../interactions/buttons/loa/reject"
 import * as loa_end                      from "../interactions/buttons/loa/end"
+import * as music_pause                  from "../interactions/buttons/music/pause"
+import * as music_resume                 from "../interactions/buttons/music/resume"
+import * as music_skip                   from "../interactions/buttons/music/skip"
+import * as music_stop                   from "../interactions/buttons/music/stop"
 
 import * as payment_method_select        from "../interactions/select_menus/payment_method";
 import * as guide_select                 from "../interactions/select_menus/guide_select";
@@ -352,6 +356,26 @@ export async function handle_interaction(
       }
       if (interaction.customId === "loa_reject") {
         await loa_reject.handle_loa_reject(interaction)
+        return
+      }
+      if (interaction.customId === "loa_end") {
+        await loa_end.handle_loa_end(interaction)
+        return
+      }
+      if (interaction.customId === "music_pause") {
+        await music_pause.handle_music_pause(interaction)
+        return
+      }
+      if (interaction.customId === "music_resume") {
+        await music_resume.handle_music_resume(interaction)
+        return
+      }
+      if (interaction.customId === "music_skip") {
+        await music_skip.handle_music_skip(interaction)
+        return
+      }
+      if (interaction.customId === "music_stop") {
+        await music_stop.handle_music_stop(interaction)
         return
       }
       if (interaction.customId === "loa_end") {
