@@ -82,8 +82,13 @@ export async function play_track(options: play_track_options) {
   try {
     const player_instance = await get_player(client)
     
+    const search_engine = query.includes("youtu.be/") || query.includes("youtube.com/")
+      ? QueryType.YOUTUBE_VIDEO
+      : QueryType.AUTO
+    
     const result = await player_instance.search(query, {
-      requestedBy: member.user,
+      requestedBy : member.user,
+      searchEngine: search_engine,
     })
 
     if (!result || !result.tracks.length) {
@@ -542,9 +547,13 @@ export async function search_tracks(query: string) {
       }
     }
 
+    const search_engine = query.includes("youtu.be/") || query.includes("youtube.com/")
+      ? QueryType.YOUTUBE_VIDEO
+      : QueryType.AUTO
+
     const result = await player.search(query, {
-      requestedBy: "system",
-      searchEngine: QueryType.AUTO,
+      requestedBy : "system",
+      searchEngine: search_engine,
     })
 
     if (!result || !result.tracks.length) {
