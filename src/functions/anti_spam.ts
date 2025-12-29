@@ -13,7 +13,7 @@ const user_message_tracker = new Map<string, spam_tracker>()
 const SPAM_CONFIG = {
   message_limit   : 5,
   time_window     : 5000,
-  duplicate_limit : 3,
+  duplicate_limit : 20,
   warning_cooldown: 30000,
 }
 
