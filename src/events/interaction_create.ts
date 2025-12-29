@@ -38,6 +38,9 @@ import { handle_role_permission_select } from "../commands/tools/get_role_permis
 import * as reminder_add_new             from "../interactions/buttons/reminder/add_new"
 import * as reminder_list                from "../interactions/buttons/reminder/list"
 import * as reminder_cancel              from "../interactions/buttons/reminder/cancel"
+import * as loa_request                  from "../interactions/buttons/loa/request"
+import * as loa_approve                  from "../interactions/buttons/loa/approve"
+import * as loa_reject                   from "../interactions/buttons/loa/reject"
 
 import * as payment_method_select        from "../interactions/select_menus/payment_method";
 import * as guide_select                 from "../interactions/select_menus/guide_select";
@@ -45,6 +48,7 @@ import * as version_select               from "../interactions/select_menus/vers
 import * as work_stats_select            from "../interactions/select_menus/work_stats/week_select";
 import * as reminder_cancel_select       from "../interactions/select_menus/reminder_cancel_select";
 import { handle_reminder_add_new_modal } from "../interactions/modals/reminder_add_new";
+import { handle_loa_request_modal }      from "../interactions/modals/loa_request";
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
   try {
@@ -337,6 +341,18 @@ export async function handle_interaction(
         await reminder_cancel.handle_reminder_cancel(interaction)
         return
       }
+      if (interaction.customId === "loa_request") {
+        await loa_request.handle_loa_request(interaction)
+        return
+      }
+      if (interaction.customId === "loa_approve") {
+        await loa_approve.handle_loa_approve(interaction)
+        return
+      }
+      if (interaction.customId === "loa_reject") {
+        await loa_reject.handle_loa_reject(interaction)
+        return
+      }
     } catch (err) {
       console.log("[button] Error:", err)
       await log_error(client, err as Error, "Button", {
@@ -366,6 +382,7 @@ export async function handle_interaction(
         return;
       }
       if (await handle_reminder_add_new_modal(interaction)) return;
+      if (await handle_loa_request_modal(interaction)) return;
       if (await script_redeem_modal.handle_script_redeem_modal(interaction)) return;
     } catch (err) {
       console.log("[modal] Error:", err);
