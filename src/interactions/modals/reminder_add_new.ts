@@ -1,6 +1,6 @@
 import { ModalSubmitInteraction } from "discord.js"
-import { component, format, time, db } from "../../utils"
-import { log_error }                   from "../../utils/error_logger"
+import { component, format, time, db, api } from "../../utils"
+import { log_error }                        from "../../utils/error_logger"
 
 interface reminder_data {
   _id?       : any
@@ -87,7 +87,12 @@ export async function handle_reminder_add_new_modal(interaction: ModalSubmitInte
       ],
     })
 
-    await interaction.reply(confirmation)
+    await api.send_dm(interaction.user.id, discord_token, confirmation)
+
+    await interaction.reply({
+      content  : "Reminder scheduled! Check your DM.",
+      ephemeral: true,
+    })
 
     return true
   } catch (err) {

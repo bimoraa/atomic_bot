@@ -14,6 +14,7 @@ import { db, component }                                                 from ".
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./functions/anti_spam"
 import { load_reminders_from_db }                                        from "./commands/tools/reminder"
+import { start_webhook_server }                                          from "./server"
 
 config()
 
@@ -94,7 +95,9 @@ client.once("ready", async () => {
   }
 
   register_audit_logs(client)
+start_webhook_server()
 
+  
   console.log("Commands registered successfully")
 })
 

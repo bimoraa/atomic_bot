@@ -157,28 +157,40 @@ export const command: Command = {
       const confirmation = component.build_message({
         components: [
           component.container({
-            accent_color: 0x57F287,
             components: [
-              component.text("## Reminder Created"),
-              component.divider(2),
+              component.text("## Reminder Scheduled"),
+            ],
+          }),
+          component.container({
+            components: [
               component.text([
-                `${format.bold("Message:")}`,
-                `${note}`,
+                `- Scheduled at: ${time.full_date_time(now)}`,
+                `- Notify at: ${time.relative_time(remind_at)} || ${time.full_date_time(remind_at)}`,
               ]),
               component.divider(2),
               component.text([
-                `${format.bold("Scheduled Time:")} ${time.full_date_time(remind_at)}`,
-                `${format.bold("From Now:")} ${time.relative_time(remind_at)}`,
-                `${format.bold("Delivery:")} Direct Message`,
+                `- Message:`,
+                `> ${note}`,
               ]),
+            ],
+          }),
+          component.container({
+            components: [
+              component.action_row(
+                component.secondary_button("Reminder List", "reminder_list"),
+                component.secondary_button("Add Reminder", "reminder_add_new"),
+                component.danger_button("Cancel Reminder", "reminder_cancel"),
+              ),
             ],
           }),
         ],
       })
 
+      await api.send_dm(interaction.user.id, discord_token, confirmation)
+
       await interaction.reply({
-        ...confirmation,
-        flags: (confirmation.flags ?? 0) | 64,
+        content  : "Reminder scheduled! Check your DM.",
+        ephemeral: true,
       })
     } catch (err) {
       await log_error(interaction.client, err as Error, "Reminder Create", {
