@@ -24,7 +24,7 @@ export function build_question_panel(
           content: [
             `## Question from <@${user_id}>`,
             ``,
-            `**Q:** ${question}`,
+            `Question: ${question}`,
           ],
           thumbnail: user_avatar,
         }),
@@ -37,7 +37,7 @@ export function build_question_panel(
       component.container({
         components: [
           component.action_row(
-            component.primary_button("Answer", `answer_question_${user_id}`)
+            component.primary_button("Answer", `ask_answer_${user_id}`)
           ),
         ],
       })
