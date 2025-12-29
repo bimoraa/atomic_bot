@@ -1,5 +1,5 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
-import { DisTube, Song, Queue } from "distube"
+import { DisTube, Song, Queue, Events } from "distube"
 import { component } from "../../utils"
 import ytdl from "ytdl-core"
 
@@ -9,21 +9,21 @@ export function get_distube(client: Client): DisTube {
   if (!distube) {
     distube = new DisTube(client, {
       emitNewSongOnly : false,
-      leaveOnStop     : true,
       nsfw            : false,
-      searchSongs     : 10,
     })
 
-    distube.on("finishSong", (queue: Queue, song: Song) => {
+    distube.on(Events.FINISH_SONG, (queue: Queue, song: Song) => {
       console.log(`[DisTube] Finished playing: ${song.name}`)
     })
 
-    distube.on("addSong", (queue: Queue, song: Song) => {
+    distube.on(Events.ADD_SONG, (queue: Queue, song: Song) => {
       console.log(`[DisTube] Track added: ${song.name}`)
     })
 
-    distube.on("error", (channel, error: Error) => {
+    distube.on(Events.ERROR, (error: Error, queue: Queue, song?: Song) => {
       console.error("[DisTube ERROR]", error)
+      console.error("[Queue]", queue?.id)
+      console.error("[Song]", song?.name)
     })
   }
 
@@ -240,7 +240,7 @@ export async function get_queue(options: { client: Client; guild: Guild }) {
                 upcoming.length > 0
                   ? `Next ${upcoming.length} track${upcoming.length > 1 ? "s" : ""}:`
                   : "No upcoming tracks",
-                ...upcoming.map((song, i) => `${i + 1}. ${song.name} - ${song.formattedDuration}`),
+                ...upcoming.map((song: Song, i: number) => `${i + 1}. ${song.name} - ${song.formattedDuration}`),
               ],
             }),
           ],
