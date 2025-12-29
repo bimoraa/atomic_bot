@@ -84,10 +84,15 @@ export async function play_track(options: play_track_options) {
   try {
     const player_instance = await get_player(client)
     
+    console.log("[play_track] Searching for:", query)
+    console.log("[play_track] Registered extractors:", player_instance.extractors.store.map(e => e.identifier).join(", "))
+
     const result = await player_instance.search(query, {
       requestedBy : member.user,
-      searchEngine: QueryType.AUTO,
+      searchEngine: QueryType.YOUTUBE_SEARCH,
     })
+
+    console.log("[play_track] Search result:", result ? `${result.tracks.length} tracks found` : "null result")
 
     if (!result || !result.tracks.length) {
       return {
@@ -539,16 +544,21 @@ export async function now_playing(options: queue_options) {
 export async function search_tracks(query: string) {
   try {
     if (!player) {
+      console.error("[search_tracks] Player not initialized")
       return {
         success : false,
         error   : "Music player not initialized",
       }
     }
 
+    console.log("[search_tracks] Searching for:", query)
+    console.log("[search_tracks] Registered extractors:", player.extractors.store.map(e => e.identifier).join(", "))
+
     const result = await player.search(query, {
-      requestedBy : "system",
-      searchEngine: QueryType.AUTO,
+      searchEngine: QueryType.YOUTUBE_SEARCH,
     })
+
+    console.log("[search_tracks] Search result:", result ? `${result.tracks.length} tracks found` : "null result")
 
     if (!result || !result.tracks.length) {
       return {
