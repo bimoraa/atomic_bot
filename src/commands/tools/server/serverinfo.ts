@@ -43,52 +43,68 @@ export const command: Command = {
       "Very High",
     ]
     const verification     = verification_levels[guild.verificationLevel] || "Unknown"
-    const icon_url         = guild.iconURL({ size: 512 }) || ""
+    const icon_url         = guild.iconURL({ size: 4096 }) || ""
+    const banner_url       = guild.bannerURL({ size: 256 }) || ""
 
     const server_message = component.build_message({
       components: [
         component.container({
           components: [
+            component.text([
+              `## ${guild.name} - Server Stats`,
+            ]),
+          ],
+        }),
+        component.container({
+          components: [
             component.section({
-              content   : `### ${guild.name}`,
-              thumbnail : icon_url,
+              content: [
+                `## General`,
+                `- Server ID: ${guild.id}`,
+                `- Owner: <@${owner.id}>`,
+                `- Created: ${created_at}`,
+                `- Verification Level: ${verification}`,
+              ],
+              thumbnail: icon_url,
             }),
-            component.divider(),
+          ],
+        }),
+        component.container({
+          components: [
             component.text([
-              "### General",
-              `- Server ID: ${guild.id}`,
-              `- Owner: <@${owner.id}>`,
-              `- Created: ${created_at}`,
-              `- Verification Level: ${verification}`,
-            ]),
-            component.divider(),
-            component.text([
-              "### Members",
-              `- Total Members: ${member_count}`,
-              `- Total Bots: ${bot_count}`,
-            ]),
-            component.divider(),
-            component.text([
-              "### Channels",
+              `## Channels`,
               `- Text: ${text_channels}`,
               `- Voice: ${voice_channels}`,
               `- Categories: ${categories}`,
             ]),
-            component.divider(),
+          ],
+        }),
+        component.container({
+          components: [
             component.text([
-              "### Boosts",
+              `## Boost`,
               `- Level: ${boost_level}`,
-              `- Boosts: ${boost_count}`,
+              `- Total Booster: ${boost_count}`,
             ]),
-            component.divider(),
+          ],
+        }),
+        component.container({
+          components: [
             component.text([
-              "### Other",
+              `## Other`,
               `- Roles: ${roles_count}`,
               `- Emojis: ${emojis_count}`,
               `- Stickers: ${stickers_count}`,
             ]),
           ],
         }),
+        ...(banner_url ? [component.container({
+          components: [
+            component.media_gallery([
+              component.gallery_item(banner_url),
+            ]),
+          ],
+        })] : []),
       ],
     })
 
