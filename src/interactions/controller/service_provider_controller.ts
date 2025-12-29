@@ -1,6 +1,7 @@
 import { Client } from "discord.js"
 import { db } from "../../utils"
 import { log_error } from "../../utils/error_logger"
+import * as luarmor from "../../functions/luarmor"
 
 const SETTINGS_COLLECTION = "service_provider_settings"
 const RESET_COLLECTION    = "service_provider_resets"
@@ -93,3 +94,154 @@ export async function check_reset_cooldown(options: { client: Client; user_id: s
     return { allowed: true }
   }
 }
+
+export async function get_user_script(options: { client: Client; user_id: string }): Promise<{ success: boolean; script?: string; error?: string }> {
+  try {
+    const user_result = await luarmor.get_user_by_discord(options.user_id)
+
+    if (!user_result.success || !user_result.data) {
+      return {
+        success : false,
+        error   : user_result.error || "User not found",
+      }
+    }
+
+    const loader_script = luarmor.get_full_loader_script(user_result.data.user_key)
+
+    return {
+      success : true,
+      script  : loader_script,
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "get_user_script", {
+      user_id: options.user_id,
+    })
+    return {
+      success : false,
+      error   : "Failed to get script",
+    }
+  }
+}
+
+export async function reset_user_hwid(options: { client: Client; user_id: string }): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const cooldown = await check_reset_cooldown({ client: options.client, user_id: options.user_id })
+
+    if (!cooldown.allowed) {
+      const remaining_seconds = Math.ceil((cooldown.remaining_ms || 0) / 1000)
+      return {
+        success : false,
+        error   : `Please wait ${remaining_seconds} seconds before resetting again.`,
+      }
+    }
+
+    const user_result = await luarmor.get_user_by_discord(options.user_id)
+
+    if (!user_result.success || !user_result.data) {
+      return {
+        success : false,
+        error   : user_result.error || "User not found",
+      }
+    }
+
+    const reset_result = await luarmor.reset_hwid_by_key(user_result.data.user_key)
+
+    if (reset_result.success) {
+      return {
+        success : true,
+        message : "HWID reset successfully",
+      }
+    } else {
+      return {
+        success : false,
+        error   : reset_result.error || "Failed to reset HWID",
+      }
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "reset_user_hwid", {
+      user_id: options.user_id,
+    })
+    return {
+      success : false,
+      error   : "Failed to reset HWID",
+    }
+  }
+}
+
+export async function get_user_stats(options: { client: Client; user_id: string }): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
+    const user_result = await luarmor.get_user_by_discord(options.user_id)
+
+    if (!user_result.success || !user_result.data) {
+      return {
+        success : false,
+        error   : user_result.error || "User not found",
+      }
+    }
+
+    const all_users_result = await luarmor.get_all_users()
+    let leaderboard_text   = "Unable to fetch leaderboard"
+
+    if (all_users_result.success && all_users_result.data) {
+      const rank_info = luarmor.get_execution_rank(all_users_result.data, options.user_id)
+      if (rank_info.rank > 0) {
+        leaderboard_text = `You are #${rank_info.rank} of ${rank_info.total} users`
+      } else {
+        leaderboard_text = `Not ranked yet (${all_users_result.data.length} total users)`
+      }
+    }
+
+    return {
+      success : true,
+      data    : {
+        user             : user_result.data,
+        leaderboard_text : leaderboard_text,
+      },
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "get_user_stats", {
+      user_id: options.user_id,
+    })
+    return {
+      success : false,
+      error   : "Failed to get stats",
+    }
+  }
+}
+
+export async function redeem_user_key(options: { client: Client; user_id: string; user_key: string }): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const existing_user = await luarmor.get_user_by_discord(options.user_id)
+
+    if (existing_user.success && existing_user.data) {
+      return {
+        success : false,
+        error   : "You already have a key linked to your Discord account",
+      }
+    }
+
+    const link_result = await luarmor.link_discord(options.user_key, options.user_id)
+
+    if (link_result.success) {
+      return {
+        success : true,
+        message : "Key linked successfully",
+      }
+    } else {
+      return {
+        success : false,
+        error   : link_result.error || "Failed to link key",
+      }
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "redeem_user_key", {
+      user_id  : options.user_id,
+      user_key : options.user_key,
+    })
+    return {
+      success : false,
+      error   : "Failed to redeem key",
+    }
+  }
+}
+
