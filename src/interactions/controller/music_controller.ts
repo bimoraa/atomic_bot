@@ -54,19 +54,27 @@ export async function get_player(client: Client): Promise<Player> {
   
   if (!extractors_loaded) {
     const { YoutubeiExtractor } = await import("discord-player-youtubei")
+    
     await player.extractors.register(YoutubeiExtractor, {
+      authentication: process.env.YOUTUBE_COOKIE || undefined,
       streamOptions: {
-        useClient: "IOS"
+        useClient      : "IOS",
+        highWaterMark  : 1 << 25,
+        downloadOptions: {
+          quality: "highestaudio"
+        }
       }
     })
+    
     await player.extractors.register(SoundCloudExtractor, {})
     await player.extractors.register(SpotifyExtractor, {})
     await player.extractors.register(AppleMusicExtractor, {})
     await player.extractors.register(AttachmentExtractor, {})
     await player.extractors.register(VimeoExtractor, {})
     await player.extractors.register(ReverbnationExtractor, {})
+    
     extractors_loaded = true
-    console.log("[PLAYER] Extractors registered with Youtubei extractor (IOS client)")
+    console.log("[PLAYER] Extractors registered (Youtubei with IOS client + auth)")
   }
   
   return player
@@ -180,9 +188,21 @@ export async function play_track(options: play_track_options) {
       try {
         await queue.node.play()
         console.log("[play_track] Playback started successfully")
-      } catch (error) {
+      } catch (error: any) {
         console.error("[play_track] Failed to start playback:", error)
-        throw error
+        console.error("[play_track] Error details:", {
+          message : error?.message,
+          stack   : error?.stack,
+          cause   : error?.cause,
+          code    : error?.code
+        })
+        
+        queue.delete()
+        
+        return {
+          success : false,
+          error   : `Failed to play track: ${error?.message || "Unknown error"}. This video might be age-restricted or unavailable in your region.`,
+        }
       }
     } else {
       console.log("[play_track] Already playing, track added to queue")
