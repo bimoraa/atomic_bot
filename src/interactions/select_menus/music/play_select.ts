@@ -3,7 +3,7 @@ import {
   GuildMember,
   VoiceChannel,
 }                    from "discord.js"
-import { play_track } from "../../controller/music_controller_distube"
+import { play_track } from "../../controller/music_controller"
 
 const search_cache = new Map<string, any[]>()
 

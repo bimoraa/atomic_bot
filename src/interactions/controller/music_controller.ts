@@ -9,21 +9,20 @@ export function get_distube(client: Client): DisTube {
   if (!distube) {
     distube = new DisTube(client, {
       emitNewSongOnly : false,
-      leaveOnFinish   : false,
       leaveOnStop     : true,
       nsfw            : false,
       searchSongs     : 10,
     })
 
-    distube.on("playSong", (queue: Queue, song: Song) => {
-      console.log(`[DisTube] Started playing: ${song.name}`)
+    distube.on("finishSong", (queue: Queue, song: Song) => {
+      console.log(`[DisTube] Finished playing: ${song.name}`)
     })
 
     distube.on("addSong", (queue: Queue, song: Song) => {
       console.log(`[DisTube] Track added: ${song.name}`)
     })
 
-    distube.on("error", (error: Error) => {
+    distube.on("error", (channel, error: Error) => {
       console.error("[DisTube ERROR]", error)
     })
   }
