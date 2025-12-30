@@ -66,10 +66,10 @@ async function resolve_track_url(client: Client, query: string, fallback_query?:
     }
 
     try {
-      const search_result = await yts.search({ query: search_text, hl: "en", gl: "US" })
-
-      if (search_result?.videos && search_result.videos.length > 0) {
-        return search_text
+      const search_results = await playdl.search(search_text, { limit: 1, source: { youtube: "video" } })
+      
+      if (search_results && search_results.length > 0) {
+        return search_results[0].url
       }
 
       return search_text
