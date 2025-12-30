@@ -3,7 +3,7 @@ import {
   GuildMember,
   VoiceChannel,
 }                    from "discord.js"
-import { play_track } from "../../controller/music_controller"
+import { play_track } from "../../controllers/music_controller"
 
 export async function handle_music_modal(interaction: ModalSubmitInteraction) {
   try {

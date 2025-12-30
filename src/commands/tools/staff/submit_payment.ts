@@ -1,8 +1,8 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, TextChannel, ThreadChannel } from "discord.js"
-import { Command } from "../../types/command"
-import { is_staff } from "../../functions/permissions"
-import { api, time, component } from "../../utils"
-import { load_config } from "../../configuration/loader"
+import { Command } from "../../../types/command"
+import { is_staff } from "../../../services/permissions"
+import { api, time, component } from "../../../utils"
+import { load_config } from "../../../configuration/loader"
 
 const payment_cfg = load_config<{ submit_channel_id: string }>("payment")
 const payment_channel_id = payment_cfg.submit_channel_id

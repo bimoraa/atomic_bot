@@ -1,5 +1,5 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
-import * as luarmor                     from "../../../functions/luarmor"
+import * as luarmor                     from "../../../services/luarmor"
 import { component, api, env, format } from "../../../utils"
 
 const __script_role_id = env.get("LUARMOR_SCRIPT_ROLE_ID", "1398313779380617459")

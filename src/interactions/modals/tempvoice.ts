@@ -1,5 +1,5 @@
 import { ModalSubmitInteraction, GuildMember, VoiceChannel } from "discord.js"
-import * as tempvoice                                        from "../../functions/tempvoice"
+import * as tempvoice                                        from "../../services/tempvoice"
 import { component }                                         from "../../utils"
 
 function create_reply(message: string) {

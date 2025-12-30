@@ -1,6 +1,6 @@
 import { Events, VoiceState } from "discord.js"
 import { client }             from ".."
-import * as tempvoice         from "../functions/tempvoice"
+import * as tempvoice         from "../services/tempvoice"
 
 client.on(Events.VoiceStateUpdate, async (old_state: VoiceState, new_state: VoiceState) => {
   try {

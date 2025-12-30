@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js"
 import { Command } from "../../types/command"
-import { is_admin } from "../../functions/permissions"
+import { is_admin } from "../../services/permissions"
 import { component, api, format } from "../../utils"
 
 const rules_channel_id = "1250373760016715866"

@@ -1,5 +1,5 @@
 import { ButtonInteraction }    from "discord.js"
-import { get_reminder_list } from "../../controller/reminder_controller"
+import { get_reminder_list } from "../../controllers/reminder_controller"
 
 export async function handle_reminder_list(interaction: ButtonInteraction): Promise<void> {
   const result = await get_reminder_list({

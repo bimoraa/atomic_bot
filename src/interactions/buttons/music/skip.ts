@@ -1,5 +1,5 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
-import { skip_track }                     from "../../../interactions/controller/music_controller"
+import { skip_track }                     from "../../controllers/music_controller"
 
 export async function handle_music_skip(interaction: ButtonInteraction): Promise<void> {
   const member = interaction.member as GuildMember

@@ -1,7 +1,7 @@
 import { Client } from "discord.js"
 import { db } from "../../utils"
 import { log_error } from "../../utils/error_logger"
-import * as luarmor from "../../functions/luarmor"
+import * as luarmor from "../../services/luarmor"
 
 const SETTINGS_COLLECTION = "service_provider_settings"
 const RESET_COLLECTION    = "service_provider_resets"

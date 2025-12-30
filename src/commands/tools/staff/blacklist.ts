@@ -5,7 +5,7 @@ import {
   User,
 }                           from "discord.js"
 import { Command }          from "../../../types/command"
-import { blacklist }        from "../../../interactions/controller/whitelister_controller"
+import { blacklist }        from "../../../interactions/controllers/whitelister_controller"
 
 const ALLOWED_ROLE_ID = "1277272542914281512"
 

@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }                                                       from "../../types/command"
-import { is_admin }                                                      from "../../functions/permissions"
+import { is_admin }                                                      from "../../services/permissions"
 import { api, component }                                                from "../../utils"
 
 export const command: Command = {

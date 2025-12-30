@@ -2,9 +2,9 @@ import { ChatInputCommandInteraction, SlashCommandBuilder, ThreadChannel, TextCh
 import { Command } from "../../../types/command"
 import { component, time, api, format, db } from "../../../utils"
 import { client } from "../../../index"
-import { ticket_types, get_ticket } from "../../../functions/unified_ticket"
-import { close_ticket } from "../../../functions/unified_ticket/close"
-import { is_staff, is_admin_or_mod } from "../../../functions/permissions"
+import { ticket_types, get_ticket } from "../../../services/unified_ticket"
+import { close_ticket } from "../../../services/unified_ticket/close"
+import { is_staff, is_admin_or_mod } from "../../../services/permissions"
 
 const COLLECTION_NAME = "close_requests"
 

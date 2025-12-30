@@ -1,5 +1,5 @@
 import { ModalSubmitInteraction, ButtonInteraction } from "discord.js"
-import { open_ticket } from "../../../functions/unified_ticket"
+import { open_ticket } from "../../../services/unified_ticket"
 
 export async function handle(interaction: ModalSubmitInteraction) {
   if (!interaction.customId.startsWith("priority_modal_")) return false

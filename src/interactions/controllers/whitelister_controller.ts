@@ -1,7 +1,7 @@
 import { Client, User }    from "discord.js"
 import { component }       from "../../utils"
 import { log_error }       from "../../utils/error_logger"
-import * as luarmor        from "../../functions/luarmor"
+import * as luarmor        from "../../services/luarmor"
 
 interface whitelist_options {
   user       : User

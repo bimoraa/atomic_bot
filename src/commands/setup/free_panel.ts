@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js"
 import { Command }  from "../../types/command"
-import { is_admin } from "../../functions/permissions"
+import { is_admin } from "../../services/permissions"
 import { component, api } from "../../utils"
 
 export const command: Command = {

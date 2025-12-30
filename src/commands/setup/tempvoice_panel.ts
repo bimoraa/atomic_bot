@@ -7,9 +7,9 @@ import {
   PermissionFlagsBits,
 }                               from "discord.js"
 import { Command }              from "../../types/command"
-import { is_admin }             from "../../functions/permissions"
+import { is_admin }             from "../../services/permissions"
 import { api, component }       from "../../utils"
-import * as tempvoice           from "../../functions/tempvoice"
+import * as tempvoice           from "../../services/tempvoice"
 
 const interface_image = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/interface.png?raw=true"
 

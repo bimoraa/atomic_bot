@@ -6,8 +6,8 @@ import {
   GuildMember,
 } from "discord.js";
 import { Command } from "../../../types/command";
-import { count_user_messages, format_logs } from "../../../functions/message_counter";
-import { is_admin } from "../../../functions/permissions";
+import { count_user_messages, format_logs } from "../../../services/message_counter";
+import { is_admin } from "../../../services/permissions";
 
 const duration_map: Record<string, number> = {
   "1d": 24 * 60 * 60 * 1000,

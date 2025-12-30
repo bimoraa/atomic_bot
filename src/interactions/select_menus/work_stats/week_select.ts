@@ -5,7 +5,7 @@ import {
   get_work_logs,
   get_year,
   format_salary,
-} from "../../../functions/work_tracker"
+} from "../../../services/work_tracker"
 
 export async function handle_work_stats_week_select(interaction: StringSelectMenuInteraction): Promise<void> {
   const [staff_id, week_str] = interaction.values[0].split(":")

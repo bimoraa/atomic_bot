@@ -7,8 +7,8 @@ import {
   TextInputStyle,
   ActionRowBuilder,
 } from "discord.js";
-import { Command } from "../../types/command";
-import { is_admin } from "../../functions/permissions";
+import { Command } from "../../../types/command";
+import { is_admin } from "../../../services/permissions";
 
 export const command: Command = {
   data: new SlashCommandBuilder()

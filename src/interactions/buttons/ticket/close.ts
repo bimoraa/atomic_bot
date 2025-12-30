@@ -1,5 +1,5 @@
 import { ButtonInteraction, ThreadChannel } from "discord.js"
-import { close_ticket } from "../../../functions/unified_ticket"
+import { close_ticket } from "../../../services/unified_ticket"
 
 export async function handle(interaction: ButtonInteraction) {
   if (interaction.customId !== "priority_close") return false

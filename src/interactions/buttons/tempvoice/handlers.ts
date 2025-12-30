@@ -1,5 +1,5 @@
 import { ButtonInteraction, GuildMember, VoiceChannel } from "discord.js"
-import * as tempvoice                                   from "../../../functions/tempvoice"
+import * as tempvoice                                   from "../../../services/tempvoice"
 import { component, modal }                             from "../../../utils"
 
 function create_not_in_channel_reply(guild_id: string, generator_channel_id: string | null) {

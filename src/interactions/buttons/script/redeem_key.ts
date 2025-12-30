@@ -1,5 +1,5 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
-import * as luarmor                     from "../../../functions/luarmor"
+import * as luarmor                     from "../../../services/luarmor"
 import { component, api, format, modal } from "../../../utils"
 
 export async function handle_redeem_key(interaction: ButtonInteraction): Promise<void> {

@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "../../../types/command"
-import { get_reminder_list }                                from "../../../interactions/controller/reminder_controller"
+import { get_reminder_list }                                from "../../../interactions/controllers/reminder_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

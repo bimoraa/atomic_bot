@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
-import { Command }                                          from "../../types/command"
-import { component, db, format, time }                      from "../../utils"
+import { Command }                                          from "../../../types/command"
+import { component, db, format, time }                      from "../../../utils"
 
 interface ghost_ping_entry {
   message_id : string

@@ -5,7 +5,7 @@ import {
   PermissionFlagsBits,
 }                        from "discord.js"
 import { Command }        from "../../../types/command"
-import { timeout_member } from "../../../interactions/controller/moderation_controller"
+import { timeout_member } from "../../../interactions/controllers/moderation_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

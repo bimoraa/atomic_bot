@@ -1,7 +1,7 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { component, api, format, modal } from "../../../utils"
-import { get_user_script } from "../../controller/service_provider_controller"
-import * as luarmor from "../../../functions/luarmor"
+import { get_user_script } from "../../controllers/service_provider_controller"
+import * as luarmor from "../../../services/luarmor"
 
 export async function handle_get_script(interaction: ButtonInteraction): Promise<void> {
   const member = interaction.member as GuildMember

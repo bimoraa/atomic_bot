@@ -1,5 +1,5 @@
 import { ButtonInteraction }       from "discord.js"
-import { end_loa, has_loa_permission } from "../../controller/loa_controller"
+import { end_loa, has_loa_permission } from "../../controllers/loa_controller"
 
 export async function handle_loa_end(interaction: ButtonInteraction): Promise<void> {
   if (!interaction.guild || !interaction.member) {

@@ -8,7 +8,7 @@ import {
 }                     from "discord.js"
 import { Command }    from "../../../types/command"
 import { component }  from "../../../utils"
-import { search_tracks }   from "../../../interactions/controller/music_controller"
+import { search_tracks }   from "../../../interactions/controllers/music_controller"
 import { cache_search_results } from "../../../interactions/select_menus/music/play_select"
 
 export const command: Command = {

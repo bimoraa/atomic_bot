@@ -1,13 +1,13 @@
 import { Client, Collection, Interaction, ThreadChannel, GuildMember, ButtonInteraction } from "discord.js"
 import { Command }                                                     from "../types/command"
-import { can_use_command }                                             from "../functions/command_permissions"
+import { can_use_command }                                             from "../services/command_permissions"
 import { log_error, handle_error_log_button }                          from "../utils/error_logger"
 import {
   handle_ticket_button,
   handle_ticket_modal,
   handle_ticket_select_menu,
   handle_ticket_user_select,
-}                                        from "../functions/unified_ticket"
+}                                        from "../services/unified_ticket"
 import * as answer_stats_select          from "../interactions/select_menus/answer_stats"
 import * as devlog_modal                 from "../interactions/modals/devlog"
 import * as review_modal                 from "../interactions/modals/review"

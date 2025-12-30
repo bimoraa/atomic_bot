@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "../../../types/command"
-import { get_loa_panel }                                    from "../../../interactions/controller/loa_controller"
+import { get_loa_panel }                                    from "../../../interactions/controllers/loa_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

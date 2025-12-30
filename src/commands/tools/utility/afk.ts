@@ -4,7 +4,7 @@ import {
 } from "discord.js"
 import { Command }     from "../../../types/command"
 import { component, api } from "../../../utils"
-import { set_afk }     from "../../../functions/afk"
+import { set_afk }     from "../../../services/afk"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

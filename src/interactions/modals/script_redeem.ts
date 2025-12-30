@@ -1,6 +1,6 @@
 import { ModalSubmitInteraction, GuildMember } from "discord.js"
 import { component, api, env, format } from "../../utils"
-import { redeem_user_key }             from "../controller/service_provider_controller"
+import { redeem_user_key }             from "../controllers/service_provider_controller"
 
 const __script_role_id = env.get("LUARMOR_SCRIPT_ROLE_ID", "1398313779380617459")
 

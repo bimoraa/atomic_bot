@@ -2,10 +2,10 @@ import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
 } from "discord.js"
-import { Command } from "../../types/command"
+import { Command } from "../../../types/command"
 import { join } from "path"
-import { file } from "../../utils"
-import { update_price_panel } from "../setup/script_price"
+import { file } from "../../../utils"
+import { update_price_panel } from "../../setup/script_price"
 
 interface PricingConfig {
   channel_id:     string
@@ -18,7 +18,7 @@ interface PricingConfig {
   }
 }
 
-const CONFIG_PATH = join(__dirname, "../../configuration/pricing.cfg")
+const CONFIG_PATH = join(__dirname, "../../../configuration/pricing.cfg")
 
 function load_config(): PricingConfig {
   return file.read_json<PricingConfig>(CONFIG_PATH)

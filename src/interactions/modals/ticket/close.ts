@@ -1,5 +1,5 @@
 import { ModalSubmitInteraction, ThreadChannel } from "discord.js"
-import { close_ticket } from "../../../functions/unified_ticket"
+import { close_ticket } from "../../../services/unified_ticket"
 
 export async function handle(interaction: ModalSubmitInteraction) {
   if (interaction.customId !== "priority_close_reason_modal") return false

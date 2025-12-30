@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js";
 import { Command } from "../../types/command";
-import { test_roblox_update_notification } from "../../functions/roblox_update";
-import { is_admin } from "../../functions/permissions";
+import { test_roblox_update_notification } from "../../services/roblox_update";
+import { is_admin } from "../../services/permissions";
 
 export const command: Command = {
   data: new SlashCommandBuilder()

@@ -8,8 +8,8 @@ import {
   ticket_issues,
   priority_log_channel_id,
   save_priority_ticket,
-} from "../../controller/ticket_controller"
-import { is_admin, is_staff } from "../../../functions/permissions"
+} from "../../controllers/ticket_controller"
+import { is_admin, is_staff } from "../../../services/permissions"
 import { component, api, format } from "../../../utils"
 
 export async function handle(interaction: ButtonInteraction) {

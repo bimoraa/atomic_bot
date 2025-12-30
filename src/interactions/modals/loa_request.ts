@@ -1,5 +1,5 @@
 import { ModalSubmitInteraction } from "discord.js"
-import { request_loa }            from "../controller/loa_controller"
+import { request_loa }            from "../controllers/loa_controller"
 import { db }                     from "../../utils"
 
 export async function handle_loa_request_modal(interaction: ModalSubmitInteraction): Promise<boolean> {

@@ -6,7 +6,7 @@ import {
 import { Command } from "../../../types/command"
 import { component, api } from "../../../utils"
 import { log_error } from "../../../utils/error_logger"
-import { set_under_ratelimit } from "../../../interactions/controller/service_provider_controller"
+import { set_under_ratelimit } from "../../../interactions/controllers/service_provider_controller"
 
 const ALLOWED_ROLE_ID = "1316021423206039596"
 

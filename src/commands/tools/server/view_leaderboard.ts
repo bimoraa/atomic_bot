@@ -4,8 +4,8 @@ import {
   GuildMember,
 }                               from "discord.js"
 import { Command }              from "../../../types/command"
-import { is_admin }             from "../../../functions/permissions"
-import * as luarmor             from "../../../functions/luarmor"
+import { is_admin }             from "../../../services/permissions"
+import * as luarmor             from "../../../services/luarmor"
 import { component, api, format } from "../../../utils"
 
 export const command: Command = {

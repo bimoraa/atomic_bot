@@ -5,7 +5,7 @@ import {
   create_thread_for_message,
   build_question_panel_no_answer 
 } from "../../../commands/tools/staff/ask"
-import { is_staff, is_admin_or_mod } from "../../../functions/permissions"
+import { is_staff, is_admin_or_mod } from "../../../services/permissions"
 
 const ANSWER_LOG_CHANNEL_ID = "1446894637980713090"
 const COLLECTION_NAME       = "answer_stats"

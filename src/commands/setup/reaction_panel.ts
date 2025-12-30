@@ -7,7 +7,7 @@ import {
   Guild,
 } from "discord.js"
 import { Command }              from "../../types/command"
-import { is_admin }             from "../../functions/permissions"
+import { is_admin }             from "../../services/permissions"
 import { component, api, format } from "../../utils"
 
 interface ReactionRole {

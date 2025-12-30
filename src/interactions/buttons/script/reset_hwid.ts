@@ -1,6 +1,6 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { component, api, format }             from "../../../utils"
-import { reset_user_hwid }                    from "../../controller/service_provider_controller"
+import { reset_user_hwid }                    from "../../controllers/service_provider_controller"
 
 export async function handle_reset_hwid(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true })

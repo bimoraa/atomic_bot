@@ -5,8 +5,8 @@ import {
   GuildMember,
 } from "discord.js"
 import { Command } from "../../types/command"
-import { is_admin } from "../../functions/permissions"
-import { get_ticket_config } from "../../functions/unified_ticket"
+import { is_admin } from "../../services/permissions"
+import { get_ticket_config } from "../../services/unified_ticket"
 import { component, api, format } from "../../utils"
 
 export const command: Command = {

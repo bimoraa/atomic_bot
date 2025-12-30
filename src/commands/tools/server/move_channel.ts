@@ -6,9 +6,9 @@ import {
   CategoryChannel,
   GuildMember,
 } from "discord.js";
-import { Command } from "../../types/command";
-import { move_channel_to_category } from "../../functions/channel_manager";
-import { is_admin } from "../../functions/permissions";
+import { Command } from "../../../types/command";
+import { move_channel_to_category } from "../../../services/channel_manager";
+import { is_admin } from "../../../services/permissions";
 
 export const command: Command = {
   data: new SlashCommandBuilder()

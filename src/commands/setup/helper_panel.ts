@@ -5,9 +5,9 @@ import {
   GuildMember,
 } from "discord.js"
 import { Command } from "../../types/command"
-import { is_admin } from "../../functions/permissions"
+import { is_admin } from "../../services/permissions"
 import { component, api, format } from "../../utils"
-import { get_ticket_config } from "../../functions/unified_ticket"
+import { get_ticket_config } from "../../services/unified_ticket"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

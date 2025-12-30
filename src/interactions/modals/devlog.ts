@@ -1,5 +1,5 @@
 import { ModalSubmitInteraction } from "discord.js"
-import { publish_devlog }         from "../controller/devlog_controller"
+import { publish_devlog }         from "../controllers/devlog_controller"
 
 export async function handle(interaction: ModalSubmitInteraction) {
   if (!interaction.customId.startsWith("devlog_modal")) return false

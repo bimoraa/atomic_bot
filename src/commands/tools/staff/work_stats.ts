@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command } from "../../../types/command"
 import { component } from "../../../utils"
-import { get_week_number } from "../../../functions/work_tracker"
+import { get_week_number } from "../../../services/work_tracker"
 
 const __admin_role_id = "1277272542914281512"
 

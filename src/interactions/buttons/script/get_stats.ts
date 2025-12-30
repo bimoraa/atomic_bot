@@ -1,6 +1,6 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { component, api, format } from "../../../utils"
-import { get_user_stats }         from "../../controller/service_provider_controller"
+import { get_user_stats }         from "../../controllers/service_provider_controller"
 
 export async function handle_get_stats(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true })
