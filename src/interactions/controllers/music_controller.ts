@@ -1,83 +1,30 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
-import { getVoiceConnection } from "@discordjs/voice"
-import { DisTube, Song, Queue, Events, Playlist } from "distube"
-import { YouTubePlugin } from "@distube/youtube"
-import yts from "yt-search"
-import ffmpeg from "ffmpeg-static"
+import { Player, QueryType, Track, GuildQueue } from "discord-player"
 import { component } from "../../utils"
 import { log_error } from "../../utils/error_logger"
-import playdl from "play-dl"
+import yts from "yt-search"
 
-let distube: DisTube | null = null
-let playdl_initialized = false
+let player: Player | null = null
 
-async function initialize_playdl() {
-  if (!playdl_initialized) {
-    try {
-      const youtube_cookies = process.env.YOUTUBE_COOKIE?.split("; ").map(cookie => {
-        const [name, ...valueParts] = cookie.split("=")
-        return {
-          name   : name.trim(),
-          value  : valueParts.join("="),
-          domain : ".youtube.com",
-          path   : "/",
-        }
-      }) || []
+export function get_player(client: Client): Player {
+  if (!player) {
+    player = new Player(client)
 
-      if (youtube_cookies.length > 0) {
-        await playdl.setToken({
-          youtube: {
-            cookie: process.env.YOUTUBE_COOKIE || "",
-          },
-        })
-        console.log("[play-dl] Initialized with YouTube cookies")
-      }
-      
-      playdl_initialized = true
-    } catch (error) {
-      console.error("[play-dl] Failed to initialize:", error)
-    }
-  }
-}
-
-export function get_distube(client: Client): DisTube {
-  if (!distube) {
-    const ffmpeg_path = (ffmpeg as string) || "ffmpeg"
+    player.extractors.loadDefault()
     
-    void initialize_playdl()
-
-    distube = new DisTube(client, {
-      emitNewSongOnly : false,
-      nsfw            : false,
-      plugins         : [],
-      ffmpeg          : {
-        path: ffmpeg_path,
-      },
+    player.events.on("playerStart", (queue: GuildQueue, track: Track) => {
+      console.log(`[Player] Now playing: ${track.title}`)
     })
 
-    distube.on(Events.FINISH_SONG, (queue: Queue, song: Song) => {
-      console.log(`[DisTube] Finished playing: ${song.name}`)
-    })
-
-    distube.on(Events.ADD_SONG, (queue: Queue, song: Song) => {
-      console.log(`[DisTube] Track added: ${song.name}`)
-    })
-
-    distube.on(Events.ERROR, (error: Error, queue: Queue, song?: Song) => {
-      console.error(`[DisTube] Error:`, error.message)
-      void log_error(client, error, "distube_error", {
-        queue      : queue?.id,
-        song       : song?.name,
-        error_stack: error.stack,
+    player.events.on("error", (queue: GuildQueue, error: Error) => {
+      console.error(`[Player] Error:`, error.message)
+      void log_error(client, error, "player_error", {
+        queue_guild: queue?.guild?.id,
       })
     })
-
-    distube.on(Events.FFMPEG_DEBUG, (debug: string) => {
-      console.log(`[DisTube FFmpeg Debug]:`, debug)
-    })
   }
 
-  return distube
+  return player
 }
 
 interface play_track_options {
@@ -89,42 +36,14 @@ interface play_track_options {
   fallback_query?: string
 }
 
-async function resolve_track_url(client: Client, query: string, fallback_query?: string) {
-  try {
-    await initialize_playdl()
-    
-    const search_text = fallback_query || query
-    
-    if (playdl.yt_validate(query) === "video" || playdl.yt_validate(query) === "playlist") {
-      return query
-    }
-
-    try {
-      const search_results = await playdl.search(search_text, { limit: 1, source: { youtube: "video" } })
-      
-      if (search_results && search_results.length > 0) {
-        return search_results[0].url
-      }
-
-      return search_text
-    } catch (error) {
-      await log_error(client, error as Error, "resolve_track_url_search", { query: search_text })
-      return search_text
-    }
-  } catch (error) {
-    await log_error(client, error as Error, "resolve_track_url_outer", { query })
-    return fallback_query || query
-  }
-}
-
 export async function play_track(options: play_track_options) {
-  const { client, query, voice_channel, member } = options
+  const { client, query, voice_channel, member, guild } = options
 
   try {
     if (!voice_channel.joinable) {
       await log_error(client, new Error("Voice channel not joinable"), "play_track_joinable", {
         query,
-        guild        : options.guild.id,
+        guild        : guild.id,
         member       : member.id,
         channel_id   : voice_channel.id,
         channel_name : voice_channel.name,
@@ -138,7 +57,7 @@ export async function play_track(options: play_track_options) {
     if (!voice_channel.speakable) {
       await log_error(client, new Error("Voice channel not speakable"), "play_track_speakable", {
         query,
-        guild        : options.guild.id,
+        guild        : guild.id,
         member       : member.id,
         channel_id   : voice_channel.id,
         channel_name : voice_channel.name,
@@ -149,69 +68,43 @@ export async function play_track(options: play_track_options) {
       }
     }
 
-    const existing_connection = getVoiceConnection(voice_channel.guild.id)
+    const player_instance = get_player(client)
 
-    if (existing_connection) {
-      existing_connection.destroy()
-    }
+    const search_result = await player_instance.search(query, {
+      requestedBy : member.user,
+    })
 
-    const track_url = await resolve_track_url(client, query, options.fallback_query)
-
-    const distube_instance = get_distube(client)
-
-    try {
-      await initialize_playdl()
-      
-      let play_source: any = track_url
-      
-      if (playdl.yt_validate(track_url) === "video") {
-        const stream = await playdl.stream(track_url)
-        play_source = stream.stream
-        console.log("[play-dl] Using play-dl direct stream")
-      }
-      
-      await distube_instance.play(voice_channel, play_source, {
-        member      : member,
-        textChannel : undefined,
+    if (!search_result || !search_result.tracks || search_result.tracks.length === 0) {
+      await log_error(client, new Error("No tracks found"), "play_track_no_results", {
+        query,
+        guild  : guild.id,
+        member : member.id,
       })
-    } catch (playError: any) {
-      if (playError?.message?.includes("NOT_SUPPORTED_URL") || playError?.message?.includes("This url is not supported")) {
-        const search_query = options.fallback_query || query
-        
-        await log_error(client, playError, "play_track_url_not_supported_fallback", {
-          query,
-          track_url,
-          search_query,
-          guild : options.guild.id,
-        })
-        
-        try {
-          await distube_instance.play(voice_channel, search_query, {
-            member      : member,
-            textChannel : undefined,
-          })
-        } catch (searchError: any) {
-          await log_error(client, searchError, "play_track_search_fallback_failed", {
-            query,
-            fallback_query : options.fallback_query,
-            guild          : options.guild.id,
-          })
-          throw searchError
-        }
-      } else {
-        throw playError
+      return {
+        success : false,
+        error   : "No tracks found for that query.",
       }
     }
+
+    const queue_result = await player_instance.play(voice_channel, search_result, {
+      nodeOptions: {
+        metadata: {
+          channel : voice_channel,
+          guild   : guild,
+        },
+      },
+    })
+
+    console.log(`[discord-player] Track added: ${search_result.tracks[0].title}`)
 
     return { success: true }
   } catch (error: any) {
     await log_error(client, error, "play_track", {
       query,
-      guild        : options.guild.id,
+      guild        : guild.id,
       member       : member.id,
       channel_id   : voice_channel.id,
       channel_name : voice_channel.name,
-      resolved_url : playdl.yt_validate(query) !== false ? query : undefined,
     })
     return {
       success : false,
@@ -256,8 +149,8 @@ export async function pause_track(options: { client: Client; guild: Guild }) {
   const { client, guild } = options
 
   try {
-    const distube_instance = get_distube(client)
-    const queue = distube_instance.getQueue(guild)
+    const player_instance = get_player(client)
+    const queue = player_instance.nodes.get(guild)
 
     if (!queue) {
       return {
@@ -266,7 +159,7 @@ export async function pause_track(options: { client: Client; guild: Guild }) {
       }
     }
 
-    distube_instance.pause(guild)
+    queue.node.pause()
     return {
       success : true,
       message : "Music paused",
@@ -286,8 +179,8 @@ export async function resume_track(options: { client: Client; guild: Guild }) {
   const { client, guild } = options
 
   try {
-    const distube_instance = get_distube(client)
-    const queue = distube_instance.getQueue(guild)
+    const player_instance = get_player(client)
+    const queue = player_instance.nodes.get(guild)
 
     if (!queue) {
       return {
@@ -296,7 +189,7 @@ export async function resume_track(options: { client: Client; guild: Guild }) {
       }
     }
 
-    distube_instance.resume(guild)
+    queue.node.resume()
     return {
       success : true,
       message : "Music resumed",
@@ -316,8 +209,8 @@ export async function skip_track(options: { client: Client; guild: Guild }) {
   const { client, guild } = options
 
   try {
-    const distube_instance = get_distube(client)
-    const queue = distube_instance.getQueue(guild)
+    const player_instance = get_player(client)
+    const queue = player_instance.nodes.get(guild)
 
     if (!queue) {
       return {
@@ -326,10 +219,11 @@ export async function skip_track(options: { client: Client; guild: Guild }) {
       }
     }
 
-    const skipped = await distube_instance.skip(guild)
+    const current_track = queue.currentTrack
+    queue.node.skip()
     return {
       success : true,
-      message : `Skipped: ${skipped.name}`,
+      message : `Skipped: ${current_track?.title || "Unknown"}`,
     }
   } catch (error: any) {
     await log_error(client, error, "skip_track", {
@@ -346,8 +240,8 @@ export async function stop_track(options: { client: Client; guild: Guild }) {
   const { client, guild } = options
 
   try {
-    const distube_instance = get_distube(client)
-    const queue = distube_instance.getQueue(guild)
+    const player_instance = get_player(client)
+    const queue = player_instance.nodes.get(guild)
 
     if (!queue) {
       return {
@@ -356,7 +250,7 @@ export async function stop_track(options: { client: Client; guild: Guild }) {
       }
     }
 
-    await distube_instance.stop(guild)
+    queue.delete()
     return {
       success : true,
       message : "Music stopped and queue cleared",
@@ -376,8 +270,8 @@ export async function get_queue(options: { client: Client; guild: Guild }) {
   const { client, guild } = options
 
   try {
-    const distube_instance = get_distube(client)
-    const queue = distube_instance.getQueue(guild)
+    const player_instance = get_player(client)
+    const queue = player_instance.nodes.get(guild)
 
     if (!queue) {
       return {
@@ -386,8 +280,8 @@ export async function get_queue(options: { client: Client; guild: Guild }) {
       }
     }
 
-    const current = queue.songs[0]
-    const upcoming = queue.songs.slice(1, 6)
+    const current = queue.currentTrack
+    const upcoming = queue.tracks.toArray().slice(0, 5)
 
     const message = component.build_message({
       components: [
@@ -398,14 +292,14 @@ export async function get_queue(options: { client: Client; guild: Guild }) {
               content: [
                 "Music Queue",
                 "",
-                `Now Playing: ${current.name}`,
-                `By: ${current.uploader.name}`,
-                `Duration: ${current.formattedDuration}`,
+                `Now Playing: ${current?.title || "Unknown"}`,
+                `By: ${current?.author || "Unknown"}`,
+                `Duration: ${current?.duration || "Unknown"}`,
                 "",
                 upcoming.length > 0
                   ? `Next ${upcoming.length} track${upcoming.length > 1 ? "s" : ""}:`
                   : "No upcoming tracks",
-                ...upcoming.map((song: Song, i: number) => `${i + 1}. ${song.name} - ${song.formattedDuration}`),
+                ...upcoming.map((track, i: number) => `${i + 1}. ${track.title} - ${track.duration}`),
               ],
             }),
           ],
@@ -432,8 +326,8 @@ export async function now_playing(options: { client: Client; guild: Guild }) {
   const { client, guild } = options
 
   try {
-    const distube_instance = get_distube(client)
-    const queue = distube_instance.getQueue(guild)
+    const player_instance = get_player(client)
+    const queue = player_instance.nodes.get(guild)
 
     if (!queue) {
       return {
@@ -442,8 +336,8 @@ export async function now_playing(options: { client: Client; guild: Guild }) {
       }
     }
 
-    const current = queue.songs[0]
-    const progress = Math.floor((queue.currentTime / current.duration) * 100)
+    const current = queue.currentTrack
+    const progress = Math.floor((queue.node.getTimestamp()?.current.value || 0) / (current?.durationMS || 1) * 100)
 
     const message = component.build_message({
       components: [
@@ -454,16 +348,16 @@ export async function now_playing(options: { client: Client; guild: Guild }) {
               content: [
                 "Now Playing",
                 "",
-                `Track: ${current.name}`,
-                `Artist: ${current.uploader.name}`,
-                `Duration: ${current.formattedDuration}`,
+                `Track: ${current?.title || "Unknown"}`,
+                `Artist: ${current?.author || "Unknown"}`,
+                `Duration: ${current?.duration || "Unknown"}`,
                 `Progress: ${progress}%`,
                 "",
-                `Volume: ${queue.volume}%`,
-                `Loop: ${queue.repeatMode === 0 ? "Off" : queue.repeatMode === 1 ? "Track" : "Queue"}`,
-                `Paused: ${queue.paused ? "Yes" : "No"}`,
+                `Volume: ${queue.node.volume}%`,
+                `Loop: ${queue.repeatMode === 0 ? "Off" : queue.repeatMode === 1 ? "Track" : queue.repeatMode === 2 ? "Queue" : "Autoplay"}`,
+                `Paused: ${queue.node.isPaused() ? "Yes" : "No"}`,
               ],
-              thumbnail: current.thumbnail || "",
+              thumbnail: current?.thumbnail || "",
             }),
           ],
         }),
@@ -489,8 +383,8 @@ export async function set_volume(options: { client: Client; guild: Guild; volume
   const { client, guild, volume } = options
 
   try {
-    const distube_instance = get_distube(client)
-    const queue = distube_instance.getQueue(guild)
+    const player_instance = get_player(client)
+    const queue = player_instance.nodes.get(guild)
 
     if (!queue) {
       return {
@@ -499,7 +393,7 @@ export async function set_volume(options: { client: Client; guild: Guild; volume
       }
     }
 
-    distube_instance.setVolume(guild, volume)
+    queue.node.setVolume(volume)
     return {
       success : true,
       message : `Volume set to ${volume}%`,
@@ -520,8 +414,8 @@ export async function set_loop(options: { client: Client; guild: Guild; mode: "o
   const { client, guild, mode } = options
 
   try {
-    const distube_instance = get_distube(client)
-    const queue = distube_instance.getQueue(guild)
+    const player_instance = get_player(client)
+    const queue = player_instance.nodes.get(guild)
 
     if (!queue) {
       return {
@@ -531,7 +425,7 @@ export async function set_loop(options: { client: Client; guild: Guild; mode: "o
     }
 
     const repeat_mode = mode === "off" ? 0 : mode === "track" ? 1 : 2
-    distube_instance.setRepeatMode(guild, repeat_mode)
+    queue.setRepeatMode(repeat_mode)
     
     return {
       success : true,
