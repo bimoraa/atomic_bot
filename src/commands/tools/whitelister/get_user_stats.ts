@@ -21,9 +21,17 @@ export const command: Command = {
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    if (!interaction.guild) {
+      await interaction.reply({
+        content  : "This command can only be used in a server.",
+        ephemeral: true,
+      })
+      return
+    }
+
     const member = interaction.member as GuildMember
 
-    if (!member.roles.cache.has(ALLOWED_ROLE_ID)) {
+    if (!member || !member.roles || !member.roles.cache.has(ALLOWED_ROLE_ID)) {
       await interaction.reply({
         content  : "You don't have permission to use this command.",
         ephemeral: true,
