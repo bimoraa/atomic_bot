@@ -67,16 +67,23 @@ export async function handle_music_play_select(interaction: StringSelectMenuInte
 
     await interaction.deferReply({ ephemeral: true })
 
-    await play_track({
+    const result = await play_track({
       client         : interaction.client,
       guild,
       member,
-      query          : selected_track.url,
+      query          : `${selected_track.title} ${selected_track.author}`,
       fallback_query : `${selected_track.title} ${selected_track.author}`,
       voice_channel  : voice_channel,
     })
 
     search_cache.delete(user_id)
+
+    if (!result.success) {
+      await interaction.editReply({
+        content: result.error || "Failed to play the track",
+      })
+      return
+    }
 
     await interaction.editReply({
       content: `Now playing: ${selected_track.title} by ${selected_track.author}`,

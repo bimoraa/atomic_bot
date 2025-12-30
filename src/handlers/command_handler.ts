@@ -27,7 +27,13 @@ export async function load_commands(client: Client & { commands: Collection<stri
           continue;
         }
         
-        client.commands.set(command.data.name, command);
+        const command_name = command.data.name;
+        const command_index = commands_data.length;
+        if (commands_data.some((cmd: any) => cmd.name === command_name)) {
+          console.warn(`[command_handler] DUPLICATE COMMAND NAME at index ${command_index}: ${command_name} from ${item_path}`);
+        }
+        console.log(`[${command_index}] ${command_name} from ${item.name}`);
+        client.commands.set(command_name, command);
         commands_data.push(command.data.toJSON());
       }
     }

@@ -1,11 +1,12 @@
 import { Client, GuildMember, VoiceChannel, Guild, GuildTextBasedChannel } from "discord.js"
 import { getVoiceConnection } from "@discordjs/voice"
-import { DisTube, Song, Queue, Events } from "distube"
+import { DisTube, Song, Queue, Events, Playlist } from "distube"
+import { YouTubePlugin } from "@distube/youtube"
 import yts from "yt-search"
 import ffmpeg from "ffmpeg-static"
 import { component } from "../../utils"
 import { log_error } from "../../utils/error_logger"
-import ytdl from "ytdl-core"
+import playdl from "play-dl"
 
 let distube: DisTube | null = null
 
@@ -16,13 +17,13 @@ export function get_distube(client: Client): DisTube {
     distube = new DisTube(client, {
       emitNewSongOnly : false,
       nsfw            : false,
-      ffmpeg          : {
-        path : ffmpeg_path,
-        args : {
-          global : {},
-          input  : {},
-          output : {},
-        },
+      plugins         : [
+        new YouTubePlugin({
+          cookies: [],
+        }),
+      ],
+      ffmpeg: {
+        path: ffmpeg_path,
       },
     })
 
@@ -35,10 +36,16 @@ export function get_distube(client: Client): DisTube {
     })
 
     distube.on(Events.ERROR, (error: Error, queue: Queue, song?: Song) => {
+      console.error(`[DisTube] Error:`, error.message)
       void log_error(client, error, "distube_error", {
-        queue : queue?.id,
-        song  : song?.name,
+        queue      : queue?.id,
+        song       : song?.name,
+        error_stack: error.stack,
       })
+    })
+
+    distube.on(Events.FFMPEG_DEBUG, (debug: string) => {
+      console.log(`[DisTube FFmpeg Debug]:`, debug)
     })
   }
 
@@ -55,39 +62,28 @@ interface play_track_options {
 }
 
 async function resolve_track_url(client: Client, query: string, fallback_query?: string) {
-  if (ytdl.validateURL(query)) {
-    return query
-  }
-
-  let parsed_host = ""
-
   try {
-    const parsed = new URL(query)
-    parsed_host = parsed.hostname || ""
-  } catch {}
-
-  const is_youtube_host = parsed_host.includes("youtube.com") || parsed_host.includes("youtu.be")
-
-  if (is_youtube_host) {
-    await log_error(client, new Error("YouTube URL not playable"), "resolve_track_url_yt_invalid", { query })
-  }
-
-  const search_text = fallback_query || query
-
-  try {
-    const search_result = await yts.search({ query: search_text, hl: "en", gl: "US" })
-
-    const first_video = search_result?.videos?.find((video: any) => video?.url && ytdl.validateURL(video.url))
-
-    if (first_video?.url) {
-      return first_video.url
+    const search_text = fallback_query || query
+    
+    if (playdl.yt_validate(query) === "video" || playdl.yt_validate(query) === "playlist") {
+      return query
     }
 
-    await log_error(client, new Error("No playable track found"), "resolve_track_url_no_match", { query: search_text })
-    return null
+    try {
+      const search_result = await yts.search({ query: search_text, hl: "en", gl: "US" })
+
+      if (search_result?.videos && search_result.videos.length > 0) {
+        return search_text
+      }
+
+      return search_text
+    } catch (error) {
+      await log_error(client, error as Error, "resolve_track_url_search", { query: search_text })
+      return search_text
+    }
   } catch (error) {
-    await log_error(client, error as Error, "resolve_track_url_search", { query: search_text })
-    return null
+    await log_error(client, error as Error, "resolve_track_url_outer", { query })
+    return fallback_query || query
   }
 }
 
@@ -131,19 +127,41 @@ export async function play_track(options: play_track_options) {
 
     const track_url = await resolve_track_url(client, query, options.fallback_query)
 
-    if (!track_url) {
-      return {
-        success : false,
-        error   : "Could not find a playable track for that query.",
-      }
-    }
-
     const distube_instance = get_distube(client)
 
-    await distube_instance.play(voice_channel, track_url, {
-      member   : member,
-      textChannel : undefined,
-    })
+    try {
+      await distube_instance.play(voice_channel, track_url, {
+        member      : member,
+        textChannel : undefined,
+      })
+    } catch (playError: any) {
+      if (playError?.message?.includes("NOT_SUPPORTED_URL") || playError?.message?.includes("This url is not supported")) {
+        const search_query = options.fallback_query || query
+        
+        await log_error(client, playError, "play_track_url_not_supported_fallback", {
+          query,
+          track_url,
+          search_query,
+          guild : options.guild.id,
+        })
+        
+        try {
+          await distube_instance.play(voice_channel, search_query, {
+            member      : member,
+            textChannel : undefined,
+          })
+        } catch (searchError: any) {
+          await log_error(client, searchError, "play_track_search_fallback_failed", {
+            query,
+            fallback_query : options.fallback_query,
+            guild          : options.guild.id,
+          })
+          throw searchError
+        }
+      } else {
+        throw playError
+      }
+    }
 
     return { success: true }
   } catch (error: any) {
@@ -153,7 +171,7 @@ export async function play_track(options: play_track_options) {
       member       : member.id,
       channel_id   : voice_channel.id,
       channel_name : voice_channel.name,
-      resolved_url : ytdl.validateURL(query) ? query : undefined,
+      resolved_url : playdl.yt_validate(query) !== false ? query : undefined,
     })
     return {
       success : false,
