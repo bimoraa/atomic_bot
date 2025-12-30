@@ -9,10 +9,42 @@ import { log_error } from "../../utils/error_logger"
 import playdl from "play-dl"
 
 let distube: DisTube | null = null
+let playdl_initialized = false
+
+async function initialize_playdl() {
+  if (!playdl_initialized) {
+    try {
+      const youtube_cookies = process.env.YOUTUBE_COOKIE?.split("; ").map(cookie => {
+        const [name, ...valueParts] = cookie.split("=")
+        return {
+          name   : name.trim(),
+          value  : valueParts.join("="),
+          domain : ".youtube.com",
+          path   : "/",
+        }
+      }) || []
+
+      if (youtube_cookies.length > 0) {
+        await playdl.setToken({
+          youtube: {
+            cookie: process.env.YOUTUBE_COOKIE || "",
+          },
+        })
+        console.log("[play-dl] Initialized with YouTube cookies")
+      }
+      
+      playdl_initialized = true
+    } catch (error) {
+      console.error("[play-dl] Failed to initialize:", error)
+    }
+  }
+}
 
 export function get_distube(client: Client): DisTube {
   if (!distube) {
     const ffmpeg_path = (ffmpeg as string) || "ffmpeg"
+    
+    void initialize_playdl()
 
     distube = new DisTube(client, {
       emitNewSongOnly : false,
@@ -59,6 +91,8 @@ interface play_track_options {
 
 async function resolve_track_url(client: Client, query: string, fallback_query?: string) {
   try {
+    await initialize_playdl()
+    
     const search_text = fallback_query || query
     
     if (playdl.yt_validate(query) === "video" || playdl.yt_validate(query) === "playlist") {
@@ -126,6 +160,8 @@ export async function play_track(options: play_track_options) {
     const distube_instance = get_distube(client)
 
     try {
+      await initialize_playdl()
+      
       let play_source: any = track_url
       
       if (playdl.yt_validate(track_url) === "video") {
