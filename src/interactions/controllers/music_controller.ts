@@ -13,21 +13,22 @@ let distube: DisTube | null = null
 export function get_distube(client: Client): DisTube {
   if (!distube) {
     const ffmpeg_path = (ffmpeg as string) || "ffmpeg"
+    
+    const youtube_cookies = process.env.YOUTUBE_COOKIE?.split("; ").map(cookie => {
+      const [name, ...valueParts] = cookie.split("=")
+      return {
+        name   : name.trim(),
+        value  : valueParts.join("="),
+        domain : ".youtube.com",
+      }
+    }) || []
 
     distube = new DisTube(client, {
       emitNewSongOnly : false,
       nsfw            : false,
       plugins         : [
         new YouTubePlugin({
-          cookies: [],
-          ytdlOptions: {
-            requestOptions: {
-              headers: {
-                "User-Agent"     : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept-Language": "en-US,en;q=0.9",
-              },
-            },
-          },
+          cookies: youtube_cookies,
         }),
       ],
       ffmpeg: {
