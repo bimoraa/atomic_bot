@@ -20,12 +20,50 @@ export function get_distube(client: Client): DisTube {
       plugins         : [
         new YouTubePlugin({
           cookies: [],
+          ytdlOptions: {
+            requestOptions: {
+              headers: {
+                "User-Agent"     : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept-Language": "en-US,en;q=0.9",
+              },
+            },
+          },
         }),
       ],
       ffmpeg: {
         path: ffmpeg_path,
       },
-    })
+      customPlugins: [
+        {
+          name       : "play-dl",
+          searchSongs: async (query: string) => {
+            try {
+              const search_results = await playdl.search(query, { limit: 1, source: { youtube: "video" } })
+              if (!search_results || search_results.length === 0) return null
+              
+              const video = search_results[0]
+              return {
+                name     : video.title || "",
+                url      : video.url,
+                uploader : { name: video.channel?.name || "" },
+                duration : video.durationInSec || 0,
+              }
+            } catch {
+              return null
+            }
+          },
+          getStreamURL: async (url: string) => {
+            try {
+              const stream_data = await playdl.stream(url)
+              return stream_data.stream
+            } catch (error) {
+              console.error("[play-dl] Stream error:", error)
+              throw error
+            }
+          },
+        },
+      ],
+    } as any)
 
     distube.on(Events.FINISH_SONG, (queue: Queue, song: Song) => {
       console.log(`[DisTube] Finished playing: ${song.name}`)
