@@ -88,8 +88,20 @@ export function check_spam(message: Message, client: Client): boolean {
       return false
     }
     
-    if (!message.content || message.content.trim().length === 0) {
-      console.log("[anti_spam] Skip: empty content")
+    const has_everyone       = message.mentions.everyone
+    const has_attachments    = message.attachments.size > 0
+    const attachment_count   = message.attachments.size
+    const content            = message.content || ""
+    const has_content        = content.trim().length > 0
+    
+    if (has_everyone && has_attachments && attachment_count >= 2) {
+      console.log(`[anti_spam] Crypto scam detected: @everyone with ${attachment_count} images`)
+      handle_crypto_scam(message, client, member, attachment_count)
+      return true
+    }
+    
+    if (!has_content) {
+      console.log("[anti_spam] Skip: empty content and no scam pattern")
       return false
     }
     
@@ -107,18 +119,18 @@ export function check_spam(message: Message, client: Client): boolean {
     const tracker = user_message_tracker.get(user_id)!
     
     tracker.messages = tracker.messages.filter(msg => now - msg.timestamp < SPAM_CONFIG.time_window)
-    tracker.messages.push({ content: message.content, timestamp: now })
+    tracker.messages.push({ content: content, timestamp: now })
     
-    console.log(`[anti_spam] Checking message from ${message.author.tag}: "${message.content.slice(0, 50)}"`)
+    console.log(`[anti_spam] Checking message from ${message.author.tag}: "${content.slice(0, 50)}"`)
     
-    const suspicious_pattern = is_suspicious_content(message.content)
+    const suspicious_pattern = is_suspicious_content(content)
     if (suspicious_pattern) {
       console.log(`[anti_spam] Suspicious pattern detected: ${suspicious_pattern}`)
       handle_suspicious_message(message, client, suspicious_pattern, member)
       return true
     }
     
-    const duplicate_count = tracker.messages.filter(msg => msg.content === message.content).length
+    const duplicate_count = tracker.messages.filter(msg => msg.content === content).length
     if (duplicate_count >= SPAM_CONFIG.duplicate_limit) {
       console.log(`[anti_spam] Duplicate spam detected: ${duplicate_count} duplicates`)
       handle_duplicate_spam(message, client, duplicate_count, member, tracker)
@@ -205,6 +217,81 @@ async function handle_suspicious_message(
       channel: message.channel.id,
       pattern: pattern,
       content: message.content?.slice(0, 100) || "No content",
+    }).catch(() => {})
+  }
+}
+
+async function handle_crypto_scam(
+  message: Message,
+  client: Client,
+  member: GuildMember,
+  attachment_count: number
+): Promise<void> {
+  try {
+    await message.delete()
+    
+    const timeout_duration = 24 * 60 * 60 * 1000
+    await member.timeout(timeout_duration, "Crypto/NFT scam spam with @everyone")
+    
+    const content_block = format.code_block(message.content.slice(0, 500) || "(no text, images only)")
+    const created_ts    = Math.floor(message.createdTimestamp / 1000)
+    const now_ts        = Math.floor(Date.now() / 1000)
+    const target_id     = member.id
+    const message_id    = message.id
+    
+    const attachment_urls = Array.from(message.attachments.values())
+      .map(att => att.url)
+      .slice(0, 5)
+      .join("\n")
+
+    const alert = component.build_message({
+      components: [
+        component.container({
+          accent_color: 0xFF0000,
+          components: [
+            component.text([
+              `## CRYPTO/NFT SCAM DETECTED`,
+              `${format.bold("Discord:")} ${format.user_mention(member.id)}`,
+              `${format.bold("Channel:")} ${format.channel_mention(message.channel.id)}`,
+              `${format.bold("Pattern:")} @everyone with ${attachment_count} images`,
+              `${format.bold("Content:")}`,
+            ]),
+            component.text(content_block),
+            component.divider(),
+            component.text([
+              `${format.bold("Attachments:")}`,
+              attachment_urls,
+            ]),
+            component.action_row(
+              component.secondary_button("Download Details", `anti_spam_download:${target_id}:${message_id}`)
+            ),
+            component.divider(2),
+            component.text([
+              `${format.bold("Action:")} Message deleted, user timed out for 24 hours`,
+              `${format.bold("Date:")} <t:${now_ts}:F>`,
+              `${format.bold("Account Age:")} ${time.relative_time(Math.floor(member.user.createdTimestamp / 1000))}`,
+              `${format.bold("Message Created:")} <t:${created_ts}:F>`,
+            ]),
+          ],
+        }),
+        component.container({
+          components: [
+            component.action_row(
+              component.secondary_button("Un-Timeout", `anti_spam_untimeout:${target_id}`),
+              component.danger_button("Ban Users", `anti_spam_ban:${target_id}`)
+            ),
+          ],
+        }),
+      ],
+    })
+    
+    await send_alert(client, alert)
+  } catch (error) {
+    console.error("[anti_spam] Error handling crypto scam:", error)
+    await log_error(client, error as Error, "Anti-Spam: Crypto Scam Handler", {
+      user            : member.user.tag,
+      channel         : message.channel.id,
+      attachment_count: attachment_count,
     }).catch(() => {})
   }
 }
