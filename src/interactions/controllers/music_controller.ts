@@ -13,25 +13,12 @@ let distube: DisTube | null = null
 export function get_distube(client: Client): DisTube {
   if (!distube) {
     const ffmpeg_path = (ffmpeg as string) || "ffmpeg"
-    
-    const youtube_cookies = process.env.YOUTUBE_COOKIE?.split("; ").map(cookie => {
-      const [name, ...valueParts] = cookie.split("=")
-      return {
-        name   : name.trim(),
-        value  : valueParts.join("="),
-        domain : ".youtube.com",
-      }
-    }) || []
 
     distube = new DisTube(client, {
       emitNewSongOnly : false,
       nsfw            : false,
-      plugins         : [
-        new YouTubePlugin({
-          cookies: youtube_cookies,
-        }),
-      ],
-      ffmpeg: {
+      plugins         : [],
+      ffmpeg          : {
         path: ffmpeg_path,
       },
     })
@@ -139,7 +126,15 @@ export async function play_track(options: play_track_options) {
     const distube_instance = get_distube(client)
 
     try {
-      await distube_instance.play(voice_channel, track_url, {
+      let play_source: any = track_url
+      
+      if (playdl.yt_validate(track_url) === "video") {
+        const stream = await playdl.stream(track_url)
+        play_source = stream.stream
+        console.log("[play-dl] Using play-dl direct stream")
+      }
+      
+      await distube_instance.play(voice_channel, play_source, {
         member      : member,
         textChannel : undefined,
       })
