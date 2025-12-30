@@ -442,44 +442,18 @@ export async function end_loa(options: end_loa_options) {
 
     await db.update_one("loa_requests", { message_id }, { status: "ended" })
 
-    const updated_message = component.build_message({
-      components: [
-        component.container({
-          accent_color: component.from_hex("95A5A6"),
-          components  : [
-            component.text("## Leave of Absence - Ended"),
-          ],
-        }),
-        component.container({
-          components: [
-            component.text([
-              `- Requester: <@${loa.user_id}>`,
-              `- Start Date: ${time.full_date_time(loa.start_date)}`,
-              `- End Date: ${time.full_date_time(loa.end_date)}`,
-            ]),
-            component.divider(2),
-            component.text([
-              `- Type of Leave: ${loa.type}`,
-              `- Reason: ${loa.reason}`,
-            ]),
-            component.divider(2),
-            component.text(`- Approved by: <@${loa.approved_by}>`),
-            component.text(`- Ended by: <@${ender_id}>`),
-          ],
-        }),
-        component.container({
-          components: [
-            component.action_row(
-              component.secondary_button("Request LOA", "loa_request")
-            ),
-          ],
-        }),
-      ],
-    })
+    if (discord_token && loa.channel_id) {
+      await api.delete_message(loa.channel_id, message_id, discord_token).catch(async (err) => {
+        await log_error(client, err as Error, "Delete LOA Message", {
+          message_id,
+          channel_id: loa.channel_id,
+        }).catch(() => {})
+      })
+    }
 
     return {
-      success: true,
-      message: updated_message,
+      success       : true,
+      message_deleted: true,
     }
   } catch (err) {
     await log_error(client, err as Error, "End LOA Controller", {

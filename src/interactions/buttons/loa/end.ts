@@ -34,5 +34,12 @@ export async function handle_loa_end(interaction: ButtonInteraction): Promise<vo
     return
   }
 
-  await interaction.update(result.message!)
+  if (result.message_deleted) {
+    await interaction.reply({
+      content  : "LOA has been ended and the message has been deleted",
+      ephemeral: true,
+    }).catch(() => {})
+  } else {
+    await interaction.update(result.message!)
+  }
 }
