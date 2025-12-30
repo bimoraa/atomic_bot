@@ -33,37 +33,7 @@ export function get_distube(client: Client): DisTube {
       ffmpeg: {
         path: ffmpeg_path,
       },
-      customPlugins: [
-        {
-          name       : "play-dl",
-          searchSongs: async (query: string) => {
-            try {
-              const search_results = await playdl.search(query, { limit: 1, source: { youtube: "video" } })
-              if (!search_results || search_results.length === 0) return null
-              
-              const video = search_results[0]
-              return {
-                name     : video.title || "",
-                url      : video.url,
-                uploader : { name: video.channel?.name || "" },
-                duration : video.durationInSec || 0,
-              }
-            } catch {
-              return null
-            }
-          },
-          getStreamURL: async (url: string) => {
-            try {
-              const stream_data = await playdl.stream(url)
-              return stream_data.stream
-            } catch (error) {
-              console.error("[play-dl] Stream error:", error)
-              throw error
-            }
-          },
-        },
-      ],
-    } as any)
+    })
 
     distube.on(Events.FINISH_SONG, (queue: Queue, song: Song) => {
       console.log(`[DisTube] Finished playing: ${song.name}`)
