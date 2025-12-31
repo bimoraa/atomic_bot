@@ -245,20 +245,47 @@ if (!discord_token) {
   process.exit(1)
 }
 
+if (discord_token.length < 50) {
+  console.error("[Discord] FATAL: Discord token appears to be invalid (too short)")
+  console.error(`[Discord] Token length: ${discord_token.length} characters`)
+  process.exit(1)
+}
+
 if (!client_id) {
   console.error("[Discord] FATAL: Client ID not found")
   console.error(`[Discord] Please set ${is_dev ? "DEV_CLIENT_ID" : "CLIENT_ID"} environment variable`)
   process.exit(1)
 }
 
+console.log("[Discord] Environment check passed")
+console.log(`[Discord] Token: ${discord_token.substring(0, 10)}...`)
+console.log(`[Discord] Client ID: ${client_id}`)
+
 console.log("[Discord] Starting HTTP server...")
 start_webhook_server(client)
 
 console.log("[Discord] Attempting to login...")
+
+const login_timeout = setTimeout(() => {
+  console.error("[Discord] Login timeout after 30 seconds")
+  console.error("[Discord] This usually means:")
+  console.error("[Discord] 1. Invalid Discord token")
+  console.error("[Discord] 2. Network connectivity issues")
+  console.error("[Discord] 3. Discord API is down")
+  process.exit(1)
+}, 30000)
+
 client.login(discord_token)
-  .then(() => console.log("[Discord] Login successful"))
+  .then(() => {
+    clearTimeout(login_timeout)
+    console.log("[Discord] Login successful")
+  })
   .catch((error) => {
+    clearTimeout(login_timeout)
     console.error("[Discord] Login failed:", error)
     console.error("[Discord] Error details:", error.message)
+    if (error.code) {
+      console.error("[Discord] Error code:", error.code)
+    }
     process.exit(1)
   })
