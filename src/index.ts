@@ -239,11 +239,26 @@ process.on("SIGINT", async () => {
 
 console.log(`[MODE] Running in ${is_dev ? "DEVELOPMENT" : "PRODUCTION"} mode`)
 
+if (!discord_token) {
+  console.error("[Discord] FATAL: Discord token not found")
+  console.error(`[Discord] Please set ${is_dev ? "DEV_DISCORD_TOKEN" : "DISCORD_TOKEN"} environment variable`)
+  process.exit(1)
+}
+
+if (!client_id) {
+  console.error("[Discord] FATAL: Client ID not found")
+  console.error(`[Discord] Please set ${is_dev ? "DEV_CLIENT_ID" : "CLIENT_ID"} environment variable`)
+  process.exit(1)
+}
+
+console.log("[Discord] Starting HTTP server...")
 start_webhook_server(client)
 
+console.log("[Discord] Attempting to login...")
 client.login(discord_token)
   .then(() => console.log("[Discord] Login successful"))
   .catch((error) => {
     console.error("[Discord] Login failed:", error)
+    console.error("[Discord] Error details:", error.message)
     process.exit(1)
   })
