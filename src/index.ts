@@ -73,21 +73,18 @@ function update_presence(): void {
 }
 
 client.once("ready", async () => {
-  console.log(`Logged in as ${client.user?.tag}`)
+  console.log(`[Bot] Logged in as ${client.user?.tag}`)
 
   try {
     const mongo = await db.connect()
     if (mongo) {
-      console.log("Connected to MongoDB")
       await load_close_requests()
       await load_all_tickets()
       await load_reminders_from_db(client)
       start_loa_checker(client)
-    } else {
-      console.error("Failed to connect to MongoDB")
     }
   } catch (error) {
-    console.error("MongoDB connection error:", error)
+    console.error("[MongoDB] Connection error:", error)
   }
 
   update_presence()
@@ -96,32 +93,21 @@ client.once("ready", async () => {
   try {
     const commands_data = await load_commands(client)
     await register_commands(commands_data)
-    console.log("Commands registered successfully")
   } catch (error) {
-    console.error("Failed to register commands:", error)
+    console.error("[Commands] Registration failed:", error)
   }
 
   try {
     start_roblox_update_checker(client)
-  } catch (error) {
-    console.error("Failed to start roblox update checker:", error)
-  }
-
-  try {
     for (const guild of client.guilds.cache.values()) {
       await tempvoice.reconcile_tempvoice_guild(guild)
     }
-  } catch (error) {
-    console.error("Failed to reconcile tempvoice:", error)
-  }
-
-  try {
     register_audit_logs(client)
   } catch (error) {
-    console.error("Failed to register audit logs:", error)
+    console.error("[Services] Initialization error:", error)
   }
 
-  console.log("Bot is ready and running")
+  console.log("[Bot] Ready")
 })
 
 client.on("interactionCreate", (interaction) => {
@@ -192,12 +178,8 @@ client.on("messageCreate", async (message: Message) => {
 })
 
 client.on("error", (error) => {
-  console.error("[Discord Client] Error:", error)
+  console.error("[Client] Error:", error.message)
   log_error(client, error, "Discord Client", {}).catch(() => {})
-})
-
-client.on("warn", (warning) => {
-  console.warn("[Discord Client] Warning:", warning)
 })
 
 process.on("unhandledRejection", (error: Error) => {
@@ -237,55 +219,34 @@ process.on("SIGINT", async () => {
   }
 })
 
-console.log(`[MODE] Running in ${is_dev ? "DEVELOPMENT" : "PRODUCTION"} mode`)
+console.log(`[Mode] ${is_dev ? "DEV" : "PROD"}`)
 
 if (!discord_token) {
-  console.error("[Discord] FATAL: Discord token not found")
-  console.error(`[Discord] Please set ${is_dev ? "DEV_DISCORD_TOKEN" : "DISCORD_TOKEN"} environment variable`)
+  console.error("[Fatal] Discord token not found")
   process.exit(1)
 }
 
 if (discord_token.length < 50) {
-  console.error("[Discord] FATAL: Discord token appears to be invalid (too short)")
-  console.error(`[Discord] Token length: ${discord_token.length} characters`)
+  console.error("[Fatal] Invalid Discord token")
   process.exit(1)
 }
 
 if (!client_id) {
-  console.error("[Discord] FATAL: Client ID not found")
-  console.error(`[Discord] Please set ${is_dev ? "DEV_CLIENT_ID" : "CLIENT_ID"} environment variable`)
+  console.error("[Fatal] Client ID not found")
   process.exit(1)
 }
 
-console.log("[Discord] Environment check passed")
-console.log(`[Discord] Token: ${discord_token.substring(0, 10)}...`)
-console.log(`[Discord] Client ID: ${client_id}`)
-
-console.log("[Discord] Starting HTTP server...")
 start_webhook_server(client)
 
-console.log("[Discord] Attempting to login...")
-
 const login_timeout = setTimeout(() => {
-  console.error("[Discord] Login timeout after 30 seconds")
-  console.error("[Discord] This usually means:")
-  console.error("[Discord] 1. Invalid Discord token")
-  console.error("[Discord] 2. Network connectivity issues")
-  console.error("[Discord] 3. Discord API is down")
+  console.error("[Login] Timeout")
   process.exit(1)
 }, 30000)
 
 client.login(discord_token)
-  .then(() => {
-    clearTimeout(login_timeout)
-    console.log("[Discord] Login successful")
-  })
+  .then(() => clearTimeout(login_timeout))
   .catch((error) => {
     clearTimeout(login_timeout)
-    console.error("[Discord] Login failed:", error)
-    console.error("[Discord] Error details:", error.message)
-    if (error.code) {
-      console.error("[Discord] Error code:", error.code)
-    }
+    console.error("[Login] Failed:", error.message)
     process.exit(1)
   })
