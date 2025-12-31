@@ -75,33 +75,53 @@ function update_presence(): void {
 client.once("ready", async () => {
   console.log(`Logged in as ${client.user?.tag}`)
 
-  start_webhook_server(client)
-
-  const mongo = await db.connect()
-  if (mongo) {
-    console.log("Connected to MongoDB")
-    await load_close_requests()
-    await load_all_tickets()
-    await load_reminders_from_db(client)
-    start_loa_checker(client)
+  try {
+    const mongo = await db.connect()
+    if (mongo) {
+      console.log("Connected to MongoDB")
+      await load_close_requests()
+      await load_all_tickets()
+      await load_reminders_from_db(client)
+      start_loa_checker(client)
+    } else {
+      console.error("Failed to connect to MongoDB")
+    }
+  } catch (error) {
+    console.error("MongoDB connection error:", error)
   }
 
   update_presence()
   setInterval(update_presence, 3000)
 
-  const commands_data = await load_commands(client)
-  await register_commands(commands_data)
-
-  start_roblox_update_checker(client)
-
-  for (const guild of client.guilds.cache.values()) {
-    await tempvoice.reconcile_tempvoice_guild(guild)
+  try {
+    const commands_data = await load_commands(client)
+    await register_commands(commands_data)
+    console.log("Commands registered successfully")
+  } catch (error) {
+    console.error("Failed to register commands:", error)
   }
 
-  register_audit_logs(client)
+  try {
+    start_roblox_update_checker(client)
+  } catch (error) {
+    console.error("Failed to start roblox update checker:", error)
+  }
 
-  
-  console.log("Commands registered successfully")
+  try {
+    for (const guild of client.guilds.cache.values()) {
+      await tempvoice.reconcile_tempvoice_guild(guild)
+    }
+  } catch (error) {
+    console.error("Failed to reconcile tempvoice:", error)
+  }
+
+  try {
+    register_audit_logs(client)
+  } catch (error) {
+    console.error("Failed to register audit logs:", error)
+  }
+
+  console.log("Bot is ready and running")
 })
 
 client.on("interactionCreate", (interaction) => {
@@ -188,7 +208,42 @@ process.on("unhandledRejection", (error: Error) => {
 process.on("uncaughtException", (error: Error) => {
   console.error("[Uncaught Exception]:", error)
   log_error(client, error, "Uncaught Exception", {}).catch(() => {})
+  process.exit(1)
+})
+
+process.on("SIGTERM", async () => {
+  console.log("[SIGTERM] Graceful shutdown initiated")
+  try {
+    await client.destroy()
+    await db.disconnect()
+    console.log("[SIGTERM] Shutdown complete")
+    process.exit(0)
+  } catch (error) {
+    console.error("[SIGTERM] Error during shutdown:", error)
+    process.exit(1)
+  }
+})
+
+process.on("SIGINT", async () => {
+  console.log("[SIGINT] Graceful shutdown initiated")
+  try {
+    await client.destroy()
+    await db.disconnect()
+    console.log("[SIGINT] Shutdown complete")
+    process.exit(0)
+  } catch (error) {
+    console.error("[SIGINT] Error during shutdown:", error)
+    process.exit(1)
+  }
 })
 
 console.log(`[MODE] Running in ${is_dev ? "DEVELOPMENT" : "PRODUCTION"} mode`)
+
+start_webhook_server(client)
+
 client.login(discord_token)
+  .then(() => console.log("[Discord] Login successful"))
+  .catch((error) => {
+    console.error("[Discord] Login failed:", error)
+    process.exit(1)
+  })
