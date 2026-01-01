@@ -32,6 +32,11 @@ export async function handle_reset_hwid(interaction: ButtonInteraction): Promise
 
     await api.edit_deferred_reply(interaction, message)
   } else {
+    if (reset_result.message && typeof reset_result.message === 'object') {
+      await api.edit_deferred_reply(interaction, reset_result.message)
+      return
+    }
+
     const message = component.build_message({
       components: [
         component.container({

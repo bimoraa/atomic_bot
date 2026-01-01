@@ -11,6 +11,11 @@ export async function handle_get_script(interaction: ButtonInteraction): Promise
   const script_result = await get_user_script({ client: interaction.client, user_id: member.id })
 
   if (!script_result.success) {
+    if (script_result.message) {
+      await api.edit_deferred_reply(interaction, script_result.message)
+      return
+    }
+
     const user_result = await luarmor.get_user_by_discord(member.id)
     
     if (!user_result.success || !user_result.data) {
@@ -90,6 +95,10 @@ export async function handle_mobile_copy(interaction: ButtonInteraction): Promis
   const script_result = await get_user_script({ client: interaction.client, user_id: member.id })
 
   if (!script_result.success) {
+    if (script_result.message) {
+      await interaction.reply({ ...script_result.message, ephemeral: true })
+      return
+    }
     await interaction.reply({
       content   : `## Error\n${script_result.error}`,
       ephemeral : true,
