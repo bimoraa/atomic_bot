@@ -1,10 +1,11 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command } from "../../../types/command"
-import { is_staff } from "../../../services/permissions"
 import { update_project_settings } from "../../../services/luarmor"
 import { component } from "../../../utils"
 
-const PROJECT_ID = "6958841b2d9e5e049a24a23e376e0d77"
+const PROJECT_ID         = "6958841b2d9e5e049a24a23e376e0d77"
+const REQUIRED_ROLE_ID   = "1316021423206039596"
+const NOTIFICATION_USER  = "1118453649727823974"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -20,15 +21,15 @@ export const command: Command = {
     try {
       const member = interaction.member as GuildMember
 
-      if (!is_staff(member)) {
+      if (!member.roles.cache.has(REQUIRED_ROLE_ID)) {
         await interaction.reply({
-          content: "Only staff can use this command.",
+          content: "You do not have permission to use this command.",
           flags: 64,
         })
         return
       }
 
-      await interaction.deferReply({ flags: 64 })
+      await interaction.deferReply()
 
       const value = interaction.options.getBoolean("value", true)
 
@@ -56,20 +57,24 @@ export const command: Command = {
       }
 
       const status = value ? "Enabled" : "Disabled"
-      const color  = value ? 0x57F287 : 0xED4245
 
       const success_message = component.build_message({
         components: [
           component.container({
-            accent_color: color,
+            accent_color: 0xE91E63,
+            components: [
+              component.text("## HWID-Less Update Success!!"),
+            ],
+          }),
+          component.container({
             components: [
               component.text([
-                "## HWID-Less Update Success",
-                `HWID-less mode has been **${status}**.`,
-                ``,
-                `- Project ID: \`${PROJECT_ID}\``,
-                `- Updated by: <@${interaction.user.id}>`,
+                "## Details:",
                 `- Status: **${status}**`,
+                `- Updated by: <@${interaction.user.id}>`,
+                `- Project \`${PROJECT_ID}\``,
+                ``,
+                ``,
               ]),
             ],
           }),
@@ -77,8 +82,39 @@ export const command: Command = {
       })
 
       await interaction.editReply(success_message)
+
+      try {
+        const notification_user = await interaction.client.users.fetch(NOTIFICATION_USER)
+        const dm_message        = component.build_message({
+          components: [
+            component.container({
+              accent_color: 0xE91E63,
+              components: [
+                component.text("## HWID-Less Update Notification"),
+              ],
+            }),
+            component.container({
+              components: [
+                component.text([
+                  "## Details:",
+                  `- Status: **${status}**`,
+                  `- Updated by: <@${interaction.user.id}> (\`${interaction.user.tag}\`)`,
+                  `- Server: **${interaction.guild?.name}**`,
+                  `- Project \`${PROJECT_ID}\``,
+                  ``,
+                  ``,
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        await notification_user.send(dm_message)
+      } catch (dm_error) {
+        console.error("[ - HWID-LESS - ] Failed to send DM notification:", dm_error)
+      }
     } catch (err) {
-      console.error("[HWID-Less Error]", err)
+      console.error("[ - HWID-LESS - ] Error:", err)
       if (interaction.deferred) {
         await interaction.editReply({ content: "An error occurred while updating HWID-less setting." })
       } else {
