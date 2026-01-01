@@ -397,3 +397,29 @@ export function get_full_loader_script(user_key: string): string {
     `loadstring(game:HttpGet("https://raw.githubusercontent.com/bimoraa/Euphoria/refs/heads/main/loader.luau"))()`,
   ].join("\n")
 }
+
+export async function update_project_settings(project_id: string, hwidless: boolean): Promise<luarmor_response<any>> {
+  try {
+    const url = `${__base_url}/projects/${project_id}`
+
+    const body = {
+      hwidless,
+    }
+
+    const response = await http.patch<any>(url, body, get_headers())
+
+    if (response.success) {
+      return { success: true, data: response }
+    }
+
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
+
+    return { success: false, error: response.message || "Failed to update project settings" }
+  } catch (error) {
+    __log.error("Failed to update project settings:", error)
+    return { success: false, error: "An error occurred" }
+  }
+}
