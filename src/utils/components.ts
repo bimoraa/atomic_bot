@@ -210,7 +210,7 @@ export function section(options: { content: string | string[]; thumbnail?: strin
     components : [text(options.content)],
   }
 
-  if (options.thumbnail && options.thumbnail.trim().length > 0) {
+  if (options.thumbnail && typeof options.thumbnail === "string" && options.thumbnail.trim().length > 0) {
     result.accessory = thumbnail(options.thumbnail)
   }
 
