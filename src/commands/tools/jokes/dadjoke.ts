@@ -58,9 +58,7 @@ export const command: Command = {
         components: [
           component.container({
             components: [
-              component.section({
-                content: `**${random_joke.setup}**`,
-              }),
+              component.text(`**${random_joke.setup}**`),
               component.divider(),
               component.text(random_joke.punchline),
             ],
