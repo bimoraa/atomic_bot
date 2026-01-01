@@ -109,14 +109,26 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
   const payment_data = parse_payment_message(interaction.message)
   const payment_id   = generate_payment_id()
 
-  const loading_message = component.build_message({
+  const processing_message = component.build_message({
     components: [
       component.container({
         components: [
           component.text([
             `## <:rbx:1447976733050667061> | Processing Payment...`,
-            `> Please wait while we process this payment.`,
+            `> Admin <@${interaction.user.id}> is processing this payment.`,
+            ``,
+            `- <:money:1381580383090380951> Amount: **${payment_data?.amount || "Unknown"}**`,
+            `- <:USERS:1381580388119613511> Customer: <@${customer_id}>`,
+            `- <:calc:1381580377340117002> Payment Method: **${payment_data?.method || "Unknown"}**`,
+            `- <:JOBSS:1381580390330011732> Submitted by: <@${submitter_id}>`,
+            `- <:app:1381680319207575552> Details: **${payment_data?.details || "Unknown"}**`,
+            `- <:OLOCK:1381580385892171816> Time: ${payment_data?.timestamp || "Unknown"}`,
           ]),
+          component.divider(2),
+          component.action_row(
+            component.success_button("Approve", `payment_approve_${submitter_id}_${amount}_${customer_id}_${thread_id}`, undefined, true),
+            component.danger_button("Reject", `payment_reject_${submitter_id}_${amount}_${customer_id}_${thread_id}`, undefined, true)
+          ),
         ],
       }),
     ],
@@ -126,7 +138,7 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
     interaction.channelId,
     interaction.message.id,
     api.get_token(),
-    loading_message
+    processing_message
   )
 
   const submitter  = await interaction.guild?.members.fetch(submitter_id).catch(() => null)
@@ -146,6 +158,38 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
   )
 
   if (!whitelist_result.success || !whitelist_result.data?.user_key) {
+    const error_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text([
+              `## <:rbx:1447976733050667061> | Payment Failed`,
+              `> Failed to whitelist user. Please try again.`,
+              ``,
+              `- <:money:1381580383090380951> Amount: **${payment_data?.amount || "Unknown"}**`,
+              `- <:USERS:1381580388119613511> Customer: <@${customer_id}>`,
+              `- <:calc:1381580377340117002> Payment Method: **${payment_data?.method || "Unknown"}**`,
+              `- <:JOBSS:1381580390330011732> Submitted by: <@${submitter_id}>`,
+              `- <:app:1381680319207575552> Details: **${payment_data?.details || "Unknown"}**`,
+              `- <:OLOCK:1381580385892171816> Time: ${payment_data?.timestamp || "Unknown"}`,
+            ]),
+            component.divider(2),
+            component.action_row(
+              component.success_button("Approve", `payment_approve_${submitter_id}_${amount}_${customer_id}_${thread_id}`),
+              component.danger_button("Reject", `payment_reject_${submitter_id}_${amount}_${customer_id}_${thread_id}`)
+            ),
+          ],
+        }),
+      ],
+    })
+
+    await api.edit_components_v2(
+      interaction.channelId,
+      interaction.message.id,
+      api.get_token(),
+      error_message
+    )
+
     await interaction.editReply({ content: "Failed to whitelist user. Please try again." })
     return
   }
