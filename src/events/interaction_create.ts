@@ -19,7 +19,7 @@ import * as review_submit                from "../interactions/buttons/review/su
 import * as ask_staff_button             from "../interactions/buttons/ask/ask_staff"
 import * as ask_answer                   from "../interactions/buttons/ask/answer"
 import * as close_request_handlers       from "../interactions/buttons/close_request/handlers"
-import * as reaction_role                from "../interactions/buttons/reaction/role"
+import * as reaction_role                from "../interactions/buttons/reaction_roles/reaction_role"
 import * as payment_handlers             from "../interactions/buttons/payment/handlers"
 import * as guide_example                from "../interactions/buttons/guide/example"
 import * as script_redeem_key            from "../interactions/buttons/script/redeem_key"
