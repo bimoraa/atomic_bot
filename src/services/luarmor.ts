@@ -400,25 +400,42 @@ export function get_full_loader_script(user_key: string): string {
 
 export async function update_project_settings(project_id: string, hwidless: boolean): Promise<luarmor_response<any>> {
   try {
-    const get_url      = `${__base_url}/projects/${project_id}`
-    const get_response = await http.get<any>(get_url, get_headers())
+    const get_url = `${__base_url}/projects/${project_id}`
+    
+    let current_settings: any = {
+      name                      : "Service Provider",
+      reset_hwid_cooldown       : 0,
+      alerts_webhook            : env.get("LUARMOR_ALERTS_WEBHOOK", ""),
+      executions_webhook        : env.get("LUARMOR_EXECUTIONS_WEBHOOK", ""),
+      auto_delete_expired_users : false,
+      allow_hwid_cloned_keys    : false,
+      instance_limit            : false,
+      instance_limit_count      : 0,
+    }
 
-    if (!get_response || !get_response.name) {
-      return { success: false, error: "Failed to fetch current project settings" }
+    try {
+      const get_response = await http.get<any>(get_url, get_headers())
+      if (get_response && get_response.name) {
+        current_settings = {
+          name                      : get_response.name,
+          reset_hwid_cooldown       : get_response.reset_hwid_cooldown ?? 0,
+          alerts_webhook            : get_response.alerts_webhook ?? "",
+          executions_webhook        : get_response.executions_webhook ?? "",
+          auto_delete_expired_users : get_response.auto_delete_expired_users ?? false,
+          allow_hwid_cloned_keys    : get_response.allow_hwid_cloned_keys ?? false,
+          instance_limit            : get_response.instance_limit ?? false,
+          instance_limit_count      : get_response.instance_limit_count ?? 0,
+        }
+      }
+    } catch (get_error) {
+      __log.warn("Failed to fetch current settings, using defaults:", get_error)
     }
 
     const url = `${__base_url}/projects/${project_id}`
 
     const body = {
-      name                      : get_response.name || "Service Provider",
-      reset_hwid_cooldown       : get_response.reset_hwid_cooldown || 0,
-      alerts_webhook            : get_response.alerts_webhook || "",
-      executions_webhook        : get_response.executions_webhook || "",
-      auto_delete_expired_users : get_response.auto_delete_expired_users || false,
-      allow_hwid_cloned_keys    : get_response.allow_hwid_cloned_keys || false,
-      hwidless                  : hwidless,
-      instance_limit            : get_response.instance_limit || false,
-      instance_limit_count      : get_response.instance_limit_count || 0,
+      ...current_settings,
+      hwidless: hwidless,
     }
 
     const response = await http.patch<any>(url, body, get_headers())
