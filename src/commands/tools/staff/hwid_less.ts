@@ -8,7 +8,7 @@ const PROJECT_ID = "6958841b2d9e5e049a24a23e376e0d77"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
-    .setName("hwid-less")
+    .setName("hwid_less")
     .setDescription("Enable or disable HWID-less mode")
     .addBooleanOption(opt =>
       opt.setName("value")

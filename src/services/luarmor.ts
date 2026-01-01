@@ -403,7 +403,8 @@ export async function update_project_settings(project_id: string, hwidless: bool
     const url = `${__base_url}/projects/${project_id}`
 
     const body = {
-      hwidless,
+      name    : "Service Provider",
+      hwidless: hwidless,
     }
 
     const response = await http.patch<any>(url, body, get_headers())
