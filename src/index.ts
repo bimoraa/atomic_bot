@@ -45,6 +45,7 @@ client.commands = new Collection()
 export { client }
 
 import "./events/guild_member_add"
+import "./events/guild_member_booster"
 import "./events/voice_state_update"
 import "./events/message_delete"
 
