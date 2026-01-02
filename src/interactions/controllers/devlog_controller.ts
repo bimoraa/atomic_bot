@@ -37,35 +37,6 @@ export async function publish_devlog(options: devlog_options) {
     const removed_list  = format_list(removed, "[ - ]")
     const fixed_list    = format_list(fixed, "[ ! ]")
 
-    const changelog_components = [] as ReturnType<typeof component.text | typeof component.divider>[]
-
-    if (added_list) {
-      changelog_components.push(component.text(`### - Added:\n${added_list}`))
-      changelog_components.push(component.divider(2))
-    }
-
-    if (removed_list) {
-      changelog_components.push(component.text(`### - Deleted:\n${removed_list}`))
-      changelog_components.push(component.divider(2))
-    }
-
-    if (fixed_list) {
-      changelog_components.push(component.text(`### - Fixed:\n${fixed_list}`))
-      changelog_components.push(component.divider(2))
-    }
-
-    if (improved_list) {
-      changelog_components.push(component.text(`### - Improved:\n${improved_list}`))
-    }
-
-    if (changelog_components.length > 0 && changelog_components[changelog_components.length - 1].type === component.component_type.divider) {
-      changelog_components.pop()
-    }
-
-    if (changelog_components.length === 0) {
-      changelog_components.push(component.text("No changes specified."))
-    }
-
     const role_mentions = (role_ids && role_ids.length > 0 ? role_ids : [priority_role_id])
       .map(id => format.role_mention(id))
       .join(" ")
@@ -78,16 +49,33 @@ export async function publish_devlog(options: devlog_options) {
               content: [
                 "## Atomicals Script Update Logs",
                 role_mentions,
-                `- **Place:** ${script}`,
-                `- **Version:** v${version}`,
+                `- **Place: **${script}`,
+                `- **Version: **v${version}`,
                 "- **Developer Notes:**",
                 "> Found any bugs or issues? Feel free to report them to the developers!",
                 "> Got ideas or suggestions for new scripts? We'd love to hear them!",
               ],
-              thumbnail: devlog_thumb_url,
+              media: devlog_thumb_url,
             }),
-            component.divider(),
-            ...changelog_components,
+          ],
+        }),
+        component.container({
+          components: [
+            component.text(`### - Added:\n${added_list || "[ + ]"}`),
+            component.divider(2),
+            component.text(`### - Deleted:\n${removed_list || "[ - ]"}`),
+            component.divider(2),
+            component.text(`### - Fixed:\n${fixed_list || "[ ! ]"}`),
+            component.divider(2),
+            component.text(`### - Improved:\n${improved_list || "[ / ]"}`),
+          ],
+        }),
+        component.container({
+          components: [
+            component.action_row(
+              component.link_button("Report Bugs", "https://discord.com/channels/1250337227582472243/1320078429110145114"),
+              component.link_button("Suggest a Feature", "https://discord.com/channels/1250337227582472243/1351980309557542962")
+            ),
           ],
         }),
       ],

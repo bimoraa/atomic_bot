@@ -204,14 +204,16 @@ export function text(content: string | string[]): text_component {
   }
 }
 
-export function section(options: { content: string | string[]; thumbnail?: string }): section_component {
+export function section(options: { content: string | string[]; thumbnail?: string; media?: string }): section_component {
   const result: section_component = {
     type       : component_type.section,
     components : [text(options.content)],
   }
 
-  if (options.thumbnail && typeof options.thumbnail === "string" && options.thumbnail.trim().length > 0) {
-    result.accessory = thumbnail(options.thumbnail)
+  const media_url = options.media || options.thumbnail
+
+  if (media_url && typeof media_url === "string" && media_url.trim().length > 0) {
+    result.accessory = thumbnail(media_url)
   }
 
   return result
