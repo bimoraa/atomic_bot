@@ -14,6 +14,7 @@ import {
   Sticker,
   Invite,
   ThreadChannel,
+  User,
 }                                from "discord.js"
 import { logger, component, format } from "../utils"
 import { track_deleted_message }     from "./snipe"
@@ -21,6 +22,8 @@ import { track_deleted_message }     from "./snipe"
 const log            = logger.create_logger("audit_log")
 const LOG_CHANNEL_ID = "1452086939866894420"
 const OWNER_ID       = "1118453649727823974"
+
+const avatar_cache = new Map<string, string>()
 
 const COLOR = {
   CREATE : 0x57F287,
@@ -32,6 +35,23 @@ const COLOR = {
   UNBAN  : 0x57F287,
   TIMEOUT: 0xFEE75C,
   INFO   : 0x5865F2,
+}
+
+async function get_avatar_url(user: User): Promise<string> {
+  const user_id = user.id
+  
+  if (avatar_cache.has(user_id)) {
+    return avatar_cache.get(user_id)!
+  }
+
+  try {
+    const avatar_url = user.displayAvatarURL({ extension: "png", size: 512 })
+    avatar_cache.set(user_id, avatar_url)
+    return avatar_url
+  } catch {
+    avatar_cache.set(user_id, format.default_avatar)
+    return format.default_avatar
+  }
 }
 
 async function send_log(client: Client, log_message: any): Promise<void> {
@@ -50,7 +70,7 @@ export function register_audit_logs(client: Client): void {
     if (!old_message.guild || old_message.author?.bot) return
     if (old_message.content === new_message.content) return
 
-    const avatar_url = old_message.author?.displayAvatarURL({ size: 512 }) || ""
+    const avatar_url = old_message.author ? await get_avatar_url(old_message.author) : format.default_avatar
 
     const log_message = component.build_message({
       components: [
@@ -145,7 +165,7 @@ export function register_audit_logs(client: Client): void {
 
     track_deleted_message(message)
 
-    const avatar_url   = message.author?.displayAvatarURL({ size: 512 }) || ""
+    const avatar_url   = message.author ? await get_avatar_url(message.author) : format.default_avatar
     const content_text = message.content?.trim() || ""
     const has_content  = content_text.length > 0
     const attachments  = message.attachments.size > 0 ? `${message.attachments.size} attachment(s)` : ""
@@ -188,7 +208,7 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("guildMemberAdd", async (member) => {
-    const avatar_url = member.user.displayAvatarURL({ size: 512 })
+    const avatar_url = await get_avatar_url(member.user)
 
     const log_message = component.build_message({
       components: [
@@ -212,7 +232,7 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("guildMemberRemove", async (member) => {
-    const avatar_url = member.user.displayAvatarURL({ size: 512 })
+    const avatar_url = await get_avatar_url(member.user)
 
     let kick_info = ""
     try {
@@ -260,7 +280,7 @@ export function register_audit_logs(client: Client): void {
       if (added.length > 0) changes.push(`Added: ${added.join(", ")}`)
       if (removed.length > 0) changes.push(`Removed: ${removed.join(", ")}`)
 
-      const avatar_url = new_member.user.displayAvatarURL({ size: 512 })
+      const avatar_url = await get_avatar_url(new_member.user)
 
       let executor_text = "Unknown"
       try {
@@ -297,7 +317,7 @@ export function register_audit_logs(client: Client): void {
     }
 
     if (old_member.nickname !== new_member.nickname) {
-      const avatar_url = new_member.user.displayAvatarURL({ size: 512 })
+      const avatar_url = await get_avatar_url(new_member.user)
 
       let executor_text = "Self"
       try {
@@ -385,7 +405,7 @@ export function register_audit_logs(client: Client): void {
               components: [
                 component.section({
                   content: [
-                    "### Member Timeout Removed",
+                    "### Timeout Removed",
                     `- Member: <@${new_member.id}>`,
                     `- Removed by: ${executor_text}`,
                   ].join("\n"),
@@ -402,7 +422,7 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("guildBanAdd", async (ban) => {
-    const avatar_url = ban.user.displayAvatarURL({ size: 512 })
+    const avatar_url = await get_avatar_url(ban.user)
 
     let executor_text = "Unknown"
     try {
@@ -439,7 +459,7 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("guildBanRemove", async (ban) => {
-    const avatar_url = ban.user.displayAvatarURL({ size: 512 })
+    const avatar_url = await get_avatar_url(ban.user)
 
     let executor_text = "Unknown"
     try {
@@ -627,7 +647,7 @@ export function register_audit_logs(client: Client): void {
     if (!old_state.guild) return
 
     if (!old_state.channel && new_state.channel) {
-      const avatar_url = new_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+      const avatar_url = new_state.member?.user ? await get_avatar_url(new_state.member.user) : format.default_avatar
 
       const log_message = component.build_message({
         components: [
@@ -649,7 +669,7 @@ export function register_audit_logs(client: Client): void {
 
       await send_log(client, log_message)
     } else if (old_state.channel && !new_state.channel) {
-      const avatar_url = old_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+      const avatar_url = old_state.member?.user ? await get_avatar_url(old_state.member.user) : format.default_avatar
 
       const log_message = component.build_message({
         components: [
@@ -671,7 +691,7 @@ export function register_audit_logs(client: Client): void {
 
       await send_log(client, log_message)
     } else if (old_state.channel && new_state.channel && old_state.channel.id !== new_state.channel.id) {
-      const avatar_url = new_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+      const avatar_url = new_state.member?.user ? await get_avatar_url(new_state.member.user) : format.default_avatar
 
       const log_message = component.build_message({
         components: [
@@ -696,7 +716,7 @@ export function register_audit_logs(client: Client): void {
     }
 
     if (old_state.serverMute !== new_state.serverMute) {
-      const avatar_url = new_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+      const avatar_url = new_state.member?.user ? await get_avatar_url(new_state.member.user) : format.default_avatar
 
       const log_message = component.build_message({
         components: [
@@ -720,7 +740,7 @@ export function register_audit_logs(client: Client): void {
     }
 
     if (old_state.serverDeaf !== new_state.serverDeaf) {
-      const avatar_url = new_state.member?.user.displayAvatarURL({ size: 512 }) || ""
+      const avatar_url = new_state.member?.user ? await get_avatar_url(new_state.member.user) : format.default_avatar
 
       const log_message = component.build_message({
         components: [
