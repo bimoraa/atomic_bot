@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_22", "python3"]
+nixPkgs = ["nodejs_22", "python3", "gcc", "gnumake", "pkg-config", "libtool", "autoconf", "automake"]
 
 [phases.install]
 cmds = ["npm i --prefer-offline"]
