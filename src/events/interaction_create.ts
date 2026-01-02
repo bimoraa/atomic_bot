@@ -39,6 +39,7 @@ import * as reminder_add_new             from "../interactions/buttons/reminder/
 import * as reminder_list                from "../interactions/buttons/reminder/list"
 import * as reminder_cancel              from "../interactions/buttons/reminder/cancel"
 import * as loa_request                  from "../interactions/buttons/loa/request"
+import * as booster_claim                from "../interactions/buttons/booster/claim"
 import * as loa_approve                  from "../interactions/buttons/loa/approve"
 import * as loa_reject                   from "../interactions/buttons/loa/reject"
 import * as loa_end                      from "../interactions/buttons/loa/end"
@@ -391,6 +392,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "loa_end") {
         await loa_end.handle_loa_end(interaction)
+        return
+      }
+      if (interaction.customId.startsWith("booster_claim_")) {
+        await booster_claim.handle(interaction)
         return
       }
     } catch (err) {
