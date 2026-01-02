@@ -68,9 +68,31 @@ async function send_log(client: Client, log_message: any): Promise<void> {
 export function register_audit_logs(client: Client): void {
   client.on("messageUpdate", async (old_message, new_message) => {
     if (!old_message.guild || old_message.author?.bot) return
-    if (old_message.content === new_message.content) return
+    
+    const content_changed     = old_message.content !== new_message.content
+    const attachments_changed = old_message.attachments.size !== new_message.attachments.size
+
+    if (!content_changed && !attachments_changed) return
 
     const avatar_url = old_message.author ? await get_avatar_url(old_message.author) : format.default_avatar
+
+    const content_parts = [
+      "### Message Edited",
+      `- Author: <@${old_message.author?.id}>`,
+      `- Channel: <#${old_message.channel.id}>`,
+    ]
+
+    if (content_changed) {
+      content_parts.push(`- Before: ${old_message.content || "(empty)"}`)
+      content_parts.push(`- After: ${new_message.content || "(empty)"}`)
+    }
+
+    if (attachments_changed) {
+      const old_attachments = old_message.attachments.map(a => `[${a.name}](${a.url})`).join(", ") || "None"
+      const new_attachments = new_message.attachments.map(a => `[${a.name}](${a.url})`).join(", ") || "None"
+      content_parts.push(`- Attachments Before: ${old_attachments}`)
+      content_parts.push(`- Attachments After: ${new_attachments}`)
+    }
 
     const log_message = component.build_message({
       components: [
@@ -78,13 +100,7 @@ export function register_audit_logs(client: Client): void {
           accent_color: COLOR.UPDATE,
           components: [
             component.section({
-              content: [
-                "### Message Edited",
-                `- Author: <@${old_message.author?.id}>`,
-                `- Channel: <#${old_message.channel.id}>`,
-                `- Before: ${old_message.content || "(empty)"}`,
-                `- After: ${new_message.content || "(empty)"}`,
-              ].join("\n"),
+              content: content_parts.join("\n"),
               thumbnail: avatar_url,
             }),
           ],
@@ -168,20 +184,24 @@ export function register_audit_logs(client: Client): void {
     const avatar_url   = message.author ? await get_avatar_url(message.author) : format.default_avatar
     const content_text = message.content?.trim() || ""
     const has_content  = content_text.length > 0
-    const attachments  = message.attachments.size > 0 ? `${message.attachments.size} attachment(s)` : ""
-    const embeds       = message.embeds.length > 0 ? `${message.embeds.length} embed(s)` : ""
+    const has_attachments = message.attachments.size > 0
+    const has_embeds      = message.embeds.length > 0
     
     const content_lines = []
     if (has_content) {
       content_lines.push(`- Content: ${content_text}`)
     }
-    if (attachments) {
-      content_lines.push(`- Attachments: ${attachments}`)
+    if (has_attachments) {
+      const attachment_list = message.attachments.map(a => {
+        const size = (a.size / 1024).toFixed(2)
+        return `[${a.name}](${a.url}) (${size} KB)`
+      }).join(", ")
+      content_lines.push(`- Attachments (${message.attachments.size}): ${attachment_list}`)
     }
-    if (embeds) {
-      content_lines.push(`- Embeds: ${embeds}`)
+    if (has_embeds) {
+      content_lines.push(`- Embeds: ${message.embeds.length} embed(s)`)
     }
-    if (!has_content && !attachments && !embeds) {
+    if (!has_content && !has_attachments && !has_embeds) {
       content_lines.push(`- Content: ${format.italic("Message had no content (possibly a component message)")}` )
     }
 
