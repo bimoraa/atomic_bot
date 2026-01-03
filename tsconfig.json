@@ -14,7 +14,9 @@
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "sourceMap": false,
     "declaration": false,
-    "removeComments": true
+    "removeComments": true,
+    "importHelpers": false,
+    "downlevelIteration": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]

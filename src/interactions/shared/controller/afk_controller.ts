@@ -27,14 +27,35 @@ export async function handle_afk_return(message: Message): Promise<void> {
     ],
   })
 
-  await message.reply(welcome_back).catch(() => {})
+  const reply = await message.reply(welcome_back).catch(() => null)
+  
+  if (reply) {
+    setTimeout(() => {
+      reply.delete().catch(() => {})
+    }, 15000)
+  }
 }
 
 export async function handle_afk_mentions(message: Message): Promise<void> {
+  const mentioned_users: Set<string> = new Set()
+  
   for (const mentioned of message.mentions.users.values()) {
-    if (!is_afk(mentioned.id)) continue
+    mentioned_users.add(mentioned.id)
+  }
+  
+  if (message.reference) {
+    try {
+      const replied_message = await message.fetchReference()
+      if (replied_message && !replied_message.author.bot) {
+        mentioned_users.add(replied_message.author.id)
+      }
+    } catch {}
+  }
+  
+  for (const user_id of mentioned_users) {
+    if (!is_afk(user_id)) continue
 
-    const afk_data = get_afk(mentioned.id)
+    const afk_data = get_afk(user_id)
     
     if (!afk_data) continue
 
@@ -43,7 +64,7 @@ export async function handle_afk_mentions(message: Message): Promise<void> {
         component.container({
           components: [
             component.section({
-              content  : `<@${mentioned.id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`
+              content  : `<@${user_id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`
             }),
           ],
         }),

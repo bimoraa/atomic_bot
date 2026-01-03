@@ -18,7 +18,9 @@ const afk_command: SubCommand = {
       set_afk(message.author.id, reason, original_nickname)
       
       try {
-        await member.setNickname(`[AFK] - ${display_name}`)
+        if (!display_name.startsWith("[AFK]")) {
+          await member.setNickname(`[AFK] - ${display_name}`)
+        }
       } catch {}
     } else {
       set_afk(message.author.id, reason, null)
