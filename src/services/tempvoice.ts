@@ -8,9 +8,10 @@ import {
   CategoryChannel,
   OverwriteType,
   VideoQualityMode,
-}                      from "discord.js"
+}                         from "discord.js"
 import { logger, component, api } from "../utils"
-import { load_config } from "../configuration/loader"
+import { load_config }    from "../configuration/loader"
+import * as voice_tracker from "./voice_time_tracker"
 
 interface tempvoice_config {
   category_name         : string
@@ -305,6 +306,8 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
     __blocked_users.set(channel.id, new Set())
     __waiting_rooms.set(channel.id, false)
 
+    await voice_tracker.track_channel_created(channel.id, member.id, guild.id)
+
     __log.info(`Created temp channel: ${channel.name} for ${member.displayName}`)
 
     try {
@@ -343,6 +346,7 @@ export async function delete_temp_channel(channel: VoiceChannel | string): Promi
       __text_channels.delete(channel_id)
     }
 
+    await voice_tracker.track_channel_deleted(channel_id)
     await voice_channel.delete()
 
     __temp_channels.delete(channel_id)

@@ -1,5 +1,6 @@
 import { ButtonInteraction, GuildMember, VoiceChannel } from "discord.js"
 import * as tempvoice                                   from "../../../services/tempvoice"
+import * as voice_tracker                               from "../../../services/voice_time_tracker"
 import { component, modal }                             from "../../../utils"
 
 function create_not_in_channel_reply(guild_id: string, generator_channel_id: string | null) {
@@ -615,4 +616,40 @@ export async function handle_tempvoice_delete(interaction: ButtonInteraction): P
   await channel.delete()
 
   await interaction.editReply(create_success_reply("Channel deleted.")).catch(() => {})
+}
+
+export async function handle_tempvoice_leaderboard(interaction: ButtonInteraction): Promise<void> {
+  const guild_id    = interaction.guildId!
+  const leaderboard = await voice_tracker.get_channel_leaderboard(guild_id, 10)
+
+  if (leaderboard.length === 0) {
+    await interaction.reply({
+      content  : "No voice channel records found.",
+      ephemeral: true,
+    })
+    return
+  }
+
+  const leaderboard_text = leaderboard.map((record, index) => {
+    const medal    = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`
+    const duration = voice_tracker.format_time(record.duration_seconds)
+    const status   = record.deleted_at ? "" : " (Active)"
+    return `${medal} <@${record.owner_id}> - ${duration}${status}`
+  })
+
+  const message = component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text([
+            `## Voice Channel Duration Leaderboard`,
+            ``,
+            ...leaderboard_text,
+          ]),
+        ],
+      }),
+    ],
+  })
+
+  await interaction.reply({ ...message, ephemeral: true })
 }

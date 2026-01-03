@@ -346,6 +346,10 @@ export async function handle_interaction(
         await tempvoice_handlers.handle_tempvoice_delete(interaction)
         return
       }
+      if (interaction.customId === "tempvoice_leaderboard") {
+        await tempvoice_handlers.handle_tempvoice_leaderboard(interaction)
+        return
+      }
       if (interaction.customId === "reminder_add_new") {
         await reminder_add_new.handle_reminder_add_new(interaction)
         return

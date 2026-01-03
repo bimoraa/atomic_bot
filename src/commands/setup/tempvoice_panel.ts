@@ -29,6 +29,7 @@ const emoji = {
   claim        : { id: "1449851319350333613", name: "claim"        },
   transfer     : { id: "1449851186772578315", name: "transfer"     },
   delete       : { id: "1449851060922355824", name: "delete"       },
+  leaderboard  : { id: "1457012485281546260", name: "leaderboard"  },
 }
 
 export const command: Command = {
@@ -91,19 +92,25 @@ export const command: Command = {
               component.secondary_button("", "tempvoice_region",  emoji.region),
             ),
             component.action_row(
-              component.secondary_button("", "tempvoice_block",    emoji.block),
-              component.secondary_button("", "tempvoice_unblock",  emoji.unblock),
-              component.secondary_button("", "tempvoice_claim",    emoji.claim),
-              component.secondary_button("", "tempvoice_transfer", emoji.transfer),
-              component.secondary_button("", "tempvoice_delete",   emoji.delete),
+              component.secondary_button("", "tempvoice_block",       emoji.block),
+              component.secondary_button("", "tempvoice_unblock",     emoji.unblock),
+              component.secondary_button("", "tempvoice_claim",       emoji.claim),
+              component.secondary_button("", "tempvoice_transfer",    emoji.transfer),
+              component.secondary_button("", "tempvoice_delete", emoji.delete),
+            ),
+            component.action_row(
+              component.secondary_button("", "tempvoice_leaderboard", emoji.leaderboard)
             ),
           ],
         }),
       ],
     })
 
-    const response = await api.send_components_v2(
+    const message_id = "1449869335479718139"
+
+    const response = await api.edit_components_v2(
       setup_result.interface_channel_id!,
+      message_id,
       api.get_token(),
       message_payload
     )
