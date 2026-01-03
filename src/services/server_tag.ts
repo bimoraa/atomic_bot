@@ -90,15 +90,15 @@ export async function check_server_tag_change(
               component.container({
                 accent_color: 0x57F287,
                 components: [
-                  component.text([
-                    `## Thank You for Using ATMC Tag`,
-                    `<@${new_user.id}> is now representing ATMC with the server tag`,
-                    ``,
-                    `**Tag:** ${new_tag}`,
-                    `**Username:** ${new_user.username}`,
-                    ``,
-                    `We appreciate your support`,
-                  ]),
+                  component.section({
+                    content: [
+                      `## Thank You for Using ATMC Tag`,
+                      `<@${new_user.id}> is now representing ATMC with the server tag`,
+                      ``,
+                      `We appreciate your support`,
+                    ],
+                    thumbnail: new_user.displayAvatarURL({ size: 256 }),
+                  }),
                 ],
               }),
             ],
