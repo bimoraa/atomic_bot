@@ -22,7 +22,7 @@ export const command: Command = {
       components: [
         component.container({
           components: [
-            component.text("### Ping"),
+            component.text("### Pong! 🏓"),
             component.divider(),
             component.text([
               `- WebSocket: ${ws_latency}ms`,
