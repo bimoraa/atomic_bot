@@ -23,7 +23,7 @@ export async function check_server_tag_change(
       old_user = await old_user.fetch().catch(() => old_user as User)
     }
     
-    console.log(`[ - SERVER TAG - ] Checking user: ${new_user.username}`)
+    console.log(`[ - SERVER TAG - ] Checking user: ${new_user.username} AsyncID: ${new_user.id}`)
     console.log(`[ - SERVER TAG - ] Old tag: ${old_user.primaryGuild?.tag}, Old guild: ${old_user.primaryGuild?.identityGuildId}`)
     console.log(`[ - SERVER TAG - ] New tag: ${new_user.primaryGuild?.tag}, New guild: ${new_user.primaryGuild?.identityGuildId}`)
     
