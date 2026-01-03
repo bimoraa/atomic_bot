@@ -122,6 +122,9 @@ client.on("interactionCreate", (interaction) => {
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
 
+  await handle_afk_return(message)
+  await handle_afk_mentions(message)
+
   if (check_spam(message, client)) return
 
   if (message.content.startsWith("?")) {
@@ -146,9 +149,6 @@ client.on("messageCreate", async (message: Message) => {
       }
     }
   }
-
-  await handle_afk_return(message)
-  await handle_afk_mentions(message)
   
   if (await handle_auto_reply(message, client)) return
   
