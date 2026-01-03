@@ -17,6 +17,7 @@ import { check_spam }                                                    from ".
 import { load_reminders_from_db }                                        from "./commands/tools/reminder/reminder"
 import { start_loa_checker }                                             from "./services/loa_checker"
 import { start_webhook_server }                                          from "./server"
+import { start_scheduler }                                               from "./commands/tools/staff/schedule_hwid_less"
 
 config()
 
@@ -84,6 +85,7 @@ client.once("ready", async () => {
       await load_all_tickets()
       await load_reminders_from_db(client)
       start_loa_checker(client)
+      start_scheduler(client)
     }
   } catch (error) {
     console.error("[MongoDB] Connection error:", error)
