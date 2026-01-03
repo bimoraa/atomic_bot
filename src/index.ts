@@ -2,6 +2,7 @@ import { Client, Collection, GatewayIntentBits, ActivityType, Message, Permissio
 import { config }                                                        from "dotenv"
 import { Command }                                                       from "./types/command"
 import { load_commands, register_commands }                              from "./handlers/command_handler"
+import { load_sub_commands, sub_commands }                               from "./handlers/sub_command_handler"
 import { handle_interaction }                                            from "./events/interaction_create"
 import { handle_auto_reply }                                             from "./services/auto_reply"
 import { start_roblox_update_checker }                                   from "./services/roblox_update"
@@ -9,7 +10,7 @@ import { load_close_requests }                                           from ".
 import { load_all_tickets }                                              from "./services/unified_ticket"
 import * as tempvoice                                                    from "./services/tempvoice"
 import { register_audit_logs }                                           from "./services/audit_log"
-import { get_afk, remove_afk, is_afk }                                   from "./services/afk"
+import { handle_afk_return, handle_afk_mentions }                        from "./interactions/shared/controller/afk_controller"
 import { db, component }                                                 from "./utils"
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./services/anti_spam"
@@ -94,6 +95,7 @@ client.once("ready", async () => {
   try {
     const commands_data = await load_commands(client)
     await register_commands(commands_data)
+    await load_sub_commands()
   } catch (error) {
     console.error("[Commands] Registration failed:", error)
   }
@@ -120,55 +122,31 @@ client.on("messageCreate", async (message: Message) => {
 
   if (check_spam(message, client)) return
 
-  const afk_removed = remove_afk(message.author.id)
-  if (afk_removed) {
-    const member = message.guild?.members.cache.get(message.author.id)
-    if (member) {
-      try {
-        await member.setNickname(afk_removed.original_nickname)
-      } catch {}
-    }
-    
-    const welcome_back = component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.section({
-              content  : `Welcome back! You were AFK for <t:${Math.floor(afk_removed.timestamp / 1000)}:R>`,
-              thumbnail: message.author.displayAvatarURL({ extension: "png", size: 256 }),
-            }),
-          ],
-        }),
-      ],
-    })
-    await message.reply(welcome_back)
-      .then(msg => setTimeout(() => msg.delete().catch(() => {}), 10000))
-      .catch(() => {})
-  }
+  if (message.content.startsWith("?")) {
+    const args         = message.content.slice(1).trim().split(/ +/)
+    const command_name = args.shift()?.toLowerCase()
 
-  for (const mentioned of message.mentions.users.values()) {
-    if (is_afk(mentioned.id)) {
-      const afk_data = get_afk(mentioned.id)
-      if (afk_data) {
-        const afk_notice = component.build_message({
-          components: [
-            component.container({
-              components: [
-                component.section({
-                  content  : `<@${mentioned.id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`,
-                  thumbnail: mentioned.displayAvatarURL({ extension: "png", size: 256 }),
-                }),
-              ],
-            }),
-          ],
-        })
-        await message.reply({ ...afk_notice, allowedMentions: { users: [] } })
-          .then(msg => setTimeout(() => msg.delete().catch(() => {}), 10000))
-          .catch(() => {})
-        break
+    if (command_name) {
+      const sub_command = sub_commands.get(command_name)
+      
+      if (sub_command) {
+        try {
+          await sub_command.execute(message, args, client)
+        } catch (error) {
+          console.error(`[ - SUB COMMAND - ] Error executing ?${command_name}:`, error)
+          await log_error(client, error as Error, `Sub Command: ?${command_name}`, {
+            user   : message.author.tag,
+            guild  : message.guild?.name || "DM",
+            channel: message.channel.id,
+          }).catch(() => {})
+        }
+        return
       }
     }
   }
+
+  await handle_afk_return(message)
+  await handle_afk_mentions(message)
   
   if (await handle_auto_reply(message, client)) return
   

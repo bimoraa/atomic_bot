@@ -38,10 +38,7 @@ export const command: Command = {
       components: [
         component.container({
           components: [
-            component.section({
-              content   : `You are now AFK: **${reason}**`,
-              thumbnail : interaction.user.displayAvatarURL({ extension: "png", size: 256 }),
-            }),
+            component.text(`<@${interaction.user.id}> I set your AFK: ${reason}`),
           ],
         }),
       ],
