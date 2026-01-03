@@ -72,11 +72,16 @@ const whois: Command = {
 
     const acknowledgements_info = acknowledgements_lines.join("\n")
 
+    const user_avatar = target_user.displayAvatarURL({ extension: "png", size: 256 })
+
     const message = component.build_message({
       components: [
         component.container({
           components: [
-            component.text(user_info),
+            component.section({
+              content  : user_info,
+              thumbnail: user_avatar,
+            }),
             component.divider(2),
             component.text(roles_info),
             component.divider(2),

@@ -1,6 +1,6 @@
 import { UserSelectMenuInteraction, GuildMember, VoiceChannel } from "discord.js"
 import * as tempvoice                                           from "../../../services/tempvoice"
-import { component }                                            from "../../../utils"
+import { component, modal }                                     from "../../../utils"
 
 function create_reply(message: string) {
   return component.build_message({
@@ -113,15 +113,20 @@ async function handle_invite_select(
   channel     : VoiceChannel,
   user_id     : string
 ): Promise<void> {
-  await interaction.deferUpdate()
+  const invite_modal = modal.create_modal(
+    `tempvoice_invite_message_${user_id}`,
+    "Invite User",
+    modal.create_text_input({
+      custom_id   : "invite_message",
+      label       : "Message (Optional)",
+      placeholder : "Enter a message to send with the invite...",
+      required    : false,
+      max_length  : 200,
+      style       : 2,
+    }),
+  )
 
-  const success = await tempvoice.invite_user(channel, user_id)
-
-  if (success) {
-    await interaction.editReply(create_reply(`<@${user_id}> has been invited to the channel.`))
-  } else {
-    await interaction.editReply(create_reply("Failed to invite user."))
-  }
+  await interaction.showModal(invite_modal)
 }
 
 async function handle_kick_select(

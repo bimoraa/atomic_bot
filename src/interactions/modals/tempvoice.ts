@@ -68,7 +68,16 @@ export async function handle_tempvoice_modal(interaction: ModalSubmitInteraction
   }
 
   if (interaction.customId === "tempvoice_invite_modal") {
-    await handle_invite_modal(interaction, channel, member)
+    const user_id        = interaction.fields.getTextInputValue("user_id").trim()
+    const invite_message = ""
+    await handle_invite_with_message(interaction, channel, member, user_id, invite_message)
+    return true
+  }
+
+  if (interaction.customId.startsWith("tempvoice_invite_message_")) {
+    const user_id        = interaction.customId.replace("tempvoice_invite_message_", "")
+    const invite_message = interaction.fields.getTextInputValue("invite_message").trim()
+    await handle_invite_with_message(interaction, channel, member, user_id, invite_message)
     return true
   }
 
@@ -164,6 +173,69 @@ async function handle_limit_modal(
   }
 }
 
+async function handle_invite_with_message(
+  interaction      : ModalSubmitInteraction,
+  channel          : VoiceChannel,
+  member           : GuildMember,
+  user_id          : string,
+  invite_message   : string
+): Promise<void> {
+  if (!tempvoice.is_channel_owner(channel.id, member.id)) {
+    await interaction.reply({
+      ...create_reply("Only the channel owner can invite users."),
+      ephemeral: true,
+    })
+    return
+  }
+
+  await interaction.deferReply({ ephemeral: true })
+
+  const target = await channel.guild.members.fetch(user_id).catch(() => null)
+
+  if (!target) {
+    await interaction.editReply(create_reply("User not found."))
+    return
+  }
+
+  const success = await tempvoice.invite_user(channel, user_id)
+
+  if (!success) {
+    await interaction.editReply(create_reply("Failed to invite user."))
+    return
+  }
+
+  if (invite_message) {
+    try {
+      const dm_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text([
+                `## Voice Channel Invitation`,
+                `<@${member.id}> invited you to join their voice channel.`,
+                ``,
+                `**Message:** ${invite_message}`,
+              ]),
+              component.divider(1),
+              component.action_row(
+                component.link_button("Join Channel", `https://discord.com/channels/${channel.guild.id}/${channel.id}`),
+              ),
+            ],
+          }),
+        ],
+      })
+
+      await target.send(dm_message).catch(() => {})
+    } catch {}
+  }
+
+  const confirmation_text = invite_message
+    ? `<@${user_id}> has been invited with your message.`
+    : `<@${user_id}> has been invited to the channel.`
+
+  await interaction.editReply(create_reply(confirmation_text))
+}
+
 async function handle_trust_modal(
   interaction : ModalSubmitInteraction,
   channel     : VoiceChannel,
@@ -220,39 +292,6 @@ async function handle_untrust_modal(
     await interaction.editReply(create_reply(`<@${user_id}> is no longer trusted.`))
   } else {
     await interaction.editReply(create_reply("Failed to untrust user."))
-  }
-}
-
-async function handle_invite_modal(
-  interaction : ModalSubmitInteraction,
-  channel     : VoiceChannel,
-  member      : GuildMember
-): Promise<void> {
-  if (!tempvoice.is_channel_owner(channel.id, member.id)) {
-    await interaction.reply({
-      ...create_reply("Only the channel owner can invite users."),
-      ephemeral: true,
-    })
-    return
-  }
-
-  const user_id = interaction.fields.getTextInputValue("user_id").trim()
-
-  await interaction.deferReply({ ephemeral: true })
-
-  const target = await channel.guild.members.fetch(user_id).catch(() => null)
-
-  if (!target) {
-    await interaction.editReply(create_reply("User not found."))
-    return
-  }
-
-  const success = await tempvoice.invite_user(channel, user_id)
-
-  if (success) {
-    await interaction.editReply(create_reply(`<@${user_id}> has been invited to the channel.`))
-  } else {
-    await interaction.editReply(create_reply("Failed to invite user."))
   }
 }
 
