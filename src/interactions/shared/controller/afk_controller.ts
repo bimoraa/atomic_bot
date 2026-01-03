@@ -1,6 +1,7 @@
 import { Message, Client } from "discord.js"
 import { remove_afk, get_afk, is_afk } from "../../../services/afk"
 import { component } from "../../../utils"
+import { log_error } from "../../../utils/error_logger"
 
 export async function handle_afk_return(message: Message): Promise<void> {
   const afk_removed = await remove_afk(message.author.id)
@@ -76,7 +77,18 @@ export async function handle_afk_mentions(message: Message): Promise<void> {
       ],
     })
 
-    await message.reply({ ...afk_notice, allowedMentions: { users: [] } }).catch(() => {})
+    try {
+      const reply = await message.reply({ ...afk_notice, allowedMentions: { users: [] } })
+      console.log(`[ - AFK - ] Successfully sent AFK notice for user ${user_id}`)
+    } catch (error) {
+      console.error(`[ - AFK - ] Failed to send AFK notice:`, error)
+      await log_error(message.client, error as Error, "AFK Notice Failed", {
+        user_id      : user_id,
+        channel      : message.channel.id,
+        afk_reason   : afk_data.reason,
+      }).catch(() => {})
+    }
+    
     break
   }
 }

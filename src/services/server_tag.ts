@@ -19,6 +19,14 @@ export async function check_server_tag_change(
   new_user : User
 ): Promise<void> {
   try {
+    if (old_user.partial) {
+      old_user = await old_user.fetch().catch(() => old_user as User)
+    }
+    
+    console.log(`[ - SERVER TAG - ] Checking user: ${new_user.username}`)
+    console.log(`[ - SERVER TAG - ] Old tag: ${old_user.primaryGuild?.tag}, Old guild: ${old_user.primaryGuild?.identityGuildId}`)
+    console.log(`[ - SERVER TAG - ] New tag: ${new_user.primaryGuild?.tag}, New guild: ${new_user.primaryGuild?.identityGuildId}`)
+    
     const old_tag = old_user.primaryGuild?.tag
     const new_tag = new_user.primaryGuild?.tag
     
@@ -26,6 +34,8 @@ export async function check_server_tag_change(
     const new_guild_id = new_user.primaryGuild?.identityGuildId
     
     if (!old_tag && new_tag && new_guild_id === TARGET_GUILD_ID) {
+      console.log(`[ - SERVER TAG - ] User ${new_user.username} added server tag: ${new_tag}`)
+      
       const existing = await db.find_one<server_tag_user>(COLLECTION, {
         user_id  : new_user.id,
         guild_id : TARGET_GUILD_ID,
@@ -61,11 +71,18 @@ export async function check_server_tag_change(
           ],
         })
         
-        await new_user.send(dm_message).catch(() => {
-          console.log(`[ - SERVER TAG - ] Could not DM user ${new_user.username}`)
+        const dm_result = await new_user.send(dm_message).catch((error) => {
+          console.error(`[ - SERVER TAG - ] Could not DM user ${new_user.username}:`, error)
+          return null
         })
         
-        console.log(`[ - SERVER TAG - ] User ${new_user.username} added server tag: ${new_tag}`)
+        if (dm_result) {
+          console.log(`[ - SERVER TAG - ] DM sent successfully to ${new_user.username}`)
+        }
+        
+        console.log(`[ - SERVER TAG - ] Saved to database: ${new_user.username}`)
+      } else {
+        console.log(`[ - SERVER TAG - ] User ${new_user.username} already in database`)
       }
     }
     
@@ -78,8 +95,11 @@ export async function check_server_tag_change(
       console.log(`[ - SERVER TAG - ] User ${new_user.username} removed server tag`)
     }
   } catch (error) {
+    console.error(`[ - SERVER TAG - ] Error:`, error)
     await log_error(client, error as Error, "Server Tag Checker", {
-      user: new_user.tag,
+      user       : new_user.tag,
+      new_tag    : new_user.primaryGuild?.tag || "none",
+      new_guild  : new_user.primaryGuild?.identityGuildId || "none",
     }).catch(() => {})
   }
 }
