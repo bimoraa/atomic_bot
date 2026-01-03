@@ -122,7 +122,7 @@ async function handle_invite_select(
       placeholder : "Enter a message to send with the invite...",
       required    : false,
       max_length  : 200,
-      style       : 2,
+      style       : "paragraph",
     }),
   )
 
