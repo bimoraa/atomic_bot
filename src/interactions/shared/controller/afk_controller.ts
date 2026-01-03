@@ -48,8 +48,11 @@ export async function handle_afk_mentions(message: Message): Promise<void> {
       const replied_message = await message.fetchReference()
       if (replied_message && !replied_message.author.bot) {
         mentioned_users.add(replied_message.author.id)
+        console.log(`[ - AFK - ] Detected reply to user: ${replied_message.author.username}`)
       }
-    } catch {}
+    } catch (error) {
+      console.log(`[ - AFK - ] Failed to fetch referenced message:`, error)
+    }
   }
   
   for (const user_id of mentioned_users) {
@@ -58,6 +61,8 @@ export async function handle_afk_mentions(message: Message): Promise<void> {
     const afk_data = get_afk(user_id)
     
     if (!afk_data) continue
+    
+    console.log(`[ - AFK - ] Notifying about AFK user: ${user_id}`)
 
     const afk_notice = component.build_message({
       components: [

@@ -1,6 +1,6 @@
-import { Client, GuildMember } from "discord.js"
-import { db, component }       from "../utils"
-import { log_error }           from "../utils/error_logger"
+import { Client, User, PartialUser } from "discord.js"
+import { db, component }             from "../utils"
+import { log_error }                 from "../utils/error_logger"
 
 interface server_tag_user {
   user_id    : string
@@ -10,38 +10,40 @@ interface server_tag_user {
   added_at   : number
 }
 
-const COLLECTION = "server_tag_users"
+const COLLECTION      = "server_tag_users"
+const TARGET_GUILD_ID = "1221481607748001822"
 
 export async function check_server_tag_change(
-  client     : Client,
-  old_member : GuildMember,
-  new_member : GuildMember
+  client   : Client,
+  old_user : User | PartialUser,
+  new_user : User
 ): Promise<void> {
   try {
-    const guild_tag = new_member.guild.name.toLowerCase()
+    const old_tag = old_user.primaryGuild?.tag
+    const new_tag = new_user.primaryGuild?.tag
     
-    const old_display = old_member.displayName.toLowerCase()
-    const new_display = new_member.displayName.toLowerCase()
+    const old_guild_id = old_user.primaryGuild?.identityGuildId
+    const new_guild_id = new_user.primaryGuild?.identityGuildId
     
-    const old_has_tag = old_display.includes(guild_tag) || old_display.includes("atmc")
-    const new_has_tag = new_display.includes(guild_tag) || new_display.includes("atmc")
-    
-    if (!old_has_tag && new_has_tag) {
+    if (!old_tag && new_tag && new_guild_id === TARGET_GUILD_ID) {
       const existing = await db.find_one<server_tag_user>(COLLECTION, {
-        user_id  : new_member.id,
-        guild_id : new_member.guild.id,
+        user_id  : new_user.id,
+        guild_id : TARGET_GUILD_ID,
       })
       
       if (!existing) {
         const tag_data: server_tag_user = {
-          user_id  : new_member.id,
-          guild_id : new_member.guild.id,
-          username : new_member.user.username,
-          tag      : new_display.includes("atmc") ? "atmc" : guild_tag,
+          user_id  : new_user.id,
+          guild_id : TARGET_GUILD_ID,
+          username : new_user.username,
+          tag      : new_tag,
           added_at : Date.now(),
         }
         
         await db.insert_one(COLLECTION, tag_data)
+        
+        const guild = client.guilds.cache.get(TARGET_GUILD_ID)
+        const guild_name = guild?.name || "our server"
         
         const dm_message = component.build_message({
           components: [
@@ -50,7 +52,7 @@ export async function check_server_tag_change(
               components: [
                 component.text([
                   `## Thanks for using our server tag!`,
-                  `We appreciate you representing **${new_member.guild.name}** in your profile.`,
+                  `We appreciate you representing **${guild_name}** with the tag **${new_tag}** in your profile.`,
                   ``,
                   `You're now part of our tagged community!`,
                 ]),
@@ -59,26 +61,25 @@ export async function check_server_tag_change(
           ],
         })
         
-        await new_member.send(dm_message).catch(() => {
-          console.log(`[ - SERVER TAG - ] Could not DM user ${new_member.user.username}`)
+        await new_user.send(dm_message).catch(() => {
+          console.log(`[ - SERVER TAG - ] Could not DM user ${new_user.username}`)
         })
         
-        console.log(`[ - SERVER TAG - ] User ${new_member.user.username} added server tag`)
+        console.log(`[ - SERVER TAG - ] User ${new_user.username} added server tag: ${new_tag}`)
       }
     }
     
-    if (old_has_tag && !new_has_tag) {
+    if (old_tag && old_guild_id === TARGET_GUILD_ID && (!new_tag || new_guild_id !== TARGET_GUILD_ID)) {
       await db.delete_one(COLLECTION, {
-        user_id  : new_member.id,
-        guild_id : new_member.guild.id,
+        user_id  : new_user.id,
+        guild_id : TARGET_GUILD_ID,
       })
       
-      console.log(`[ - SERVER TAG - ] User ${new_member.user.username} removed server tag`)
+      console.log(`[ - SERVER TAG - ] User ${new_user.username} removed server tag`)
     }
   } catch (error) {
     await log_error(client, error as Error, "Server Tag Checker", {
-      user   : new_member.user.tag,
-      guild  : new_member.guild.name,
+      user: new_user.tag,
     }).catch(() => {})
   }
 }

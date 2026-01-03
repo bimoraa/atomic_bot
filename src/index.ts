@@ -13,6 +13,7 @@ import * as tempvoice                                                    from ".
 import { register_audit_logs }                                           from "./services/audit_log"
 import { handle_afk_return, handle_afk_mentions }                        from "./interactions/shared/controller/afk_controller"
 import { load_afk_from_db }                                              from "./services/afk"
+import { check_server_tag_change }                                       from "./services/server_tag"
 import { db, component }                                                 from "./utils"
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./services/anti_spam"
@@ -140,6 +141,10 @@ client.once("ready", async () => {
 client.on("interactionCreate", (interaction) => {
   handle_interaction(interaction, client);
 });
+
+client.on("userUpdate", async (old_user, new_user) => {
+  await check_server_tag_change(client, old_user, new_user)
+})
 
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
