@@ -10,8 +10,9 @@ interface server_tag_user {
   added_at   : number
 }
 
-const COLLECTION      = "server_tag_users"
-const TARGET_GUILD_ID = "1250337227582472243"
+const COLLECTION          = "server_tag_users"
+const TARGET_GUILD_ID     = "1250337227582472243"
+const SERVER_TAG_LOG_ID   = "1457105102044139597"
 
 export async function check_server_tag_change(
   client   : Client,
@@ -80,6 +81,32 @@ export async function check_server_tag_change(
         
         if (dm_result) {
           console.log(`[ - SERVER TAG - ] DM sent successfully to ${new_user.username}`)
+        }
+        
+        const log_channel = guild?.channels.cache.get(SERVER_TAG_LOG_ID)
+        if (log_channel?.isTextBased()) {
+          const log_message = component.build_message({
+            components: [
+              component.container({
+                accent_color: 0x57F287,
+                components: [
+                  component.text([
+                    `## Thank You for Using ATMC Tag`,
+                    `<@${new_user.id}> is now representing ATMC with the server tag`,
+                    ``,
+                    `**Tag:** ${new_tag}`,
+                    `**Username:** ${new_user.username}`,
+                    ``,
+                    `We appreciate your support`,
+                  ]),
+                ],
+              }),
+            ],
+          })
+
+          await log_channel.send(log_message).catch((error) => {
+            console.error(`[ - SERVER TAG - ] Failed to send log message:`, error)
+          })
         }
         
         console.log(`[ - SERVER TAG - ] Saved to database: ${new_user.username}`)
