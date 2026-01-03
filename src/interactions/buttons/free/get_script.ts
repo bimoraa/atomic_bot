@@ -1,6 +1,7 @@
-import { ButtonInteraction, GuildMember } from "discord.js"
-import { component, api, format }        from "../../../utils"
-import { http, env, logger, db }         from "../../../utils"
+import { ButtonInteraction, GuildMember }   from "discord.js"
+import { component, api, format }          from "../../../utils"
+import { http, env, logger, db }           from "../../../utils"
+import { remove_free_script_access }       from "../../../services/free_script_manager"
 
 const __log                  = logger.create_logger("free_script")
 const FREE_PROJECT_ID        = "cd7560b7384fd815dafd993828c40d2b"
@@ -27,6 +28,12 @@ export async function handle_free_get_script(interaction: ButtonInteraction): Pr
     const user = member.user
 
     if (!user.primaryGuild?.tag || user.primaryGuild.identityGuildId !== TARGET_GUILD_ID) {
+      await remove_free_script_access(member.id)
+
+      if (member.roles.cache.has(FREE_SCRIPT_ROLE_ID)) {
+        await member.roles.remove(FREE_SCRIPT_ROLE_ID).catch(() => {})
+      }
+
       const no_tag_message = component.build_message({
         components: [
           component.container({
@@ -35,6 +42,8 @@ export async function handle_free_get_script(interaction: ButtonInteraction): Pr
               component.text([
                 `## Server Tag Required`,
                 `To use the free script, you must wear the ATMC server tag`,
+                ``,
+                `You have been unwhitelisted`,
                 ``,
                 `**How to set server tag:**`,
                 `1. Go to User Settings > Profile`,
@@ -199,6 +208,33 @@ export async function handle_free_mobile_copy(interaction: ButtonInteraction): P
   const member = interaction.member as GuildMember
 
   await interaction.deferReply({ ephemeral: true })
+
+  const user = member.user
+
+  if (!user.primaryGuild?.tag || user.primaryGuild.identityGuildId !== TARGET_GUILD_ID) {
+    await remove_free_script_access(member.id)
+
+    if (member.roles.cache.has(FREE_SCRIPT_ROLE_ID)) {
+      await member.roles.remove(FREE_SCRIPT_ROLE_ID).catch(() => {})
+    }
+
+    await api.edit_deferred_reply(interaction, component.build_message({
+      components: [
+        component.container({
+          accent_color: 0xED4245,
+          components: [
+            component.text([
+              `## Server Tag Required`,
+              `You must wear the ATMC server tag to use free script features`,
+              ``,
+              `You have been unwhitelisted. Set the server tag and click "Get Script" again`,
+            ]),
+          ],
+        }),
+      ],
+    }))
+    return
+  }
 
   try {
     const check_url = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users?discord_id=${member.id}`

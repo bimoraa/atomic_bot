@@ -1,9 +1,12 @@
-import { ButtonInteraction, GuildMember } from "discord.js"
-import { component, api, format }        from "../../../utils"
-import { http, env, logger }             from "../../../utils"
+import { ButtonInteraction, GuildMember }   from "discord.js"
+import { component, api, format }          from "../../../utils"
+import { http, env, logger }               from "../../../utils"
+import { remove_free_script_access }       from "../../../services/free_script_manager"
 
-const __log           = logger.create_logger("free_stats")
-const FREE_PROJECT_ID = "cd7560b7384fd815dafd993828c40d2b"
+const __log               = logger.create_logger("free_stats")
+const FREE_PROJECT_ID     = "cd7560b7384fd815dafd993828c40d2b"
+const FREE_SCRIPT_ROLE_ID = "1347086323575423048"
+const TARGET_GUILD_ID     = "1250337227582472243"
 
 function get_api_key(): string {
   return env.required("LUARMOR_API_KEY")
@@ -19,6 +22,32 @@ export async function handle_free_get_stats(interaction: ButtonInteraction): Pro
   await interaction.deferReply({ ephemeral: true })
 
   const member = interaction.member as GuildMember
+  const user   = member.user
+
+  if (!user.primaryGuild?.tag || user.primaryGuild.identityGuildId !== TARGET_GUILD_ID) {
+    await remove_free_script_access(member.id)
+
+    if (member.roles.cache.has(FREE_SCRIPT_ROLE_ID)) {
+      await member.roles.remove(FREE_SCRIPT_ROLE_ID).catch(() => {})
+    }
+
+    await api.edit_deferred_reply(interaction, component.build_message({
+      components: [
+        component.container({
+          accent_color: 0xED4245,
+          components: [
+            component.text([
+              `## Server Tag Required`,
+              `You must wear the ATMC server tag to use free script features`,
+              ``,
+              `You have been unwhitelisted. Set the server tag and click "Get Script" again`,
+            ]),
+          ],
+        }),
+      ],
+    }))
+    return
+  }
 
   try {
     const check_url = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users?discord_id=${member.id}`
