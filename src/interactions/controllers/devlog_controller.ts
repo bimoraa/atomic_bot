@@ -41,6 +41,32 @@ export async function publish_devlog(options: devlog_options) {
       .map(id => format.role_mention(id))
       .join(" ")
 
+    const changelog_components: ReturnType<typeof component.text | typeof component.divider>[] = []
+
+    if (added_list) {
+      changelog_components.push(component.text(`### - Added:\n${added_list}`))
+      changelog_components.push(component.divider(2))
+    }
+
+    if (removed_list) {
+      changelog_components.push(component.text(`### - Deleted:\n${removed_list}`))
+      changelog_components.push(component.divider(2))
+    }
+
+    if (fixed_list) {
+      changelog_components.push(component.text(`### - Fixed:\n${fixed_list}`))
+      changelog_components.push(component.divider(2))
+    }
+
+    if (improved_list) {
+      changelog_components.push(component.text(`### - Improved:\n${improved_list}`))
+      changelog_components.push(component.divider(2))
+    }
+
+    if (changelog_components.length > 0) {
+      changelog_components.pop()
+    }
+
     const message = component.build_message({
       components: [
         component.container({
@@ -59,17 +85,13 @@ export async function publish_devlog(options: devlog_options) {
             }),
           ],
         }),
-        component.container({
-          components: [
-            component.text(`### - Added:\n${added_list || "[ + ]"}`),
-            component.divider(2),
-            component.text(`### - Deleted:\n${removed_list || "[ - ]"}`),
-            component.divider(2),
-            component.text(`### - Fixed:\n${fixed_list || "[ ! ]"}`),
-            component.divider(2),
-            component.text(`### - Improved:\n${improved_list || "[ / ]"}`),
-          ],
-        }),
+        ...(changelog_components.length > 0
+          ? [
+              component.container({
+                components: changelog_components,
+              }),
+            ]
+          : []),
         component.container({
           components: [
             component.action_row(
