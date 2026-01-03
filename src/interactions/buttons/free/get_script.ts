@@ -1,11 +1,12 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { component, api, format }        from "../../../utils"
-import { http, env, logger }             from "../../../utils"
+import { http, env, logger, db }         from "../../../utils"
 
 const __log                  = logger.create_logger("free_script")
 const FREE_PROJECT_ID        = "cd7560b7384fd815dafd993828c40d2b"
 const FREE_SCRIPT_ROLE_ID    = "1347086323575423048"
 const FREE_LOADER_PROJECT_ID = "1bf4ff7a5e613f8aec76d84316949913"
+const TARGET_GUILD_ID        = "1250337227582472243"
 
 function get_api_key(): string {
   return env.required("LUARMOR_API_KEY")
@@ -23,6 +24,35 @@ export async function handle_free_get_script(interaction: ButtonInteraction): Pr
   await interaction.deferReply({ ephemeral: true })
 
   try {
+    const user = member.user
+
+    if (!user.primaryGuild?.tag || user.primaryGuild.identityGuildId !== TARGET_GUILD_ID) {
+      const no_tag_message = component.build_message({
+        components: [
+          component.container({
+            accent_color: 0xED4245,
+            components: [
+              component.text([
+                `## Server Tag Required`,
+                `To use the free script, you must wear the ATMC server tag`,
+                ``,
+                `**How to set server tag:**`,
+                `1. Go to User Settings > Profile`,
+                `2. Click on Server Profiles`,
+                `3. Find this server and enable "Display on profile"`,
+                `4. Click "Use Server Tag"`,
+                ``,
+                `After setting the tag, click the button again`,
+              ]),
+            ],
+          }),
+        ],
+      })
+
+      await api.edit_deferred_reply(interaction, no_tag_message)
+      return
+    }
+
     const check_url = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users?discord_id=${member.id}`
     const check_res = await http.get<any>(check_url, get_headers())
 
@@ -60,7 +90,7 @@ export async function handle_free_get_script(interaction: ButtonInteraction): Pr
               components: [
                 component.text([
                   "## Error",
-                  "Failed to create your account. Please try again later.",
+                  "Failed to create your account. Please try again later",
                 ]),
               ],
             }),
@@ -76,6 +106,20 @@ export async function handle_free_get_script(interaction: ButtonInteraction): Pr
       } catch (error) {
         __log.error("Failed to add role:", error)
       }
+
+      await db.update_one(
+        "free_script_users",
+        { user_id: member.id },
+        {
+          user_id    : member.id,
+          guild_id   : TARGET_GUILD_ID,
+          username   : member.user.username,
+          user_key   : user_key,
+          created_at : Date.now(),
+          has_tag    : true,
+        },
+        true
+      )
     }
 
     if (!user_key) {
