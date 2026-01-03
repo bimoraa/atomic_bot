@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from "discord.js"
-import { Command }  from "../../types/command"
-import { component, format } from "../../utils"
+import { Command }  from "../../../types/command"
+import { component } from "../../../utils"
 
 const whois: Command = {
   data: new SlashCommandBuilder()
