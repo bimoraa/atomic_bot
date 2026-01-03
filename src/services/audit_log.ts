@@ -15,9 +15,10 @@ import {
   Invite,
   ThreadChannel,
   User,
-}                                from "discord.js"
-import { logger, component, format } from "../utils"
-import { track_deleted_message }     from "./snipe"
+}                                       from "discord.js"
+import { logger, component, format }    from "../utils"
+import { track_deleted_message }        from "./snipe"
+import { check_server_tag_change }      from "./server_tag"
 
 const log            = logger.create_logger("audit_log")
 const LOG_CHANNEL_ID = "1452086939866894420"
@@ -289,6 +290,11 @@ export function register_audit_logs(client: Client): void {
   })
 
   client.on("guildMemberUpdate", async (old_member, new_member) => {
+    if (old_member.partial) await old_member.fetch()
+    if (new_member.partial) await new_member.fetch()
+    
+    await check_server_tag_change(client, old_member as GuildMember, new_member as GuildMember)
+    
     const old_roles = old_member.roles.cache.map(r => r.name).sort()
     const new_roles = new_member.roles.cache.map(r => r.name).sort()
 
