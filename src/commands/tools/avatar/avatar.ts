@@ -21,61 +21,50 @@ export const command: Command = {
   async execute(interaction: ChatInputCommandInteraction) {
     try {
       const target_user = interaction.options.getUser("user") || interaction.user
+      const member      = interaction.guild?.members.cache.get(target_user.id)
 
-      const avatar_url = target_user.displayAvatarURL({
-        size: 4096,
+      const default_avatar = target_user.displayAvatarURL({
+        size     : 4096,
         extension: "png",
       })
 
-      const avatar_gif_url = target_user.displayAvatarURL({
-        size: 4096,
-        extension: "gif",
+      const server_avatar = member?.avatarURL({
+        size     : 4096,
+        extension: "png",
       })
 
-      const is_animated = avatar_gif_url.includes(".gif")
-      const final_avatar_url = is_animated ? avatar_gif_url : avatar_url
+      const has_server_avatar = server_avatar && server_avatar !== default_avatar
 
-      const download_links = [
-        component.link_button("PNG", avatar_url),
-      ]
+      if (has_server_avatar) {
+        const payload = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.media_gallery([
+                  component.gallery_item(server_avatar),
+                  component.gallery_item(default_avatar),
+                ]),
+              ],
+            }),
+          ],
+        })
 
-      if (is_animated) {
-        download_links.push(component.link_button("GIF", avatar_gif_url))
+        await interaction.reply(payload)
+      } else {
+        const payload = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.media_gallery([
+                  component.gallery_item(default_avatar),
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        await interaction.reply(payload)
       }
-
-      const download_links_jpg = target_user.displayAvatarURL({
-        size: 4096,
-        extension: "jpg",
-      })
-
-      const download_links_webp = target_user.displayAvatarURL({
-        size: 4096,
-        extension: "webp",
-      })
-
-      download_links.push(component.link_button("JPG", download_links_jpg))
-      download_links.push(component.link_button("WEBP", download_links_webp))
-
-      const payload = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.section({
-                content  : `**${target_user.username}** Avatar`,
-                thumbnail: final_avatar_url,
-              }),
-              component.divider(),
-              component.text(`User: ${target_user.tag}`),
-              component.text(`ID: ${target_user.id}`),
-              component.divider(),
-              component.action_row(...download_links),
-            ],
-            accent_color: component.from_hex("#5865F2"),
-          }),
-        ],
-      })
-
-      await interaction.reply(payload)
     } catch (error) {
       await log_error(interaction.client, error as Error, "avatar_command", {
         user   : interaction.user.id,
