@@ -33,7 +33,9 @@ export async function check_server_tag_change(
     const old_guild_id = old_user.primaryGuild?.identityGuildId
     const new_guild_id = new_user.primaryGuild?.identityGuildId
     
-    if (!old_tag && new_tag && new_guild_id === TARGET_GUILD_ID) {
+    const switched_to_target_guild = (old_guild_id !== TARGET_GUILD_ID || !old_tag) && new_tag && new_guild_id === TARGET_GUILD_ID
+    
+    if (switched_to_target_guild) {
       console.log(`[ - SERVER TAG - ] User ${new_user.username} added server tag: ${new_tag}`)
       
       const existing = await db.find_one<server_tag_user>(COLLECTION, {

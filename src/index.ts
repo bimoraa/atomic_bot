@@ -97,19 +97,38 @@ client.once("ready", async () => {
 
   try {
     const voice_channel_id = "1427737274983907408"
-    const guild_id         = "1221481607748001822"
+    const guild_id         = "1250337227582472243"
+    
+    console.log(`[ - VOICE - ] Attempting to join voice channel ${voice_channel_id}`)
+    console.log(`[ - VOICE - ] Target guild ID: ${guild_id}`)
+    console.log(`[ - VOICE - ] Available guilds: ${client.guilds.cache.map(g => `${g.name} (${g.id})`).join(", ")}`)
     
     const guild = client.guilds.cache.get(guild_id)
-    if (guild) {
-      const connection = joinVoiceChannel({
-        channelId      : voice_channel_id,
-        guildId        : guild_id,
-        adapterCreator : guild.voiceAdapterCreator as any,
-        selfDeaf       : true,
-        selfMute       : false,
-      })
-      console.log(`[ - VOICE - ] Joined voice channel ${voice_channel_id} (deafened)`)
+    if (!guild) {
+      console.error(`[ - VOICE - ] Guild ${guild_id} not found!`)
+      return
     }
+    
+    console.log(`[ - VOICE - ] Guild found: ${guild.name}`)
+    
+    const voice_channel = guild.channels.cache.get(voice_channel_id)
+    if (!voice_channel) {
+      console.error(`[ - VOICE - ] Voice channel ${voice_channel_id} not found in guild ${guild.name}!`)
+      console.log(`[ - VOICE - ] Available voice channels: ${guild.channels.cache.filter(c => c.isVoiceBased()).map(c => `${c.name} (${c.id})`).join(", ")}`)
+      return
+    }
+    
+    console.log(`[ - VOICE - ] Voice channel found: ${voice_channel.name}`)
+    
+    const connection = joinVoiceChannel({
+      channelId      : voice_channel_id,
+      guildId        : guild_id,
+      adapterCreator : guild.voiceAdapterCreator as any,
+      selfDeaf       : true,
+      selfMute       : false,
+    })
+    
+    console.log(`[ - VOICE - ] Successfully joined voice channel ${voice_channel.name} (${voice_channel_id}) - deafened`)
   } catch (error) {
     console.error("[ - VOICE - ] Failed to join voice channel:", error)
   }
