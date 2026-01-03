@@ -115,3 +115,54 @@ export async function get_all_tagged_users(guild_id: string): Promise<server_tag
     return []
   }
 }
+
+export async function sync_guild_tagged_users(client: Client, guild_id: string): Promise<number> {
+  try {
+    const guild = client.guilds.cache.get(guild_id)
+    if (!guild) {
+      console.error("[ - SERVER TAG - ] Guild not found")
+      return 0
+    }
+
+    console.log(`[ - SERVER TAG - ] Starting sync for guild: ${guild.name}`)
+    
+    await guild.members.fetch()
+    
+    let synced_count = 0
+    
+    for (const [member_id, member] of guild.members.cache) {
+      try {
+        const user = member.user
+        
+        if (user.primaryGuild?.tag && user.primaryGuild.identityGuildId === guild_id) {
+          const existing = await db.find_one<server_tag_user>(COLLECTION, {
+            user_id  : user.id,
+            guild_id : guild_id,
+          })
+          
+          if (!existing) {
+            const tag_data: server_tag_user = {
+              user_id  : user.id,
+              guild_id : guild_id,
+              username : user.username,
+              tag      : user.primaryGuild.tag,
+              added_at : Date.now(),
+            }
+            
+            await db.insert_one(COLLECTION, tag_data)
+            synced_count++
+            console.log(`[ - SERVER TAG - ] Synced: ${user.username} - ${user.primaryGuild.tag}`)
+          }
+        }
+      } catch (error) {
+        console.error(`[ - SERVER TAG - ] Error syncing member ${member_id}:`, error)
+      }
+    }
+    
+    console.log(`[ - SERVER TAG - ] Sync complete. Total synced: ${synced_count}`)
+    return synced_count
+  } catch (error) {
+    console.error("[ - SERVER TAG - ] Failed to sync guild tagged users:", error)
+    return 0
+  }
+}
