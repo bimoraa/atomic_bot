@@ -15,13 +15,13 @@ export async function handle_afk_return(message: Message): Promise<void> {
     } catch {}
   }
 
-  const duration_seconds = Math.floor((Date.now() - afk_removed.timestamp) / 1000)
+  const afk_timestamp = Math.floor(afk_removed.timestamp / 1000)
 
   const welcome_back = component.build_message({
     components: [
       component.container({
         components: [
-          component.text(`Welcome back! You were AFK for ${duration_seconds} seconds ago`),
+          component.text(`Welcome back! You were AFK <t:${afk_timestamp}:R>`),
         ],
       }),
     ],
