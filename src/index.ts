@@ -1,4 +1,5 @@
 import { Client, Collection, GatewayIntentBits, ActivityType, Message, PermissionFlagsBits, Partials } from "discord.js"
+import { joinVoiceChannel } from "@discordjs/voice"
 import { config }                                                        from "dotenv"
 import { Command }                                                       from "./types/command"
 import { load_commands, register_commands }                              from "./handlers/command_handler"
@@ -11,6 +12,7 @@ import { load_all_tickets }                                              from ".
 import * as tempvoice                                                    from "./services/tempvoice"
 import { register_audit_logs }                                           from "./services/audit_log"
 import { handle_afk_return, handle_afk_mentions }                        from "./interactions/shared/controller/afk_controller"
+import { load_afk_from_db }                                              from "./services/afk"
 import { db, component }                                                 from "./utils"
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./services/anti_spam"
@@ -84,11 +86,31 @@ client.once("ready", async () => {
       await load_close_requests()
       await load_all_tickets()
       await load_reminders_from_db(client)
+      await load_afk_from_db()
       start_loa_checker(client)
       start_scheduler(client)
     }
   } catch (error) {
     console.error("[MongoDB] Connection error:", error)
+  }
+
+  try {
+    const voice_channel_id = "1427737274983907408"
+    const guild_id         = "1221481607748001822"
+    
+    const guild = client.guilds.cache.get(guild_id)
+    if (guild) {
+      const connection = joinVoiceChannel({
+        channelId      : voice_channel_id,
+        guildId        : guild_id,
+        adapterCreator : guild.voiceAdapterCreator as any,
+        selfDeaf       : true,
+        selfMute       : false,
+      })
+      console.log(`[ - VOICE - ] Joined voice channel ${voice_channel_id} (deafened)`)
+    }
+  } catch (error) {
+    console.error("[ - VOICE - ] Failed to join voice channel:", error)
   }
 
   update_presence()
