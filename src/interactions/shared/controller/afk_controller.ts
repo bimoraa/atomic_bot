@@ -69,9 +69,7 @@ export async function handle_afk_mentions(message: Message): Promise<void> {
       components: [
         component.container({
           components: [
-            component.section({
-              content  : `<@${user_id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`
-            }),
+            component.text(`<@${user_id}> is currently AFK: **${afk_data.reason}** - <t:${Math.floor(afk_data.timestamp / 1000)}:R>`),
           ],
         }),
       ],

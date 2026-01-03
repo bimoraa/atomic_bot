@@ -11,7 +11,7 @@ interface server_tag_user {
 }
 
 const COLLECTION      = "server_tag_users"
-const TARGET_GUILD_ID = "1221481607748001822"
+const TARGET_GUILD_ID = "1250337227582472243"
 
 export async function check_server_tag_change(
   client   : Client,
