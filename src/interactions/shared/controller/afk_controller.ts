@@ -3,7 +3,7 @@ import { remove_afk, get_afk, is_afk } from "../../../services/afk"
 import { component } from "../../../utils"
 
 export async function handle_afk_return(message: Message): Promise<void> {
-  const afk_removed = remove_afk(message.author.id)
+  const afk_removed = await remove_afk(message.author.id)
   
   if (!afk_removed) return
 
