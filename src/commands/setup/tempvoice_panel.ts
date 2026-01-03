@@ -11,7 +11,7 @@ import { is_admin }             from "../../services/permissions"
 import { api, component }       from "../../utils"
 import * as tempvoice           from "../../services/tempvoice"
 
-const interface_image = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/interface.png?raw=true"
+const interface_image = "https://github.com/bimoraa/atomic_bot/blob/main/assets/interface.png?raw=true"
 
 const emoji = {
   name         : { id: "1449851618295283763", name: "name"         },
