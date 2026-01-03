@@ -12,6 +12,7 @@ const COLLECTION         = "hwid_less_schedule"
 interface hwid_less_schedule {
   _id?            : any
   guild_id        : string
+  channel_id      : string
   scheduled_time  : Date
   enabled         : boolean
   created_by      : string
@@ -59,7 +60,7 @@ export const command: Command = {
         return
       }
 
-      await interaction.deferReply({ ephemeral: true })
+      await interaction.deferReply()
 
       const time_input = interaction.options.getString("time", true)
       const enabled    = interaction.options.getBoolean("enabled", true)
@@ -78,6 +79,7 @@ export const command: Command = {
         COLLECTION,
         {
           guild_id       : interaction.guildId!,
+          channel_id     : interaction.channelId!,
           scheduled_time : scheduled_time,
           enabled        : enabled,
           created_by     : interaction.user.id,
@@ -124,7 +126,7 @@ export const command: Command = {
       if (interaction.deferred) {
         await interaction.editReply({ content: "An error occurred while scheduling HWID-less." })
       } else {
-        await interaction.reply({ content: "An error occurred while scheduling HWID-less.", ephemeral: true })
+        await interaction.reply({ content: "An error occurred while scheduling HWID-less." })
       }
     }
   },
@@ -170,20 +172,28 @@ function parse_time(input: string, timezone: string = "WIB"): Date | null {
 }
 
 async function start_scheduler(client: any): Promise<void> {
-  if (__scheduler_running) return
+  if (__scheduler_running) {
+    __log.info("Scheduler already running")
+    return
+  }
 
   __scheduler_running = true
   __log.info("Starting HWID-less scheduler")
 
-  setInterval(async () => {
+  const check_schedules = async () => {
     try {
+      const now = new Date()
+      __log.info(`Checking schedules at ${now.toISOString()}`)
+      
       const schedules = await db.find_many<hwid_less_schedule>(
         COLLECTION,
         {
           executed       : false,
-          scheduled_time : { $lte: new Date() },
+          scheduled_time : { $lte: now },
         }
       )
+
+      __log.info(`Found ${schedules.length} pending schedules`)
 
       for (const schedule of schedules) {
         try {
@@ -199,6 +209,37 @@ async function start_scheduler(client: any): Promise<void> {
             )
 
             const status = schedule.enabled ? "Enabled" : "Disabled"
+
+            try {
+              const channel = await client.channels.fetch(schedule.channel_id)
+              if (channel && channel.isTextBased()) {
+                const channel_message = component.build_message({
+                  components: [
+                    component.container({
+                      accent_color: 0xE91E63,
+                      components: [
+                        component.text("## HWID-Less Update Success!!"),
+                      ],
+                    }),
+                    component.container({
+                      components: [
+                        component.text([
+                          "## Details:",
+                          `- Status: **${status}**`,
+                          `- Scheduled by: <@${schedule.created_by}>`,
+                          `- Executed at: <t:${Math.floor(Date.now() / 1000)}:F>`,
+                          `- Project \`${PROJECT_ID}\``,
+                        ]),
+                      ],
+                    }),
+                  ],
+                })
+
+                await channel.send(channel_message)
+              }
+            } catch (channel_error) {
+              __log.error("Failed to send channel notification:", channel_error)
+            }
 
             try {
               const notification_user = await client.users.fetch(NOTIFICATION_USER)
@@ -240,7 +281,11 @@ async function start_scheduler(client: any): Promise<void> {
     } catch (err) {
       __log.error("Error in scheduler loop:", err)
     }
-  }, 30000)
+  }
+
+  await check_schedules()
+
+  setInterval(check_schedules, 10000)
 }
 
 export default command

@@ -2,10 +2,14 @@
 nixPkgs = ["nodejs_22", "python3", "gcc", "gnumake", "pkg-config", "libtool", "autoconf", "automake", "libopus"]
 
 [phases.install]
-cmds = ["npm i --prefer-offline"]
+cmds = ["npm ci --omit=dev --prefer-offline --no-audit --no-fund"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "npm install --save-dev typescript @types/node",
+  "npm run build",
+  "npm prune --production"
+]
 
 [start]
-cmd = "npm start"
+cmd = "node dist/index.js"
