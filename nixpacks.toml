@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_22", "python3", "gcc", "gnumake", "pkg-config", "libtool", "autoconf", "automake", "libopus"]
 
 [phases.install]
-cmds = ["npm ci --omit=dev --prefer-offline --no-audit --no-fund"]
+cmds = ["npm install --omit=dev --prefer-offline --no-audit --no-fund"]
 
 [phases.build]
 cmds = [

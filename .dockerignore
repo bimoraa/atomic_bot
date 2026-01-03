@@ -3,10 +3,7 @@ dist
 .env
 .github
 example
-*.tsbuildinfo
 *.log
 npm-debug.log*
 .git
-.gitignore
-README.md
 .DS_Store
