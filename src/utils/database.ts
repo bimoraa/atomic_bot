@@ -311,22 +311,19 @@ async function migrate_tables(client: any): Promise<void> {
       ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT
     `).catch(() => {})
 
-    await client.query(`
-      ALTER TABLE work_reports 
-      DROP COLUMN IF EXISTS guild_id,
-      DROP COLUMN IF EXISTS total_actions,
-      DROP COLUMN IF EXISTS weekly_actions,
-      DROP COLUMN IF EXISTS created_at,
-      DROP COLUMN IF EXISTS updated_at,
-      ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS total_work INTEGER DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS total_work_this_week INTEGER DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS total_salary BIGINT DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS salary_this_week BIGINT DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS week_number INTEGER,
-      ADD COLUMN IF NOT EXISTS year INTEGER,
-      ADD COLUMN IF NOT EXISTS last_work BIGINT
-    `).catch(() => {})
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS guild_id`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS total_actions`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS weekly_actions`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS created_at`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS updated_at`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_work INTEGER DEFAULT 0`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_work_this_week INTEGER DEFAULT 0`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_salary BIGINT DEFAULT 0`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS salary_this_week BIGINT DEFAULT 0`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS week_number INTEGER`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS year INTEGER`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS last_work BIGINT`).catch(() => {})
 
     console.log("[ - POSTGRESQL - ] Table migrations completed")
   } catch (err) {
