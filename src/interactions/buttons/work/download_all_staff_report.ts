@@ -1,5 +1,6 @@
 import { ButtonInteraction } from "discord.js"
-import { db } from "../../../utils"
+import { db, component } from "../../../utils"
+import { format_salary } from "../../../services/work_tracker"
 
 interface WorkLog {
   staff_id    : string
@@ -26,10 +27,9 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
 
   await interaction.deferUpdate()
 
-  const all_reports = await db.find_many<WorkReport>("work_reports", { week_number, year })
-  const all_logs    = await db.find_many<WorkLog>("work_logs", { week_number, year })
+  const all_logs = await db.find_many<WorkLog>("work_logs", { week_number, year })
 
-  if (all_reports.length === 0) {
+  if (all_logs.length === 0) {
     await interaction.followUp({
       content   : "No work data found for this week",
       ephemeral : true,
@@ -37,7 +37,7 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
     return
   }
 
-  const staff_details = new Map<string, {
+  const staff_map = new Map<string, {
     staff_name           : string
     tickets              : number
     whitelists           : number
@@ -45,37 +45,47 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
     ticket_salary        : number
     whitelist_salary     : number
     total_salary_week    : number
-    total_work_all_time  : number
-    total_salary_all_time: number
   }>()
 
-  for (const report of all_reports) {
-    const staff_logs       = all_logs.filter(log => log.staff_id === report.staff_id)
-    const tickets          = staff_logs.filter(log => log.type === "ticket").length
-    const whitelists       = staff_logs.filter(log => log.type === "whitelist").length
-    const ticket_salary    = tickets * 2500
-    const whitelist_salary = whitelists * 1500
+  for (const log of all_logs) {
+    if (!staff_map.has(log.staff_id)) {
+      staff_map.set(log.staff_id, {
+        staff_name        : log.staff_name || "Unknown",
+        tickets           : 0,
+        whitelists        : 0,
+        total_works       : 0,
+        ticket_salary     : 0,
+        whitelist_salary  : 0,
+        total_salary_week : 0,
+      })
+    }
 
-    staff_details.set(report.staff_id, {
-      staff_name           : report.staff_name || "Unknown",
-      tickets,
-      whitelists,
-      total_works          : tickets + whitelists,
-      ticket_salary,
-      whitelist_salary,
-      total_salary_week    : ticket_salary + whitelist_salary,
-      total_work_all_time  : report.total_work,
-      total_salary_all_time: Number(report.total_salary),
-    })
+    const staff = staff_map.get(log.staff_id)!
+    
+    if (log.type === "ticket") {
+      staff.tickets++
+      staff.ticket_salary += 2500
+    } else if (log.type === "whitelist") {
+      staff.whitelists++
+      staff.whitelist_salary += 1500
+    }
+    
+    staff.total_works++
+    staff.total_salary_week += Number(log.salary)
   }
 
-  const sorted_staff = Array.from(staff_details.entries())
+  const all_reports = await db.find_many<WorkReport>("work_reports", {})
+  const report_map  = new Map(all_reports.map(r => [r.staff_id, r]))
+
+  const sorted_staff = Array.from(staff_map.entries())
     .sort((a, b) => b[1].total_works - a[1].total_works)
 
   let csv = "Rank,Staff Name,Staff ID,Tickets,Whitelists,Total Works Week,Ticket Salary,Whitelist Salary,Total Salary Week,Total Works All Time,Total Salary All Time\n"
 
   sorted_staff.forEach(([staff_id, details], index) => {
-    const rank = index + 1
+    const rank          = index + 1
+    const total_report  = report_map.get(staff_id)
+    
     csv += `${rank},`
     csv += `"${details.staff_name}",`
     csv += `${staff_id},`
@@ -85,8 +95,8 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
     csv += `${details.ticket_salary},`
     csv += `${details.whitelist_salary},`
     csv += `${details.total_salary_week},`
-    csv += `${details.total_work_all_time},`
-    csv += `${details.total_salary_all_time}\n`
+    csv += `${total_report?.total_work || 0},`
+    csv += `${total_report?.total_salary || 0}\n`
   })
 
   const total_tickets           = sorted_staff.reduce((sum, [_, d]) => sum + d.tickets, 0)
@@ -110,8 +120,23 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
   const filename = `all_staff_work_week${week_number}_${year}.csv`
   const buffer   = Buffer.from(csv, "utf-8")
 
+  const message = component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text(`**WORK REPORT DOWNLOADED**`),
+          component.text(`Week ${week_number} - ${year}`),
+          component.text(`Total Staff: **${sorted_staff.length}**`),
+          component.text(`Total Tickets: **${total_tickets}** | Whitelists: **${total_whitelists}**`),
+          component.text(`Total Works: **${total_works_week}**`),
+          component.text(`Total Salary: **${format_salary(total_salary_week)}**`),
+        ],
+      }),
+    ],
+  })
+
   await interaction.followUp({
-    content   : `**Work Report Week ${week_number} - ${year}**\n\n**Summary:**\n- Total Staff: ${sorted_staff.length}\n- Total Tickets: ${total_tickets}\n- Total Whitelists: ${total_whitelists}\n- Total Works: ${total_works_week}\n- Total Salary: Rp ${total_salary_week.toLocaleString("id-ID")}`,
+    ...message,
     files     : [{ attachment: buffer, name: filename }],
     ephemeral : true,
   })
