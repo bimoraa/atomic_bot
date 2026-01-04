@@ -90,7 +90,7 @@ export interface container_component {
 export interface message_payload {
   flags?: number
   content?: string
-  components: (container_component | text_component)[]
+  components: (container_component | text_component | file_component)[]
 }
 
 export function primary_button(label: string, custom_id: string, emoji?: { id?: string; name: string }, disabled?: boolean): button_component {

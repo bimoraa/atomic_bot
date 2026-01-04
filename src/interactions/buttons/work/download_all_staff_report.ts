@@ -123,10 +123,20 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
 
   const week_range = get_week_date_range(year, week_number)
 
-  await interaction.followUp({
+  const upload_response = await interaction.followUp({
     files     : [{ attachment: buffer, name: filename }],
     ephemeral : true,
   })
+
+  const file_url = upload_response.attachments.first()?.url
+
+  if (!file_url) {
+    await interaction.followUp({
+      content   : "Failed to upload CSV file",
+      ephemeral : true,
+    })
+    return
+  }
 
   const message = component.build_message({
     components: [
@@ -141,6 +151,7 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
           component.text(`Total Salary: **${format_salary(total_salary_week)}**`),
         ],
       }),
+      component.file(file_url) as any,
     ],
   })
 
