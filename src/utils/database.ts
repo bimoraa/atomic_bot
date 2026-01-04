@@ -165,8 +165,8 @@ async function init_tables(): Promise<void> {
         type        VARCHAR(50),
         thread_link TEXT,
         proof_link  TEXT,
-        amount      INTEGER DEFAULT 0,
-        salary      INTEGER DEFAULT 0,
+        amount      BIGINT DEFAULT 0,
+        salary      BIGINT DEFAULT 0,
         week_number INTEGER,
         year        INTEGER,
         date        VARCHAR(255),
@@ -760,7 +760,7 @@ export async function update_jsonb_field(
 function convert_row_to_object<T>(row: any): T {
   const result: any       = {}
   const date_fields       = [
-    "created_at", "updated_at", "joined_at", "left_at", 
+    "updated_at", "joined_at", "left_at", 
     "scheduled_time", "added_at", "whitelisted_at", 
     "last_tag_check", "start_date", "end_date"
   ]
