@@ -171,13 +171,16 @@ async function init_tables(): Promise<void> {
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS work_reports (
-        id              SERIAL PRIMARY KEY,
-        staff_id        VARCHAR(255) NOT NULL UNIQUE,
-        guild_id        VARCHAR(255),
-        total_actions   INTEGER DEFAULT 0,
-        weekly_actions  JSONB DEFAULT '{}',
-        created_at      TIMESTAMP DEFAULT NOW(),
-        updated_at      TIMESTAMP DEFAULT NOW()
+        id                   SERIAL PRIMARY KEY,
+        staff_id             VARCHAR(255) NOT NULL UNIQUE,
+        staff_name           VARCHAR(255),
+        total_work           INTEGER DEFAULT 0,
+        total_work_this_week INTEGER DEFAULT 0,
+        total_salary         BIGINT DEFAULT 0,
+        salary_this_week     BIGINT DEFAULT 0,
+        week_number          INTEGER,
+        year                 INTEGER,
+        last_work            BIGINT
       )
     `)
 
@@ -306,6 +309,23 @@ async function migrate_tables(client: any): Promise<void> {
     await client.query(`
       ALTER TABLE hwid_less_schedule 
       ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT
+    `).catch(() => {})
+
+    await client.query(`
+      ALTER TABLE work_reports 
+      DROP COLUMN IF EXISTS guild_id,
+      DROP COLUMN IF EXISTS total_actions,
+      DROP COLUMN IF EXISTS weekly_actions,
+      DROP COLUMN IF EXISTS created_at,
+      DROP COLUMN IF EXISTS updated_at,
+      ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS total_work INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS total_work_this_week INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS total_salary BIGINT DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS salary_this_week BIGINT DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS week_number INTEGER,
+      ADD COLUMN IF NOT EXISTS year INTEGER,
+      ADD COLUMN IF NOT EXISTS last_work BIGINT
     `).catch(() => {})
 
     console.log("[ - POSTGRESQL - ] Table migrations completed")
