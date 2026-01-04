@@ -290,8 +290,19 @@ async function migrate_tables(client: any): Promise<void> {
     `)
 
     await client.query(`
-      ALTER TABLE server_tag_users 
-      ALTER COLUMN added_at TYPE BIGINT USING EXTRACT(EPOCH FROM added_at)::BIGINT
+      DO $$
+      BEGIN
+        BEGIN
+          ALTER TABLE server_tag_users 
+          ALTER COLUMN added_at TYPE BIGINT USING EXTRACT(EPOCH FROM added_at)::BIGINT;
+        EXCEPTION
+          WHEN OTHERS THEN
+            ALTER TABLE server_tag_users 
+            DROP COLUMN IF EXISTS added_at;
+            ALTER TABLE server_tag_users 
+            ADD COLUMN added_at BIGINT;
+        END;
+      END $$;
     `).catch(() => {})
 
     await client.query(`
