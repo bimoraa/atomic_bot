@@ -300,6 +300,58 @@ function build_where_clause(filter: object, start_index: number = 1): { clause: 
     
     if (value === null) {
       conditions.push(`${key} IS NULL`)
+    } else if (typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
+      const operators = Object.keys(value)
+      
+      for (const op of operators) {
+        const op_value = (value as any)[op]
+        
+        switch (op) {
+          case "$lte":
+            conditions.push(`${key} <= $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$gte":
+            conditions.push(`${key} >= $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$lt":
+            conditions.push(`${key} < $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$gt":
+            conditions.push(`${key} > $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$ne":
+            conditions.push(`${key} != $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$in":
+            if (Array.isArray(op_value)) {
+              const placeholders = op_value.map(() => `$${param_idx++}`).join(", ")
+              conditions.push(`${key} IN (${placeholders})`)
+              final_values.push(...op_value)
+            }
+            break
+          case "$nin":
+            if (Array.isArray(op_value)) {
+              const placeholders = op_value.map(() => `$${param_idx++}`).join(", ")
+              conditions.push(`${key} NOT IN (${placeholders})`)
+              final_values.push(...op_value)
+            }
+            break
+          default:
+            conditions.push(`${key} = $${param_idx}`)
+            final_values.push(value)
+            param_idx++
+        }
+      }
     } else {
       conditions.push(`${key} = $${param_idx}`)
       final_values.push(value)

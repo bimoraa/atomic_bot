@@ -1,5 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
-import { component, db, logger }                           from "../../../utils"
+import { Command }                                          from "../../../types/command"
+import { component, db, logger }                            from "../../../utils"
 
 const __log = logger.create_logger("hwid_less_list")
 
@@ -15,11 +16,12 @@ interface hwid_less_schedule {
 
 const COLLECTION = "hwid_less_schedule"
 
-export const data = new SlashCommandBuilder()
-  .setName("hwid-less-list")
-  .setDescription("View all HWID-Less schedules")
+export const command: Command = {
+  data: new SlashCommandBuilder()
+    .setName("hwid-less-list")
+    .setDescription("View all HWID-Less schedules"),
 
-export async function execute(interaction: ChatInputCommandInteraction) {
+  async execute(interaction: ChatInputCommandInteraction) {
   try {
     await interaction.deferReply({ ephemeral: true })
 
@@ -87,4 +89,5 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       content: "An error occurred while listing schedules.",
     })
   }
+  },
 }
