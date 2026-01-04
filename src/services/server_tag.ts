@@ -50,7 +50,7 @@ export async function check_server_tag_change(
           guild_id : TARGET_GUILD_ID,
           username : new_user.username,
           tag      : new_tag,
-          added_at : Date.now(),
+          added_at : Math.floor(Date.now() / 1000),
         }
         
         await db.insert_one(COLLECTION, tag_data)
