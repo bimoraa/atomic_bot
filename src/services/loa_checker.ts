@@ -5,7 +5,7 @@ const is_dev        = process.env.NODE_ENV === "development"
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN
 
 interface loa_data {
-  _id?              : any
+  id?               : any
   message_id        : string
   user_id           : string
   user_tag          : string
@@ -71,7 +71,7 @@ export async function check_expired_loa(client: Client): Promise<void> {
 
         await api.send_dm(loa.user_id, discord_token, dm_message).catch(() => {})
 
-        await db.update_one("loa_requests", { _id: loa._id }, { status: "ended" })
+        await db.update_one("loa_requests", { id: loa.id }, { status: "ended" })
       } catch (err) {
         console.error(`[LOA] Failed to end LOA for ${loa.user_tag}:`, err)
       }

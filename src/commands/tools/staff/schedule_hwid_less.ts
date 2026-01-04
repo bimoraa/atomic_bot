@@ -10,14 +10,14 @@ const NOTIFICATION_USER  = "1118453649727823974"
 const COLLECTION         = "hwid_less_schedule"
 
 interface hwid_less_schedule {
-  _id?            : any
+  id?             : any
   guild_id        : string
   channel_id      : string
-  scheduled_time  : Date
+  scheduled_time  : number
   enabled         : boolean
   created_by      : string
   executed        : boolean
-  created_at      : Date
+  created_at      : number
 }
 
 let __scheduler_running = false
@@ -86,7 +86,7 @@ export const command: Command = {
 
       if (existing_schedule) {
         const existing_status = enabled ? "ON" : "OFF"
-        const existing_unix   = Math.floor(existing_schedule.scheduled_time.getTime() / 1000)
+        const existing_unix   = Math.floor(existing_schedule.scheduled_time / 1000)
         
         await interaction.editReply({
           content: `A schedule for HWID-Less **${existing_status}** already exists at <t:${existing_unix}:F>. Please delete it first before creating a new one.`,
@@ -99,11 +99,11 @@ export const command: Command = {
         {
           guild_id       : interaction.guildId!,
           channel_id     : interaction.channelId!,
-          scheduled_time : scheduled_time,
+          scheduled_time : scheduled_time.getTime(),
           enabled        : enabled,
           created_by     : interaction.user.id,
           executed       : false,
-          created_at     : new Date(),
+          created_at     : Date.now(),
         }
       )
 
@@ -201,8 +201,8 @@ async function start_scheduler(client: any): Promise<void> {
 
   const check_schedules = async () => {
     try {
-      const now = new Date()
-      __log.info(`Checking schedules at ${now.toISOString()}`)
+      const now = Date.now()
+      __log.info(`Checking schedules at ${new Date().toISOString()}`)
       
       const schedules = await db.find_many<hwid_less_schedule>(
         COLLECTION,
