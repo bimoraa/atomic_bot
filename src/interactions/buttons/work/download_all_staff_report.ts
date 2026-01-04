@@ -1,6 +1,7 @@
-import { ButtonInteraction } from "discord.js"
-import { db, component } from "../../../utils"
-import { format_salary } from "../../../services/work_tracker"
+import { ButtonInteraction }            from "discord.js"
+import { db, component }                from "../../../utils"
+import { format_salary }                from "../../../services/work_tracker"
+import { get_week_date_range }          from "../../select_menus/work_stats/year_select"
 
 interface WorkLog {
   staff_id    : string
@@ -120,12 +121,20 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
   const filename = `all_staff_work_week${week_number}_${year}.csv`
   const buffer   = Buffer.from(csv, "utf-8")
 
+  const week_range = get_week_date_range(year, week_number)
+
+  await interaction.followUp({
+    files     : [{ attachment: buffer, name: filename }],
+    ephemeral : true,
+  })
+
   const message = component.build_message({
     components: [
       component.container({
         components: [
           component.text(`**WORK REPORT DOWNLOADED**`),
           component.text(`Week ${week_number} - ${year}`),
+          component.text(`Period: ${week_range.start} - ${week_range.end}`),
           component.text(`Total Staff: **${sorted_staff.length}**`),
           component.text(`Total Tickets: **${total_tickets}** | Whitelists: **${total_whitelists}**`),
           component.text(`Total Works: **${total_works_week}**`),
@@ -137,7 +146,6 @@ export async function handle_download_all_staff_report(interaction: ButtonIntera
 
   await interaction.followUp({
     ...message,
-    files     : [{ attachment: buffer, name: filename }],
     ephemeral : true,
   })
 }

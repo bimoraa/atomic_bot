@@ -15,6 +15,32 @@ function get_iso_week(date: Date): { week: number; year: number } {
   return { week: week_number, year: target.getFullYear() }
 }
 
+export function get_week_date_range(year: number, week: number): { start: string; end: string } {
+  const jan_1       = new Date(year, 0, 1)
+  const day_of_week = (jan_1.getDay() + 6) % 7
+  const days_to_thursday = (3 - day_of_week + 7) % 7
+  const first_thursday = new Date(year, 0, 1 + days_to_thursday)
+  const first_monday = new Date(first_thursday)
+  first_monday.setDate(first_thursday.getDate() - 3)
+  
+  const week_start = new Date(first_monday)
+  week_start.setDate(first_monday.getDate() + (week - 1) * 7)
+  
+  const week_end = new Date(week_start)
+  week_end.setDate(week_start.getDate() + 6)
+  
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+  
+  const format_date = (date: Date) => `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
+  
+  return {
+    start : format_date(week_start),
+    end   : format_date(week_end),
+  }
+}
+
+export { get_iso_week }
+
 export async function handle_all_staff_work_year_select(interaction: StringSelectMenuInteraction): Promise<void> {
   const year = parseInt(interaction.values[0], 10)
 

@@ -18,6 +18,28 @@ interface WorkReport {
   total_salary         : number
 }
 
+function get_week_date_range(year: number, week: number): { start: string; end: string } {
+  const jan_1 = new Date(year, 0, 1)
+  const days_offset = (week - 1) * 7
+  const week_start = new Date(year, 0, 1 + days_offset - (jan_1.getDay() + 6) % 7)
+  
+  const start_date = new Date(week_start)
+  start_date.setDate(start_date.getDate() - (start_date.getDay() + 6) % 7)
+  
+  const end_date = new Date(start_date)
+  end_date.setDate(end_date.getDate() + 6)
+  
+  const format_date = (date: Date) => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
+  }
+  
+  return {
+    start: format_date(start_date),
+    end: format_date(end_date)
+  }
+}
+
 export async function handle_all_staff_work_week_select(interaction: StringSelectMenuInteraction): Promise<void> {
   const [year_str, week_str] = interaction.values[0].split(":")
   const year                 = parseInt(year_str, 10)
@@ -99,12 +121,7 @@ export async function handle_all_staff_work_week_select(interaction: StringSelec
   const total_tickets      = sorted_staff.reduce((sum, [_, d]) => sum + d.tickets, 0)
   const total_whitelists   = sorted_staff.reduce((sum, [_, d]) => sum + d.whitelists, 0)
 
-  report_text += `${"-".repeat(60)}\\n`
-  report_text += `TOTAL STAFF: ${sorted_staff.length}\\n`
-  report_text += `TOTAL TICKETS: ${total_tickets}\\n`
-  report_text += `TOTAL WHITELISTS: ${total_whitelists}\\n`
-  report_text += `TOTAL WORKS: ${total_works_week}\\n`
-  report_text += `TOTAL SALARY: ${format_salary(total_salary_week)}\\n`
+  const week_range = get_week_date_range(year, week_number)
 
   const message = component.build_message({
     components: [
@@ -112,6 +129,7 @@ export async function handle_all_staff_work_week_select(interaction: StringSelec
         components: [
           component.text(`**ALL STAFF WORK REPORT**`),
           component.text(`Week ${week_number} - ${year}`),
+          component.text(`Period: ${week_range.start} - ${week_range.end}`),
           component.text(`Total Staff: **${sorted_staff.length}**`),
           component.text(`Total Tickets: **${total_tickets}** | Whitelists: **${total_whitelists}**`),
           component.text(`Total Works: **${total_works_week}**`),
