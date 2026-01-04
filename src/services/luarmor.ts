@@ -40,6 +40,7 @@ export interface luarmor_user {
   banned           : number
   ban_reason       : string
   ban_expire       : number
+  unban_token      : string
   total_executions : number
   allowed_hwids    : string[]
   current_hwid     : string | null
@@ -453,5 +454,27 @@ export async function update_project_settings(project_id: string, hwidless: bool
   } catch (error) {
     __log.error("Failed to update project settings:", error)
     return { success: false, error: "An error occurred" }
+  }
+}
+
+export async function unban_user(unban_token: string, project_id?: string): Promise<luarmor_response<null>> {
+  try {
+    const pid      = project_id || get_project_id()
+    const url      = `${__base_url}/projects/${pid}/users/unban?unban_token=${unban_token}`
+    const response = await http.get<any>(url)
+
+    const rate_limit_error = check_rate_limit(response)
+    if (rate_limit_error) {
+      return { success: false, error: rate_limit_error }
+    }
+
+    if (response.success === true || response.message?.toLowerCase().includes("success")) {
+      return { success: true, message: "User unbanned successfully" }
+    }
+
+    return { success: false, error: response.message || "Failed to unban user" }
+  } catch (error) {
+    __log.error("Failed to unban user:", error)
+    return { success: false, error: "Failed to connect to server" }
   }
 }
