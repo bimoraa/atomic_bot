@@ -75,6 +75,25 @@ export const command: Command = {
         return
       }
 
+      const existing_schedule = await db.find_one<hwid_less_schedule>(
+        COLLECTION,
+        {
+          guild_id : interaction.guildId!,
+          enabled  : enabled,
+          executed : false,
+        }
+      )
+
+      if (existing_schedule) {
+        const existing_status = enabled ? "ON" : "OFF"
+        const existing_unix   = Math.floor(existing_schedule.scheduled_time.getTime() / 1000)
+        
+        await interaction.editReply({
+          content: `A schedule for HWID-Less **${existing_status}** already exists at <t:${existing_unix}:F>. Please delete it first before creating a new one.`,
+        })
+        return
+      }
+
       await db.insert_one<hwid_less_schedule>(
         COLLECTION,
         {

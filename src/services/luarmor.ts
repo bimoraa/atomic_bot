@@ -410,7 +410,7 @@ export async function update_project_settings(project_id: string, hwidless: bool
       alerts_webhook            : env.get("LUARMOR_ALERTS_WEBHOOK", ""),
       executions_webhook        : env.get("LUARMOR_EXECUTIONS_WEBHOOK", ""),
       auto_delete_expired_users : false,
-      allow_hwid_cloned_keys    : false,
+      allow_hwid_cloned_keys    : true,
       instance_limit            : false,
       instance_limit_count      : 0,
     }
@@ -424,7 +424,7 @@ export async function update_project_settings(project_id: string, hwidless: bool
           alerts_webhook            : get_response.alerts_webhook ?? "",
           executions_webhook        : get_response.executions_webhook ?? "",
           auto_delete_expired_users : get_response.auto_delete_expired_users ?? false,
-          allow_hwid_cloned_keys    : get_response.allow_hwid_cloned_keys ?? false,
+          allow_hwid_cloned_keys    : get_response.allow_hwid_cloned_keys ?? true,
           instance_limit            : get_response.instance_limit ?? false,
           instance_limit_count      : get_response.instance_limit_count ?? 0,
         }
