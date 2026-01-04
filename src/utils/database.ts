@@ -192,8 +192,11 @@ async function init_tables(): Promise<void> {
     await client.query(`
       CREATE TABLE IF NOT EXISTS loa_requests (
         id          SERIAL PRIMARY KEY,
+        message_id  VARCHAR(255),
         user_id     VARCHAR(255) NOT NULL,
+        user_tag    VARCHAR(255),
         guild_id    VARCHAR(255) NOT NULL,
+        channel_id  VARCHAR(255),
         reason      TEXT,
         start_date  BIGINT,
         end_date    BIGINT,
@@ -344,6 +347,10 @@ async function migrate_tables(client: any): Promise<void> {
     await client.query(`ALTER TABLE work_logs ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT * 1000`).catch(() => {})
     await client.query(`ALTER TABLE work_logs ALTER COLUMN week_number DROP NOT NULL`).catch(() => {})
     await client.query(`ALTER TABLE work_logs ALTER COLUMN year DROP NOT NULL`).catch(() => {})
+
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS message_id VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS user_tag VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS channel_id VARCHAR(255)`).catch(() => {})
 
     console.log("[ - POSTGRESQL - ] Table migrations completed")
   } catch (err) {

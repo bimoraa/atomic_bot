@@ -31,6 +31,7 @@ import * as free_get_script              from "../interactions/buttons/free/get_
 import * as free_reset_hwid              from "../interactions/buttons/free/reset_hwid"
 import * as free_get_stats               from "../interactions/buttons/free/get_stats"
 import * as free_leaderboard             from "../interactions/buttons/free/leaderboard"
+import * as download_all_staff_report    from "../interactions/buttons/work/download_all_staff_report"
 import * as tempvoice_handlers           from "../interactions/buttons/tempvoice/handlers"
 import * as tempvoice_user_select        from "../interactions/select_menus/tempvoice/user_select"
 import * as tempvoice_region_select      from "../interactions/select_menus/tempvoice/region_select"
@@ -55,6 +56,8 @@ import * as payment_method_select        from "../interactions/select_menus/paym
 import * as guide_select                 from "../interactions/select_menus/guide_select";
 import * as version_select               from "../interactions/select_menus/version/select";
 import * as work_stats_select            from "../interactions/select_menus/work_stats/week_select";
+import * as work_stats_year_select       from "../interactions/select_menus/work_stats/year_select";
+import * as work_stats_all_staff         from "../interactions/select_menus/work_stats/all_staff_week_select";
 import * as reminder_cancel_select       from "../interactions/select_menus/reminder_cancel_select";
 import { handle_reminder_add_new_modal } from "../interactions/modals/reminder_add_new";
 import { handle_loa_request_modal }      from "../interactions/modals/loa_request";
@@ -158,6 +161,14 @@ export async function handle_interaction(
         await work_stats_select.handle_work_stats_week_select(interaction);
         return;
       }
+      if (interaction.customId === "all_staff_work_year_select") {
+        await work_stats_year_select.handle_all_staff_work_year_select(interaction);
+        return;
+      }
+      if (interaction.customId === "all_staff_work_week_select") {
+        await work_stats_all_staff.handle_all_staff_work_week_select(interaction);
+        return;
+      }
       if (interaction.customId === "reminder_cancel_select") {
         await reminder_cancel_select.handle_reminder_cancel_select(interaction);
         return;
@@ -241,8 +252,10 @@ export async function handle_interaction(
       if (interaction.customId.startsWith("guide_btn_")) {
         await guide_example.handle_guide_button(interaction);
         return;
-      }
-      if (interaction.customId === "script_redeem_key") {
+      }      if (interaction.customId.startsWith("download_all_staff_report:")) {
+        await download_all_staff_report.handle_download_all_staff_report(interaction)
+        return
+      }      if (interaction.customId === "script_redeem_key") {
         await script_redeem_key.handle_redeem_key(interaction);
         return;
       }
