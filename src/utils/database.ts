@@ -22,11 +22,18 @@ export async function connect(): Promise<Pool | null> {
       connectionTimeoutMillis : 15000,
     })
 
+    pool.on('connect', async (client) => {
+      await client.query("SET TIME ZONE 'Asia/Jakarta'")
+    })
+
     const client = await pool.connect()
+    
+    await client.query("SET TIME ZONE 'Asia/Jakarta'")
+    
     client.release()
     connected = true
 
-    console.log("[ - POSTGRESQL - ] Connected to database")
+    console.log("[ - POSTGRESQL - ] Connected to database (UTC+7)")
     
     await init_tables()
     
@@ -103,8 +110,9 @@ async function init_tables(): Promise<void> {
         id         SERIAL PRIMARY KEY,
         user_id    VARCHAR(255) NOT NULL,
         guild_id   VARCHAR(255) NOT NULL,
+        username   VARCHAR(255),
         tag        VARCHAR(255),
-        added_at   TIMESTAMP DEFAULT NOW(),
+        added_at   BIGINT,
         UNIQUE(user_id, guild_id)
       )
     `)
@@ -127,11 +135,11 @@ async function init_tables(): Promise<void> {
         id             SERIAL PRIMARY KEY,
         guild_id       VARCHAR(255) NOT NULL,
         channel_id     VARCHAR(255) NOT NULL,
-        scheduled_time TIMESTAMP NOT NULL,
+        scheduled_time BIGINT NOT NULL,
         enabled        BOOLEAN NOT NULL,
         created_by     VARCHAR(255) NOT NULL,
         executed       BOOLEAN DEFAULT FALSE,
-        created_at     TIMESTAMP DEFAULT NOW()
+        created_at     BIGINT
       )
     `)
 
@@ -179,10 +187,10 @@ async function init_tables(): Promise<void> {
         user_id     VARCHAR(255) NOT NULL,
         guild_id    VARCHAR(255) NOT NULL,
         reason      TEXT,
-        start_date  TIMESTAMP,
-        end_date    TIMESTAMP,
+        start_date  BIGINT,
+        end_date    BIGINT,
         status      VARCHAR(50) DEFAULT 'pending',
-        created_at  TIMESTAMP DEFAULT NOW()
+        created_at  BIGINT
       )
     `)
 
@@ -255,9 +263,54 @@ async function init_tables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_generic_data_collection ON generic_data(collection)
     `)
 
+    await migrate_tables(client)
+
     console.log("[ - POSTGRESQL - ] Tables initialized")
   } finally {
     client.release()
+  }
+}
+
+async function migrate_tables(client: any): Promise<void> {
+  try {
+    await client.query(`
+      ALTER TABLE server_tag_users 
+      ADD COLUMN IF NOT EXISTS username VARCHAR(255)
+    `)
+
+    await client.query(`
+      ALTER TABLE server_tag_users 
+      ALTER COLUMN added_at TYPE BIGINT USING EXTRACT(EPOCH FROM added_at)::BIGINT
+    `).catch(() => {})
+
+    await client.query(`
+      ALTER TABLE loa_requests 
+      ALTER COLUMN start_date TYPE BIGINT USING EXTRACT(EPOCH FROM start_date)::BIGINT
+    `).catch(() => {})
+
+    await client.query(`
+      ALTER TABLE loa_requests 
+      ALTER COLUMN end_date TYPE BIGINT USING EXTRACT(EPOCH FROM end_date)::BIGINT
+    `).catch(() => {})
+
+    await client.query(`
+      ALTER TABLE loa_requests 
+      ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT
+    `).catch(() => {})
+
+    await client.query(`
+      ALTER TABLE hwid_less_schedule 
+      ALTER COLUMN scheduled_time TYPE BIGINT USING EXTRACT(EPOCH FROM scheduled_time)::BIGINT
+    `).catch(() => {})
+
+    await client.query(`
+      ALTER TABLE hwid_less_schedule 
+      ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT
+    `).catch(() => {})
+
+    console.log("[ - POSTGRESQL - ] Table migrations completed")
+  } catch (err) {
+    console.error("[ - POSTGRESQL - ] Migration error:", (err as Error).message)
   }
 }
 
