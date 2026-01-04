@@ -23,10 +23,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   try {
     await interaction.deferReply({ ephemeral: true })
 
-    const schedules = await db.collection<hwid_less_schedule>(COLLECTION)
-      .find({ guild_id: interaction.guildId! })
-      .sort({ scheduled_time: 1 })
-      .toArray()
+    const schedules = await db.find_many_sorted<hwid_less_schedule>(
+      COLLECTION,
+      { guild_id: interaction.guildId! },
+      "scheduled_time",
+      "ASC"
+    )
 
     if (!schedules || schedules.length === 0) {
       await interaction.editReply({

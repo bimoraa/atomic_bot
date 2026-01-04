@@ -54,10 +54,7 @@ client.on(Events.MessageDelete, async (message: Message | PartialMessage) => {
     const timestamp_now  = Date.now()
     
     if (db.is_connected() && message.id && message.author?.id) {
-      const database         = db.get_db()
-      const ghost_ping_coll  = database.collection<ghost_ping_entry>("ghost_pings")
-      
-      await ghost_ping_coll.insertOne({
+      await db.insert_one<ghost_ping_entry>("ghost_pings", {
         message_id : message.id,
         author_id  : message.author.id,
         author_tag : author_name,

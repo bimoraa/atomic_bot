@@ -27,17 +27,13 @@ function get_week_key(): string {
 
 async function increment_stat(staff_id: string): Promise<number> {
   const week_key = get_week_key()
-  const coll     = db.collection<AnswerStat>(COLLECTION_NAME)
   
-  await coll.updateOne(
+  await db.update_jsonb_field(
+    COLLECTION_NAME,
     { staff_id },
-    { 
-      $inc: { 
-        [`weekly.${week_key}`]: 1,
-        total: 1 
-      } 
-    },
-    { upsert: true }
+    "weekly",
+    week_key,
+    1
   )
 
   const stat = await db.find_one<AnswerStat>(COLLECTION_NAME, { staff_id })
