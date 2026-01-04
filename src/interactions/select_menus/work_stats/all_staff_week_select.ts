@@ -71,11 +71,9 @@ export async function handle_all_staff_work_week_select(interaction: StringSelec
           component.text(`Total Salary: **${format_salary(total_salary_this_week)}**`),
         ],
       }),
-      component.container({
-        components: [
-          component.primary_button("Download Report", `download_all_staff_report:${week_number}:${year}`),
-        ],
-      }),
+      component.action_row(
+        component.primary_button("Download Report", `download_all_staff_report:${week_number}:${year}`)
+      ),
     ],
   })
 
