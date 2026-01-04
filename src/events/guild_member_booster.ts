@@ -15,25 +15,15 @@ const config = load_config<booster_config>("booster")
 
 client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuildMember, new_member: GuildMember) => {
   try {
-    const old_boost_count = old_member.premiumSinceTimestamp ? 1 : 0
-    const new_boost_count = new_member.premiumSinceTimestamp ? 1 : 0
-
-    const actual_old_boost = old_member.guild.members.cache.filter(m => m.premiumSince).size
-    const actual_new_boost = new_member.guild.members.cache.filter(m => m.premiumSince).size
-
     if (new_member.premiumSince && !old_member.premiumSince) {
-      const user_boost_count = new_member.roles.cache.filter(role => 
-        role.id === new_member.guild.roles.premiumSubscriberRole?.id
-      ).size > 0 ? actual_new_boost : 1
-
-      console.log(`[ - BOOSTER LOG - ] ${new_member.user.tag} boosted the server (${user_boost_count} boosts)`)
+      console.log(`[ - BOOSTER LOG - ] ${new_member.user.tag} started boosting the server`)
 
       const user_avatar = new_member.user.displayAvatarURL({ extension: "png", size: 256 })
 
       await send_booster_log(
         config.booster_log_channel_id,
         new_member.user.id,
-        user_boost_count,
+        1,
         user_avatar
       )
 
@@ -46,7 +36,13 @@ client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuil
         await booster_manager.update_boost_count(
           new_member.user.id,
           new_member.guild.id,
-          user_boost_count
+          (whitelist_data.boost_count || 0) + 1
+        )
+      } else {
+        await booster_manager.add_whitelist(
+          new_member.user.id,
+          new_member.guild.id,
+          1
         )
       }
     }

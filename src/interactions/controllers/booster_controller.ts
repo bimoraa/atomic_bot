@@ -7,8 +7,6 @@ export async function send_booster_log(
   boost_count : number,
   media_url   : string = ""
 ): Promise<void> {
-  const show_button = boost_count >= 2
-
   const message = component.build_message({
     components: [
       component.container({
@@ -17,10 +15,11 @@ export async function send_booster_log(
             content: [
               `## Server Boosted!`,
               `> Thank you so much for boosting the server, <@${user_id}>!`,
+              `> Total Boosts: **${boost_count}**`,
             ],
             media: media_url,
           }),
-          ...(show_button
+          ...(boost_count >= 2
             ? [
                 component.action_row(
                   component.secondary_button("Claim your 1 month SP Key", `booster_claim_${user_id}`)
