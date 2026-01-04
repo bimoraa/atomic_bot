@@ -9,7 +9,7 @@ import { component }   from "../../../utils"
 import * as database   from "../../../utils/database"
 
 interface Warning {
-  id          : string
+  warning_id  : string
   guild_id    : string
   user_id     : string
   moderator_id: string
@@ -19,11 +19,8 @@ interface Warning {
 
 async function get_warnings(guild_id: string, user_id: string): Promise<Warning[]> {
   try {
-    const warnings = await database.collection<Warning>("warnings")
-      .find({ guild_id, user_id })
-      .sort({ timestamp: -1 })
-      .toArray()
-    return warnings
+    const warnings = await database.find_many<Warning>("warnings", { guild_id, user_id })
+    return warnings.sort((a, b) => b.timestamp - a.timestamp)
   } catch {
     return []
   }
@@ -131,7 +128,7 @@ export async function add_warning(
   reason      : string
 ): Promise<void> {
   const warning: Warning = {
-    id          : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    warning_id  : `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     guild_id    : guild_id,
     user_id     : user_id,
     moderator_id: moderator_id,
@@ -139,5 +136,5 @@ export async function add_warning(
     timestamp   : Date.now(),
   }
 
-  await database.collection<Warning>("warnings").insertOne(warning as any)
+  await database.insert_one<Warning>("warnings", warning)
 }

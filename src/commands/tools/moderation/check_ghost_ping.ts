@@ -39,14 +39,12 @@ export const command: Command = {
       return
     }
 
-    const database        = db.get_db()
-    const ghost_ping_coll = database.collection<ghost_ping_entry>("ghost_pings")
-
-    const user_ghost_pings = await ghost_ping_coll
-      .find({ mentioned: interaction.user.id })
-      .sort({ timestamp: -1 })
-      .limit(10)
-      .toArray()
+    const all_pings = await db.find_many<ghost_ping_entry>("ghost_pings", {})
+    
+    const user_ghost_pings = all_pings
+      .filter(ping => ping.mentioned.includes(interaction.user.id))
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 10)
 
     if (user_ghost_pings.length === 0) {
       const no_ghost_pings = component.build_message({
@@ -66,7 +64,7 @@ export const command: Command = {
       return
     }
 
-    const ghost_ping_entries = user_ghost_pings.map((entry) => {
+    const ghost_ping_entries = user_ghost_pings.map((entry: ghost_ping_entry) => {
       const author_mention  = format.user_mention(entry.author_id)
       const channel_mention = format.channel_mention(entry.channel_id)
       const timestamp_rel   = time.relative_time(Math.floor(entry.timestamp / 1000))
@@ -80,7 +78,7 @@ export const command: Command = {
       ].join("\n")
     })
 
-    const total_count  = await ghost_ping_coll.countDocuments({ mentioned: interaction.user.id })
+    const total_count  = all_pings.filter(ping => ping.mentioned.includes(interaction.user.id)).length
     const showing_text = user_ghost_pings.length < total_count 
       ? `Showing latest ${user_ghost_pings.length} of ${total_count} ghost pings`
       : `Showing all ${total_count} ghost pings`

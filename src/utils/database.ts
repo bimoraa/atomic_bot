@@ -207,6 +207,42 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS ghost_pings (
+        id         SERIAL PRIMARY KEY,
+        message_id VARCHAR(255) NOT NULL UNIQUE,
+        author_id  VARCHAR(255) NOT NULL,
+        author_tag VARCHAR(255),
+        channel_id VARCHAR(255) NOT NULL,
+        guild_id   VARCHAR(255) NOT NULL,
+        content    TEXT,
+        mentioned  TEXT[] NOT NULL,
+        timestamp  BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS warnings (
+        id           SERIAL PRIMARY KEY,
+        warning_id   VARCHAR(255) NOT NULL UNIQUE,
+        guild_id     VARCHAR(255) NOT NULL,
+        user_id      VARCHAR(255) NOT NULL,
+        moderator_id VARCHAR(255) NOT NULL,
+        reason       TEXT,
+        timestamp    BIGINT NOT NULL,
+        created_at   TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_warnings_user ON warnings(guild_id, user_id)
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_ghost_pings_mentioned ON ghost_pings USING GIN(mentioned)
+    `)
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS generic_data (
         id          SERIAL PRIMARY KEY,
         collection  VARCHAR(255) NOT NULL,
@@ -239,6 +275,8 @@ function get_table_name(collection: string): string {
     loa_requests          : "loa_requests",
     answer_stats          : "answer_stats",
     afk_users             : "afk_users",
+    ghost_pings           : "ghost_pings",
+    warnings              : "warnings",
   }
   
   return table_map[collection] || "generic_data"
