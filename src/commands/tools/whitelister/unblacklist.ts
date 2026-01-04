@@ -4,6 +4,7 @@ import { luarmor }                                                            fr
 import { component }                                                          from "../../../utils"
 
 const ALLOWED_ROLE_ID = "1277272542914281512"
+const PROJECT_ID      = "6958841b2d9e5e049a24a23e376e0d77"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -47,7 +48,7 @@ export const command: Command = {
 
     await interaction.deferReply({ ephemeral: true })
 
-    const user_data = await luarmor.get_user_by_discord(user.id)
+    const user_data = await luarmor.get_user_by_discord(user.id, PROJECT_ID)
 
     if (!user_data.success || !user_data.data) {
       await interaction.editReply({
@@ -70,7 +71,7 @@ export const command: Command = {
       return
     }
 
-    const unban_result = await luarmor.unban_user(user_data.data.unban_token)
+    const unban_result = await luarmor.unban_user(user_data.data.unban_token, PROJECT_ID)
 
     if (!unban_result.success) {
       await interaction.editReply({

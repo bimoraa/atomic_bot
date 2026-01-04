@@ -168,18 +168,19 @@ export async function delete_user_from_project(project_id: string, discord_id: s
   }
 }
 
-export async function get_user_by_discord(discord_id: string): Promise<luarmor_response<luarmor_user>> {
+export async function get_user_by_discord(discord_id: string, project_id?: string): Promise<luarmor_response<luarmor_user>> {
   const now             = Date.now()
   const cached_user     = __user_cache.get(discord_id)
   const cached_time     = __user_cache_timestamp.get(discord_id) || 0
 
-  if (cached_user && (now - cached_time) < __user_cache_duration) {
+  if (cached_user && (now - cached_time) < __user_cache_duration && !project_id) {
     __log.info("Returning cached user for discord_id:", discord_id)
     return { success: true, data: cached_user }
   }
 
   try {
-    const url      = `${__base_url}/projects/${get_project_id()}/users?discord_id=${discord_id}`
+    const pid      = project_id || get_project_id()
+    const url      = `${__base_url}/projects/${pid}/users?discord_id=${discord_id}`
     const response = await http.get<any>(url, get_headers())
 
     __log.info("Luarmor get_user_by_discord response:", JSON.stringify(response))
