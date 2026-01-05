@@ -365,6 +365,10 @@ async function migrate_tables(client: any): Promise<void> {
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS message_id VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS user_tag VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS channel_id VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS type VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS rejected_by VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS original_nickname VARCHAR(255)`).catch(() => {})
 
     await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS username VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS user_key VARCHAR(255)`).catch(() => {})
