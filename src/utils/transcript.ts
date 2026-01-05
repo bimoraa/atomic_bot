@@ -24,7 +24,7 @@ export interface transcript_message {
   author_tag:  string
   author_avatar: string
   content:     string
-  attachments: string[]
+  attachments: any[]
   embeds:      any[]
   components?: any[]
   timestamp:   number
@@ -65,9 +65,41 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
     if (!(fetched instanceof Collection) || fetched.size === 0) break
 
     for (const [id, msg] of fetched.entries()) {
+      // - CAPTURE FULL COMPONENT V2 DATA - \\
       const components_data = msg.components?.length > 0 
         ? JSON.parse(JSON.stringify(msg.components))
         : []
+
+      // - CAPTURE EMBEDS WITH ALL FIELDS - \\
+      const embeds_data = msg.embeds.map((e: any) => {
+        const embed_json = e.toJSON()
+        // - Ensure thumbnail and image are captured - \\
+        if (e.thumbnail) {
+          embed_json.thumbnail = {
+            url: e.thumbnail.url,
+            proxy_url: e.thumbnail.proxyURL,
+            height: e.thumbnail.height,
+            width: e.thumbnail.width
+          }
+        }
+        if (e.image) {
+          embed_json.image = {
+            url: e.image.url,
+            proxy_url: e.image.proxyURL,
+            height: e.image.height,
+            width: e.image.width
+          }
+        }
+        if (e.video) {
+          embed_json.video = {
+            url: e.video.url,
+            proxy_url: e.video.proxyURL,
+            height: e.video.height,
+            width: e.video.width
+          }
+        }
+        return embed_json
+      })
 
       if (components_data.length > 0) {
         console.log(`[ - TRANSCRIPT - ] Message ${msg.id} has ${components_data.length} components:`, JSON.stringify(components_data, null, 2))
@@ -79,8 +111,16 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
         author_tag   : msg.author.tag,
         author_avatar: msg.author.displayAvatarURL({ size: 128 }),
         content      : msg.content,
-        attachments  : Array.from(msg.attachments.values()).map((a: any) => a.url),
-        embeds       : msg.embeds.map((e: any) => e.toJSON()),
+        attachments  : Array.from(msg.attachments.values()).map((a: any) => ({
+          url: a.url,
+          proxy_url: a.proxyURL,
+          filename: a.name,
+          size: a.size,
+          width: a.width || null,
+          height: a.height || null,
+          content_type: a.contentType
+        })),
+        embeds       : embeds_data,
         components   : components_data,
         timestamp    : Math.floor(msg.createdTimestamp / 1000),
         is_bot       : msg.author.bot,

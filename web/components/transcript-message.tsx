@@ -1,5 +1,13 @@
+"use client"
+
 import { cn } from "@/lib/utils"
-import { Paperclip, Image, FileText, Bot } from "lucide-react"
+import { Paperclip, Bot, Hash, ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { useState, useEffect } from "react"
+import { UserDialog } from "@/components/user-dialog"
 
 export interface transcript_message {
   id: string
@@ -18,98 +26,302 @@ export interface TranscriptMessageProps {
   message: transcript_message
 }
 
+// - BASIC MARKDOWN PARSER (for component rendering) - \\
+/**
+ * @param text - Raw markdown text
+ * @returns HTML string with markdown formatted
+ */
+function parse_basic_markdown(text: string): string {
+  // - Escape HTML \\
+  text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  
+  // - Inline code (must be before other formatting) \\
+  text = text.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">$1</code>')
+  
+  // - Strikethrough: ~~text~~ \\
+  text = text.replace(/~~([^~]+)~~/g, '<span class="line-through">$1</span>')
+  
+  // - Bold: **text** (must be before italic) \\
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold">$1</strong>')
+  
+  // - Underline: __text__ \\
+  text = text.replace(/__([^_]+)__/g, '<span class="underline">$1</span>')
+  
+  // - Italic: *text* or _text_ \\
+  text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em class="italic">$1</em>')
+  text = text.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em class="italic">$1</em>')
+  
+  // - Spoiler: ||text|| \\
+  text = text.replace(/\|\|([^|]+)\|\|/g, '<span class="bg-muted px-1 rounded cursor-pointer hover:bg-transparent transition-colors">$1</span>')
+  
+  // - Links: [text](url) \\
+  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">$1</a>')
+  
+  return text
+}
+
+// - RENDER EMBED - \\
+/**
+ * @param embed - Discord embed object
+ * @param index - Unique key
+ * @returns Rendered embed with shadcn
+ */
 function render_embed(embed: any, index: number) {
   if (!embed) return null
   
+  const border_color = embed.color 
+    ? `#${embed.color.toString(16).padStart(6, '0')}` 
+    : 'hsl(var(--primary))'
+  
   return (
-    <div key={index} className="mt-2 border-l-4 border-blue-500 bg-accent/30 p-3 rounded-r">
-      {embed.title && (
-        <div className="font-semibold text-sm mb-1">{embed.title}</div>
-      )}
-      {embed.description && (
-        <div className="text-sm text-muted-foreground whitespace-pre-wrap">{embed.description}</div>
-      )}
-      {embed.fields && embed.fields.length > 0 && (
-        <div className="mt-2 grid grid-cols-1 gap-2">
-          {embed.fields.map((field: any, idx: number) => (
-            <div key={idx}>
-              <div className="font-semibold text-xs">{field.name}</div>
-              <div className="text-xs text-muted-foreground">{field.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
-      {embed.footer && (
-        <div className="mt-2 text-xs text-muted-foreground">{embed.footer.text}</div>
-      )}
-    </div>
+    <Card key={index} className="mt-2 border-l-4" style={{ borderLeftColor: border_color }}>
+      <CardContent className="p-2 sm:p-3">
+        {embed.author && (
+          <div className="flex items-center gap-2 mb-2">
+            {embed.author.icon_url && (
+              <img src={embed.author.icon_url} alt="" className="w-6 h-6 rounded-full" />
+            )}
+            <span className="text-sm font-semibold">{embed.author.name}</span>
+          </div>
+        )}
+        {embed.title && (
+          <div className="font-semibold text-xs sm:text-sm mb-1">{embed.title}</div>
+        )}
+        {embed.description && (
+          <div className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap">{embed.description}</div>
+        )}
+        {embed.thumbnail && (
+          <img src={embed.thumbnail.url} alt="" className="float-right ml-2 rounded w-20 h-20 object-cover" />
+        )}
+        {embed.fields && embed.fields.length > 0 && (
+          <div className="mt-2 grid grid-cols-1 gap-2">
+            {embed.fields.map((field: any, idx: number) => (
+              <div key={idx}>
+                <div className="font-semibold text-xs">{field.name}</div>
+                <div className="text-xs text-muted-foreground">{field.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {embed.image && (
+          <img src={embed.image.url} alt="" className="mt-2 rounded max-w-full" />
+        )}
+        {embed.footer && (
+          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+            {embed.footer.icon_url && (
+              <img src={embed.footer.icon_url} alt="" className="w-5 h-5 rounded-full" />
+            )}
+            <span>{embed.footer.text}</span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
-function render_component(component: any, index: number): any {
+// - RENDER COMPONENT V2 - \\
+/**
+ * @param component - Discord component v2
+ * @param index - Unique key
+ * @returns Rendered component with shadcn
+ */
+function render_component(component: any, index: number | string): any {
   if (!component) return null
   
-  // - TYPE 17 - container \\ 
+  // - TYPE 17 - Section Container \\
   if (component.type === 17) {
+    const has_accent = component.accent_color
     return (
-      <div key={`container-${index}`} className="my-1">
-        {component.components?.map((child: any, idx: number) => render_component(child, idx))}
-      </div>
+      <Card key={`section-${index}`} className={cn("my-2", has_accent && "border-l-4")} style={has_accent ? { borderLeftColor: `#${component.accent_color.toString(16).padStart(6, '0')}` } : {}}>
+        <CardContent className="p-3">
+          {component.components?.map((child: any, idx: number) => render_component(child, `${index}-${idx}`))}
+        </CardContent>
+      </Card>
     )
   }
   
-  // - TYPE 10 - text/markdown \\ 
+  // - TYPE 10 - Text/Markdown \\
   if (component.type === 10) {
-    return (
-      <div key={`text-${index}`} className="prose prose-invert max-w-none">
-        {component.content?.split('\n').map((line: string, idx: number) => {
-          if (line.startsWith('```') && line.includes('```', 3)) {
-            const match = line.match(/```(\w+)?\n?([\s\S]*?)```/)
-            if (match) {
-              const code = match[2]
-              return (
-                <pre key={idx} className="bg-gray-900 p-3 rounded my-2 overflow-x-auto">
-                  <code className="text-sm text-gray-300">{code}</code>
-                </pre>
-              )
-            }
+    const content = component.content || ''
+    const lines = content.split('\n')
+    let in_code = false
+    let code_lang = ''
+    let code_lines: string[] = []
+    let in_quote = false
+    let quote_lines: string[] = []
+    const elements: any[] = []
+    
+    lines.forEach((line: string, idx: number) => {
+      // - CODE BLOCK - \\
+      if (line.trim().startsWith('```')) {
+        if (!in_code) {
+          // - Close any open quote \\
+          if (in_quote) {
+            elements.push(
+              <blockquote key={`quote-${idx}`} className="border-l-4 border-muted-foreground/30 pl-3 my-2 italic text-muted-foreground">
+                {quote_lines.map((qline, qidx) => (
+                  <p key={qidx} dangerouslySetInnerHTML={{ __html: parse_basic_markdown(qline) }} />
+                ))}
+              </blockquote>
+            )
+            in_quote = false
+            quote_lines = []
           }
-          if (line.startsWith('##')) {
-            return <h2 key={idx} className="text-lg font-semibold text-white mt-2 mb-1">{line.replace(/^##\s*/, '')}</h2>
+          
+          in_code = true
+          code_lang = line.trim().substring(3)
+          code_lines = []
+        } else {
+          elements.push(
+            <pre key={`code-${idx}`} className="my-2 rounded-md bg-muted p-3 overflow-x-auto border">
+              {code_lang && (
+                <div className="text-xs text-muted-foreground font-mono mb-2 pb-1 border-b">{code_lang}</div>
+              )}
+              <code className="text-sm font-mono leading-relaxed">{code_lines.join('\n')}</code>
+            </pre>
+          )
+          in_code = false
+          code_lang = ''
+          code_lines = []
+        }
+      } else if (in_code) {
+        code_lines.push(line)
+      } else if (line.startsWith('> ')) {
+        // - BLOCKQUOTE - \\
+        if (!in_quote) {
+          in_quote = true
+          quote_lines = []
+        }
+        quote_lines.push(line.substring(2))
+      } else {
+        // - FLUSH QUOTE - \\
+        if (in_quote) {
+          elements.push(
+            <blockquote key={`quote-${idx}`} className="border-l-4 border-muted-foreground/30 pl-3 my-2 italic text-muted-foreground">
+              {quote_lines.map((qline, qidx) => (
+                <p key={qidx} className="leading-relaxed" dangerouslySetInnerHTML={{ __html: parse_basic_markdown(qline) }} />
+              ))}
+            </blockquote>
+          )
+          in_quote = false
+          quote_lines = []
+        }
+        
+        // - HEADINGS - \\
+        if (line.startsWith('### ')) {
+          elements.push(
+            <h3 key={idx} className="scroll-m-20 text-base font-semibold tracking-tight mt-3 mb-1">
+              <span dangerouslySetInnerHTML={{ __html: parse_basic_markdown(line.substring(4)) }} />
+            </h3>
+          )
+        } else if (line.startsWith('## ')) {
+          elements.push(
+            <h2 key={idx} className="scroll-m-20 text-lg font-semibold tracking-tight mt-3 mb-2">
+              <span dangerouslySetInnerHTML={{ __html: parse_basic_markdown(line.substring(3)) }} />
+            </h2>
+          )
+        } else if (line.startsWith('# ')) {
+          elements.push(
+            <h1 key={idx} className="scroll-m-20 text-xl font-bold tracking-tight mt-4 mb-2">
+              <span dangerouslySetInnerHTML={{ __html: parse_basic_markdown(line.substring(2)) }} />
+            </h1>
+          )
+        } else if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+          // - UNORDERED LIST - \\
+          elements.push(
+            <li key={idx} className="ml-6 list-disc text-sm leading-relaxed">
+              <span dangerouslySetInnerHTML={{ __html: parse_basic_markdown(line.trim().substring(2)) }} />
+            </li>
+          )
+        } else if (/^\d+\.\s/.test(line.trim())) {
+          // - ORDERED LIST - \\
+          const match = line.trim().match(/^\d+\.\s(.*)/)
+          if (match) {
+            elements.push(
+              <li key={idx} className="ml-6 list-decimal text-sm leading-relaxed">
+                <span dangerouslySetInnerHTML={{ __html: parse_basic_markdown(match[1]) }} />
+              </li>
+            )
           }
-          return line ? <p key={idx} className="text-gray-300 my-1">{line}</p> : <br key={idx} />
-        })}
-      </div>
-    )
+        } else if (line.trim()) {
+          elements.push(
+            <p key={idx} className="leading-7 text-sm [&:not(:first-child)]:mt-2">
+              <span dangerouslySetInnerHTML={{ __html: parse_basic_markdown(line) }} />
+            </p>
+          )
+        } else {
+          elements.push(<div key={idx} className="h-2" />)
+        }
+      }
+    })
+    
+    // - FLUSH REMAINING QUOTE - \\
+    if (in_quote) {
+      elements.push(
+        <blockquote key="quote-final" className="border-l-4 border-muted-foreground/30 pl-3 my-2 italic text-muted-foreground">
+          {quote_lines.map((qline, qidx) => (
+            <p key={qidx} className="leading-relaxed" dangerouslySetInnerHTML={{ __html: parse_basic_markdown(qline) }} />
+          ))}
+        </blockquote>
+      )
+    }
+    
+    return <div key={`text-${index}`} className="space-y-1">{elements}</div>
   }
   
-  // - TYPE 14 - spacing \\ 
+  // - TYPE 14 - Separator \\
   if (component.type === 14) {
     const spacing = component.spacing || 1
-    return <div key={`spacing-${index}`} style={{ marginTop: `${spacing * 0.25}rem` }} />
+    return (
+      <div key={`spacing-${index}`} className="my-2" style={{ marginTop: `${spacing * 8}px`, marginBottom: `${spacing * 8}px` }}>
+        <Separator />
+      </div>
+    )
   }
   
-  // - TYPE 1 - action row \\ 
+  // - TYPE 1 - Action Row \\
   if (component.type === 1) {
     return (
-      <div key={`action-row-${index}`} className="mt-2 flex flex-wrap gap-2">
-        {component.components?.map((btn: any, idx: number) => {
-          if (btn.type === 2) {
-            const style_class = btn.style === 1 ? 'bg-blue-500/20 text-blue-500 border-blue-500/50' :
-                               btn.style === 2 ? 'bg-gray-500/20 text-gray-400 border-gray-500/50' :
-                               btn.style === 3 ? 'bg-green-500/20 text-green-500 border-green-500/50' :
-                               btn.style === 4 ? 'bg-red-500/20 text-red-500 border-red-500/50' :
-                               'bg-gray-500/20 text-gray-400 border-gray-500/50'
+      <div key={`action-${index}`} className="flex flex-wrap gap-2 mt-2">
+        {component.components?.map((child: any, idx: number) => {
+          // - TYPE 2 - Button \\
+          if (child.type === 2) {
+            const variants: Record<number, any> = {
+              1: { variant: 'default', className: 'bg-blue-600 hover:bg-blue-700' },
+              2: { variant: 'secondary' },
+              3: { variant: 'default', className: 'bg-green-600 hover:bg-green-700' },
+              4: { variant: 'destructive' },
+              5: { variant: 'outline' }
+            }
             
+            const btn_style = variants[child.style] || variants[2]
+            
+            return (
+              <Button
+                key={idx}
+                disabled
+                variant={btn_style.variant}
+                size="sm"
+                className={cn("cursor-not-allowed", btn_style.className)}
+              >
+                {child.label}
+              </Button>
+            )
+          }
+          
+          // - TYPE 3-8 - Select Menus \\
+          if (child.type >= 3 && child.type <= 8) {
             return (
               <div
                 key={idx}
-                className={`px-3 py-1.5 text-xs rounded border ${style_class}`}
+                className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-md border bg-background hover:bg-accent cursor-not-allowed"
               >
-                {btn.label}
+                <span className="text-muted-foreground">{child.placeholder || 'Select an option'}</span>
+                <ChevronDown className="h-4 w-4 opacity-50" />
               </div>
             )
           }
+          
           return null
         })}
       </div>
@@ -120,6 +332,13 @@ function render_component(component: any, index: number): any {
 }
 
 export function TranscriptMessage({ message }: TranscriptMessageProps) {
+  const [user_cache, set_user_cache]         = useState<Record<string, any>>({})
+  const [member_cache, set_member_cache]     = useState<Record<string, any>>({})
+  const [is_loading, set_is_loading]         = useState(true)
+  const [show_user_modal, set_show_user_modal] = useState(false)
+  const [selected_user, set_selected_user]   = useState<any>(null)
+  const [loading_user, set_loading_user]     = useState(false)
+
   const date = new Date(message.timestamp * 1000)
   const time_str = date.toLocaleString('en-US', {
     month: 'short',
@@ -129,37 +348,207 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
     minute: '2-digit',
   })
 
+  // - EXTRACT ALL USER IDS FROM MESSAGE - \\
+  useEffect(() => {
+    const extract_user_ids = (text: string): string[] => {
+      const matches = text.matchAll(/<@!?(\d+)>/g)
+      return Array.from(matches, m => m[1])
+    }
+
+    const fetch_all_users = async () => {
+      const user_ids = extract_user_ids(message.content)
+      if (user_ids.length === 0) {
+        set_is_loading(false)
+        return
+      }
+
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      console.log(`[ - TRANSCRIPT - ] Fetching users from:`, bot_url)
+      console.log(`[ - TRANSCRIPT - ] User IDs:`, user_ids)
+      
+      const cache: Record<string, any> = {}
+
+      await Promise.all(
+        user_ids.map(async (user_id) => {
+          try {
+            const url = `${bot_url}/api/user/${user_id}`
+            console.log(`[ - TRANSCRIPT - ] Fetching:`, url)
+            const res = await fetch(url)
+            if (res.ok) {
+              const data = await res.json()
+              console.log(`[ - TRANSCRIPT - ] Got user ${user_id}:`, data.username)
+              cache[user_id] = data
+            } else {
+              console.error(`[ - TRANSCRIPT - ] Failed to fetch user ${user_id}: ${res.status}`)
+            }
+          } catch (err) {
+            console.error(`[ - FETCH USER - ] Failed for ${user_id}:`, err)
+          }
+        })
+      )
+
+      console.log(`[ - TRANSCRIPT - ] User cache:`, cache)
+      set_user_cache(cache)
+      set_is_loading(false)
+    }
+
+    // - Fetch author member data for role color - \\
+    const fetch_author_member = async () => {
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      try {
+        const res = await fetch(`${bot_url}/api/member/${message.author_id}`)
+        if (res.ok) {
+          const data = await res.json()
+          set_member_cache({ [message.author_id]: data })
+        }
+      } catch (err) {
+        console.error(`[ - FETCH MEMBER - ] Failed:`, err)
+      }
+    }
+
+    fetch_all_users()
+    fetch_author_member()
+  }, [message.content, message.author_id])
+
+  // - FETCH MEMBER DETAILS - \\
+  /**
+   * @param user_id - Discord user ID
+   * @description Fetch member details from bot API
+   */
+  const fetch_member_details = async (user_id: string) => {
+    set_loading_user(true)
+    try {
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      const res = await fetch(`${bot_url}/api/member/${user_id}`)
+      
+      if (res.ok) {
+        const data = await res.json()
+        set_selected_user(data)
+        set_show_user_modal(true)
+      } else {
+        console.error(`[ - FETCH MEMBER - ] Failed: ${res.status}`)
+      }
+    } catch (err) {
+      console.error(`[ - FETCH MEMBER - ] Error:`, err)
+    } finally {
+      set_loading_user(false)
+    }
+  }
+
+  // - HANDLE AVATAR CLICK - \\
+  /**
+   * @param user_id - Discord user ID
+   * @description Show user details modal
+   */
+  const handle_avatar_click = (user_id: string) => {
+    fetch_member_details(user_id)
+  }
+
+  // - PARSE MARKDOWN WITH MENTIONS - \\
+  /**
+   * @param text - Message text with Discord markdown
+   * @returns Parsed HTML with mentions resolved
+   */
+  const parse_markdown = (text: string) => {
+    // - User mentions: <@ID> (BEFORE HTML escaping) - \\
+    text = text.replace(/<@!?(\d+)>/g, (match, user_id) => {
+      const user = user_cache[user_id]
+      if (user) {
+        console.log(`[ - MENTION - ] Resolved ${user_id} to @${user.username}`)
+        return `__MENTION_${user_id}_${user.username}__`
+      }
+      console.log(`[ - MENTION - ] User ${user_id} not in cache:`, Object.keys(user_cache))
+      return match
+    })
+    
+    // - Channel mentions: <#ID> - \\
+    text = text.replace(/<#(\d+)>/g, '__CHANNEL_$1__')
+    
+    // - Role mentions: <@&ID> - \\
+    text = text.replace(/<@&(\d+)>/g, '__ROLE_$1__')
+    
+    // - Escape HTML \\
+    text = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    
+    // - Restore mentions with HTML - \\
+    text = text.replace(/__MENTION_(\d+)_([^_]+)__/g, '<span class="inline-flex items-center gap-1 px-1 rounded bg-blue-500/20 text-blue-400 font-medium">@$2</span>')
+    text = text.replace(/__CHANNEL_(\d+)__/g, '<span class="inline-flex items-center gap-1 px-1 rounded bg-blue-500/20 text-blue-400 font-medium">#channel</span>')
+    text = text.replace(/__ROLE_(\d+)__/g, '<span class="inline-flex items-center gap-1 px-1 rounded bg-blue-500/20 text-blue-400 font-medium">@role</span>')
+    
+    // - Inline code (must be before other formatting) \\
+    text = text.replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-muted text-sm font-mono">$1</code>')
+    
+    // - Strikethrough: ~~text~~ \\
+    text = text.replace(/~~([^~]+)~~/g, '<span class="line-through">$1</span>')
+    
+    // - Bold: **text** (must be before italic) \\
+    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold">$1</strong>')
+    
+    // - Underline: __text__ \\
+    text = text.replace(/__([^_]+)__/g, '<span class="underline">$1</span>')
+    
+    // - Italic: *text* or _text_ \\
+    text = text.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em class="italic">$1</em>')
+    text = text.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em class="italic">$1</em>')
+    
+    // - Spoiler: ||text|| \\
+    text = text.replace(/\|\|([^|]+)\|\|/g, '<span class="bg-muted px-1 rounded cursor-pointer hover:bg-transparent transition-colors">$1</span>')
+    
+    // - Links: [text](url) \\
+    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">$1</a>')
+    
+    return text
+  }
+
+  // - Get author role color - \\
+  const get_author_color = () => {
+    const member = member_cache[message.author_id]
+    if (member?.roles && member.roles.length > 0) {
+      const top_role = member.roles.sort((a: any, b: any) => b.position - a.position)[0]
+      return top_role.color !== '#000000' ? top_role.color : null
+    }
+    return null
+  }
+
+  const author_color = get_author_color()
+
   return (
-    <div className="flex gap-4 p-4 hover:bg-accent/50 transition-colors">
+    <div className="flex gap-2 sm:gap-3 py-3 px-3 sm:px-4 hover:bg-muted/30 transition-colors rounded-md group border-b border-border/50 last:border-0">
       <div className="flex-shrink-0">
         <img
           src={message.author_avatar}
           alt={message.author_tag}
-          className="w-10 h-10 rounded-full"
+          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+          onClick={() => handle_avatar_click(message.author_id)}
         />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className={cn(
-            "font-semibold",
-            message.is_bot && "text-blue-500"
-          )}>
+        <div className="flex flex-wrap items-baseline gap-1 sm:gap-2 mb-1">
+          <span 
+            className={cn(
+              "font-semibold text-sm sm:text-base truncate max-w-[150px] sm:max-w-none",
+              !author_color && message.is_bot && "text-blue-500"
+            )}
+            style={author_color ? { color: author_color } : undefined}
+          >
             {message.author_tag}
           </span>
           {message.is_bot && (
-            <span className="px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded flex items-center gap-1">
-              <Bot className="w-3 h-3" />
+            <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 flex items-center gap-1 text-[10px] sm:text-xs px-1 sm:px-1.5">
+              <Bot className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               BOT
-            </span>
+            </Badge>
           )}
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[10px] sm:text-xs text-muted-foreground">
             {time_str}
           </span>
         </div>
         {message.content && (
-          <div className="text-sm whitespace-pre-wrap break-words">
-            {message.content}
-          </div>
+          <div 
+            key={`content-${Object.keys(user_cache).length}`}
+            className="text-xs sm:text-sm whitespace-pre-wrap break-words leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: parse_markdown(message.content) }}
+          />
         )}
         {message.attachments.length > 0 && (
           <div className="mt-2 flex flex-col gap-2">
@@ -173,12 +562,12 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-1 max-w-md"
+                    className="mt-1 max-w-full sm:max-w-md"
                   >
                     <img 
                       src={url} 
                       alt={`Attachment ${i + 1}`}
-                      className="rounded border border-border max-h-96 object-contain"
+                      className="rounded border border-border max-h-60 sm:max-h-96 w-full object-contain"
                     />
                   </a>
                 )
@@ -190,10 +579,10 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-blue-500 hover:underline flex items-center gap-1"
+                  className="text-xs sm:text-sm text-blue-500 hover:underline flex items-center gap-1"
                 >
-                  <Paperclip className="w-4 h-4" />
-                  Attachment {i + 1}
+                  <Paperclip className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="truncate">Attachment {i + 1}</span>
                 </a>
               )
             })}
@@ -210,6 +599,15 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
           </div>
         )}
       </div>
+
+      {/* - USER DIALOG - \\ */}
+      {selected_user && (
+        <UserDialog 
+          user_id={selected_user.id}
+          open={show_user_modal}
+          on_close={() => set_show_user_modal(false)}
+        />
+      )}
     </div>
   )
 }

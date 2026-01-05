@@ -87,6 +87,97 @@ export function start_webhook_server(client: Client): void {
     }
   })
 
+  // - GET USER INFO BY ID - \\
+  /**
+   * @route GET /api/user/:id
+   * @param id - Discord user ID
+   * @returns User info (username, tag, avatar)
+   */
+  app.get("/api/user/:id", async (req: Request, res: Response) => {
+    try {
+      if (!discord_client?.isReady()) {
+        return res.status(503).json({ error: "Bot not ready" })
+      }
+
+      const user_id = req.params.id
+      const user = await discord_client.users.fetch(user_id).catch(() => null)
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" })
+      }
+
+      res.status(200).json({
+        id       : user.id,
+        username : user.username,
+        tag      : user.tag,
+        avatar   : user.displayAvatarURL({ size: 128 }),
+        bot      : user.bot,
+      })
+    } catch (err) {
+      console.error("[ - API USER - ] Error:", err)
+      res.status(500).json({ error: "Failed to get user" })
+    }
+  })
+
+  // - GET MEMBER INFO BY ID - \\
+  /**
+   * @route GET /api/member/:id
+   * @param id - Discord user ID
+   * @returns Member info including roles, join date, etc.
+   */
+  app.get("/api/member/:id", async (req: Request, res: Response) => {
+    try {
+      if (!discord_client?.isReady()) {
+        return res.status(503).json({ error: "Bot not ready" })
+      }
+
+      const user_id = req.params.id
+      const guild = discord_client.guilds.cache.get(main_guild_id)
+      
+      if (!guild) {
+        return res.status(404).json({ error: "Guild not found" })
+      }
+
+      const member = await guild.members.fetch(user_id).catch(() => null)
+      
+      if (!member) {
+        return res.status(404).json({ error: "Member not found" })
+      }
+
+      const roles = member.roles.cache
+        .filter(r => r.id !== guild.id)
+        .sort((a, b) => b.position - a.position)
+        .map(r => ({
+          id: r.id,
+          name: r.name,
+          color: r.hexColor,
+          icon: r.iconURL({ size: 64 }) || r.icon || null,
+          position: r.position
+        }))
+
+      // - Fetch full user for banner - \\
+      const full_user = await discord_client.users.fetch(user_id, { force: true }).catch(() => null)
+
+      res.status(200).json({
+        id           : member.id,
+        username     : member.user.username,
+        tag          : member.user.tag,
+        avatar       : member.user.displayAvatarURL({ size: 256 }),
+        banner       : full_user?.bannerURL({ size: 512 }) || null,
+        display_name : member.displayName,
+        nickname     : member.nickname,
+        bot          : member.user.bot,
+        roles        : roles,
+        joined_at    : member.joinedTimestamp,
+        created_at   : member.user.createdTimestamp,
+        premium_since: member.premiumSinceTimestamp,
+      })
+    } catch (err) {
+      console.error("[ - API MEMBER - ] Error:", err)
+      res.status(500).json({ error: "Failed to get member" })
+    }
+  })
+
   app.get("/api/server-info", async (req: Request, res: Response) => {
     try {
       if (!discord_client?.isReady()) {

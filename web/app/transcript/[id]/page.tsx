@@ -1,12 +1,21 @@
 import { get_transcript } from '@/lib/db'
 import { TranscriptMessage } from '@/components/transcript-message'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 
 export default async function TranscriptPage({
   params,
 }: {
   params: { id: string }
 }) {
+  // - Check authentication - \\
+  const cookie_store = cookies()
+  const discord_user = cookie_store.get('discord_user')
+  
+  if (!discord_user) {
+    redirect(`/login?return_to=/transcript/${params.id}`)
+  }
+
   const transcript = await get_transcript(params.id)
 
   if (!transcript) {
@@ -31,22 +40,22 @@ export default async function TranscriptPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-2 sm:p-4 md:p-6">
         <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="p-6 bg-accent/30 border-b border-border">
-            <h1 className="text-2xl font-bold mb-4">Ticket Transcript</h1>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="p-3 sm:p-4 md:p-6 bg-accent/30 border-b border-border">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">Ticket Transcript</h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
               <div>
-                <p className="text-muted-foreground">Ticket ID</p>
-                <p className="font-mono">{transcript.ticket_id}</p>
+                <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">Ticket ID</p>
+                <p className="font-mono text-xs sm:text-sm">{transcript.ticket_id}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Type</p>
-                <p className="capitalize">{transcript.ticket_type}</p>
+                <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">Type</p>
+                <p className="capitalize text-xs sm:text-sm">{transcript.ticket_type}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Owner</p>
-                <p>{transcript.owner_tag}</p>
+                <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">Owner</p>
+                <p className="text-xs sm:text-sm">{transcript.owner_tag}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Claimed By</p>
