@@ -65,6 +65,14 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
     if (!(fetched instanceof Collection) || fetched.size === 0) break
 
     for (const [id, msg] of fetched.entries()) {
+      const components_data = msg.components?.length > 0 
+        ? JSON.parse(JSON.stringify(msg.components))
+        : []
+
+      if (components_data.length > 0) {
+        console.log(`[ - TRANSCRIPT - ] Message ${msg.id} has ${components_data.length} components:`, JSON.stringify(components_data, null, 2))
+      }
+
       messages.push({
         id           : msg.id,
         author_id    : msg.author.id,
@@ -73,7 +81,7 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
         content      : msg.content,
         attachments  : Array.from(msg.attachments.values()).map((a: any) => a.url),
         embeds       : msg.embeds.map((e: any) => e.toJSON()),
-        components   : msg.components?.map((c: any) => c.toJSON()) || [],
+        components   : components_data,
         timestamp    : Math.floor(msg.createdTimestamp / 1000),
         is_bot       : msg.author.bot,
       })

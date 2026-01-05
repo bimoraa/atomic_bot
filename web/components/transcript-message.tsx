@@ -46,18 +46,65 @@ function render_embed(embed: any, index: number) {
   )
 }
 
-function render_component(component: any, index: number) {
+function render_component(component: any, index: number): any {
   if (!component) return null
   
+  // - TYPE 17 - container \\ 
+  if (component.type === 17) {
+    return (
+      <div key={`container-${index}`} className="my-1">
+        {component.components?.map((child: any, idx: number) => render_component(child, idx))}
+      </div>
+    )
+  }
+  
+  // - TYPE 10 - text/markdown \\ 
+  if (component.type === 10) {
+    return (
+      <div key={`text-${index}`} className="prose prose-invert max-w-none">
+        {component.content?.split('\n').map((line: string, idx: number) => {
+          if (line.startsWith('```') && line.includes('```', 3)) {
+            const match = line.match(/```(\w+)?\n?([\s\S]*?)```/)
+            if (match) {
+              const code = match[2]
+              return (
+                <pre key={idx} className="bg-gray-900 p-3 rounded my-2 overflow-x-auto">
+                  <code className="text-sm text-gray-300">{code}</code>
+                </pre>
+              )
+            }
+          }
+          if (line.startsWith('##')) {
+            return <h2 key={idx} className="text-lg font-semibold text-white mt-2 mb-1">{line.replace(/^##\s*/, '')}</h2>
+          }
+          return line ? <p key={idx} className="text-gray-300 my-1">{line}</p> : <br key={idx} />
+        })}
+      </div>
+    )
+  }
+  
+  // - TYPE 14 - spacing \\ 
+  if (component.type === 14) {
+    const spacing = component.spacing || 1
+    return <div key={`spacing-${index}`} style={{ marginTop: `${spacing * 0.25}rem` }} />
+  }
+  
+  // - TYPE 1 - action row \\ 
   if (component.type === 1) {
     return (
-      <div key={index} className="mt-2 flex flex-wrap gap-2">
+      <div key={`action-row-${index}`} className="mt-2 flex flex-wrap gap-2">
         {component.components?.map((btn: any, idx: number) => {
           if (btn.type === 2) {
+            const style_class = btn.style === 1 ? 'bg-blue-500/20 text-blue-500 border-blue-500/50' :
+                               btn.style === 2 ? 'bg-gray-500/20 text-gray-400 border-gray-500/50' :
+                               btn.style === 3 ? 'bg-green-500/20 text-green-500 border-green-500/50' :
+                               btn.style === 4 ? 'bg-red-500/20 text-red-500 border-red-500/50' :
+                               'bg-gray-500/20 text-gray-400 border-gray-500/50'
+            
             return (
               <div
                 key={idx}
-                className="px-3 py-1.5 text-xs rounded bg-blue-500/20 text-blue-500 border border-blue-500/50"
+                className={`px-3 py-1.5 text-xs rounded border ${style_class}`}
               >
                 {btn.label}
               </div>
