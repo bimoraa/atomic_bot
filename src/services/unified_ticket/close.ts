@@ -44,8 +44,9 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
   const issue_type   = data.issue_type
   const description  = data.description
 
+  // - WEB_URL should point to Next.js web app (Vercel), not bot server - \\
   const web_url      = process.env.WEB_URL || "https://maxime.vercel.app"
-  const full_url     = web_url.startsWith("http") ? web_url : `http://${web_url}`
+  const full_url     = web_url.startsWith("http") ? web_url : `https://${web_url}`
 
   if (owner_id) {
     remove_user_open_ticket(data.ticket_type, owner_id)
