@@ -44,6 +44,9 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
   const issue_type   = data.issue_type
   const description  = data.description
 
+  const web_url      = process.env.WEB_URL || "https://maxime.vercel.app"
+  const full_url     = web_url.startsWith("http") ? web_url : `http://${web_url}`
+
   if (owner_id) {
     remove_user_open_ticket(data.ticket_type, owner_id)
   }
@@ -118,17 +121,20 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
     }
 
     const transcript_buttons = transcript_id 
-      ? [component.link_button("View Transcript", `${process.env.WEB_URL || "https://maxime.vercel.app"}/transcript/${transcript_id}`)]
+      ? [component.link_button("View Transcript", `${full_url}/transcript/${transcript_id}`)]
       : []
 
     const log_message = component.build_message({
       components: [
         component.container({
           components: [
-            component.text([
-              `## ${config.name} Ticket Closed`,
-              `A ${config.name.toLowerCase()} ticket has been closed.`,
-            ]),
+            component.section({
+              content: [
+                `## ${config.name} Ticket Closed`,
+                `A ${config.name.toLowerCase()} ticket has been closed.`,
+              ],
+              thumbnail: owner_avatar,
+            }),
             component.divider(),
             component.text(log_content_1),
             component.divider(),
@@ -143,8 +149,6 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       ],
     })
 
-    console.log(`[ - TICKET CLOSE LOG - ] owner_avatar:`, owner_avatar)
-    console.log(`[ - TICKET CLOSE LOG - ] Message structure:`, JSON.stringify(log_message, null, 2))
     console.log(`[ - TICKET CLOSE LOG - ] Sending message to channel: ${close_log_channel.id}`)
     const response = await api.send_components_v2(close_log_channel.id, token, log_message)
     console.log(`[ - TICKET CLOSE LOG - ] API Response:`, response)
@@ -166,7 +170,7 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       const closed_by_text = closed_by === "System" ? "System" : `<@${closed_by.id}>`
 
       const dm_transcript_buttons = transcript_id 
-        ? [component.link_button("View Transcript", `${process.env.WEB_URL || "https://maxime.vercel.app"}/transcript/${transcript_id}`)]
+        ? [component.link_button("View Transcript", `${full_url}/transcript/${transcript_id}`)]
         : []
 
       const dm_message = component.build_message({
