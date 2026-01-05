@@ -122,6 +122,9 @@ async function init_tables(): Promise<void> {
         id                  SERIAL PRIMARY KEY,
         user_id             VARCHAR(255) NOT NULL,
         guild_id            VARCHAR(255),
+        username            VARCHAR(255),
+        user_key            VARCHAR(255),
+        created_at          BIGINT,
         whitelisted_at      TIMESTAMP DEFAULT NOW(),
         last_tag_check      TIMESTAMP,
         has_tag             BOOLEAN DEFAULT TRUE,
@@ -362,6 +365,10 @@ async function migrate_tables(client: any): Promise<void> {
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS message_id VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS user_tag VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS channel_id VARCHAR(255)`).catch(() => {})
+
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS username VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS user_key VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS created_at BIGINT`).catch(() => {})
 
     console.log("[ - POSTGRESQL - ] Table migrations completed")
   } catch (err) {
