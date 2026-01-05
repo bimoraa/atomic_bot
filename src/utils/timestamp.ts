@@ -11,31 +11,52 @@ export function to_date(unix: number): Date {
 }
 
 export function relative_time(unix: number): string {
-  return `<t:${unix}:R>`
+  if (!unix || isNaN(unix) || unix <= 0) {
+    return "Invalid Date"
+  }
+  return `<t:${Math.floor(unix)}:R>`
 }
 
 export function full_date_time(unix: number): string {
-  return `<t:${unix}:F>`
+  if (!unix || isNaN(unix) || unix <= 0) {
+    return "Invalid Date"
+  }
+  return `<t:${Math.floor(unix)}:F>`
 }
 
 export function short_date_time(unix: number): string {
-  return `<t:${unix}:f>`
+  if (!unix || isNaN(unix) || unix <= 0) {
+    return "Invalid Date"
+  }
+  return `<t:${Math.floor(unix)}:f>`
 }
 
 export function long_date(unix: number): string {
-  return `<t:${unix}:D>`
+  if (!unix || isNaN(unix) || unix <= 0) {
+    return "Invalid Date"
+  }
+  return `<t:${Math.floor(unix)}:D>`
 }
 
 export function short_date(unix: number): string {
-  return `<t:${unix}:d>`
+  if (!unix || isNaN(unix) || unix <= 0) {
+    return "Invalid Date"
+  }
+  return `<t:${Math.floor(unix)}:d>`
 }
 
 export function long_time(unix: number): string {
-  return `<t:${unix}:T>`
+  if (!unix || isNaN(unix) || unix <= 0) {
+    return "Invalid Date"
+  }
+  return `<t:${Math.floor(unix)}:T>`
 }
 
 export function short_time(unix: number): string {
-  return `<t:${unix}:t>`
+  if (!unix || isNaN(unix) || unix <= 0) {
+    return "Invalid Date"
+  }
+  return `<t:${Math.floor(unix)}:t>`
 }
 
 export function add_seconds(unix: number, seconds: number): number {
