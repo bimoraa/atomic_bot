@@ -211,6 +211,9 @@ export async function approve_loa(options: approve_loa_options) {
       }
     }
 
+    console.log(`[ - LOA APPROVE - ] Timestamp types - start_date: ${typeof loa.start_date}, end_date: ${typeof loa.end_date}`)
+    console.log(`[ - LOA APPROVE - ] Timestamp values - start_date: ${loa.start_date}, end_date: ${loa.end_date}`)
+
     if (loa.status !== "pending") {
       return {
         success: false,

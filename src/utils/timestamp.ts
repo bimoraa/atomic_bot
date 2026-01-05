@@ -10,53 +10,53 @@ export function to_date(unix: number): Date {
   return new Date(unix * 1000)
 }
 
-export function relative_time(unix: number): string {
-  if (!unix || isNaN(unix) || unix <= 0) {
-    return "Invalid Date"
-  }
-  return `<t:${Math.floor(unix)}:R>`
+export function relative_time(unix: number | string | null | undefined): string {
+  if (!unix) return "Not set"
+  const timestamp = typeof unix === 'string' ? parseInt(unix) : unix
+  if (isNaN(timestamp) || timestamp <= 0) return "Not set"
+  return `<t:${Math.floor(timestamp)}:R>`
 }
 
-export function full_date_time(unix: number): string {
-  if (!unix || isNaN(unix) || unix <= 0) {
-    return "Invalid Date"
-  }
-  return `<t:${Math.floor(unix)}:F>`
+export function full_date_time(unix: number | string | null | undefined): string {
+  if (!unix) return "Not set"
+  const timestamp = typeof unix === 'string' ? parseInt(unix) : unix
+  if (isNaN(timestamp) || timestamp <= 0) return "Not set"
+  return `<t:${Math.floor(timestamp)}:F>`
 }
 
-export function short_date_time(unix: number): string {
-  if (!unix || isNaN(unix) || unix <= 0) {
-    return "Invalid Date"
-  }
-  return `<t:${Math.floor(unix)}:f>`
+export function short_date_time(unix: number | string | null | undefined): string {
+  if (!unix) return "Not set"
+  const timestamp = typeof unix === 'string' ? parseInt(unix) : unix
+  if (isNaN(timestamp) || timestamp <= 0) return "Not set"
+  return `<t:${Math.floor(timestamp)}:f>`
 }
 
-export function long_date(unix: number): string {
-  if (!unix || isNaN(unix) || unix <= 0) {
-    return "Invalid Date"
-  }
-  return `<t:${Math.floor(unix)}:D>`
+export function long_date(unix: number | string | null | undefined): string {
+  if (!unix) return "Not set"
+  const timestamp = typeof unix === 'string' ? parseInt(unix) : unix
+  if (isNaN(timestamp) || timestamp <= 0) return "Not set"
+  return `<t:${Math.floor(timestamp)}:D>`
 }
 
-export function short_date(unix: number): string {
-  if (!unix || isNaN(unix) || unix <= 0) {
-    return "Invalid Date"
-  }
-  return `<t:${Math.floor(unix)}:d>`
+export function short_date(unix: number | string | null | undefined): string {
+  if (!unix) return "Not set"
+  const timestamp = typeof unix === 'string' ? parseInt(unix) : unix
+  if (isNaN(timestamp) || timestamp <= 0) return "Not set"
+  return `<t:${Math.floor(timestamp)}:d>`
 }
 
-export function long_time(unix: number): string {
-  if (!unix || isNaN(unix) || unix <= 0) {
-    return "Invalid Date"
-  }
-  return `<t:${Math.floor(unix)}:T>`
+export function long_time(unix: number | string | null | undefined): string {
+  if (!unix) return "Not set"
+  const timestamp = typeof unix === 'string' ? parseInt(unix) : unix
+  if (isNaN(timestamp) || timestamp <= 0) return "Not set"
+  return `<t:${Math.floor(timestamp)}:T>`
 }
 
-export function short_time(unix: number): string {
-  if (!unix || isNaN(unix) || unix <= 0) {
-    return "Invalid Date"
-  }
-  return `<t:${Math.floor(unix)}:t>`
+export function short_time(unix: number | string | null | undefined): string {
+  if (!unix) return "Not set"
+  const timestamp = typeof unix === 'string' ? parseInt(unix) : unix
+  if (isNaN(timestamp) || timestamp <= 0) return "Not set"
+  return `<t:${Math.floor(timestamp)}:t>`
 }
 
 export function add_seconds(unix: number, seconds: number): number {
