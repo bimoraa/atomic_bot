@@ -26,6 +26,7 @@ export interface transcript_message {
   content:     string
   attachments: string[]
   embeds:      any[]
+  components?: any[]
   timestamp:   number
   is_bot:      boolean
 }
@@ -72,6 +73,7 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
         content      : msg.content,
         attachments  : Array.from(msg.attachments.values()).map((a: any) => a.url),
         embeds       : msg.embeds.map((e: any) => e.toJSON()),
+        components   : msg.components?.map((c: any) => c.toJSON()) || [],
         timestamp    : Math.floor(msg.createdTimestamp / 1000),
         is_bot       : msg.author.bot,
       })
