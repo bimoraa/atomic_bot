@@ -860,17 +860,29 @@ export async function update_jsonb_field(
   return true
 }
 
+// - Convert database row to object with proper type handling - \\
+// - Unix timestamp fields (BIGINT) are kept as numbers - \\
+// - Legacy TIMESTAMP fields are converted to Date objects - \\
+
+/**
+ * @param {any} row - Database row object
+ * @returns {T} Converted object with proper types
+ */
 function convert_row_to_object<T>(row: any): T {
-  const result: any       = {}
-  const date_fields       = [
+  const result: any         = {}
+  const legacy_date_fields  = [
     "updated_at", "joined_at", "left_at", 
-    "scheduled_time", "added_at", "whitelisted_at", 
-    "last_tag_check", "start_date", "end_date"
+    "scheduled_time", "added_at", "last_tag_check"
+  ]
+  const unix_timestamp_fields = [
+    "whitelisted_at", "start_date", "end_date", "created_at"
   ]
   
   for (const [key, value] of Object.entries(row)) {
-    if (date_fields.includes(key)) {
+    if (legacy_date_fields.includes(key)) {
       result[key] = value ? new Date(value as string) : null
+    } else if (unix_timestamp_fields.includes(key)) {
+      result[key] = value ? parseInt(value as string) : null
     } else {
       result[key] = value
     }

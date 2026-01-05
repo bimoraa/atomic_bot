@@ -1,3 +1,5 @@
+// - Discord component v2 builder utilities - \\
+
 export enum component_type {
   action_row = 1,
   button = 2,
@@ -93,10 +95,24 @@ export interface message_payload {
   components: (container_component | text_component | file_component)[]
 }
 
+/**
+ * @param {string} label - Button label
+ * @param {string} custom_id - Custom identifier
+ * @param {{ id?: string; name: string }} emoji - Optional emoji
+ * @param {boolean} disabled - Whether button is disabled
+ * @returns {button_component} Primary styled button
+ */
 export function primary_button(label: string, custom_id: string, emoji?: { id?: string; name: string }, disabled?: boolean): button_component {
   return {
     type: component_type.button,
     style: button_style.primary,
+/**
+ * @param {string} label - Button label
+ * @param {string} custom_id - Custom identifier
+ * @param {{ id?: string; name: string }} emoji - Optional emoji
+ * @param {boolean} disabled - Whether button is disabled
+ * @returns {button_component} Secondary styled button
+ */
     label,
     custom_id,
     emoji,
@@ -108,14 +124,35 @@ export function secondary_button(label: string, custom_id: string, emoji?: { id?
   return {
     type: component_type.button,
     style: button_style.secondary,
+/**
+ * @param {string} label - Button label
+ * @param {string} custom_id - Custom identifier
+ * @param {{ id?: string; name: string }} emoji - Optional emoji
+ * @param {boolean} disabled - Whether button is disabled
+ * @returns {button_component} Success styled button
+ */
     label,
     custom_id,
     emoji,
     disabled,
+/**
+ * @param {string} label - Button label
+ * @param {string} custom_id - Custom identifier
+ * @param {{ id?: string; name: string }} emoji - Optional emoji
+ * @param {boolean} disabled - Whether button is disabled
+ * @returns {button_component} Danger styled button
+ */
   }
 }
 
 export function success_button(label: string, custom_id: string, emoji?: { id?: string; name: string }, disabled?: boolean): button_component {
+/**
+ * @param {string} label - Button label
+ * @param {string} url - Link URL
+ * @param {{ id?: string; name: string }} emoji - Optional emoji
+ * @param {boolean} disabled - Whether button is disabled
+ * @returns {button_component} Link styled button
+ */
   return {
     type: component_type.button,
     style: button_style.success,
