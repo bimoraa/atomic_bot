@@ -59,6 +59,10 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
   const token         = api.get_token()
   let transcript_id: string | null = null
 
+  console.log(`[ - TRANSCRIPT GENERATION - ] Starting for ticket: ${ticket_id}`)
+  console.log(`[ - TRANSCRIPT GENERATION - ] Thread ID: ${thread.id}`)
+  console.log(`[ - TRANSCRIPT GENERATION - ] Owner ID: ${owner_id}`)
+
   try {
     transcript_id = await transcript.generate_transcript(
       thread,
@@ -72,9 +76,14 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       issue_type,
       description
     )
-    console.log(`[ - TRANSCRIPT GENERATED - ] Ticket: ${ticket_id}, Transcript: ${transcript_id}`)
+    console.log(`[ - TRANSCRIPT GENERATED ✅ - ] Ticket: ${ticket_id}, Transcript: ${transcript_id}`)
   } catch (error) {
-    console.error(`[ - TRANSCRIPT ERROR - ] Ticket: ${ticket_id}`, error)
+    console.error(`[ - TRANSCRIPT ERROR ❌ - ] Ticket: ${ticket_id}`)
+    console.error(`[ - TRANSCRIPT ERROR ❌ - ] Error:`, error)
+    if (error instanceof Error) {
+      console.error(`[ - TRANSCRIPT ERROR ❌ - ] Message: ${error.message}`)
+      console.error(`[ - TRANSCRIPT ERROR ❌ - ] Stack:`, error.stack)
+    }
   }
 
   const open_log_channel = client.channels.cache.get(config.log_channel_id) as TextChannel

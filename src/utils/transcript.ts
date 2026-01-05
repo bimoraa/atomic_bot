@@ -89,13 +89,15 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
  * @returns {Promise<void>}
  */
 export async function save_transcript(data: transcript_data): Promise<void> {
-  if (!db.is_connected()) {
-    console.error("[ - TRANSCRIPT ERROR - ] Database not connected")
-    throw new Error("Database not connected")
-  }
-
   console.log(`[ - TRANSCRIPT SAVE START - ] ID: ${data.transcript_id}, Ticket: ${data.ticket_id}`)
   console.log(`[ - TRANSCRIPT SAVE START - ] Messages count: ${data.messages.length}`)
+  console.log(`[ - TRANSCRIPT SAVE START - ] Database connected: ${db.is_connected()}`)
+
+  if (!db.is_connected()) {
+    const error_msg = "Database not connected when saving transcript"
+    console.error(`[ - TRANSCRIPT ERROR - ] ${error_msg}`)
+    throw new Error(error_msg)
+  }
 
   try {
     const insert_data = {
@@ -114,17 +116,33 @@ export async function save_transcript(data: transcript_data): Promise<void> {
       close_time   : data.close_time,
     }
 
-    console.log(`[ - TRANSCRIPT SAVE DATA - ] Insert data prepared`)
+    console.log(`[ - TRANSCRIPT SAVE DATA - ] Insert data prepared:`, {
+      transcript_id: insert_data.transcript_id,
+      ticket_id: insert_data.ticket_id,
+      ticket_type: insert_data.ticket_type,
+      messages_length: insert_data.messages.length
+    })
 
     const result = await db.insert_one("ticket_transcripts", insert_data)
 
-    console.log(`[ - TRANSCRIPT SAVED - ] ID: ${data.transcript_id}, Ticket: ${data.ticket_id}, DB ID: ${result}`)
+    console.log(`[ - TRANSCRIPT SAVED ✅ - ] ID: ${data.transcript_id}, Ticket: ${data.ticket_id}, DB ID: ${result}`)
+    
+    // - Verify save - \\
+    const verify = await db.find_one<any>("ticket_transcripts", { transcript_id: data.transcript_id })
+    if (!verify) {
+      console.error(`[ - TRANSCRIPT VERIFY FAILED - ] Transcript ${data.transcript_id} not found in DB after insert!`)
+      throw new Error(`Transcript verification failed for ${data.transcript_id}`)
+    }
+    console.log(`[ - TRANSCRIPT VERIFIED ✅ - ] Found in DB: ${verify.transcript_id}`)
   } catch (error) {
     console.error("[ - TRANSCRIPT SAVE ERROR - ] Failed to save transcript")
     console.error("[ - TRANSCRIPT SAVE ERROR - ] Transcript ID:", data.transcript_id)
     console.error("[ - TRANSCRIPT SAVE ERROR - ] Ticket ID:", data.ticket_id)
+    console.error("[ - TRANSCRIPT SAVE ERROR - ] Owner ID:", data.owner_id)
+    console.error("[ - TRANSCRIPT SAVE ERROR - ] Thread ID:", data.thread_id)
     console.error("[ - TRANSCRIPT SAVE ERROR - ] Error:", error)
     if (error instanceof Error) {
+      console.error("[ - TRANSCRIPT SAVE ERROR - ] Error name:", error.name)
       console.error("[ - TRANSCRIPT SAVE ERROR - ] Error message:", error.message)
       console.error("[ - TRANSCRIPT SAVE ERROR - ] Error stack:", error.stack)
     }
