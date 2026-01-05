@@ -15,8 +15,9 @@ import * as file from "./file"
 import * as http from "./http"
 import * as db from "./database"
 import * as version from "./version"
+import * as transcript from "./transcript"
 
-export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http, db, version }
+export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http, db, version, transcript }
 
 export type {
   button_component,

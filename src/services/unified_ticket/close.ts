@@ -8,6 +8,7 @@ import {
   load_ticket,
 } from "./state"
 import { component, time, api, format } from "../../utils"
+import * as transcript from "../../utils/transcript"
 
 interface CloseTicketOptions {
   thread:    ThreadChannel
@@ -50,8 +51,27 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
   delete_ticket(thread.id)
   await delete_ticket_db(thread.id)
 
-  const timestamp = time.now()
-  const token     = api.get_token()
+  const timestamp     = time.now()
+  const token         = api.get_token()
+  let transcript_id: string | null = null
+
+  try {
+    transcript_id = await transcript.generate_transcript(
+      thread,
+      client,
+      ticket_id,
+      data.ticket_type,
+      owner_id,
+      open_time,
+      closed_by === "System" ? "System" : closed_by.id,
+      claimed_by,
+      issue_type,
+      description
+    )
+    console.log(`[ - TRANSCRIPT GENERATED - ] Ticket: ${ticket_id}, Transcript: ${transcript_id}`)
+  } catch (error) {
+    console.error(`[ - TRANSCRIPT ERROR - ] Ticket: ${ticket_id}`, error)
+  }
 
   const open_log_channel = client.channels.cache.get(config.log_channel_id) as TextChannel
   if (open_log_channel && open_log_id) {
@@ -87,6 +107,10 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       log_content_2.unshift(`- **Issue Type:** ${issue_type}`)
     }
 
+    const transcript_buttons = transcript_id 
+      ? [component.link_button("View Transcript", `${process.env.WEB_URL || "https://maxime.vercel.app"}/transcript/${transcript_id}`)]
+      : []
+
     const log_message = component.build_message({
       components: [
         component.container({
@@ -104,7 +128,8 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
             component.text(log_content_2),
             component.divider(),
             component.action_row(
-              component.link_button("View Thread", thread_url)
+              component.link_button("View Thread", thread_url),
+              ...transcript_buttons
             ),
           ],
         }),
@@ -120,6 +145,10 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       const dm_channel = await owner.createDM()
 
       const closed_by_text = closed_by === "System" ? "System" : `<@${closed_by.id}>`
+
+      const dm_transcript_buttons = transcript_id 
+        ? [component.link_button("View Transcript", `${process.env.WEB_URL || "https://maxime.vercel.app"}/transcript/${transcript_id}`)]
+        : []
 
       const dm_message = component.build_message({
         components: [
@@ -139,7 +168,8 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
                 `Thank you for using our service!`,
               ]),
               component.action_row(
-                component.link_button("View Ticket", `https://discord.com/channels/${thread.guildId}/${thread.id}`)
+                component.link_button("View Ticket", `https://discord.com/channels/${thread.guildId}/${thread.id}`),
+                ...dm_transcript_buttons
               ),
             ],
           }),

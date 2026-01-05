@@ -244,6 +244,26 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS ticket_transcripts (
+        id              SERIAL PRIMARY KEY,
+        transcript_id   VARCHAR(255) NOT NULL UNIQUE,
+        ticket_id       VARCHAR(255) NOT NULL,
+        ticket_type     VARCHAR(255) NOT NULL,
+        thread_id       VARCHAR(255) NOT NULL,
+        owner_id        VARCHAR(255) NOT NULL,
+        owner_tag       VARCHAR(255),
+        claimed_by      VARCHAR(255),
+        closed_by       VARCHAR(255),
+        issue_type      VARCHAR(255),
+        description     TEXT,
+        messages        JSONB NOT NULL,
+        open_time       BIGINT NOT NULL,
+        close_time      BIGINT NOT NULL,
+        created_at      TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS warnings (
         id           SERIAL PRIMARY KEY,
         warning_id   VARCHAR(255) NOT NULL UNIQUE,
