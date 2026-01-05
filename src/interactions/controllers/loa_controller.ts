@@ -197,9 +197,14 @@ export async function approve_loa(options: approve_loa_options) {
   const { message_id, approver_id, client, guild_id } = options
 
   try {
+    console.log(`[ - LOA APPROVE - ] Looking for LOA with message_id: ${message_id}`)
+
     const loa = await db.find_one<loa_data>("loa_requests", { message_id })
 
+    console.log(`[ - LOA APPROVE - ] Found LOA:`, loa)
+
     if (!loa) {
+      console.error(`[ - LOA APPROVE - ] LOA request not found for message_id: ${message_id}`)
       return {
         success: false,
         error  : "LOA request not found",
@@ -304,9 +309,14 @@ export async function reject_loa(options: reject_loa_options) {
   const { message_id, rejector_id, client } = options
 
   try {
+    console.log(`[ - LOA REJECT - ] Looking for LOA with message_id: ${message_id}`)
+
     const loa = await db.find_one<loa_data>("loa_requests", { message_id })
 
+    console.log(`[ - LOA REJECT - ] Found LOA:`, loa)
+
     if (!loa) {
+      console.error(`[ - LOA REJECT - ] LOA request not found for message_id: ${message_id}`)
       return {
         success: false,
         error  : "LOA request not found",
@@ -384,9 +394,14 @@ export async function end_loa(options: end_loa_options) {
   const { message_id, ender_id, client, guild_id } = options
 
   try {
+    console.log(`[ - LOA END - ] Looking for LOA with message_id: ${message_id}`)
+
     const loa = await db.find_one<loa_data>("loa_requests", { message_id })
 
+    console.log(`[ - LOA END - ] Found LOA:`, loa)
+
     if (!loa) {
+      console.error(`[ - LOA END - ] LOA request not found for message_id: ${message_id}`)
       return {
         success: false,
         error  : "LOA request not found",

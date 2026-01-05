@@ -1,6 +1,7 @@
 import { ModalSubmitInteraction } from "discord.js"
 import { request_loa }            from "../controllers/loa_controller"
 import { db }                     from "../../utils"
+import { log_error }              from "../../utils/error_logger"
 
 export async function handle_loa_request_modal(interaction: ModalSubmitInteraction): Promise<boolean> {
   if (interaction.customId !== "loa_request_modal") return false
@@ -33,10 +34,29 @@ export async function handle_loa_request_modal(interaction: ModalSubmitInteracti
     fetchReply: true,
   })
 
-  await db.insert_one("loa_requests", {
+  const loa_data = {
     ...result.data,
     message_id: message.id,
-  })
+  }
+
+  console.log(`[ - LOA REQUEST - ] Inserting LOA data:`, loa_data)
+
+  try {
+    const insert_result = await db.insert_one("loa_requests", loa_data)
+
+    console.log(`[ - LOA REQUEST - ] Insert successful with id: ${insert_result}`)
+  } catch (insert_error) {
+    console.error(`[ - LOA REQUEST - ] Failed to insert LOA data:`, insert_error)
+    await log_error(interaction.client, insert_error as Error, "LOA Request Insert", {
+      user_id   : interaction.user.id,
+      message_id: message.id,
+    }).catch(() => {})
+
+    await interaction.followUp({
+      content  : "LOA request submitted but failed to save. Please contact an administrator.",
+      ephemeral: true,
+    }).catch(() => {})
+  }
 
   return true
 }
