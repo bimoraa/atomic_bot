@@ -78,8 +78,13 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
     await api.delete_message(open_log_channel.id, open_log_id, token)
   }
 
-  const close_log_channel = await client.channels.fetch(config.closed_log_channel_id) as TextChannel
-  if (close_log_channel) {
+  try {
+    const close_log_channel = await client.channels.fetch(config.closed_log_channel_id) as TextChannel
+    if (!close_log_channel) {
+      console.error(`[ - TICKET CLOSE LOG ERROR - ] Channel not found: ${config.closed_log_channel_id}`)
+      return
+    }
+
     let owner_avatar = format.default_avatar
     if (owner_id) {
       try {
@@ -137,6 +142,9 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
     })
 
     await api.send_components_v2(close_log_channel.id, token, log_message)
+    console.log(`[ - TICKET CLOSE LOG - ] Sent for ticket: ${ticket_id}`)
+  } catch (error) {
+    console.error(`[ - TICKET CLOSE LOG ERROR - ] Ticket: ${ticket_id}`, error)
   }
 
   if (owner_id) {
