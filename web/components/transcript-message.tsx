@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { Paperclip, Image, FileText, Bot } from "lucide-react"
 
 export interface transcript_message {
   id: string
@@ -8,12 +9,67 @@ export interface transcript_message {
   content: string
   attachments: string[]
   embeds: any[]
+  components?: any[]
   timestamp: number
   is_bot: boolean
 }
 
 export interface TranscriptMessageProps {
   message: transcript_message
+}
+
+function render_embed(embed: any, index: number) {
+  if (!embed) return null
+  
+  return (
+    <div key={index} className="mt-2 border-l-4 border-blue-500 bg-accent/30 p-3 rounded-r">
+      {embed.title && (
+        <div className="font-semibold text-sm mb-1">{embed.title}</div>
+      )}
+      {embed.description && (
+        <div className="text-sm text-muted-foreground whitespace-pre-wrap">{embed.description}</div>
+      )}
+      {embed.fields && embed.fields.length > 0 && (
+        <div className="mt-2 grid grid-cols-1 gap-2">
+          {embed.fields.map((field: any, idx: number) => (
+            <div key={idx}>
+              <div className="font-semibold text-xs">{field.name}</div>
+              <div className="text-xs text-muted-foreground">{field.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {embed.footer && (
+        <div className="mt-2 text-xs text-muted-foreground">{embed.footer.text}</div>
+      )}
+    </div>
+  )
+}
+
+function render_component(component: any, index: number) {
+  if (!component) return null
+  
+  if (component.type === 1) {
+    return (
+      <div key={index} className="mt-2 flex flex-wrap gap-2">
+        {component.components?.map((btn: any, idx: number) => {
+          if (btn.type === 2) {
+            return (
+              <div
+                key={idx}
+                className="px-3 py-1.5 text-xs rounded bg-blue-500/20 text-blue-500 border border-blue-500/50"
+              >
+                {btn.label}
+              </div>
+            )
+          }
+          return null
+        })}
+      </div>
+    )
+  }
+  
+  return null
 }
 
 export function TranscriptMessage({ message }: TranscriptMessageProps) {
@@ -44,7 +100,8 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
             {message.author_tag}
           </span>
           {message.is_bot && (
-            <span className="px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded">
+            <span className="px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded flex items-center gap-1">
+              <Bot className="w-3 h-3" />
               BOT
             </span>
           )}
@@ -59,22 +116,50 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
         )}
         {message.attachments.length > 0 && (
           <div className="mt-2 flex flex-col gap-2">
-            {message.attachments.map((url, i) => (
-              <a
-                key={i}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-blue-500 hover:underline"
-              >
-                📎 Attachment {i + 1}
-              </a>
-            ))}
+            {message.attachments.map((url, i) => {
+              const is_image = /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+              
+              if (is_image) {
+                return (
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 max-w-md"
+                  >
+                    <img 
+                      src={url} 
+                      alt={`Attachment ${i + 1}`}
+                      className="rounded border border-border max-h-96 object-contain"
+                    />
+                  </a>
+                )
+              }
+              
+              return (
+                <a
+                  key={i}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-500 hover:underline flex items-center gap-1"
+                >
+                  <Paperclip className="w-4 h-4" />
+                  Attachment {i + 1}
+                </a>
+              )
+            })}
           </div>
         )}
-        {message.embeds.length > 0 && (
-          <div className="mt-2 text-xs text-muted-foreground">
-            {message.embeds.length} embed(s)
+        {message.embeds && message.embeds.length > 0 && (
+          <div className="mt-1">
+            {message.embeds.map((embed, i) => render_embed(embed, i))}
+          </div>
+        )}
+        {message.components && message.components.length > 0 && (
+          <div className="mt-1">
+            {message.components.map((component, i) => render_component(component, i))}
           </div>
         )}
       </div>
