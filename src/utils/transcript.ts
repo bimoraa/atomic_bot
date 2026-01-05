@@ -91,11 +91,14 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
 export async function save_transcript(data: transcript_data): Promise<void> {
   if (!db.is_connected()) {
     console.error("[ - TRANSCRIPT ERROR - ] Database not connected")
-    return
+    throw new Error("Database not connected")
   }
 
+  console.log(`[ - TRANSCRIPT SAVE START - ] ID: ${data.transcript_id}, Ticket: ${data.ticket_id}`)
+  console.log(`[ - TRANSCRIPT SAVE START - ] Messages count: ${data.messages.length}`)
+
   try {
-    await db.insert_one("ticket_transcripts", {
+    const insert_data = {
       transcript_id: data.transcript_id,
       ticket_id    : data.ticket_id,
       ticket_type  : data.ticket_type,
@@ -109,11 +112,23 @@ export async function save_transcript(data: transcript_data): Promise<void> {
       messages     : JSON.stringify(data.messages),
       open_time    : data.open_time,
       close_time   : data.close_time,
-    })
+    }
 
-    console.log(`[ - TRANSCRIPT SAVED - ] ID: ${data.transcript_id}, Ticket: ${data.ticket_id}`)
+    console.log(`[ - TRANSCRIPT SAVE DATA - ] Insert data prepared`)
+
+    const result = await db.insert_one("ticket_transcripts", insert_data)
+
+    console.log(`[ - TRANSCRIPT SAVED - ] ID: ${data.transcript_id}, Ticket: ${data.ticket_id}, DB ID: ${result}`)
   } catch (error) {
-    console.error("[ - TRANSCRIPT SAVE ERROR - ]", error)
+    console.error("[ - TRANSCRIPT SAVE ERROR - ] Failed to save transcript")
+    console.error("[ - TRANSCRIPT SAVE ERROR - ] Transcript ID:", data.transcript_id)
+    console.error("[ - TRANSCRIPT SAVE ERROR - ] Ticket ID:", data.ticket_id)
+    console.error("[ - TRANSCRIPT SAVE ERROR - ] Error:", error)
+    if (error instanceof Error) {
+      console.error("[ - TRANSCRIPT SAVE ERROR - ] Error message:", error.message)
+      console.error("[ - TRANSCRIPT SAVE ERROR - ] Error stack:", error.stack)
+    }
+    throw error
   }
 }
 
