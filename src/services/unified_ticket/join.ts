@@ -11,9 +11,11 @@ import { component, api, format } from "../../utils"
 const HELPER_ROLE_ID = "1357767950421065981"
 
 export async function join_ticket(interaction: ButtonInteraction, ticket_type: string, thread_id: string): Promise<void> {
+  await interaction.deferReply({ flags: 32832 } as any)
+
   const config = get_ticket_config(ticket_type)
   if (!config) {
-    await interaction.reply({ content: "Invalid ticket type.", flags: 64 })
+    await interaction.editReply({ content: "Invalid ticket type." })
     return
   }
 
@@ -22,17 +24,15 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
   
   if (ticket_type === "helper") {
     if (!is_admin(member) && !is_staff(member) && !is_helper) {
-      await interaction.reply({ content: "Only staff and helpers can join helper tickets.", flags: 64 })
+      await interaction.editReply({ content: "Only staff and helpers can join helper tickets." })
       return
     }
   } else {
     if (!is_admin(member) && !is_staff(member)) {
-      await interaction.reply({ content: "Only staff can join tickets.", flags: 64 })
+      await interaction.editReply({ content: "Only staff can join tickets." })
       return
     }
   }
-
-  await interaction.deferReply({ flags: 32832 } as any)
 
   const guild  = interaction.guild!
   const thread = guild.channels.cache.get(thread_id) as ThreadChannel

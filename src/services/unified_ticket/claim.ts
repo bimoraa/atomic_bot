@@ -16,9 +16,11 @@ import { component, api, format } from "../../utils"
 const HELPER_ROLE_ID = "1357767950421065981"
 
 export async function claim_ticket(interaction: ButtonInteraction, ticket_type: string): Promise<void> {
+  await interaction.deferReply({ flags: 64 })
+
   const config = get_ticket_config(ticket_type)
   if (!config) {
-    await interaction.reply({ content: "Invalid ticket type.", flags: 64 })
+    await interaction.editReply({ content: "Invalid ticket type." })
     return
   }
 
@@ -27,12 +29,12 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
   
   if (ticket_type === "helper") {
     if (!is_admin(member) && !is_staff(member) && !is_helper) {
-      await interaction.reply({ content: "Only staff and helpers can claim helper tickets.", flags: 64 })
+      await interaction.editReply({ content: "Only staff and helpers can claim helper tickets." })
       return
     }
   } else {
     if (!is_admin(member) && !is_staff(member)) {
-      await interaction.reply({ content: "Only staff can claim tickets.", flags: 64 })
+      await interaction.editReply({ content: "Only staff can claim tickets." })
       return
     }
   }
@@ -40,22 +42,20 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
   const thread = interaction.channel as ThreadChannel
 
   if (!thread.isThread()) {
-    await interaction.reply({ content: "This can only be used in a ticket thread.", flags: 64 })
+    await interaction.editReply({ content: "This can only be used in a ticket thread." })
     return
   }
 
   const data = get_ticket(thread.id)
   if (!data) {
-    await interaction.reply({ content: "Ticket data not found.", flags: 64 })
+    await interaction.editReply({ content: "Ticket data not found." })
     return
   }
 
   if (data.claimed_by) {
-    await interaction.reply({ content: `This ticket has already been claimed by <@${data.claimed_by}>.`, flags: 64 })
+    await interaction.editReply({ content: `This ticket has already been claimed by <@${data.claimed_by}>.` })
     return
   }
-
-  await interaction.deferReply({ flags: 64 })
 
   await thread.members.add(interaction.user.id)
   data.claimed_by = interaction.user.id
