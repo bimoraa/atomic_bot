@@ -370,18 +370,32 @@ async function migrate_tables(client: any): Promise<void> {
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS rejected_by VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS original_nickname VARCHAR(255)`).catch(() => {})
     
+    console.log('[ - DB MIGRATION - ] Converting loa_requests timestamp columns to BIGINT...')
+    
     await client.query(`
       DO $$ 
       BEGIN
         IF EXISTS (
           SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'loa_requests' AND column_name = 'created_at' AND data_type != 'bigint'
+          WHERE table_name = 'loa_requests' AND column_name = 'created_at'
         ) THEN
-          ALTER TABLE loa_requests ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT;
+          IF (SELECT data_type FROM information_schema.columns 
+              WHERE table_name = 'loa_requests' AND column_name = 'created_at') != 'bigint' THEN
+            ALTER TABLE loa_requests ALTER COLUMN created_at DROP DEFAULT;
+            ALTER TABLE loa_requests ALTER COLUMN created_at TYPE BIGINT 
+              USING CASE 
+                WHEN created_at IS NULL THEN NULL
+                ELSE EXTRACT(EPOCH FROM created_at)::BIGINT
+              END;
+            RAISE NOTICE 'Converted loa_requests.created_at to BIGINT';
+          END IF;
+        ELSE
+          ALTER TABLE loa_requests ADD COLUMN created_at BIGINT;
+          RAISE NOTICE 'Added loa_requests.created_at as BIGINT';
         END IF;
       EXCEPTION
         WHEN OTHERS THEN
-          RAISE NOTICE 'Error converting loa_requests.created_at: %', SQLERRM;
+          RAISE NOTICE 'Error with loa_requests.created_at: %', SQLERRM;
       END $$;
     `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.created_at migration error:', err.message))
     
@@ -390,13 +404,25 @@ async function migrate_tables(client: any): Promise<void> {
       BEGIN
         IF EXISTS (
           SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'loa_requests' AND column_name = 'start_date' AND data_type != 'bigint'
+          WHERE table_name = 'loa_requests' AND column_name = 'start_date'
         ) THEN
-          ALTER TABLE loa_requests ALTER COLUMN start_date TYPE BIGINT USING EXTRACT(EPOCH FROM start_date)::BIGINT;
+          IF (SELECT data_type FROM information_schema.columns 
+              WHERE table_name = 'loa_requests' AND column_name = 'start_date') != 'bigint' THEN
+            ALTER TABLE loa_requests ALTER COLUMN start_date DROP DEFAULT;
+            ALTER TABLE loa_requests ALTER COLUMN start_date TYPE BIGINT 
+              USING CASE 
+                WHEN start_date IS NULL THEN NULL
+                ELSE EXTRACT(EPOCH FROM start_date)::BIGINT
+              END;
+            RAISE NOTICE 'Converted loa_requests.start_date to BIGINT';
+          END IF;
+        ELSE
+          ALTER TABLE loa_requests ADD COLUMN start_date BIGINT;
+          RAISE NOTICE 'Added loa_requests.start_date as BIGINT';
         END IF;
       EXCEPTION
         WHEN OTHERS THEN
-          RAISE NOTICE 'Error converting loa_requests.start_date: %', SQLERRM;
+          RAISE NOTICE 'Error with loa_requests.start_date: %', SQLERRM;
       END $$;
     `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.start_date migration error:', err.message))
     
@@ -405,13 +431,25 @@ async function migrate_tables(client: any): Promise<void> {
       BEGIN
         IF EXISTS (
           SELECT 1 FROM information_schema.columns 
-          WHERE table_name = 'loa_requests' AND column_name = 'end_date' AND data_type != 'bigint'
+          WHERE table_name = 'loa_requests' AND column_name = 'end_date'
         ) THEN
-          ALTER TABLE loa_requests ALTER COLUMN end_date TYPE BIGINT USING EXTRACT(EPOCH FROM end_date)::BIGINT;
+          IF (SELECT data_type FROM information_schema.columns 
+              WHERE table_name = 'loa_requests' AND column_name = 'end_date') != 'bigint' THEN
+            ALTER TABLE loa_requests ALTER COLUMN end_date DROP DEFAULT;
+            ALTER TABLE loa_requests ALTER COLUMN end_date TYPE BIGINT 
+              USING CASE 
+                WHEN end_date IS NULL THEN NULL
+                ELSE EXTRACT(EPOCH FROM end_date)::BIGINT
+              END;
+            RAISE NOTICE 'Converted loa_requests.end_date to BIGINT';
+          END IF;
+        ELSE
+          ALTER TABLE loa_requests ADD COLUMN end_date BIGINT;
+          RAISE NOTICE 'Added loa_requests.end_date as BIGINT';
         END IF;
       EXCEPTION
         WHEN OTHERS THEN
-          RAISE NOTICE 'Error converting loa_requests.end_date: %', SQLERRM;
+          RAISE NOTICE 'Error with loa_requests.end_date: %', SQLERRM;
       END $$;
     `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.end_date migration error:', err.message))
 
