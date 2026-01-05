@@ -369,6 +369,9 @@ async function migrate_tables(client: any): Promise<void> {
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS rejected_by VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS original_nickname VARCHAR(255)`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ALTER COLUMN created_at TYPE BIGINT USING CASE WHEN created_at IS NULL THEN NULL ELSE EXTRACT(EPOCH FROM created_at)::BIGINT END`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ALTER COLUMN start_date TYPE BIGINT USING CASE WHEN start_date IS NULL THEN NULL ELSE EXTRACT(EPOCH FROM start_date)::BIGINT END`).catch(() => {})
+    await client.query(`ALTER TABLE loa_requests ALTER COLUMN end_date TYPE BIGINT USING CASE WHEN end_date IS NULL THEN NULL ELSE EXTRACT(EPOCH FROM end_date)::BIGINT END`).catch(() => {})
 
     await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS username VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS user_key VARCHAR(255)`).catch(() => {})
