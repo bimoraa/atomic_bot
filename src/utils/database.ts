@@ -490,6 +490,7 @@ function get_table_name(collection: string): string {
     afk_users             : "afk_users",
     ghost_pings           : "ghost_pings",
     warnings              : "warnings",
+    ticket_transcripts    : "ticket_transcripts",
   }
   
   return table_map[collection] || "generic_data"
