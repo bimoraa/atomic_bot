@@ -125,13 +125,10 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       components: [
         component.container({
           components: [
-            component.section({
-              content: [
-                `## ${config.name} Ticket Closed`,
-                `A ${config.name.toLowerCase()} ticket has been closed.`,
-              ],
-              thumbnail: owner_avatar,
-            }),
+            component.text([
+              `## ${config.name} Ticket Closed`,
+              `A ${config.name.toLowerCase()} ticket has been closed.`,
+            ]),
             component.divider(),
             component.text(log_content_1),
             component.divider(),
@@ -146,6 +143,8 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       ],
     })
 
+    console.log(`[ - TICKET CLOSE LOG - ] owner_avatar:`, owner_avatar)
+    console.log(`[ - TICKET CLOSE LOG - ] Message structure:`, JSON.stringify(log_message, null, 2))
     console.log(`[ - TICKET CLOSE LOG - ] Sending message to channel: ${close_log_channel.id}`)
     const response = await api.send_components_v2(close_log_channel.id, token, log_message)
     console.log(`[ - TICKET CLOSE LOG - ] API Response:`, response)
