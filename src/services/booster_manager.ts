@@ -1,10 +1,10 @@
 import { db } from "../utils"
 
 interface booster_whitelist {
-  user_id      : string
-  guild_id     : string
-  whitelisted_at: Date
-  boost_count  : number
+  user_id       : string
+  guild_id      : string
+  whitelisted_at: number
+  boost_count   : number
 }
 
 const COLLECTION = "booster_whitelist"
@@ -16,7 +16,7 @@ export async function add_whitelist(user_id: string, guild_id: string, boost_cou
     {
       user_id,
       guild_id,
-      whitelisted_at: new Date(),
+      whitelisted_at: Math.floor(Date.now() / 1000),
       boost_count,
     },
     true

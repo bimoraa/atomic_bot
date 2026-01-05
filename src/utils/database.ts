@@ -383,7 +383,7 @@ async function migrate_tables(client: any): Promise<void> {
         WHEN OTHERS THEN
           RAISE NOTICE 'Error converting loa_requests.created_at: %', SQLERRM;
       END $$;
-    `).catch((err) => console.error('[ - DB MIGRATION - ] loa_requests.created_at migration error:', err.message))
+    `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.created_at migration error:', err.message))
     
     await client.query(`
       DO $$ 
@@ -398,7 +398,7 @@ async function migrate_tables(client: any): Promise<void> {
         WHEN OTHERS THEN
           RAISE NOTICE 'Error converting loa_requests.start_date: %', SQLERRM;
       END $$;
-    `).catch((err) => console.error('[ - DB MIGRATION - ] loa_requests.start_date migration error:', err.message))
+    `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.start_date migration error:', err.message))
     
     await client.query(`
       DO $$ 
@@ -413,11 +413,14 @@ async function migrate_tables(client: any): Promise<void> {
         WHEN OTHERS THEN
           RAISE NOTICE 'Error converting loa_requests.end_date: %', SQLERRM;
       END $$;
-    `).catch((err) => console.error('[ - DB MIGRATION - ] loa_requests.end_date migration error:', err.message))
+    `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.end_date migration error:', err.message))
 
     await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS username VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS user_key VARCHAR(255)`).catch(() => {})
     await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS created_at BIGINT`).catch(() => {})
+
+    await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS whitelisted_at BIGINT`).catch(() => {})
+    await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS boost_count INTEGER DEFAULT 0`).catch(() => {})
 
     console.log("[ - POSTGRESQL - ] Table migrations completed")
   } catch (err) {
