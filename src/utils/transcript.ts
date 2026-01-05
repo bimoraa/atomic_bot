@@ -100,6 +100,19 @@ export async function save_transcript(data: transcript_data): Promise<void> {
   }
 
   try {
+    // - Log database connection info - \\
+    const db_url = process.env.DATABASE_URL || ""
+    const db_host = db_url.match(/@([^:/]+)/)?.[1] || "unknown"
+    const db_name = db_url.match(/\/([^?]+)$/)?.[1] || "unknown"
+    console.log(`[ - TRANSCRIPT DB INFO - ] Host: ${db_host}, Database: ${db_name}`)
+    
+    // - Check table exists and count - \\
+    const pool = (db as any).pool
+    if (pool) {
+      const count_result = await pool.query("SELECT COUNT(*) FROM ticket_transcripts")
+      console.log(`[ - TRANSCRIPT DB INFO - ] Current row count: ${count_result.rows[0].count}`)
+    }
+
     const insert_data = {
       transcript_id: data.transcript_id,
       ticket_id    : data.ticket_id,
@@ -125,15 +138,21 @@ export async function save_transcript(data: transcript_data): Promise<void> {
 
     const result = await db.insert_one("ticket_transcripts", insert_data)
 
-    console.log(`[ - TRANSCRIPT SAVED ✅ - ] ID: ${data.transcript_id}, Ticket: ${data.ticket_id}, DB ID: ${result}`)
+    console.log(`[ - TRANSCRIPT SAVED - ] ID: ${data.transcript_id}, Ticket: ${data.ticket_id}, DB ID: ${result}`)
     
-    // - Verify save - \\
+    // - Verify save and log full count - \\
     const verify = await db.find_one<any>("ticket_transcripts", { transcript_id: data.transcript_id })
     if (!verify) {
       console.error(`[ - TRANSCRIPT VERIFY FAILED - ] Transcript ${data.transcript_id} not found in DB after insert!`)
       throw new Error(`Transcript verification failed for ${data.transcript_id}`)
     }
-    console.log(`[ - TRANSCRIPT VERIFIED ✅ - ] Found in DB: ${verify.transcript_id}`)
+    console.log(`[ - TRANSCRIPT VERIFIED - ] Found in DB: ${verify.transcript_id}`)
+    
+    // - Final count check - \\
+    if (pool) {
+      const final_count = await pool.query("SELECT COUNT(*) FROM ticket_transcripts")
+      console.log(`[ - TRANSCRIPT DB INFO - ] Final row count: ${final_count.rows[0].count}`)
+    }
   } catch (error) {
     console.error("[ - TRANSCRIPT SAVE ERROR - ] Failed to save transcript")
     console.error("[ - TRANSCRIPT SAVE ERROR - ] Transcript ID:", data.transcript_id)

@@ -76,13 +76,13 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       issue_type,
       description
     )
-    console.log(`[ - TRANSCRIPT GENERATED ✅ - ] Ticket: ${ticket_id}, Transcript: ${transcript_id}`)
+    console.log(`[ - TRANSCRIPT GENERATED - ] Ticket: ${ticket_id}, Transcript: ${transcript_id}`)
   } catch (error) {
-    console.error(`[ - TRANSCRIPT ERROR ❌ - ] Ticket: ${ticket_id}`)
-    console.error(`[ - TRANSCRIPT ERROR ❌ - ] Error:`, error)
+    console.error(`[ - TRANSCRIPT ERROR - ] Ticket: ${ticket_id}`)
+    console.error(`[ - TRANSCRIPT ERROR - ] Error:`, error)
     if (error instanceof Error) {
-      console.error(`[ - TRANSCRIPT ERROR ❌ - ] Message: ${error.message}`)
-      console.error(`[ - TRANSCRIPT ERROR ❌ - ] Stack:`, error.stack)
+      console.error(`[ - TRANSCRIPT ERROR - ] Message: ${error.message}`)
+      console.error(`[ - TRANSCRIPT ERROR - ] Stack:`, error.stack)
     }
   }
 
