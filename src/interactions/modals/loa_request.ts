@@ -39,12 +39,19 @@ export async function handle_loa_request_modal(interaction: ModalSubmitInteracti
     message_id: message.id,
   }
 
-  console.log(`[ - LOA REQUEST - ] Inserting LOA data:`, loa_data)
+  console.log(`[ - LOA REQUEST - ] Inserting LOA data:`, JSON.stringify(loa_data, null, 2))
+  console.log(`[ - LOA REQUEST - ] Timestamp details:`)
+  console.log(`  - start_date: ${loa_data.start_date} (type: ${typeof loa_data.start_date})`)
+  console.log(`  - end_date: ${loa_data.end_date} (type: ${typeof loa_data.end_date})`)
+  console.log(`  - created_at: ${loa_data.created_at} (type: ${typeof loa_data.created_at})`)
 
   try {
     const insert_result = await db.insert_one("loa_requests", loa_data)
 
     console.log(`[ - LOA REQUEST - ] Insert successful with id: ${insert_result}`)
+
+    const verify = await db.find_one("loa_requests", { message_id: message.id })
+    console.log(`[ - LOA REQUEST - ] Verification - Retrieved data:`, JSON.stringify(verify, null, 2))
   } catch (insert_error) {
     console.error(`[ - LOA REQUEST - ] Failed to insert LOA data:`, insert_error)
     await log_error(interaction.client, insert_error as Error, "LOA Request Insert", {
