@@ -411,7 +411,7 @@ function FormExample() {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem variant="destructive">
+                  <DropdownMenuItem className="text-destructive focus:text-destructive">
                     <LogOutIcon
                     />
                     Sign Out
