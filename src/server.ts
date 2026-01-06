@@ -12,6 +12,10 @@ const main_guild_id = process.env.MAIN_GUILD_ID || "1250337227582472243"
 let bot_ready = false
 let discord_client: Client | null = null
 
+// - MEMBER CACHE - \\
+const member_cache = new Map<string, { data: any; timestamp: number }>()
+const cache_ttl = 5 * 60 * 1000 // - 5 minutes - \\
+
 export function start_webhook_server(client: Client): void {
   discord_client = client
   
@@ -174,6 +178,14 @@ export function start_webhook_server(client: Client): void {
       }
 
       const user_id = req.params.id
+      
+      // - CHECK CACHE - \\
+      const cached = member_cache.get(user_id)
+      if (cached && Date.now() - cached.timestamp < cache_ttl) {
+        console.log(`[ - API MEMBER - ] Cache hit for ${user_id}`)
+        return res.status(200).json(cached.data)
+      }
+
       const guild = discord_client.guilds.cache.get(main_guild_id)
       
       if (!guild) {
@@ -200,7 +212,7 @@ export function start_webhook_server(client: Client): void {
       // - Fetch full user for banner - \\
       const full_user = await discord_client.users.fetch(user_id, { force: true }).catch(() => null)
 
-      res.status(200).json({
+      const response_data = {
         id           : member.id,
         username     : member.user.username,
         tag          : member.user.tag,
@@ -213,7 +225,16 @@ export function start_webhook_server(client: Client): void {
         joined_at    : member.joinedTimestamp,
         created_at   : member.user.createdTimestamp,
         premium_since: member.premiumSinceTimestamp,
+      }
+
+      // - SAVE TO CACHE - \\
+      member_cache.set(user_id, {
+        data     : response_data,
+        timestamp: Date.now()
       })
+      console.log(`[ - API MEMBER - ] Cached ${user_id}`)
+
+      res.status(200).json(response_data)
     } catch (err) {
       console.error("[ - API MEMBER - ] Error:", err)
       res.status(500).json({ error: "Failed to get member" })
