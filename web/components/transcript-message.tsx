@@ -675,7 +675,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
                 src={message.referenced_message.author_avatar}
                 alt={message.referenced_message.author_tag}
                 className="w-4 h-4 rounded-full ml-6 cursor-pointer hover:ring-1 hover:ring-primary transition-all"
-                onClick={() => handle_avatar_click(message.referenced_message.author_id)}
+                onClick={() => message.referenced_message && handle_avatar_click(message.referenced_message.author_id)}
               />
             </div>
             <div className="flex flex-col -mt-0.5">
