@@ -119,6 +119,48 @@ export function start_webhook_server(client: Client): void {
     }
   })
 
+  // - GET CHANNEL INFO BY ID - \\
+  /**
+   * @route GET /api/channel/:id
+   * @param id - Discord channel ID
+   * @returns Channel info (name, type, etc.)
+   */
+  app.get("/api/channel/:id", async (req: Request, res: Response) => {
+    try {
+      if (!discord_client?.isReady()) {
+        return res.status(503).json({ error: "Bot not ready" })
+      }
+
+      const channel_id = req.params.id
+      const channel = await discord_client.channels.fetch(channel_id).catch(() => null)
+
+      if (!channel) {
+        return res.status(404).json({ error: "Channel not found" })
+      }
+
+      const response: any = {
+        id   : channel.id,
+        type : channel.type,
+      }
+
+      if ('name' in channel && channel.name) {
+        response.name = channel.name
+      }
+
+      if ('parent' in channel && channel.parent) {
+        response.parent = {
+          id   : channel.parent.id,
+          name : channel.parent.name,
+        }
+      }
+
+      res.status(200).json(response)
+    } catch (err) {
+      console.error("[ - API CHANNEL - ] Error:", err)
+      res.status(500).json({ error: "Failed to get channel" })
+    }
+  })
+
   // - GET MEMBER INFO BY ID - \\
   /**
    * @route GET /api/member/:id
@@ -779,6 +821,53 @@ export function start_webhook_server(client: Client): void {
       memory    : process.memoryUsage(),
       timestamp : new Date().toISOString(),
     })
+  })
+
+  // - GET ALL TRANSCRIPTS - \\
+  /**
+   * @route GET /api/transcripts
+   * @description Get all transcripts from database
+   */
+  app.get("/api/transcripts", async (req: Request, res: Response) => {
+    try {
+      const auth_header = req.headers.authorization
+      const expected_token = process.env.BOT_API_SECRET || 'dev-secret'
+
+      if (!auth_header || auth_header !== `Bearer ${expected_token}`) {
+        return res.status(401).json({ error: "Unauthorized" })
+      }
+
+      const transcripts = await database.find_many_sorted<any>(
+        'transcripts',
+        {},
+        'close_time',
+        'DESC'
+      )
+
+      const formatted_transcripts = transcripts.map((t: any) => ({
+        transcript_id : t.transcript_id,
+        ticket_id     : t.ticket_id,
+        ticket_type   : t.ticket_type,
+        owner_id      : t.owner_id,
+        owner_tag     : t.owner_tag,
+        claimed_by    : t.claimed_by,
+        closed_by     : t.closed_by,
+        issue_type    : t.issue_type,
+        description   : t.description,
+        message_count : t.messages?.length || 0,
+        open_time     : t.open_time,
+        close_time    : t.close_time,
+        duration      : t.close_time - t.open_time,
+      }))
+
+      res.status(200).json({
+        total  : formatted_transcripts.length,
+        transcripts: formatted_transcripts,
+      })
+    } catch (err) {
+      console.error("[ - API TRANSCRIPTS - ] Error:", err)
+      res.status(500).json({ error: "Failed to fetch transcripts" })
+    }
   })
 
   app.get("/", (req: Request, res: Response) => {

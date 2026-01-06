@@ -9,17 +9,29 @@ import { Separator } from "@/components/ui/separator"
 import { useState, useEffect } from "react"
 import { UserDialog } from "@/components/user-dialog"
 
+export interface transcript_attachment {
+  url: string
+  proxy_url?: string
+  filename?: string
+  size?: number
+  width?: number | null
+  height?: number | null
+  content_type?: string
+}
+
 export interface transcript_message {
   id: string
+  type: number
   author_id: string
   author_tag: string
   author_avatar: string
   content: string
-  attachments: string[]
+  attachments: (string | transcript_attachment)[]
   embeds: any[]
   components?: any[]
   timestamp: number
   is_bot: boolean
+  mentions?: { id: string; username: string; tag: string }[]
 }
 
 export interface TranscriptMessageProps {
@@ -128,15 +140,35 @@ function render_embed(embed: any, index: number) {
 function render_component(component: any, index: number | string): any {
   if (!component) return null
   
-  // - TYPE 17 - Section Container \\
+  // - TYPE 17 - Container \\
   if (component.type === 17) {
     const has_accent = component.accent_color
     return (
-      <Card key={`section-${index}`} className={cn("my-2", has_accent && "border-l-4")} style={has_accent ? { borderLeftColor: `#${component.accent_color.toString(16).padStart(6, '0')}` } : {}}>
+      <Card key={`container-${index}`} className={cn("my-2", has_accent && "border-l-4")} style={has_accent ? { borderLeftColor: `#${component.accent_color.toString(16).padStart(6, '0')}` } : {}}>
         <CardContent className="p-3">
           {component.components?.map((child: any, idx: number) => render_component(child, `${index}-${idx}`))}
         </CardContent>
       </Card>
+    )
+  }
+  
+  // - TYPE 9 - Section \\
+  if (component.type === 9) {
+    return (
+      <div key={`section-${index}`} className="flex gap-3">
+        <div className="flex-1">
+          {component.components?.map((child: any, idx: number) => render_component(child, `${index}-${idx}`))}
+        </div>
+        {component.accessory && component.accessory.type === 11 && (
+          <div className="flex-shrink-0">
+            <img 
+              src={component.accessory.media?.url} 
+              alt="" 
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover border-2 border-border" 
+            />
+          </div>
+        )}
+      </div>
     )
   }
   
@@ -333,25 +365,35 @@ function render_component(component: any, index: number | string): any {
 
 export function TranscriptMessage({ message }: TranscriptMessageProps) {
   const [user_cache, set_user_cache]         = useState<Record<string, any>>({})
+  const [channel_cache, set_channel_cache]   = useState<Record<string, any>>({})
   const [member_cache, set_member_cache]     = useState<Record<string, any>>({})
   const [is_loading, set_is_loading]         = useState(true)
   const [show_user_modal, set_show_user_modal] = useState(false)
   const [selected_user, set_selected_user]   = useState<any>(null)
   const [loading_user, set_loading_user]     = useState(false)
+  const [time_str, set_time_str]             = useState<string>('')
 
-  const date = new Date(message.timestamp * 1000)
-  const time_str = date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  useEffect(() => {
+    const date = new Date(message.timestamp * 1000)
+    const formatted = date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    set_time_str(formatted)
+  }, [message.timestamp])
 
-  // - EXTRACT ALL USER IDS FROM MESSAGE - \\
+  // - EXTRACT ALL USER IDS AND CHANNEL IDS FROM MESSAGE - \\
   useEffect(() => {
     const extract_user_ids = (text: string): string[] => {
       const matches = text.matchAll(/<@!?(\d+)>/g)
+      return Array.from(matches, m => m[1])
+    }
+
+    const extract_channel_ids = (text: string): string[] => {
+      const matches = text.matchAll(/<#(\d+)>/g)
       return Array.from(matches, m => m[1])
     }
 
@@ -392,6 +434,37 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
       set_is_loading(false)
     }
 
+    const fetch_all_channels = async () => {
+      const channel_ids = extract_channel_ids(message.content)
+      if (channel_ids.length === 0) return
+
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      console.log(`[ - TRANSCRIPT - ] Fetching channels:`, channel_ids)
+      
+      const cache: Record<string, any> = {}
+
+      await Promise.all(
+        channel_ids.map(async (channel_id) => {
+          try {
+            const url = `${bot_url}/api/channel/${channel_id}`
+            const res = await fetch(url)
+            if (res.ok) {
+              const data = await res.json()
+              console.log(`[ - TRANSCRIPT - ] Got channel ${channel_id}:`, data.name)
+              cache[channel_id] = data
+            } else {
+              console.error(`[ - TRANSCRIPT - ] Failed to fetch channel ${channel_id}: ${res.status}`)
+            }
+          } catch (err) {
+            console.error(`[ - FETCH CHANNEL - ] Failed for ${channel_id}:`, err)
+          }
+        })
+      )
+
+      console.log(`[ - TRANSCRIPT - ] Channel cache:`, cache)
+      set_channel_cache(cache)
+    }
+
     // - Fetch author member data for role color - \\
     const fetch_author_member = async () => {
       const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
@@ -407,6 +480,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
     }
 
     fetch_all_users()
+    fetch_all_channels()
     fetch_author_member()
   }, [message.content, message.author_id])
 
@@ -462,7 +536,15 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
     })
     
     // - Channel mentions: <#ID> - \\
-    text = text.replace(/<#(\d+)>/g, '__CHANNEL_$1__')
+    text = text.replace(/<#(\d+)>/g, (match, channel_id) => {
+      const channel = channel_cache[channel_id]
+      if (channel) {
+        console.log(`[ - CHANNEL MENTION - ] Resolved ${channel_id} to #${channel.name}`)
+        return `__CHANNEL_${channel_id}_${channel.name}__`
+      }
+      console.log(`[ - CHANNEL MENTION - ] Channel ${channel_id} not in cache`)
+      return `__CHANNEL_${channel_id}_channel__`
+    })
     
     // - Role mentions: <@&ID> - \\
     text = text.replace(/<@&(\d+)>/g, '__ROLE_$1__')
@@ -472,7 +554,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
     
     // - Restore mentions with HTML - \\
     text = text.replace(/__MENTION_(\d+)_([^_]+)__/g, '<span class="inline-flex items-center gap-1 px-1 rounded bg-blue-500/20 text-blue-400 font-medium">@$2</span>')
-    text = text.replace(/__CHANNEL_(\d+)__/g, '<span class="inline-flex items-center gap-1 px-1 rounded bg-blue-500/20 text-blue-400 font-medium">#channel</span>')
+    text = text.replace(/__CHANNEL_(\d+)_([^_]+)__/g, '<span class="inline-flex items-center gap-1 px-1 rounded bg-blue-500/20 text-blue-400 font-medium">#$2</span>')
     text = text.replace(/__ROLE_(\d+)__/g, '<span class="inline-flex items-center gap-1 px-1 rounded bg-blue-500/20 text-blue-400 font-medium">@role</span>')
     
     // - Inline code (must be before other formatting) \\
@@ -512,6 +594,69 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
 
   const author_color = get_author_color()
 
+  // - RENDER SYSTEM MESSAGE - \\
+  /**
+   * @returns System message formatted text
+   */
+  const render_system_message = () => {
+    const mention = message.mentions && message.mentions.length > 0 ? message.mentions[0] : null
+    
+    switch (message.type) {
+      case 7: // - THREAD_MEMBER_JOIN - \\
+        return (
+          <div className="flex items-center gap-2 py-2 px-3 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{message.author_tag}</span>
+            <span>joined the thread.</span>
+          </div>
+        )
+      
+      case 8: // - GUILD_MEMBER_JOIN - \\
+        return (
+          <div className="flex items-center gap-2 py-2 px-3 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{message.author_tag}</span>
+            <span>joined the server.</span>
+          </div>
+        )
+      
+      case 19: // - REPLY - \\
+        return null // - Render as normal message - \\
+      
+      case 21: // - THREAD_STARTER_MESSAGE - \\
+        return null // - Render as normal message - \\
+      
+      default:
+        if (mention) {
+          return (
+            <div className="flex items-center gap-2 py-2 px-3 text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{message.author_tag}</span>
+              <span>added</span>
+              <span className="font-semibold text-foreground">{mention.username}</span>
+              <span>to the thread.</span>
+            </div>
+          )
+        }
+        return null
+    }
+  }
+
+  const system_message = render_system_message()
+  
+  // - RENDER SYSTEM MESSAGE ONLY (if no content/components/embeds/attachments) - \\
+  if (system_message && message.type !== 19 && message.type !== 21) {
+    const has_content = message.content || 
+                        (message.components && message.components.length > 0) ||
+                        (message.embeds && message.embeds.length > 0) ||
+                        (message.attachments && message.attachments.length > 0)
+    
+    if (!has_content) {
+      return (
+        <div className="border-b border-border/50 last:border-0">
+          {system_message}
+        </div>
+      )
+    }
+  }
+
   return (
     <div className="flex gap-2 sm:gap-3 py-3 px-3 sm:px-4 hover:bg-muted/30 transition-colors rounded-md group border-b border-border/50 last:border-0">
       <div className="flex-shrink-0">
@@ -545,15 +690,19 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
         </div>
         {message.content && (
           <div 
-            key={`content-${Object.keys(user_cache).length}`}
+            key={`content-${Object.keys(user_cache).length}-${Object.keys(channel_cache).length}`}
             className="text-xs sm:text-sm whitespace-pre-wrap break-words leading-relaxed"
             dangerouslySetInnerHTML={{ __html: parse_markdown(message.content) }}
           />
         )}
         {message.attachments.length > 0 && (
           <div className="mt-2 flex flex-col gap-2">
-            {message.attachments.map((url, i) => {
-              const is_image = /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
+            {message.attachments.map((attachment, i) => {
+              const url = typeof attachment === 'string' ? attachment : attachment.url
+              const filename = typeof attachment === 'object' && attachment.filename ? attachment.filename : `Attachment ${i + 1}`
+              const content_type = typeof attachment === 'object' ? attachment.content_type : ''
+              
+              const is_image = content_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url)
               
               if (is_image) {
                 return (
@@ -566,8 +715,8 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
                   >
                     <img 
                       src={url} 
-                      alt={`Attachment ${i + 1}`}
-                      className="rounded border border-border max-h-60 sm:max-h-96 w-full object-contain"
+                      alt={filename}
+                      className="rounded border border-border max-h-60 sm:max-h-96 w-full object-contain hover:opacity-90 transition-opacity"
                     />
                   </a>
                 )
@@ -582,7 +731,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
                   className="text-xs sm:text-sm text-blue-500 hover:underline flex items-center gap-1"
                 >
                   <Paperclip className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="truncate">Attachment {i + 1}</span>
+                  <span className="truncate">{filename}</span>
                 </a>
               )
             })}

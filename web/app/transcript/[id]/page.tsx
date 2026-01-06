@@ -40,54 +40,70 @@ export default async function TranscriptPage({
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-2 sm:p-4 md:p-6">
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="p-3 sm:p-4 md:p-6 bg-accent/30 border-b border-border">
-            <h1 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">Ticket Transcript</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
-              <div>
-                <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">Ticket ID</p>
-                <p className="font-mono text-xs sm:text-sm">{transcript.ticket_id}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">Type</p>
-                <p className="capitalize text-xs sm:text-sm">{transcript.ticket_type}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground text-[10px] sm:text-xs mb-1">Owner</p>
-                <p className="text-xs sm:text-sm">{transcript.owner_tag}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Claimed By</p>
-                <p>{transcript.claimed_by || 'Not claimed'}</p>
-              </div>
-              {transcript.issue_type && (
+      <div className="max-w-5xl mx-auto p-4 md:p-8">
+        {/* - HEADER CARD - \\ */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden mb-6 shadow-sm">
+          <div className="p-6 border-b border-border">
+            <h1 className="text-2xl font-semibold mb-6">Ticket Transcript</h1>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 <div>
-                  <p className="text-muted-foreground">Issue Type</p>
-                  <p>{transcript.issue_type}</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Ticket ID</p>
+                  <p className="font-mono text-sm bg-muted/50 px-3 py-1.5 rounded-md inline-block">{transcript.ticket_id}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Type</p>
+                  <p className="text-sm font-medium capitalize">{transcript.ticket_type}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Owner</p>
+                  <p className="text-sm font-medium">{transcript.owner_tag}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Claimed By</p>
+                  <p className="text-sm font-medium">{transcript.claimed_by || 'Not claimed'}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Opened</p>
+                  <p className="text-sm">{open_date}</p>
+                </div>
+                
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Closed</p>
+                  <p className="text-sm">{close_date}</p>
+                </div>
+              </div>
+
+              {transcript.issue_type && (
+                <div className="md:col-span-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Issue Type</p>
+                  <p className="text-sm font-medium">{transcript.issue_type}</p>
                 </div>
               )}
+              
               {transcript.description && (
-                <div className="col-span-2">
-                  <p className="text-muted-foreground">Description</p>
-                  <p className="mt-1">{transcript.description}</p>
+                <div className="md:col-span-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Description</p>
+                  <p className="text-sm leading-relaxed mt-2">{transcript.description}</p>
                 </div>
               )}
-              <div>
-                <p className="text-muted-foreground">Opened</p>
-                <p>{open_date}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Closed</p>
-                <p>{close_date}</p>
-              </div>
             </div>
           </div>
+        </div>
 
+        {/* - MESSAGES CARD - \\ */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
           <div className="divide-y divide-border">
             {transcript.messages.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                No messages in this transcript
+              <div className="p-12 text-center text-muted-foreground">
+                <p className="text-sm">No messages in this transcript</p>
               </div>
             ) : (
               transcript.messages.map((message: any) => (
@@ -96,8 +112,10 @@ export default async function TranscriptPage({
             )}
           </div>
 
-          <div className="p-4 bg-accent/30 border-t border-border text-center text-sm text-muted-foreground">
-            <p>{transcript.messages.length} message(s) • Transcript ID: {transcript.transcript_id}</p>
+          <div className="px-6 py-4 bg-muted/30 border-t border-border">
+            <p className="text-xs text-center text-muted-foreground">
+              {transcript.messages.length} message(s) • Transcript ID: <span className="font-mono">{transcript.transcript_id}</span>
+            </p>
           </div>
         </div>
       </div>

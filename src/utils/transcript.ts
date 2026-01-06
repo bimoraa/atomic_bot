@@ -20,6 +20,7 @@ export function generate_transcript_id(length: number = 12): string {
 
 export interface transcript_message {
   id:          string
+  type:        number
   author_id:   string
   author_tag:  string
   author_avatar: string
@@ -29,6 +30,7 @@ export interface transcript_message {
   components?: any[]
   timestamp:   number
   is_bot:      boolean
+  mentions?:   { id: string; username: string; tag: string }[]
 }
 
 export interface transcript_data {
@@ -105,8 +107,17 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
         console.log(`[ - TRANSCRIPT - ] Message ${msg.id} has ${components_data.length} components:`, JSON.stringify(components_data, null, 2))
       }
 
+      const mentions_data = msg.mentions.users.size > 0
+        ? Array.from(msg.mentions.users.values()).map((u: any) => ({
+            id: u.id,
+            username: u.username,
+            tag: u.tag
+          }))
+        : undefined
+
       messages.push({
         id           : msg.id,
+        type         : msg.type,
         author_id    : msg.author.id,
         author_tag   : msg.author.tag,
         author_avatar: msg.author.displayAvatarURL({ size: 128 }),
@@ -124,6 +135,7 @@ export async function fetch_thread_messages(thread: ThreadChannel, limit: number
         components   : components_data,
         timestamp    : Math.floor(msg.createdTimestamp / 1000),
         is_bot       : msg.author.bot,
+        mentions     : mentions_data,
       })
     }
 
