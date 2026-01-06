@@ -838,7 +838,7 @@ export function start_webhook_server(client: Client): void {
       }
 
       const transcripts = await database.find_many_sorted<any>(
-        'transcripts',
+        'ticket_transcripts',
         {},
         'close_time',
         'DESC'
