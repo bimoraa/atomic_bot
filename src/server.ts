@@ -844,20 +844,47 @@ export function start_webhook_server(client: Client): void {
         'DESC'
       )
 
-      const formatted_transcripts = transcripts.map((t: any) => ({
-        transcript_id : t.transcript_id,
-        ticket_id     : t.ticket_id,
-        ticket_type   : t.ticket_type,
-        owner_id      : t.owner_id,
-        owner_tag     : t.owner_tag,
-        claimed_by    : t.claimed_by,
-        closed_by     : t.closed_by,
-        issue_type    : t.issue_type,
-        description   : t.description,
-        message_count : t.messages?.length || 0,
-        open_time     : t.open_time,
-        close_time    : t.close_time,
-        duration      : t.close_time - t.open_time,
+      // - Helper function to fetch user with timeout - \\
+      const fetch_user_with_timeout = async (user_id: string, timeout_ms = 2000): Promise<string | null> => {
+        if (!discord_client) return null
+        
+        try {
+          const timeout_promise = new Promise<null>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), timeout_ms)
+          )
+          
+          const fetch_promise = discord_client.users.fetch(user_id).then(u => u.username)
+          
+          return await Promise.race([fetch_promise, timeout_promise])
+        } catch (error) {
+          return null
+        }
+      }
+
+      const formatted_transcripts = await Promise.all(transcripts.map(async (t: any) => {
+        const [claimed_by_username, closed_by_username] = await Promise.all([
+          t.claimed_by ? fetch_user_with_timeout(t.claimed_by) : Promise.resolve(null),
+          t.closed_by ? fetch_user_with_timeout(t.closed_by) : Promise.resolve(null)
+        ])
+
+        return {
+          transcript_id : t.transcript_id,
+          ticket_id     : t.ticket_id,
+          ticket_type   : t.ticket_type,
+          owner_id      : t.owner_id,
+          owner_tag     : t.owner_tag,
+          owner_avatar  : t.owner_avatar,
+          claimed_by    : claimed_by_username,
+          claimed_by_id : t.claimed_by,
+          closed_by     : closed_by_username,
+          closed_by_id  : t.closed_by,
+          issue_type    : t.issue_type,
+          description   : t.description,
+          message_count : t.messages?.length || 0,
+          open_time     : t.open_time,
+          close_time    : t.close_time,
+          duration      : t.close_time - t.open_time,
+        }
       }))
 
       res.status(200).json({

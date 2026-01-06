@@ -6,10 +6,35 @@ import { format } from 'date-fns'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Loader2, Search, ExternalLink, FileText, Clock, User, Tag, Filter, Calendar as CalendarIcon, X } from 'lucide-react'
+import { Loader2, Search, ExternalLink, FileText, Clock, User, Tag, Filter, Calendar as CalendarIcon, X, MoreHorizontal, Eye, Info } from 'lucide-react'
 import { IconFileText } from '@tabler/icons-react'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { Calendar } from '@/components/ui/calendar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserDialog } from '@/components/user-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Popover,
   PopoverContent,
@@ -54,8 +79,11 @@ interface transcript_item {
   ticket_type: string
   owner_id: string
   owner_tag: string
+  owner_avatar?: string
   claimed_by?: string
+  claimed_by_id?: string
   closed_by?: string
+  closed_by_id?: string
   issue_type?: string
   description?: string
   message_count: number
@@ -75,6 +103,10 @@ export default function DashboardPage() {
   const [date_from, set_date_from] = useState<Date | undefined>()
   const [date_to, set_date_to] = useState<Date | undefined>()
   const [current_page, set_current_page] = useState(1)
+  const [selected_ticket, set_selected_ticket] = useState<transcript_item | null>(null)
+  const [details_dialog_open, set_details_dialog_open] = useState(false)
+  const [user_dialog_open, set_user_dialog_open] = useState(false)
+  const [selected_user_id, set_selected_user_id] = useState<string | null>(null)
   const items_per_page = 10
 
   useEffect(() => {
@@ -206,7 +238,7 @@ export default function DashboardPage() {
       <DashboardSidebar user={user} active_page="transcripts" />
 
       {/* - MAIN CONTENT - \\ */}
-      <div className="transition-all duration-300 ml-72 py-6 px-8 max-w-7xl">
+      <div className="transition-all duration-300 lg:ml-72 py-4 px-4 sm:py-6 sm:px-6 lg:px-8 max-w-7xl">
         {/* - BREADCRUMB - \\ */}
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
@@ -221,16 +253,16 @@ export default function DashboardPage() {
         </Breadcrumb>
 
         {/* - HEADER - \\ */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold mb-1">Transcripts</h1>
-          <p className="text-sm text-muted-foreground">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-semibold mb-1">Transcripts</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Manage and review all ticket transcripts from your support channels
           </p>
         </div>
 
         {/* - SEARCH AND FILTERS - \\ */}
-        <div className="mb-6 space-y-4">
-          <div className="flex items-center gap-3">
+        <div className="mb-4 sm:mb-6 space-y-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {/* - SEARCH - \\ */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -244,7 +276,7 @@ export default function DashboardPage() {
             </div>
 
             {/* - FILTERS - \\ */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* - DATE FROM - \\ */}
               <Popover>
                 <PopoverTrigger asChild>
@@ -252,10 +284,10 @@ export default function DashboardPage() {
                     variant="outline"
                     size="sm"
                     data-empty={!date_from}
-                    className="data-[empty=true]:text-muted-foreground h-9 w-[150px] justify-start text-left font-normal"
+                    className="data-[empty=true]:text-muted-foreground h-9 w-full sm:w-[140px] justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date_from ? format(date_from, "MMM dd, yyyy") : "From date"}
+                    <span className="truncate">{date_from ? format(date_from, "MMM dd, yyyy") : "From date"}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -270,10 +302,10 @@ export default function DashboardPage() {
                     variant="outline"
                     size="sm"
                     data-empty={!date_to}
-                    className="data-[empty=true]:text-muted-foreground h-9 w-[150px] justify-start text-left font-normal"
+                    className="data-[empty=true]:text-muted-foreground h-9 w-full sm:w-[140px] justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date_to ? format(date_to, "MMM dd, yyyy") : "To date"}
+                    <span className="truncate">{date_to ? format(date_to, "MMM dd, yyyy") : "To date"}</span>
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -283,7 +315,7 @@ export default function DashboardPage() {
 
               {/* - CATEGORY FILTER - \\ */}
               <Select value={selected_category} onValueChange={set_selected_category}>
-                <SelectTrigger className="w-[160px] h-9">
+                <SelectTrigger className="w-full sm:w-[140px] h-9">
                   <Tag className="w-3.5 h-3.5 text-muted-foreground mr-1" />
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
@@ -308,7 +340,7 @@ export default function DashboardPage() {
                     set_selected_category('all')
                     set_search('')
                   }}
-                  className="h-9 px-3 text-xs"
+                  className="h-9 px-3 text-xs w-full sm:w-auto"
                 >
                   <X className="w-3.5 h-3.5 mr-1" />
                   Clear
@@ -318,91 +350,218 @@ export default function DashboardPage() {
           </div>
 
           {/* - RESULTS COUNT - \\ */}
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs sm:text-sm text-muted-foreground">
             Showing <span className="font-medium text-foreground">{filtered_transcripts.length > 0 ? start_index + 1 : 0}-{Math.min(end_index, filtered_transcripts.length)}</span> of <span className="font-medium text-foreground">{filtered_transcripts.length}</span> results
           </div>
         </div>
 
         {/* - TRANSCRIPT LIST - \\ */}
         <div>
-          <div className="space-y-2">
-            {filtered_transcripts.length === 0 ? (
-              <Empty className="py-16">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <IconFileText />
-                  </EmptyMedia>
-                  <EmptyTitle>No transcripts found</EmptyTitle>
-                  <EmptyDescription>
-                    {search || selected_category !== 'all' || date_from || date_to
-                      ? 'Try adjusting your filters or search query to find what you\'re looking for.'
-                      : 'Transcripts will appear here once tickets are closed.'}
-                  </EmptyDescription>
-                </EmptyHeader>
-                {(search || selected_category !== 'all' || date_from || date_to) && (
-                  <EmptyContent>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        set_date_from(undefined)
-                        set_date_to(undefined)
-                        set_selected_category('all')
-                        set_search('')
-                      }}
-                    >
-                      Clear Filters
-                    </Button>
-                  </EmptyContent>
-                )}
-              </Empty>
-            ) : (
-              paginated_transcripts.map((transcript) => (
-                <Card
-                  key={transcript.transcript_id}
-                  className="bg-card border-border hover:shadow-sm transition-all cursor-pointer group"
-                  onClick={() => window.open(`/transcript/${transcript.transcript_id}`, '_blank')}
-                >
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <code className="text-sm font-mono text-foreground">
-                            {transcript.transcript_id}
-                          </code>
-                          <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded">
+          {filtered_transcripts.length === 0 ? (
+            <Empty className="py-16">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <IconFileText />
+                </EmptyMedia>
+                <EmptyTitle>No transcripts found</EmptyTitle>
+                <EmptyDescription>
+                  {search || selected_category !== 'all' || date_from || date_to
+                    ? 'Try adjusting your filters or search query to find what you\'re looking for.'
+                    : 'Transcripts will appear here once tickets are closed.'}
+                </EmptyDescription>
+              </EmptyHeader>
+              {(search || selected_category !== 'all' || date_from || date_to) && (
+                <EmptyContent>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      set_date_from(undefined)
+                      set_date_to(undefined)
+                      set_selected_category('all')
+                      set_search('')
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                </EmptyContent>
+              )}
+            </Empty>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              {/* - MOBILE CARD VIEW - \\ */}
+              <div className="md:hidden divide-y">
+                {paginated_transcripts.map((transcript) => {
+                  const avatar_url = transcript.owner_id 
+                    ? `https://cdn.discordapp.com/avatars/${transcript.owner_id}/${transcript.owner_avatar}.png`
+                    : null
+
+                  return (
+                    <div key={transcript.transcript_id} className="p-4 hover:bg-muted/50 transition-colors">
+                      {/* - HEADER ROW - \\ */}
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <Avatar className="h-10 w-10 flex-shrink-0">
+                            <AvatarImage src={avatar_url || undefined} alt={transcript.owner_tag} />
+                            <AvatarFallback className="text-xs bg-muted">
+                              <User className="h-5 w-5 text-muted-foreground" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{transcript.owner_tag.split('#')[0]}</p>
+                            <p className="text-xs text-muted-foreground truncate">@{transcript.owner_tag}</p>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => {
+                              set_selected_ticket(transcript)
+                              set_details_dialog_open(true)
+                            }}>
+                              <Info className="mr-2 h-4 w-4" />
+                              Ticket Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.open(`/transcript/${transcript.transcript_id}`, '_blank')}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Transcript
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+
+                      {/* - TICKET ID - \\ */}
+                      <div className="mb-3">
+                        <code className="text-xs font-mono bg-muted px-2 py-1 rounded">{transcript.transcript_id}</code>
+                      </div>
+
+                      {/* - STATS GRID - \\ */}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <p className="text-xs text-muted-foreground mb-0.5">Messages</p>
+                          <p className="text-sm font-semibold">{transcript.message_count}</p>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <p className="text-xs text-muted-foreground mb-0.5">Ticket ID</p>
+                          <p className="text-xs font-mono font-semibold truncate">{transcript.ticket_id}</p>
+                        </div>
+                      </div>
+
+                      {/* - CATEGORY AND TIME - \\ */}
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1">
+                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
                             {transcript.ticket_type}
                           </span>
                           {transcript.issue_type && (
-                            <span className="text-xs text-muted-foreground px-2 py-0.5 bg-muted rounded">
+                            <span className="text-xs px-2 py-1 bg-muted rounded">
                               {transcript.issue_type}
                             </span>
                           )}
                         </div>
-
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="truncate">{transcript.owner_tag}</span>
-                          <span>·</span>
-                          <span>{transcript.message_count} messages</span>
-                          <span>·</span>
-                          <span>{format_duration(transcript.duration)}</span>
-                          <span>·</span>
-                          <span>{format_date(transcript.close_time)}</span>
-                        </div>
-
-                        {transcript.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-1 mt-2">
-                            {transcript.description}
-                          </p>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Closed {format_date(transcript.close_time)}
+                        </p>
                       </div>
-
-                      <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                  </div>
-                </Card>
-              ))
-            )}
-          </div>
+                  )
+                })}
+              </div>
+
+              {/* - DESKTOP TABLE VIEW - \\ */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead className="min-w-[150px]">User</TableHead>
+                      <TableHead className="min-w-[120px]">Ticket ID</TableHead>
+                      <TableHead>Messages</TableHead>
+                      <TableHead className="min-w-[140px]">User ID</TableHead>
+                      <TableHead className="hidden lg:table-cell">Closed</TableHead>
+                      <TableHead className="min-w-[120px]">Category</TableHead>
+                      <TableHead className="w-12"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginated_transcripts.map((transcript) => {
+                      const avatar_url = transcript.owner_id 
+                        ? `https://cdn.discordapp.com/avatars/${transcript.owner_id}/${transcript.owner_avatar}.png`
+                        : null
+
+                      return (
+                        <TableRow key={transcript.transcript_id} className="hover:bg-muted/50">
+                          <TableCell>
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={avatar_url || undefined} alt={transcript.owner_tag} />
+                              <AvatarFallback className="text-xs bg-muted">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                              </AvatarFallback>
+                            </Avatar>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium">{transcript.owner_tag.split('#')[0]}</span>
+                              <span className="text-xs text-muted-foreground">@{transcript.owner_tag}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-xs font-mono">{transcript.transcript_id}</code>
+                          </TableCell>
+                          <TableCell className="text-sm">{transcript.message_count}</TableCell>
+                          <TableCell>
+                            <code className="text-xs font-mono">{transcript.owner_id}</code>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-sm">{format_date(transcript.close_time)}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-xs px-2 py-0.5 bg-muted rounded w-fit">
+                                {transcript.ticket_type}
+                              </span>
+                              {transcript.issue_type && (
+                                <span className="text-xs px-2 py-0.5 bg-muted rounded w-fit">
+                                  {transcript.issue_type}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => {
+                                set_selected_ticket(transcript)
+                                set_details_dialog_open(true)
+                              }}>
+                                <Info className="mr-2 h-4 w-4" />
+                                Ticket Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(`/transcript/${transcript.transcript_id}`, '_blank')}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                View Transcript
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
 
           {/* - PAGINATION - \\ */}
           {filtered_transcripts.length > 0 && total_pages > 1 && (
@@ -461,6 +620,167 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* - TICKET DETAILS DIALOG - \\ */}
+      <Dialog open={details_dialog_open} onOpenChange={set_details_dialog_open}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Ticket Details</DialogTitle>
+            <DialogDescription>
+              Complete information about this support ticket
+            </DialogDescription>
+          </DialogHeader>
+          {selected_ticket && (
+            <div className="space-y-5">
+              {/* - TICKET IDS - \\ */}
+              <div className="space-y-3">
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Transcript ID</p>
+                  <code className="text-xs font-mono block break-all">{selected_ticket.transcript_id}</code>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1.5">Original Ticket ID</p>
+                  <code className="text-xs font-mono block break-all">{selected_ticket.ticket_id}</code>
+                </div>
+              </div>
+
+              {/* - PEOPLE INVOLVED - \\ */}
+              <div className="space-y-3">
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Owner</p>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage 
+                        src={selected_ticket.owner_id && selected_ticket.owner_avatar 
+                          ? `https://cdn.discordapp.com/avatars/${selected_ticket.owner_id}/${selected_ticket.owner_avatar}.png`
+                          : undefined
+                        } 
+                        alt={selected_ticket.owner_tag} 
+                      />
+                      <AvatarFallback className="text-xs bg-muted">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{selected_ticket.owner_tag.split('#')[0]}</p>
+                      <p className="text-xs text-muted-foreground truncate">@{selected_ticket.owner_tag}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Claimed By</p>
+                  {selected_ticket.claimed_by_id ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        set_selected_user_id(selected_ticket.claimed_by_id || null)
+                        set_user_dialog_open(true)
+                      }}
+                      className="text-sm text-blue-500 hover:underline font-medium"
+                    >
+                      @{selected_ticket.claimed_by || selected_ticket.claimed_by_id}
+                    </button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Not claimed</p>
+                  )}
+                </div>
+
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Closed By</p>
+                  {selected_ticket.closed_by_id ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        set_selected_user_id(selected_ticket.closed_by_id || null)
+                        set_user_dialog_open(true)
+                      }}
+                      className="text-sm text-blue-500 hover:underline font-medium"
+                    >
+                      @{selected_ticket.closed_by || selected_ticket.closed_by_id}
+                    </button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">N/A</p>
+                  )}
+                </div>
+              </div>
+
+              {/* - TICKET METADATA - \\ */}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Type</p>
+                    <span className="text-xs text-primary font-medium">
+                      {selected_ticket.ticket_type}
+                    </span>
+                  </div>
+                  {selected_ticket.issue_type && (
+                    <div className="bg-muted/30 rounded-lg p-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Issue</p>
+                      <span className="text-xs font-medium">
+                        {selected_ticket.issue_type}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Messages</p>
+                    <p className="text-sm font-semibold">{selected_ticket.message_count}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-lg p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">Duration</p>
+                    <p className="text-sm font-semibold">{format_duration(selected_ticket.duration)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* - TIMESTAMPS - \\ */}
+              <div className="space-y-3">
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Opened At</p>
+                  <p className="text-sm">{format_date(selected_ticket.open_time)}</p>
+                </div>
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">Closed At</p>
+                  <p className="text-sm">{format_date(selected_ticket.close_time)}</p>
+                </div>
+              </div>
+
+              {/* - DESCRIPTION - \\ */}
+              {selected_ticket.description && (
+                <div className="bg-muted/30 rounded-lg p-3">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Description</p>
+                  <p className="text-sm leading-relaxed">{selected_ticket.description}</p>
+                </div>
+              )}
+
+              {/* - ACTION BUTTON - \\ */}
+              <Button 
+                onClick={() => window.open(`/transcript/${selected_ticket.transcript_id}`, '_blank')}
+                className="w-full"
+                size="lg"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                View Full Transcript
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* - USER DIALOG - \\ */}
+      {selected_user_id && (
+        <UserDialog
+          user_id={selected_user_id}
+          open={user_dialog_open}
+          on_close={() => {
+            set_user_dialog_open(false)
+            set_selected_user_id(null)
+          }}
+        />
+      )}
     </div>
   )
 }

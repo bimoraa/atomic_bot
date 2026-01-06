@@ -117,7 +117,7 @@ export function UserDialog({ user_id, open, on_close }: UserDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={(is_open) => !is_open && on_close()}>
-      <DialogContent className="sm:max-w-[550px] p-0 gap-0 overflow-hidden bg-[#0a0a0a] border border-[#1a1a1a] shadow-2xl">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] p-0 gap-0 overflow-y-auto bg-[#0a0a0a] border border-[#1a1a1a] shadow-2xl">
         {loading ? (
           <div className="p-8 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

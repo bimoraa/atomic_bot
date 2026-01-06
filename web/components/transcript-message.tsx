@@ -32,6 +32,13 @@ export interface transcript_message {
   timestamp: number
   is_bot: boolean
   mentions?: { id: string; username: string; tag: string }[]
+  referenced_message?: {
+    id: string
+    author_id: string
+    author_tag: string
+    author_avatar: string
+    content: string
+  }
 }
 
 export interface TranscriptMessageProps {
@@ -145,7 +152,7 @@ function render_component(component: any, index: number | string): any {
     const has_accent = component.accent_color
     return (
       <Card key={`container-${index}`} className={cn("my-2", has_accent && "border-l-4")} style={has_accent ? { borderLeftColor: `#${component.accent_color.toString(16).padStart(6, '0')}` } : {}}>
-        <CardContent className="p-3">
+        <CardContent className="px-3">
           {component.components?.map((child: any, idx: number) => render_component(child, `${index}-${idx}`))}
         </CardContent>
       </Card>
@@ -604,7 +611,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
     switch (message.type) {
       case 7: // - THREAD_MEMBER_JOIN - \\
         return (
-          <div className="flex items-center gap-2 py-2 px-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 py-4 px-3 sm:px-4 text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">{message.author_tag}</span>
             <span>joined the thread.</span>
           </div>
@@ -612,7 +619,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
       
       case 8: // - GUILD_MEMBER_JOIN - \\
         return (
-          <div className="flex items-center gap-2 py-2 px-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 py-4 px-3 sm:px-4 text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">{message.author_tag}</span>
             <span>joined the server.</span>
           </div>
@@ -627,7 +634,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
       default:
         if (mention) {
           return (
-            <div className="flex items-center gap-2 py-2 px-3 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2 py-4 px-3 sm:px-4 text-sm text-muted-foreground">
               <span className="font-semibold text-foreground">{message.author_tag}</span>
               <span>added</span>
               <span className="font-semibold text-foreground">{mention.username}</span>
@@ -658,8 +665,29 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
   }
 
   return (
-    <div className="flex gap-2 sm:gap-3 py-3 px-3 sm:px-4 hover:bg-muted/30 transition-colors rounded-md group border-b border-border/50 last:border-0">
-      <div className="flex-shrink-0">
+    <div className="flex gap-2 sm:gap-3 py-4 px-3 sm:px-4 hover:bg-muted/30 transition-colors rounded-md group border-b border-border/50 last:border-0">
+      <div className="flex-shrink-0 relative">
+        {message.referenced_message && (
+          <div className="absolute -top-3 left-4 flex items-start gap-2">
+            <div className="relative">
+              <div className="absolute top-0 left-0 w-6 h-full border-l-2 border-t-2 border-muted-foreground/30 rounded-tl-lg" style={{ height: '2rem' }} />
+              <img
+                src={message.referenced_message.author_avatar}
+                alt={message.referenced_message.author_tag}
+                className="w-4 h-4 rounded-full ml-6 cursor-pointer hover:ring-1 hover:ring-primary transition-all"
+                onClick={() => handle_avatar_click(message.referenced_message.author_id)}
+              />
+            </div>
+            <div className="flex flex-col -mt-0.5">
+              <span className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
+                {message.referenced_message.author_tag}
+              </span>
+              <span className="text-xs text-muted-foreground/70 line-clamp-1 max-w-[200px]">
+                {message.referenced_message.content || 'Click to see attachment'}
+              </span>
+            </div>
+          </div>
+        )}
         <img
           src={message.author_avatar}
           alt={message.author_tag}
@@ -667,7 +695,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
           onClick={() => handle_avatar_click(message.author_id)}
         />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0" style={message.referenced_message ? { marginTop: '2rem' } : undefined}>
         <div className="flex flex-wrap items-baseline gap-1 sm:gap-2 mb-1">
           <span 
             className={cn(
@@ -682,6 +710,16 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
             <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 flex items-center gap-1 text-[10px] sm:text-xs px-1 sm:px-1.5">
               <Bot className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               BOT
+            </Badge>
+          )}
+          {member_cache[message.author_id]?.roles?.some((role: any) => role.id === '1264915024707588208') && (
+            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 text-[10px] sm:text-xs px-1 sm:px-1.5">
+              STAFF
+            </Badge>
+          )}
+          {member_cache[message.author_id]?.roles?.some((role: any) => role.id === '1277272542914281512') && (
+            <Badge variant="default" className="bg-purple-600 hover:bg-purple-700 flex items-center gap-1 text-[10px] sm:text-xs px-1 sm:px-1.5">
+              WHITELISTER
             </Badge>
           )}
           <span className="text-[10px] sm:text-xs text-muted-foreground">
