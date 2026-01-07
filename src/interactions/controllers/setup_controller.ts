@@ -9,6 +9,16 @@ import { log_error } from "../../utils/error_logger"
  */
 export async function handle_setup_welcome(interaction: ChatInputCommandInteraction): Promise<void> {
   try {
+    if (!interaction.guildId) {
+      await interaction.reply({ content: "This command can only be used in a server", ephemeral: true })
+      return
+    }
+
+    if (!interaction.member) {
+      await interaction.reply({ content: "Could not verify your permissions", ephemeral: true })
+      return
+    }
+
     const member = interaction.member as GuildMember
 
     if (!is_admin(member)) {
@@ -16,11 +26,6 @@ export async function handle_setup_welcome(interaction: ChatInputCommandInteract
         content: "You don't have permission to use this command",
         ephemeral: true,
       })
-      return
-    }
-
-    if (!interaction.guildId) {
-      await interaction.reply({ content: "This command can only be used in a server", ephemeral: true })
       return
     }
 

@@ -13,16 +13,26 @@ const moderator_role_id = config.moderator_role_id
 export const staff_role_id     = config.staff_role_id ?? ""
 
 export function is_admin(member: GuildMember): boolean {
+  if (!member || !member.roles || !member.roles.cache) {
+    console.error("[ - PERMISSIONS ERROR - ] Invalid member object", {
+      has_member: !!member,
+      has_roles: !!(member?.roles),
+      has_cache: !!(member?.roles?.cache),
+    })
+    return false
+  }
   return member.roles.cache.has(admin_role_id)
 }
 
 export function is_moderator(member: GuildMember): boolean {
   if (!moderator_role_id) return false
+  if (!member || !member.roles || !member.roles.cache) return false
   return member.roles.cache.has(moderator_role_id)
 }
 
 export function is_staff(member: GuildMember): boolean {
   if (!staff_role_id) return false
+  if (!member || !member.roles || !member.roles.cache) return false
   return member.roles.cache.has(staff_role_id)
 }
 
