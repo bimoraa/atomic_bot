@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, GuildMember, TextChannel, Client } from "discord.js"
+import { ChatInputCommandInteraction, GuildMember, ChannelType } from "discord.js"
 import { guild_settings, component } from "../../utils"
 import { is_admin } from "../../services/permissions"
 import { log_error } from "../../utils/error_logger"
@@ -19,18 +19,44 @@ export async function handle_setup_welcome(interaction: ChatInputCommandInteract
       return
     }
 
-    const channel = interaction.options.getChannel("channel", true) as TextChannel
-    const message = interaction.options.getString("message")
-
     if (!interaction.guildId) {
       await interaction.reply({ content: "This command can only be used in a server", ephemeral: true })
       return
     }
 
-    await guild_settings.set_guild_setting(interaction.guildId, "welcome_channel", channel.id)
+    const channel = interaction.options.getChannel("channel", true)
+    const message = interaction.options.getString("message", false)
+
+    if (!channel || channel.type !== ChannelType.GuildText) {
+      await interaction.reply({
+        content: "Please provide a valid text channel",
+        ephemeral: true,
+      })
+      return
+    }
+
+    const success = await guild_settings.set_guild_setting(interaction.guildId, "welcome_channel", channel.id)
+
+    if (!success) {
+      await interaction.reply({
+        content: "Failed to save welcome channel setting",
+        ephemeral: true,
+      })
+      return
+    }
 
     if (message) {
       await guild_settings.set_guild_setting(interaction.guildId, "welcome_message", message)
+    }
+
+    const content_lines = [
+      `## Welcome Setup Complete`,
+      ``,
+      `**Channel:** <#${channel.id}>`,
+    ]
+
+    if (message) {
+      content_lines.push(`**Message:** ${message}`)
     }
 
     const response = component.build_message({
@@ -38,12 +64,7 @@ export async function handle_setup_welcome(interaction: ChatInputCommandInteract
         component.container({
           components: [
             component.section({
-              content: [
-                `## Welcome Setup Complete`,
-                ``,
-                `**Channel:** ${channel}`,
-                message ? `**Message:** ${message}` : "",
-              ].filter(Boolean),
+              content: content_lines,
             }),
           ],
         }),
@@ -52,14 +73,18 @@ export async function handle_setup_welcome(interaction: ChatInputCommandInteract
 
     await interaction.reply({ ...response, ephemeral: true })
   } catch (err) {
+    console.error("[ - SETUP WELCOME ERROR - ]", err)
     await log_error(interaction.client, err as Error, "HANDLE_SETUP_WELCOME", {
       guild_id: interaction.guildId,
       user_id: interaction.user.id,
     })
-    await interaction.reply({
-      content: "An error occurred while setting up welcome message",
-      ephemeral: true,
-    })
+    
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "An error occurred while setting up welcome channel",
+        ephemeral: true,
+      })
+    }
   }
 }
 
