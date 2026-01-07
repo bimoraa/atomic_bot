@@ -658,8 +658,14 @@ export async function insert_one<T extends object>(
     return result.rows[0].id.toString()
   }
   
-  const keys         = Object.keys(doc)
-  const values       = Object.values(doc)
+  const keys   = Object.keys(doc)
+  const values = Object.keys(doc).map(key => {
+    const value = (doc as any)[key]
+    if (table === "guild_settings" && key === "settings" && typeof value === "object") {
+      return JSON.stringify(value)
+    }
+    return value
+  })
   const placeholders = keys.map((_, index) => `$${index + 1}`).join(", ")
   const columns      = keys.join(", ")
   
@@ -706,7 +712,13 @@ export async function update_one<T extends object>(
   
   if (existing_result.rows.length > 0) {
     const update_keys   = Object.keys(update)
-    const update_values = Object.values(update)
+    const update_values = Object.keys(update).map(key => {
+      const value = (update as any)[key]
+      if (table === "guild_settings" && key === "settings" && typeof value === "object") {
+        return JSON.stringify(value)
+      }
+      return value
+    })
     const set_clause    = update_keys.map((key, index) => `${key} = $${index + 1}`).join(", ")
     
     const adjusted_where = where_clause.replace(/\$(\d+)/g, (_, num) => `$${parseInt(num) + update_keys.length}`)

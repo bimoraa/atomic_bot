@@ -91,37 +91,49 @@ export async function set_guild_setting(
   value: string
 ): Promise<boolean> {
   try {
+    console.log(`[ - GUILD SETTINGS - ] Setting ${key} = ${value} for guild ${guild_id}`)
+    
     if (!db.is_connected()) {
+      console.error("[ - GUILD SETTINGS ERROR - ] Database not connected")
       throw new Error("Database not connected")
     }
 
+    console.log(`[ - GUILD SETTINGS - ] Fetching existing settings...`)
     const existing = await db.find_one<{ guild_id: string; settings: guild_settings_data }>(
       "guild_settings",
       { guild_id }
     )
+
+    console.log(`[ - GUILD SETTINGS - ] Existing settings:`, existing)
 
     const updated_settings: guild_settings_data = {
       ...(existing?.settings || {}),
       [key]: value,
     }
 
+    console.log(`[ - GUILD SETTINGS - ] Updated settings:`, updated_settings)
+
     if (existing) {
+      console.log(`[ - GUILD SETTINGS - ] Updating existing record...`)
       await db.update_one(
         "guild_settings",
         { guild_id },
         { settings: updated_settings, updated_at: new Date() }
       )
     } else {
+      console.log(`[ - GUILD SETTINGS - ] Inserting new record...`)
       await db.insert_one("guild_settings", {
         guild_id,
         settings: updated_settings,
       })
     }
 
-    console.log(`[ - GUILD SETTINGS - ] Set ${key} for guild ${guild_id}`)
+    console.log(`[ - GUILD SETTINGS - ] Successfully set ${key} for guild ${guild_id}`)
     return true
   } catch (err) {
-    console.error(`[ - GUILD SETTINGS ERROR - ] SET_GUILD_SETTING: ${(err as Error).message}`, { guild_id, key, value })
+    console.error(`[ - GUILD SETTINGS ERROR - ] SET_GUILD_SETTING: ${(err as Error).message}`)
+    console.error(`[ - GUILD SETTINGS ERROR - ] Stack:`, (err as Error).stack)
+    console.error(`[ - GUILD SETTINGS ERROR - ] Details:`, { guild_id, key, value })
     return false
   }
 }
