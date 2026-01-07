@@ -1,5 +1,5 @@
 import { Client, Collection, GatewayIntentBits, ActivityType, Message, PermissionFlagsBits, Partials } from "discord.js"
-import { joinVoiceChannel } from "@discordjs/voice"
+import { joinVoiceChannel, VoiceConnection, VoiceConnectionStatus } from "@discordjs/voice"
 import { config }                                                        from "dotenv"
 import { Command }                                                       from "./types/command"
 import { load_commands, register_commands }                              from "./handlers/command_handler"
@@ -48,12 +48,71 @@ const client = new Client({
 
 client.commands = new Collection()
 
+let voice_connection: VoiceConnection | null = null
+
 export { client }
 
 import "./events/guild_member_add"
 import "./events/guild_member_booster"
 import "./events/voice_state_update"
 import "./events/message_delete"
+
+/**
+ * - JOIN VOICE CHANNEL WITH AUTO-RECONNECT - \\
+ */
+function join_voice_channel(): void {
+  const voice_channel_id = "1427737274983907408"
+  const guild_id         = "1250337227582472243"
+  
+  try {
+    console.log(`[ - VOICE - ] Attempting to join voice channel ${voice_channel_id}`)
+    
+    const guild = client.guilds.cache.get(guild_id)
+    if (!guild) {
+      console.error(`[ - VOICE - ] Guild ${guild_id} not found!`)
+      setTimeout(() => join_voice_channel(), 5000)
+      return
+    }
+    
+    const voice_channel = guild.channels.cache.get(voice_channel_id)
+    if (!voice_channel) {
+      console.error(`[ - VOICE - ] Voice channel ${voice_channel_id} not found!`)
+      setTimeout(() => join_voice_channel(), 5000)
+      return
+    }
+    
+    if (voice_connection) {
+      voice_connection.destroy()
+    }
+    
+    voice_connection = joinVoiceChannel({
+      channelId      : voice_channel_id,
+      guildId        : guild_id,
+      adapterCreator : guild.voiceAdapterCreator as any,
+      selfDeaf       : true,
+      selfMute       : false,
+    })
+    
+    voice_connection.on(VoiceConnectionStatus.Disconnected, async () => {
+      console.log(`[ - VOICE - ] Disconnected from voice channel, attempting to reconnect...`)
+      setTimeout(() => join_voice_channel(), 3000)
+    })
+    
+    voice_connection.on(VoiceConnectionStatus.Destroyed, () => {
+      console.log(`[ - VOICE - ] Connection destroyed`)
+    })
+    
+    voice_connection.on("error", (error) => {
+      console.error(`[ - VOICE - ] Connection error:`, error)
+      setTimeout(() => join_voice_channel(), 3000)
+    })
+    
+    console.log(`[ - VOICE - ] Successfully joined voice channel ${voice_channel.name} (${voice_channel_id})`)
+  } catch (error) {
+    console.error("[ - VOICE - ] Failed to join voice channel:", error)
+    setTimeout(() => join_voice_channel(), 5000)
+  }
+}
 
 function get_total_members(): number {
   return client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0)
@@ -97,43 +156,7 @@ client.once("ready", async () => {
     console.error("[MongoDB] Connection error:", error)
   }
 
-  try {
-    const voice_channel_id = "1427737274983907408"
-    const guild_id         = "1250337227582472243"
-    
-    console.log(`[ - VOICE - ] Attempting to join voice channel ${voice_channel_id}`)
-    console.log(`[ - VOICE - ] Target guild ID: ${guild_id}`)
-    console.log(`[ - VOICE - ] Available guilds: ${client.guilds.cache.map(g => `${g.name} (${g.id})`).join(", ")}`)
-    
-    const guild = client.guilds.cache.get(guild_id)
-    if (!guild) {
-      console.error(`[ - VOICE - ] Guild ${guild_id} not found!`)
-      return
-    }
-    
-    console.log(`[ - VOICE - ] Guild found: ${guild.name}`)
-    
-    const voice_channel = guild.channels.cache.get(voice_channel_id)
-    if (!voice_channel) {
-      console.error(`[ - VOICE - ] Voice channel ${voice_channel_id} not found in guild ${guild.name}!`)
-      console.log(`[ - VOICE - ] Available voice channels: ${guild.channels.cache.filter(c => c.isVoiceBased()).map(c => `${c.name} (${c.id})`).join(", ")}`)
-      return
-    }
-    
-    console.log(`[ - VOICE - ] Voice channel found: ${voice_channel.name}`)
-    
-    const connection = joinVoiceChannel({
-      channelId      : voice_channel_id,
-      guildId        : guild_id,
-      adapterCreator : guild.voiceAdapterCreator as any,
-      selfDeaf       : true,
-      selfMute       : false,
-    })
-    
-    console.log(`[ - VOICE - ] Successfully joined voice channel ${voice_channel.name} (${voice_channel_id}) - deafened`)
-  } catch (error) {
-    console.error("[ - VOICE - ] Failed to join voice channel:", error)
-  }
+  join_voice_channel()
 
   update_presence()
   setInterval(update_presence, 3000)
