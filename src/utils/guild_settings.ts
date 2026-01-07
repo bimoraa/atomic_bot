@@ -1,0 +1,187 @@
+import { db } from "."
+
+export type guild_setting_key = 
+  | "welcome_channel"
+  | "welcome_message"
+  | "ticket_category"
+  | "ticket_log_channel"
+  | "mod_log_channel"
+  | "member_log_channel"
+  | "auto_role"
+  | "verification_channel"
+  | "rules_channel"
+  | "announcements_channel"
+
+export interface guild_settings_data {
+  welcome_channel?        : string
+  welcome_message?        : string
+  ticket_category?        : string
+  ticket_log_channel?     : string
+  mod_log_channel?        : string
+  member_log_channel?     : string
+  auto_role?              : string
+  verification_channel?   : string
+  rules_channel?          : string
+  announcements_channel?  : string
+}
+
+/**
+ * @param {string} guild_id - Guild ID
+ * @param {guild_setting_key} key - Setting key to get
+ * @returns {Promise<string | null>} Setting value or null
+ */
+export async function get_guild_setting(
+  guild_id: string,
+  key: guild_setting_key
+): Promise<string | null> {
+  try {
+    if (!db.is_connected()) {
+      throw new Error("Database not connected")
+    }
+
+    const result = await db.find_one<{ guild_id: string; settings: guild_settings_data }>(
+      "guild_settings",
+      { guild_id }
+    )
+
+    if (!result || !result.settings) {
+      return null
+    }
+
+    return result.settings[key] || null
+  } catch (err) {
+    console.error(`[ - GUILD SETTINGS ERROR - ] GET_GUILD_SETTING: ${(err as Error).message}`, { guild_id, key })
+    return null
+  }
+}
+
+/**
+ * @param {string} guild_id - Guild ID
+ * @returns {Promise<guild_settings_data | null>} All guild settings or null
+ */
+export async function get_all_guild_settings(
+  guild_id: string
+): Promise<guild_settings_data | null> {
+  try {
+    if (!db.is_connected()) {
+      throw new Error("Database not connected")
+    }
+
+    const result = await db.find_one<{ guild_id: string; settings: guild_settings_data }>(
+      "guild_settings",
+      { guild_id }
+    )
+
+    return result?.settings || null
+  } catch (err) {
+    console.error(`[ - GUILD SETTINGS ERROR - ] GET_ALL_GUILD_SETTINGS: ${(err as Error).message}`, { guild_id })
+    return null
+  }
+}
+
+/**
+ * @param {string} guild_id - Guild ID
+ * @param {guild_setting_key} key - Setting key to set
+ * @param {string} value - Setting value
+ * @returns {Promise<boolean>} Success status
+ */
+export async function set_guild_setting(
+  guild_id: string,
+  key: guild_setting_key,
+  value: string
+): Promise<boolean> {
+  try {
+    if (!db.is_connected()) {
+      throw new Error("Database not connected")
+    }
+
+    const existing = await db.find_one<{ guild_id: string; settings: guild_settings_data }>(
+      "guild_settings",
+      { guild_id }
+    )
+
+    const updated_settings: guild_settings_data = {
+      ...(existing?.settings || {}),
+      [key]: value,
+    }
+
+    if (existing) {
+      await db.update_one(
+        "guild_settings",
+        { guild_id },
+        { settings: updated_settings, updated_at: new Date() }
+      )
+    } else {
+      await db.insert_one("guild_settings", {
+        guild_id,
+        settings: updated_settings,
+      })
+    }
+
+    console.log(`[ - GUILD SETTINGS - ] Set ${key} for guild ${guild_id}`)
+    return true
+  } catch (err) {
+    console.error(`[ - GUILD SETTINGS ERROR - ] SET_GUILD_SETTING: ${(err as Error).message}`, { guild_id, key, value })
+    return false
+  }
+}
+
+/**
+ * @param {string} guild_id - Guild ID
+ * @param {guild_setting_key} key - Setting key to remove
+ * @returns {Promise<boolean>} Success status
+ */
+export async function remove_guild_setting(
+  guild_id: string,
+  key: guild_setting_key
+): Promise<boolean> {
+  try {
+    if (!db.is_connected()) {
+      throw new Error("Database not connected")
+    }
+
+    const existing = await db.find_one<{ guild_id: string; settings: guild_settings_data }>(
+      "guild_settings",
+      { guild_id }
+    )
+
+    if (!existing) {
+      return false
+    }
+
+    const updated_settings = { ...existing.settings }
+    delete updated_settings[key]
+
+    await db.update_one(
+      "guild_settings",
+      { guild_id },
+      { settings: updated_settings, updated_at: new Date() }
+    )
+
+    console.log(`[ - GUILD SETTINGS - ] Removed ${key} for guild ${guild_id}`)
+    return true
+  } catch (err) {
+    console.error(`[ - GUILD SETTINGS ERROR - ] REMOVE_GUILD_SETTING: ${(err as Error).message}`, { guild_id, key })
+    return false
+  }
+}
+
+/**
+ * @param {string} guild_id - Guild ID
+ * @returns {Promise<boolean>} Success status
+ */
+export async function clear_all_guild_settings(guild_id: string): Promise<boolean> {
+  try {
+    if (!db.is_connected()) {
+      throw new Error("Database not connected")
+    }
+
+    const deleted = await db.delete_one("guild_settings", { guild_id })
+    
+    console.log(`[ - GUILD SETTINGS - ] Cleared all settings for guild ${guild_id}`)
+    return deleted
+  } catch (err) {
+    console.error(`[ - GUILD SETTINGS ERROR - ] CLEAR_ALL_GUILD_SETTINGS: ${(err as Error).message}`, { guild_id })
+    return false
+  }
+}

@@ -281,6 +281,20 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS guild_settings (
+        id         SERIAL PRIMARY KEY,
+        guild_id   VARCHAR(255) NOT NULL UNIQUE,
+        settings   JSONB NOT NULL DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_guild_settings_guild ON guild_settings(guild_id)
+    `)
+
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_ghost_pings_mentioned ON ghost_pings USING GIN(mentioned)
     `)
 
@@ -491,6 +505,7 @@ function get_table_name(collection: string): string {
     ghost_pings           : "ghost_pings",
     warnings              : "warnings",
     ticket_transcripts    : "ticket_transcripts",
+    guild_settings        : "guild_settings",
   }
   
   return table_map[collection] || "generic_data"

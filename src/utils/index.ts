@@ -16,8 +16,9 @@ import * as http from "./http"
 import * as db from "./database"
 import * as version from "./version"
 import * as transcript from "./transcript"
+import * as guild_settings from "./guild_settings"
 
-export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http, db, version, transcript }
+export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http, db, version, transcript, guild_settings }
 
 export type {
   button_component,
