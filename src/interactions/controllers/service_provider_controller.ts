@@ -69,23 +69,39 @@ interface cached_user {
 
 async function get_cached_user(user_id: string): Promise<luarmor.luarmor_user | null> {
   try {
+    if (!db.is_connected()) {
+      console.log("[ - SERVICE PROVIDER CACHE - ] DB not connected, skipping cache lookup")
+      return null
+    }
+
     const cached = await db.find_one<cached_user>(USER_CACHE_COLLECTION, { user_id })
     
-    if (!cached) return null
-    
-    const now = Date.now()
-    if (now - cached.cached_at > CACHE_DURATION_MS) {
+    if (!cached) {
+      console.log(`[ - SERVICE PROVIDER CACHE - ] Cache miss for user_id: ${user_id}`)
       return null
     }
     
+    const now = Date.now()
+    if (now - cached.cached_at > CACHE_DURATION_MS) {
+      console.log(`[ - SERVICE PROVIDER CACHE - ] Cache expired for user_id: ${user_id} (age: ${Math.floor((now - cached.cached_at) / 1000)}s)`)
+      return null
+    }
+    
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Cache hit for user_id: ${user_id}`)
     return cached.user_data
   } catch (error) {
+    console.error("[ - SERVICE PROVIDER CACHE - ] Error reading cache:", error)
     return null
   }
 }
 
 async function save_cached_user(user_id: string, user_data: luarmor.luarmor_user): Promise<void> {
   try {
+    if (!db.is_connected()) {
+      console.log("[ - SERVICE PROVIDER CACHE - ] DB not connected, skipping cache save")
+      return
+    }
+
     const now = Date.now()
     await db.update_one<cached_user>(
       USER_CACHE_COLLECTION,
@@ -98,7 +114,9 @@ async function save_cached_user(user_id: string, user_data: luarmor.luarmor_user
       },
       true
     )
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Saved cache for user_id: ${user_id}`)
   } catch (error) {
+    console.error(`[ - SERVICE PROVIDER CACHE - ] Error saving cache for user_id: ${user_id}`, error)
   }
 }
 
@@ -315,6 +333,7 @@ async function get_user_with_cache(user_id: string, client: Client): Promise<{ s
   const cached = await get_cached_user(user_id)
   
   if (cached) {
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Returning cached data for user_id: ${user_id}`)
     return {
       success    : true,
       data       : cached,
@@ -322,6 +341,7 @@ async function get_user_with_cache(user_id: string, client: Client): Promise<{ s
     }
   }
   
+  console.log(`[ - SERVICE PROVIDER CACHE - ] Fetching from Luarmor for user_id: ${user_id}`)
   const user_result = await luarmor.get_user_by_discord(user_id)
   
   if (user_result.success && user_result.data) {

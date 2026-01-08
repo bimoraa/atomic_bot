@@ -12,24 +12,41 @@ let is_syncing = false
  * @return {Promise<void>} Resolve when sync completes
  */
 export async function sync_service_provider_cache(client: Client): Promise<void> {
-  if (is_syncing) return
+  if (is_syncing) {
+    console.log("[ - SERVICE PROVIDER CACHE - ] Sync already in progress, skipping")
+    return
+  }
 
   is_syncing = true
+  console.log("[ - SERVICE PROVIDER CACHE - ] Starting sync...")
 
   try {
+    if (!db.is_connected()) {
+      console.error("[ - SERVICE PROVIDER CACHE - ] Database not connected, skipping sync")
+      is_syncing = false
+      return
+    }
+
     const users_result = await luarmor.get_all_users()
 
     if (!users_result.success || !users_result.data) {
+      console.error("[ - SERVICE PROVIDER CACHE - ] Failed to fetch users from Luarmor:", users_result.error)
       await log_error(client, new Error(users_result.error || "Failed to fetch users"), "service_provider_cache_fetch", {})
       return
     }
 
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Fetched ${users_result.data.length} users from Luarmor`)
+
     const now           = Date.now()
     let cached_users    = 0
+    let failed_users    = 0
 
     for (const user of users_result.data) {
       const user_id = user.discord_id || user.user_key
-      if (!user_id) continue
+      if (!user_id) {
+        console.warn("[ - SERVICE PROVIDER CACHE - ] User missing both discord_id and user_key, skipping")
+        continue
+      }
 
       try {
         await db.update_one(
@@ -45,12 +62,15 @@ export async function sync_service_provider_cache(client: Client): Promise<void>
         )
         cached_users += 1
       } catch (error) {
+        failed_users += 1
+        console.error(`[ - SERVICE PROVIDER CACHE - ] Failed to cache user ${user_id}:`, error)
         await log_error(client, error as Error, "service_provider_cache_update", { user_id })
       }
     }
 
-    console.log(`[ - SERVICE PROVIDER CACHE - ] Cached ${cached_users} users at ${new Date(now).toISOString()}`)
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Sync complete: ${cached_users} cached, ${failed_users} failed at ${new Date(now).toISOString()}`)
   } catch (error) {
+    console.error("[ - SERVICE PROVIDER CACHE - ] Sync error:", error)
     await log_error(client, error as Error, "service_provider_cache_sync", {})
   } finally {
     is_syncing = false
