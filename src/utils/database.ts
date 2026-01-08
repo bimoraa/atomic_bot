@@ -348,6 +348,21 @@ async function init_tables(): Promise<void> {
       )
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tempvoice_saved_settings (
+        id             SERIAL PRIMARY KEY,
+        user_id        VARCHAR(255) NOT NULL UNIQUE,
+        guild_id       VARCHAR(255) NOT NULL,
+        name           VARCHAR(255) NOT NULL,
+        user_limit     INTEGER NOT NULL DEFAULT 0,
+        is_private     BOOLEAN NOT NULL DEFAULT false,
+        trusted_users  TEXT[] DEFAULT '{}',
+        blocked_users  TEXT[] DEFAULT '{}',
+        created_at     TIMESTAMP DEFAULT NOW(),
+        updated_at     TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")

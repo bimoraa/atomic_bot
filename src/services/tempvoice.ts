@@ -9,7 +9,7 @@ import {
   OverwriteType,
   VideoQualityMode,
 }                         from "discord.js"
-import { logger, component, api } from "../utils"
+import { logger, component, api, db } from "../utils"
 import { load_config }    from "../configuration/loader"
 import * as voice_tracker from "./voice_time_tracker"
 
@@ -18,6 +18,14 @@ interface tempvoice_config {
   generator_name        : string
   generator_channel_id? : string
   category_id?          : string
+}
+
+interface saved_channel_settings {
+  name           : string
+  user_limit     : number
+  is_private     : boolean
+  trusted_users  : string[]
+  blocked_users  : string[]
 }
 
 const __log    = logger.create_logger("tempvoice")
@@ -33,6 +41,7 @@ const __blocked_users: Map<string, Set<string>>         = new Map()
 const __waiting_rooms: Map<string, boolean>             = new Map()
 const __text_channels: Map<string, string>              = new Map()
 const __in_voice_interfaces: Map<string, string>        = new Map()
+const __saved_settings: Map<string, saved_channel_settings> = new Map()
 
 let __generator_channel_id : string | null = __config.generator_channel_id || null
 let __category_id          : string | null = __config.category_id || null
@@ -172,7 +181,7 @@ export async function setup_tempvoice(guild: Guild): Promise<setup_result> {
         name    : __generator_name,
         type    : ChannelType.GuildVoice,
         parent  : category.id,
-        bitrate : 384000,
+        bitrate : 96000,
       })
       __log.info(`Created generator channel: ${generator.name}`)
     }
@@ -277,7 +286,7 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
       name                 : channel_name,
       type                 : ChannelType.GuildVoice,
       parent               : category.id,
-      bitrate              : 384000,
+      bitrate              : 96000,
       videoQualityMode     : VideoQualityMode.Auto,
       permissionOverwrites : [
         {
@@ -286,6 +295,8 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
           allow : [
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.Connect,
+            PermissionFlagsBits.Speak,
+            PermissionFlagsBits.UseVAD,
           ],
         },
         {
@@ -294,6 +305,7 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
           allow : [
             PermissionFlagsBits.Connect,
             PermissionFlagsBits.Speak,
+            PermissionFlagsBits.UseVAD,
             PermissionFlagsBits.ManageChannels,
             PermissionFlagsBits.MoveMembers,
             PermissionFlagsBits.MuteMembers,
@@ -310,6 +322,12 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
     __waiting_rooms.set(channel.id, false)
 
     await voice_tracker.track_channel_created(channel.id, member.id, guild.id)
+
+    const has_saved_settings = __saved_settings.has(member.id)
+    if (has_saved_settings) {
+      await restore_channel_settings(channel, member)
+      __log.info(`[ - AUTO RESTORED - ] Settings applied for ${member.displayName}`)
+    }
 
     __log.info(`Created temp channel: ${channel.name} for ${member.displayName}`)
 
@@ -391,6 +409,10 @@ export function get_channel_owner(channel_id: string): string | null {
 export async function rename_channel(channel: VoiceChannel, new_name: string): Promise<boolean> {
   try {
     await channel.setName(new_name)
+    const owner_id = get_channel_owner(channel.id)
+    if (owner_id) {
+      save_channel_settings(channel, owner_id)
+    }
     return true
   } catch (error) {
     __log.error("Failed to rename channel:", error)
@@ -401,6 +423,10 @@ export async function rename_channel(channel: VoiceChannel, new_name: string): P
 export async function set_user_limit(channel: VoiceChannel, limit: number): Promise<boolean> {
   try {
     await channel.setUserLimit(limit)
+    const owner_id = get_channel_owner(channel.id)
+    if (owner_id) {
+      save_channel_settings(channel, owner_id)
+    }
     return true
   } catch (error) {
     __log.error("Failed to set user limit:", error)
@@ -418,6 +444,10 @@ export async function set_privacy(channel: VoiceChannel, is_private: boolean): P
       await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {
         Connect: null,
       })
+    }
+    const owner_id = get_channel_owner(channel.id)
+    if (owner_id) {
+      save_channel_settings(channel, owner_id)
     }
     return true
   } catch (error) {
@@ -498,7 +528,13 @@ export async function trust_user(channel: VoiceChannel, user_id: string): Promis
       ViewChannel : true,
       Connect     : true,
       Speak       : true,
+      UseVAD      : true,
     })
+
+    const owner_id = get_channel_owner(channel.id)
+    if (owner_id) {
+      save_channel_settings(channel, owner_id)
+    }
 
     return true
   } catch (error) {
@@ -515,6 +551,12 @@ export async function untrust_user(channel: VoiceChannel, user_id: string): Prom
     }
 
     await channel.permissionOverwrites.delete(user_id)
+    
+    const owner_id = get_channel_owner(channel.id)
+    if (owner_id) {
+      save_channel_settings(channel, owner_id)
+    }
+    
     return true
   } catch (error) {
     __log.error("Failed to untrust user:", error)
@@ -542,6 +584,11 @@ export async function block_user(channel: VoiceChannel, user_id: string): Promis
       await member.voice.disconnect()
     }
 
+    const owner_id = get_channel_owner(channel.id)
+    if (owner_id) {
+      save_channel_settings(channel, owner_id)
+    }
+
     return true
   } catch (error) {
     __log.error("Failed to block user:", error)
@@ -557,6 +604,12 @@ export async function unblock_user(channel: VoiceChannel, user_id: string): Prom
     }
 
     await channel.permissionOverwrites.delete(user_id)
+    
+    const owner_id = get_channel_owner(channel.id)
+    if (owner_id) {
+      save_channel_settings(channel, owner_id)
+    }
+    
     return true
   } catch (error) {
     __log.error("Failed to unblock user:", error)
@@ -588,6 +641,7 @@ export async function invite_user(channel: VoiceChannel, user_id: string): Promi
     await channel.permissionOverwrites.edit(user_id, {
       ViewChannel : true,
       Connect     : true,
+      UseVAD      : true,
     })
 
     try {
@@ -920,4 +974,159 @@ export async function update_in_voice_interface(voice_channel: VoiceChannel, own
  */
 export function get_in_voice_interface_id(voice_channel_id: string): string | null {
   return __in_voice_interfaces.get(voice_channel_id) || null
+}
+
+/**
+ * - SAVE CHANNEL SETTINGS - \\
+ * @param channel - The voice channel
+ * @param owner_id - The owner user ID
+ */
+async function save_channel_settings(channel: VoiceChannel, owner_id: string): Promise<void> {
+  try {
+    const is_private = channel.permissionOverwrites.cache.get(channel.guild.roles.everyone.id)?.deny.has(PermissionFlagsBits.Connect) || false
+
+    const settings: saved_channel_settings = {
+      name          : channel.name,
+      user_limit    : channel.userLimit,
+      is_private    : is_private,
+      trusted_users : Array.from(__trusted_users.get(channel.id) || []),
+      blocked_users : Array.from(__blocked_users.get(channel.id) || []),
+    }
+
+    __saved_settings.set(owner_id, settings)
+
+    if (db.is_connected()) {
+      await db.update_one(
+        "tempvoice_saved_settings",
+        { user_id: owner_id },
+        {
+          user_id       : owner_id,
+          guild_id      : channel.guild.id,
+          name          : settings.name,
+          user_limit    : settings.user_limit,
+          is_private    : settings.is_private,
+          trusted_users : settings.trusted_users,
+          blocked_users : settings.blocked_users,
+          updated_at    : new Date(),
+        },
+        true
+      )
+    }
+
+    __log.info(`[ - SETTINGS SAVED - ] User ${owner_id}: ${channel.name}`)
+  } catch (error) {
+    __log.error("Failed to save channel settings:", error)
+  }
+}
+
+/**
+ * - RESTORE CHANNEL SETTINGS - \\
+ * @param channel - The voice channel to restore settings to
+ * @param owner - The owner member
+ * @returns True if settings were restored
+ */
+export async function restore_channel_settings(channel: VoiceChannel, owner: GuildMember): Promise<boolean> {
+  try {
+    const settings = __saved_settings.get(owner.id)
+    if (!settings) {
+      return false
+    }
+
+    await channel.setName(settings.name)
+    await channel.setUserLimit(settings.user_limit)
+
+    if (settings.is_private) {
+      await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {
+        Connect: false,
+      })
+    }
+
+    for (const user_id of settings.trusted_users) {
+      await channel.permissionOverwrites.edit(user_id, {
+        ViewChannel : true,
+        Connect     : true,
+        Speak       : true,
+        UseVAD      : true,
+      })
+      const trusted = __trusted_users.get(channel.id) || new Set()
+      trusted.add(user_id)
+      __trusted_users.set(channel.id, trusted)
+    }
+
+    for (const user_id of settings.blocked_users) {
+      await channel.permissionOverwrites.edit(user_id, {
+        Connect : false,
+        Speak   : false,
+      })
+      const blocked = __blocked_users.get(channel.id) || new Set()
+      blocked.add(user_id)
+      __blocked_users.set(channel.id, blocked)
+    }
+
+    __log.info(`[ - SETTINGS RESTORED - ] User ${owner.id}: ${settings.name}`)
+    return true
+  } catch (error) {
+    __log.error("Failed to restore channel settings:", error)
+    return false
+  }
+}
+
+/**
+ * - GET SAVED SETTINGS - \\
+ * @param user_id - The user ID
+ * @returns The saved settings or null
+ */
+export function get_saved_settings(user_id: string): saved_channel_settings | null {
+  return __saved_settings.get(user_id) || null
+}
+
+/**
+ * - CLEAR SAVED SETTINGS - \\
+ * @param user_id - The user ID
+ */
+export async function clear_saved_settings(user_id: string): Promise<void> {
+  __saved_settings.delete(user_id)
+  
+  if (db.is_connected()) {
+    await db.delete_one("tempvoice_saved_settings", { user_id })
+  }
+  
+  __log.info(`[ - SETTINGS CLEARED - ] User ${user_id}`)
+}
+
+/**
+ * - LOAD SAVED SETTINGS FROM DATABASE - \\
+ * @param guild_id - The guild ID to load settings for
+ */
+export async function load_saved_settings_from_db(guild_id: string): Promise<void> {
+  try {
+    if (!db.is_connected()) {
+      __log.warn("[ - TEMPVOICE - ] Database not connected, skipping settings load")
+      return
+    }
+
+    const records = await db.find_many<{
+      user_id       : string
+      name          : string
+      user_limit    : number
+      is_private    : boolean
+      trusted_users : string[]
+      blocked_users : string[]
+    }>("tempvoice_saved_settings", { guild_id })
+
+    for (const record of records) {
+      const settings: saved_channel_settings = {
+        name          : record.name,
+        user_limit    : record.user_limit,
+        is_private    : record.is_private,
+        trusted_users : record.trusted_users || [],
+        blocked_users : record.blocked_users || [],
+      }
+      __saved_settings.set(record.user_id, settings)
+    }
+
+    __log.info(`[ - TEMPVOICE - ] Loaded ${records.length} saved settings from database`)
+  } catch (error) {
+    __log.error("Failed to load saved settings from database:", error)
+  }
 }

@@ -175,6 +175,7 @@ client.once("ready", async () => {
     start_roblox_update_checker(client)
     for (const guild of client.guilds.cache.values()) {
       await tempvoice.reconcile_tempvoice_guild(guild)
+      await tempvoice.load_saved_settings_from_db(guild.id)
     }
     register_audit_logs(client)
   } catch (error) {
