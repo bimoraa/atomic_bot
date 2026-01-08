@@ -1,7 +1,8 @@
-import { ButtonInteraction, GuildMember }   from "discord.js"
-import { component, api, format }          from "../../../utils"
-import { http, env, logger }               from "../../../utils"
-import { remove_free_script_access }       from "../../../services/free_script_manager"
+import { ButtonInteraction, GuildMember }      from "discord.js"
+import { component, api, format }              from "../../../utils"
+import { http, env, logger }                   from "../../../utils"
+import { remove_free_script_access }           from "../../../services/free_script_manager"
+import { create_rate_limit_message }           from "../../controllers/service_provider_controller"
 
 const __log               = logger.create_logger("free_stats")
 const FREE_PROJECT_ID     = "cd7560b7384fd815dafd993828c40d2b"
@@ -135,17 +136,6 @@ export async function handle_free_get_stats(interaction: ButtonInteraction): Pro
   } catch (error) {
     __log.error("Failed to get stats:", error)
 
-    await api.edit_deferred_reply(interaction, component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.text([
-              "## Error",
-              "Failed to connect to server. Please try again later.",
-            ]),
-          ],
-        }),
-      ],
-    }))
+    await api.edit_deferred_reply(interaction, create_rate_limit_message("Stats"))
   }
 }

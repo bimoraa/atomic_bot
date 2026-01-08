@@ -18,7 +18,7 @@ function is_rate_limited(error_message?: string): boolean {
   return msg.includes("ratelimit") || msg.includes("rate limit") || msg.includes("too many requests")
 }
 
-function create_rate_limit_message(feature_name: string) {
+export function create_rate_limit_message(feature_name: string) {
   const retry_timestamp = Math.floor(Date.now() / 1000) + 60
   
   return component.build_message({

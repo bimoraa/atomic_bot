@@ -1,6 +1,7 @@
-import { ButtonInteraction, GuildMember } from "discord.js"
-import { component, api, format }         from "../../../utils"
-import { http, env, logger }              from "../../../utils"
+import { ButtonInteraction, GuildMember }   from "discord.js"
+import { component, api, format }           from "../../../utils"
+import { http, env, logger }                from "../../../utils"
+import { create_rate_limit_message }        from "../../controllers/service_provider_controller"
 
 const __log                 = logger.create_logger("free_leaderboard")
 const FREE_PROJECT_ID       = "cd7560b7384fd815dafd993828c40d2b"
@@ -113,17 +114,6 @@ export async function handle_free_leaderboard(interaction: ButtonInteraction): P
   } catch (error) {
     __log.error("Failed to get leaderboard:", error)
 
-    await api.edit_deferred_reply(interaction, component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.text([
-              "## Error",
-              "Failed to connect to server. Please try again later.",
-            ]),
-          ],
-        }),
-      ],
-    }))
+    await api.edit_deferred_reply(interaction, create_rate_limit_message("Leaderboard"))
   }
 }
