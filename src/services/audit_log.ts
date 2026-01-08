@@ -59,7 +59,14 @@ async function send_log(client: Client, log_message: any): Promise<void> {
     const log_channel = await client.channels.fetch(LOG_CHANNEL_ID) as TextChannel
     if (!log_channel || !log_channel.isTextBased()) return
 
-    await log_channel.send(log_message)
+    await log_channel.send({
+      ...log_message,
+      allowedMentions: {
+        parse: [],
+        users: [],
+        roles: [],
+      },
+    })
   } catch (error) {
     log.error("Failed to send audit log:", error)
   }
