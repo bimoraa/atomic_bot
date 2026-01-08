@@ -51,6 +51,7 @@ const emoji = {
   claim        : { id: "1449851319350333613", name: "claim"        },
   transfer     : { id: "1449851186772578315", name: "transfer"     },
   delete       : { id: "1449851060922355824", name: "delete"       },
+  leaderboard  : { id: "1457012485281546260", name: "leaderboard"  },
 }
 
 const __temp_channels: Map<string, string>              = new Map()
@@ -932,10 +933,10 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
       components: [
         component.container({
           components: [
-            component.text([
-              `## Voice Channel Controls`,
-              `**Owner:** <@${owner.id}>`,
-              `**Channel:** ${voice_channel.name}`,
+            component.text("## Atomic TempVoice\nThis interface can be used to manage temporary voice channels."),
+            component.divider(2),
+            component.media_gallery([
+              component.gallery_item("https://github.com/bimoraa/atomic_bot/blob/main/assets/interface.png?raw=true"),
             ]),
             component.divider(2),
             component.action_row(
@@ -953,11 +954,14 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
               component.secondary_button("", "tempvoice_region",  emoji.region),
             ),
             component.action_row(
-              component.secondary_button("", "tempvoice_block",    emoji.block),
-              component.secondary_button("", "tempvoice_unblock",  emoji.unblock),
-              component.secondary_button("", "tempvoice_claim",    emoji.claim),
-              component.secondary_button("", "tempvoice_transfer", emoji.transfer),
-              component.danger_button("", "tempvoice_delete",      emoji.delete),
+              component.secondary_button("", "tempvoice_block",       emoji.block),
+              component.secondary_button("", "tempvoice_unblock",     emoji.unblock),
+              component.secondary_button("", "tempvoice_claim",       emoji.claim),
+              component.secondary_button("", "tempvoice_transfer",    emoji.transfer),
+              component.danger_button("", "tempvoice_delete",         emoji.delete),
+            ),
+            component.action_row(
+              component.secondary_button("", "tempvoice_leaderboard", emoji.leaderboard),
             ),
           ],
         }),
