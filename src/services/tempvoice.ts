@@ -525,6 +525,16 @@ export async function create_thread(channel: VoiceChannel, owner: GuildMember): 
 
     console.log(`[ - THREAD - ] Created: ${thread.name} (${thread.id})`)
     
+    try {
+      const starter_message = await thread.fetchStarterMessage()
+      if (starter_message) {
+        await starter_message.delete()
+        console.log(`[ - THREAD - ] Deleted starter message`)
+      }
+    } catch (delete_error) {
+      console.warn(`[ - THREAD - ] Failed to delete starter message:`, delete_error)
+    }
+    
     __threads.set(channel.id, thread.id)
 
     console.log(`[ - THREAD - ] Now creating interface...`)
