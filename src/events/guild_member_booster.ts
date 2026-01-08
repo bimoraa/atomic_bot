@@ -18,33 +18,37 @@ client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuil
     if (new_member.premiumSince && !old_member.premiumSince) {
       console.log(`[ - BOOSTER LOG - ] ${new_member.user.tag} started boosting the server`)
 
-      const user_avatar = new_member.user.displayAvatarURL({ extension: "png", size: 256 })
-
-      await send_booster_log(
-        config.booster_log_channel_id,
-        new_member.user.id,
-        1,
-        user_avatar
-      )
-
       const whitelist_data = await booster_manager.get_whitelist(
         new_member.user.id,
         new_member.guild.id
       )
 
+      let new_boost_count = 1
       if (whitelist_data) {
+        new_boost_count = (whitelist_data.boost_count || 0) + 1
         await booster_manager.update_boost_count(
           new_member.user.id,
           new_member.guild.id,
-          (whitelist_data.boost_count || 0) + 1
+          new_boost_count
         )
       } else {
         await booster_manager.add_whitelist(
           new_member.user.id,
           new_member.guild.id,
-          1
+          new_boost_count
         )
       }
+
+      const user_avatar = new_member.user.displayAvatarURL({ extension: "png", size: 256 })
+
+      await send_booster_log(
+        config.booster_log_channel_id,
+        new_member.user.id,
+        new_boost_count,
+        user_avatar
+      )
+
+      console.log(`[ - BOOSTER LOG - ] Logged boost for ${new_member.user.tag}, total boosts: ${new_boost_count}`)
     }
 
     if (!new_member.premiumSince && old_member.premiumSince) {
@@ -65,11 +69,16 @@ client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuil
     }
 
   } catch (error) {
-    await log_error(
-      client,
-      error instanceof Error ? error : new Error(String(error)),
-      "booster_log",
-      { user_id: new_member.user.id, guild_id: new_member.guild.id }
-    )
+    console.error(`[ - BOOSTER LOG - ] Error processing booster update:`, error)
+    try {
+      await log_error(
+        client,
+        error instanceof Error ? error : new Error(String(error)),
+        "booster_log",
+        { user_id: new_member.user.id, guild_id: new_member.guild.id }
+      )
+    } catch (log_err) {
+      console.error(`[ - BOOSTER LOG - ] Failed to log error:`, log_err)
+    }
   }
 })
