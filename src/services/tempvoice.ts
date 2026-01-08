@@ -388,9 +388,14 @@ export async function delete_temp_channel(channel: VoiceChannel | string): Promi
     const thread_id = __threads.get(channel_id)
     if (thread_id && voice_channel) {
       const thread = voice_channel.guild.channels.cache.get(thread_id)
-      if (thread) {
-        await thread.delete()
-        console.log(`[ - THREAD - ] Deleted thread ${thread_id}`)
+      if (thread && thread.isThread()) {
+        try {
+          await thread.setLocked(true)
+          await thread.setArchived(true)
+          console.log(`[ - THREAD - ] Locked and archived thread ${thread_id}`)
+        } catch (thread_error) {
+          console.error(`[ - THREAD - ] Failed to lock/archive thread:`, thread_error)
+        }
       }
       __threads.delete(channel_id)
     }
@@ -515,15 +520,19 @@ export async function create_thread(channel: VoiceChannel, owner: GuildMember): 
       return null
     }
 
-    console.log(`[ - THREAD - ] Creating thread in parent ${__thread_parent_id}...`)
+    console.log(`[ - THREAD - ] Creating private thread in parent ${__thread_parent_id}...`)
     
     const thread = await parent_channel.threads.create({
       name               : `${channel.name}`,
+      type               : ChannelType.PrivateThread,
       autoArchiveDuration: 60,
       reason             : `Voice channel thread for ${owner.displayName}`,
     })
 
     console.log(`[ - THREAD - ] Created: ${thread.name} (${thread.id})`)
+    
+    await thread.members.add(owner.id)
+    console.log(`[ - THREAD - ] Added owner to thread`)
     
     try {
       const starter_message = await thread.fetchStarterMessage()
@@ -820,6 +829,22 @@ export async function handle_voice_state_update(old_state: VoiceState, new_state
   if (new_state.channelId === __generator_channel_id) {
     await create_temp_channel(member)
     return
+  }
+
+  // - ADD MEMBER TO THREAD WHEN JOINING TEMP CHANNEL - \\
+  if (new_state.channelId && is_temp_channel(new_state.channelId)) {
+    const thread_id = __threads.get(new_state.channelId)
+    if (thread_id) {
+      try {
+        const channel = new_state.guild.channels.cache.get(thread_id)
+        if (channel && channel.isThread()) {
+          await channel.members.add(member.id)
+          console.log(`[ - THREAD - ] Added ${member.displayName} to thread`)
+        }
+      } catch (error) {
+        console.error(`[ - THREAD - ] Failed to add member to thread:`, error)
+      }
+    }
   }
 
   if (old_state.channelId && is_temp_channel(old_state.channelId)) {
