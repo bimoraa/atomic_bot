@@ -15,6 +15,7 @@ import { handle_afk_return, handle_afk_mentions }                        from ".
 import { load_afk_from_db }                                              from "./services/afk"
 import { check_server_tag_change }                                       from "./services/server_tag"
 import { start_free_script_checker }                                     from "./services/free_script_manager"
+import { start_service_provider_cache }                                  from "./services/service_provider_cache"
 import { db, component }                                                 from "./utils"
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./services/anti_spam"
@@ -151,6 +152,7 @@ client.once("ready", async () => {
       start_loa_checker(client)
       start_scheduler(client)
       start_free_script_checker(client)
+      start_service_provider_cache(client)
     }
   } catch (error) {
     console.error("[MongoDB] Connection error:", error)

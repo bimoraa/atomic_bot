@@ -312,6 +312,21 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS service_provider_user_cache (
+        id           SERIAL PRIMARY KEY,
+        user_id      VARCHAR(255) NOT NULL UNIQUE,
+        user_data    JSONB NOT NULL,
+        cached_at    BIGINT NOT NULL,
+        last_updated BIGINT NOT NULL,
+        created_at   TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_service_provider_user_cache_user_id ON service_provider_user_cache(user_id)
+    `)
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS hwid_reset_tracker (
         id         SERIAL PRIMARY KEY,
         user_id    VARCHAR(255) NOT NULL,
@@ -512,24 +527,25 @@ async function migrate_tables(client: any): Promise<void> {
 
 function get_table_name(collection: string): string {
   const table_map: Record<string, string> = {
-    reputation_records    : "reputation_records",
-    reputation_logs       : "reputation_logs",
-    voice_channel_records : "voice_channel_records",
-    server_tag_users      : "server_tag_users",
-    free_script_users     : "free_script_users",
-    hwid_less_schedule    : "hwid_less_schedule",
-    hwid_reset_tracker    : "hwid_reset_tracker",
-    hwid_reset_cache      : "hwid_reset_cache",
-    booster_whitelist     : "booster_whitelist",
-    work_logs             : "work_logs",
-    work_reports          : "work_reports",
-    loa_requests          : "loa_requests",
-    answer_stats          : "answer_stats",
-    afk_users             : "afk_users",
-    ghost_pings           : "ghost_pings",
-    warnings              : "warnings",
-    ticket_transcripts    : "ticket_transcripts",
-    guild_settings        : "guild_settings",
+    reputation_records           : "reputation_records",
+    reputation_logs              : "reputation_logs",
+    voice_channel_records        : "voice_channel_records",
+    server_tag_users             : "server_tag_users",
+    free_script_users            : "free_script_users",
+    hwid_less_schedule           : "hwid_less_schedule",
+    service_provider_user_cache  : "service_provider_user_cache",
+    hwid_reset_tracker           : "hwid_reset_tracker",
+    hwid_reset_cache             : "hwid_reset_cache",
+    booster_whitelist            : "booster_whitelist",
+    work_logs                    : "work_logs",
+    work_reports                 : "work_reports",
+    loa_requests                 : "loa_requests",
+    answer_stats                 : "answer_stats",
+    afk_users                    : "afk_users",
+    ghost_pings                  : "ghost_pings",
+    warnings                     : "warnings",
+    ticket_transcripts           : "ticket_transcripts",
+    guild_settings               : "guild_settings",
   }
   
   return table_map[collection] || "generic_data"
@@ -947,7 +963,7 @@ function convert_row_to_object<T>(row: any): T {
     "scheduled_time", "added_at", "last_tag_check"
   ]
   const unix_timestamp_fields = [
-    "whitelisted_at", "start_date", "end_date", "created_at"
+    "whitelisted_at", "start_date", "end_date", "created_at", "cached_at", "last_updated"
   ]
   
   for (const [key, value] of Object.entries(row)) {
