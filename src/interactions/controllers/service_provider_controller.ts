@@ -6,7 +6,9 @@ import * as luarmor from "../../services/luarmor"
 const RESET_COLLECTION          = "service_provider_resets"
 const USER_CACHE_COLLECTION     = "service_provider_user_cache"
 const HWID_RESET_TRACKER        = "hwid_reset_tracker"
+const HWID_RESET_CACHE          = "hwid_reset_cache"
 const CACHE_DURATION_MS         = 60 * 60 * 1000
+const RESET_CACHE_TTL_MS        = 10000
 const RESET_THRESHOLD           = 40
 const HWID_LESS_DURATION_MS     = 60 * 60 * 1000
 const PROJECT_ID                = "6958841b2d9e5e049a24a23e376e0d77"
@@ -115,6 +117,48 @@ interface hwid_less_status {
   reset_count   : number
 }
 
+interface hwid_reset_cache_entry {
+  _id?          : any
+  reset_count   : number
+  cached_at     : number
+}
+
+/**
+ * - GET CACHED RESET COUNT - \\
+ */
+async function get_cached_reset_count(): Promise<number | null> {
+  try {
+    const cached = await db.find_one<hwid_reset_cache_entry>(HWID_RESET_CACHE, {})
+    
+    if (!cached) return null
+    
+    const now = Date.now()
+    if (now - cached.cached_at > RESET_CACHE_TTL_MS) {
+      return null
+    }
+    
+    return cached.reset_count
+  } catch (error) {
+    return null
+  }
+}
+
+/**
+ * - SAVE RESET COUNT TO CACHE - \\
+ */
+async function save_reset_count_cache(reset_count: number): Promise<void> {
+  try {
+    await db.delete_many(HWID_RESET_CACHE, {})
+    
+    await db.insert_one(HWID_RESET_CACHE, {
+      reset_count,
+      cached_at: Date.now(),
+    })
+  } catch (error) {
+    console.error("[ - HWID RESET TRACKER - ] Failed to cache reset count:", error)
+  }
+}
+
 /**
  * - TRACK HWID RESET REQUEST - \\
  */
@@ -124,6 +168,8 @@ async function track_hwid_reset(user_id: string): Promise<void> {
       user_id,
       timestamp: Date.now(),
     })
+    
+    await db.delete_many(HWID_RESET_CACHE, {})
   } catch (error) {
     console.error("[ - HWID RESET TRACKER - ] Failed to track reset:", error)
   }
@@ -134,15 +180,26 @@ async function track_hwid_reset(user_id: string): Promise<void> {
  */
 async function check_and_enable_hwid_less(client: Client): Promise<void> {
   try {
-    const one_minute_ago = Date.now() - 60000
+    const cached_count = await get_cached_reset_count()
     
-    const recent_resets = await db.find_many<hwid_reset_request>(HWID_RESET_TRACKER, {
-      timestamp: { $gte: one_minute_ago },
-    })
+    let reset_count: number
+    
+    if (cached_count !== null) {
+      reset_count = cached_count
+      console.log(`[ - HWID RESET TRACKER - ] Using cached reset count: ${reset_count}/${RESET_THRESHOLD}`)
+    } else {
+      const one_minute_ago = Date.now() - 60000
+      
+      const recent_resets = await db.find_many<hwid_reset_request>(HWID_RESET_TRACKER, {
+        timestamp: { $gte: one_minute_ago },
+      })
 
-    const reset_count = recent_resets.length
-
-    console.log(`[ - HWID RESET TRACKER - ] Resets in last minute: ${reset_count}/${RESET_THRESHOLD}`)
+      reset_count = recent_resets.length
+      
+      await save_reset_count_cache(reset_count)
+      
+      console.log(`[ - HWID RESET TRACKER - ] Resets in last minute: ${reset_count}/${RESET_THRESHOLD}`)
+    }
 
     if (reset_count >= RESET_THRESHOLD) {
       const existing_status = await db.find_one<hwid_less_status>("hwid_less_status", {

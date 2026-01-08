@@ -113,6 +113,9 @@ export async function handle_free_reset_hwid(interaction: ButtonInteraction): Pr
       return
     }
 
+    // - TRACK RESET ATTEMPT BEFORE API CALL - \\
+    await track_and_check_hwid_reset(interaction.client, member.id)
+
     const reset_url  = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users/resethwid`
     const reset_body = { user_key }
     const reset_res  = await http.post<any>(reset_url, reset_body, get_headers())
@@ -121,8 +124,6 @@ export async function handle_free_reset_hwid(interaction: ButtonInteraction): Pr
 
     if (reset_res.success === true || reset_res.message?.toLowerCase().includes("success")) {
       reset_cooldowns.set(member.id, now)
-      
-      await track_and_check_hwid_reset(interaction.client, member.id)
       
       await api.edit_deferred_reply(interaction, component.build_message({
         components: [
