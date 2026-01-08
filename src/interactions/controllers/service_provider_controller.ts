@@ -136,7 +136,7 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
   try {
     const one_minute_ago = Date.now() - 60000
     
-    const recent_resets = await db.find<hwid_reset_request>(HWID_RESET_TRACKER, {
+    const recent_resets = await db.find_many<hwid_reset_request>(HWID_RESET_TRACKER, {
       timestamp: { $gte: one_minute_ago },
     })
 
