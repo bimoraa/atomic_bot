@@ -491,6 +491,10 @@ export async function create_text_channel(channel: VoiceChannel, owner: GuildMem
     }
 
     const bot_id = channel.guild.members.me?.id
+    if (!bot_id) {
+      __log.error("[ - TEXT CHANNEL - ] Bot member not found in guild")
+      return null
+    }
 
     // - allow bot + owner to see/send while hiding everyone - \
     const text_channel = await channel.guild.channels.create({
@@ -506,25 +510,28 @@ export async function create_text_channel(channel: VoiceChannel, owner: GuildMem
           id    : owner.id,
           allow : [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
         },
-        ...(bot_id
-          ? [
-              {
-                id    : bot_id,
-                allow : [
-                  PermissionFlagsBits.ViewChannel,
-                  PermissionFlagsBits.SendMessages,
-                  PermissionFlagsBits.EmbedLinks,
-                  PermissionFlagsBits.AttachFiles,
-                ],
-              },
-            ]
-          : []),
+        {
+          id    : bot_id,
+          allow : [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.AttachFiles,
+          ],
+        },
       ],
     })
 
+    __log.info(`[ - TEXT CHANNEL - ] Created: ${text_channel.name} (${text_channel.id})`)
+    
     __text_channels.set(channel.id, text_channel.id)
 
-    await create_in_voice_interface(channel, owner)
+    const interface_id = await create_in_voice_interface(channel, owner)
+    if (interface_id) {
+      __log.info(`[ - INTERFACE - ] Created in text channel ${text_channel.id}`)
+    } else {
+      __log.error(`[ - INTERFACE - ] Failed to create in text channel ${text_channel.id}`)
+    }
 
     return text_channel.id
   } catch (error) {
@@ -836,18 +843,36 @@ export function init_from_database(
 export async function create_in_voice_interface(voice_channel: VoiceChannel, owner: GuildMember): Promise<string | null> {
   try {
     if (__in_voice_interfaces.has(voice_channel.id)) {
+      __log.info(`[ - INTERFACE - ] Already exists for voice channel ${voice_channel.id}`)
       return __in_voice_interfaces.get(voice_channel.id) || null
     }
 
     const text_channel_id = __text_channels.get(voice_channel.id)
     if (!text_channel_id) {
+      __log.error(`[ - INTERFACE - ] No text channel ID found for voice channel ${voice_channel.id}`)
       return null
     }
 
-    const text_channel = voice_channel.guild.channels.cache.get(text_channel_id)
+    let text_channel = voice_channel.guild.channels.cache.get(text_channel_id)
     if (!text_channel) {
+      __log.warn(`[ - INTERFACE - ] Text channel not in cache, fetching...`)
+      try {
+        const fetched = await voice_channel.guild.channels.fetch(text_channel_id)
+        if (fetched) {
+          text_channel = fetched
+        }
+      } catch (fetch_error) {
+        __log.error(`[ - INTERFACE - ] Failed to fetch text channel ${text_channel_id}:`, fetch_error)
+        return null
+      }
+    }
+
+    if (!text_channel) {
+      __log.error(`[ - INTERFACE - ] Text channel ${text_channel_id} not found`)
       return null
     }
+
+    __log.info(`[ - INTERFACE - ] Building message for channel ${text_channel_id}`)
 
     const interface_message = component.build_message({
       components: [
@@ -885,6 +910,8 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
       ],
     })
 
+    __log.info(`[ - INTERFACE - ] Sending to channel ${text_channel_id}`)
+
     const sent_message = await api.send_components_v2(
       text_channel_id,
       api.get_token(),
@@ -893,9 +920,11 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
 
     if (sent_message && sent_message.id) {
       __in_voice_interfaces.set(voice_channel.id, sent_message.id)
+      __log.info(`[ - INTERFACE - ] Successfully sent message ${sent_message.id}`)
       return sent_message.id
     }
 
+    __log.error(`[ - INTERFACE - ] Failed to send message, response:`, sent_message)
     return null
   } catch (error) {
     __log.error("Failed to create in-voice interface:", error)
