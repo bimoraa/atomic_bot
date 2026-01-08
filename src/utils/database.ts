@@ -311,6 +311,28 @@ async function init_tables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_generic_data_collection ON generic_data(collection)
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hwid_reset_tracker (
+        id         SERIAL PRIMARY KEY,
+        user_id    VARCHAR(255) NOT NULL,
+        timestamp  BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_hwid_reset_tracker_timestamp ON hwid_reset_tracker(timestamp)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hwid_reset_cache (
+        id          SERIAL PRIMARY KEY,
+        reset_count INTEGER NOT NULL,
+        cached_at   BIGINT NOT NULL,
+        created_at  TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")
@@ -496,6 +518,8 @@ function get_table_name(collection: string): string {
     server_tag_users      : "server_tag_users",
     free_script_users     : "free_script_users",
     hwid_less_schedule    : "hwid_less_schedule",
+    hwid_reset_tracker    : "hwid_reset_tracker",
+    hwid_reset_cache      : "hwid_reset_cache",
     booster_whitelist     : "booster_whitelist",
     work_logs             : "work_logs",
     work_reports          : "work_reports",
