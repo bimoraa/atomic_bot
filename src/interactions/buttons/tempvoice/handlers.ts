@@ -1,6 +1,7 @@
 import { ButtonInteraction, GuildMember, VoiceChannel } from "discord.js"
 import * as tempvoice                                   from "../../../services/tempvoice"
 import * as voice_tracker                               from "../../../services/voice_time_tracker"
+import * as voice_interaction                           from "../../../services/voice_interaction_tracker"
 import { component, modal }                             from "../../../utils"
 
 function create_not_in_channel_reply(guild_id: string, generator_channel_id: string | null) {
@@ -329,18 +330,58 @@ export async function handle_tempvoice_invite(interaction: ButtonInteraction): P
     return
   }
 
+  await interaction.deferReply({ ephemeral: true })
+
+  const suggested_users = await voice_interaction.get_suggested_users(
+    member.id,
+    guild_id,
+    channel,
+    25
+  )
+
+  const user_options = await Promise.all(
+    suggested_users.slice(0, 25).map(async (user_id, index) => {
+      try {
+        const user = await interaction.client.users.fetch(user_id)
+        const is_in_channel = channel.members.has(user_id)
+        const description = is_in_channel ? "Currently in channel" : 
+                          index < 5 ? "Frequently interacted" : ""
+        const emoji_value = is_in_channel ? "🔊" : index < 5 ? "⭐" : undefined
+        return {
+          label      : user.username,
+          value      : user_id,
+          description: description,
+          ...(emoji_value ? { emoji: { name: emoji_value } } : {}),
+        }
+      } catch (error) {
+        return null
+      }
+    })
+  )
+
+  const valid_options = user_options.filter(opt => opt !== null)
+
+  if (valid_options.length === 0) {
+    await interaction.editReply(create_error_reply("No users available to invite."))
+    return
+  }
+
   const reply = component.build_message({
     components: [
       component.container({
         components: [
-          component.text("Select a user to invite:"),
-          component.user_select("tempvoice_invite_select", "Select user to invite"),
+          component.text([
+            "Select a user to invite:",
+            "-# ⭐ = Frequently interacted | 🔊 = Currently in channel",
+          ]),
+          component.divider(1),
+          component.select_menu("tempvoice_invite_select", "Select user to invite", valid_options),
         ],
       }),
     ],
   })
 
-  await interaction.reply({ ...reply, ephemeral: true })
+  await interaction.editReply(reply)
 }
 
 export async function handle_tempvoice_kick(interaction: ButtonInteraction): Promise<void> {
