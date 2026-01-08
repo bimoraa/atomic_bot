@@ -15,7 +15,7 @@ import { handle_afk_return, handle_afk_mentions }                        from ".
 import { load_afk_from_db }                                              from "./services/afk"
 import { check_server_tag_change }                                       from "./services/server_tag"
 import { start_free_script_checker }                                     from "./services/free_script_manager"
-import { start_service_provider_cache }                                  from "./services/service_provider_cache"
+import { start_service_provider_cache, stop_service_provider_cache }     from "./services/service_provider_cache"
 import { db, component }                                                 from "./utils"
 import { log_error }                                                     from "./utils/error_logger"
 import { check_spam }                                                    from "./services/anti_spam"
@@ -251,7 +251,11 @@ process.on("uncaughtException", (error: Error) => {
 process.on("SIGTERM", async () => {
   console.log("[SIGTERM] Graceful shutdown initiated")
   try {
+    console.log("[SIGTERM] Stopping service provider cache...")
+    stop_service_provider_cache()
+    console.log("[SIGTERM] Destroying client...")
     await client.destroy()
+    console.log("[SIGTERM] Disconnecting database...")
     await db.disconnect()
     console.log("[SIGTERM] Shutdown complete")
     process.exit(0)
@@ -264,7 +268,11 @@ process.on("SIGTERM", async () => {
 process.on("SIGINT", async () => {
   console.log("[SIGINT] Graceful shutdown initiated")
   try {
+    console.log("[SIGINT] Stopping service provider cache...")
+    stop_service_provider_cache()
+    console.log("[SIGINT] Destroying client...")
     await client.destroy()
+    console.log("[SIGINT] Disconnecting database...")
     await db.disconnect()
     console.log("[SIGINT] Shutdown complete")
     process.exit(0)

@@ -5,7 +5,8 @@ import * as luarmor from "./luarmor"
 
 const CACHE_INTERVAL_MS = 3 * 60 * 1000
 
-let is_syncing = false
+let is_syncing          = false
+let sync_interval       : NodeJS.Timeout | null = null
 
 /**
  * @param {Client} client - Discord client instance
@@ -99,7 +100,18 @@ export function start_service_provider_cache(client: Client): void {
   }
 
   void run_sync()
-  setInterval(run_sync, CACHE_INTERVAL_MS)
+  sync_interval = setInterval(run_sync, CACHE_INTERVAL_MS)
 
   console.log("[ - SERVICE PROVIDER CACHE - ] Scheduler started (3 minutes)")
+}
+
+/**
+ * @return {void}
+ */
+export function stop_service_provider_cache(): void {
+  if (sync_interval) {
+    clearInterval(sync_interval)
+    sync_interval = null
+    console.log("[ - SERVICE PROVIDER CACHE - ] Scheduler stopped")
+  }
 }
