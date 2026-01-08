@@ -3,9 +3,14 @@ import { db, component } from "../../utils"
 import { log_error } from "../../utils/error_logger"
 import * as luarmor from "../../services/luarmor"
 
-const RESET_COLLECTION      = "service_provider_resets"
-const USER_CACHE_COLLECTION = "service_provider_user_cache"
-const CACHE_DURATION_MS     = 60 * 60 * 1000
+const RESET_COLLECTION          = "service_provider_resets"
+const USER_CACHE_COLLECTION     = "service_provider_user_cache"
+const HWID_RESET_TRACKER        = "hwid_reset_tracker"
+const CACHE_DURATION_MS         = 60 * 60 * 1000
+const RESET_THRESHOLD           = 40
+const HWID_LESS_DURATION_MS     = 60 * 60 * 1000
+const PROJECT_ID                = "6958841b2d9e5e049a24a23e376e0d77"
+const NOTIFICATION_USER         = "1118453649727823974"
 
 function is_rate_limited(error_message?: string): boolean {
   if (!error_message) return false
@@ -95,6 +100,160 @@ async function save_cached_user(user_id: string, user_data: luarmor.luarmor_user
   }
 }
 
+interface hwid_reset_request {
+  _id?          : any
+  timestamp     : number
+  user_id       : string
+}
+
+interface hwid_less_status {
+  _id?          : any
+  enabled       : boolean
+  enabled_at    : number
+  expires_at    : number
+  triggered_by  : string
+  reset_count   : number
+}
+
+/**
+ * - TRACK HWID RESET REQUEST - \\
+ */
+async function track_hwid_reset(user_id: string): Promise<void> {
+  try {
+    await db.insert_one(HWID_RESET_TRACKER, {
+      user_id,
+      timestamp: Date.now(),
+    })
+  } catch (error) {
+    console.error("[ - HWID RESET TRACKER - ] Failed to track reset:", error)
+  }
+}
+
+/**
+ * - CHECK AND AUTO-ENABLE HWID LESS - \\
+ */
+async function check_and_enable_hwid_less(client: Client): Promise<void> {
+  try {
+    const one_minute_ago = Date.now() - 60000
+    
+    const recent_resets = await db.find<hwid_reset_request>(HWID_RESET_TRACKER, {
+      timestamp: { $gte: one_minute_ago },
+    })
+
+    const reset_count = recent_resets.length
+
+    console.log(`[ - HWID RESET TRACKER - ] Resets in last minute: ${reset_count}/${RESET_THRESHOLD}`)
+
+    if (reset_count >= RESET_THRESHOLD) {
+      const existing_status = await db.find_one<hwid_less_status>("hwid_less_status", {
+        enabled   : true,
+        expires_at: { $gt: Date.now() },
+      })
+
+      if (existing_status) {
+        console.log("[ - HWID RESET TRACKER - ] HWID less already enabled")
+        return
+      }
+
+      const enable_result = await luarmor.update_project_settings(PROJECT_ID, true)
+
+      if (enable_result.success) {
+        const now        = Date.now()
+        const expires_at = now + HWID_LESS_DURATION_MS
+
+        await db.insert_one("hwid_less_status", {
+          enabled      : true,
+          enabled_at   : now,
+          expires_at   : expires_at,
+          triggered_by : "auto",
+          reset_count  : reset_count,
+        })
+
+        console.log(`[ - HWID RESET TRACKER - ] Auto-enabled HWID less for 1 hour (${reset_count} requests)`)
+
+        try {
+          const notification_user = await client.users.fetch(NOTIFICATION_USER)
+          const message           = component.build_message({
+            components: [
+              component.container({
+                accent_color: 0xED4245,
+                components: [
+                  component.text("## Auto HWID-Less Enabled!"),
+                ],
+              }),
+              component.container({
+                components: [
+                  component.text([
+                    "## Details:",
+                    `- Trigger: **Auto (High Reset Requests)**`,
+                    `- Reset Count: **${reset_count} requests in 1 minute**`,
+                    `- Threshold: **${RESET_THRESHOLD} requests/minute**`,
+                    `- Duration: **1 hour**`,
+                    `- Expires: <t:${Math.floor(expires_at / 1000)}:R>`,
+                    ``,
+                    `HWID-less mode has been automatically enabled due to high reset request volume.`,
+                  ]),
+                ],
+              }),
+            ],
+          })
+
+          await notification_user.send(message)
+        } catch (dm_error) {
+          console.error("[ - HWID RESET TRACKER - ] Failed to send notification:", dm_error)
+        }
+
+        setTimeout(async () => {
+          try {
+            const disable_result = await luarmor.update_project_settings(PROJECT_ID, false)
+            if (disable_result.success) {
+              console.log("[ - HWID RESET TRACKER - ] Auto-disabled HWID less after 1 hour")
+              
+              try {
+                const notification_user = await client.users.fetch(NOTIFICATION_USER)
+                const message           = component.build_message({
+                  components: [
+                    component.container({
+                      accent_color: 0x57F287,
+                      components: [
+                        component.text("## Auto HWID-Less Disabled!"),
+                      ],
+                    }),
+                    component.container({
+                      components: [
+                        component.text([
+                          "HWID-less mode has been automatically disabled after 1 hour.",
+                          "",
+                          "Normal HWID protection is now re-enabled.",
+                        ]),
+                      ],
+                    }),
+                  ],
+                })
+
+                await notification_user.send(message)
+              } catch (dm_error) {
+                console.error("[ - HWID RESET TRACKER - ] Failed to send disable notification:", dm_error)
+              }
+            }
+          } catch (error) {
+            console.error("[ - HWID RESET TRACKER - ] Failed to auto-disable HWID less:", error)
+          }
+        }, HWID_LESS_DURATION_MS)
+      } else {
+        console.error("[ - HWID RESET TRACKER - ] Failed to enable HWID less:", enable_result.error)
+      }
+    }
+
+    const old_timestamp = Date.now() - 300000
+    await db.delete_many(HWID_RESET_TRACKER, {
+      timestamp: { $lt: old_timestamp },
+    })
+  } catch (error) {
+    console.error("[ - HWID RESET TRACKER - ] Error checking reset count:", error)
+  }
+}
+
 async function get_user_with_cache(user_id: string, client: Client): Promise<{ success: boolean; data?: luarmor.luarmor_user; error?: string; from_cache?: boolean }> {
   const cached = await get_cached_user(user_id)
   
@@ -178,6 +337,8 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
 
     if (reset_result.success) {
       await save_cached_user(options.user_id, user_result.data)
+      
+      await track_and_check_hwid_reset(options.client, options.user_id)
       
       return {
         success : true,
@@ -305,3 +466,10 @@ export async function redeem_user_key(options: { client: Client; user_id: string
   }
 }
 
+/**
+ * - TRACK AND CHECK HWID RESET - \\
+ */
+export async function track_and_check_hwid_reset(client: Client, user_id: string): Promise<void> {
+  await track_hwid_reset(user_id)
+  await check_and_enable_hwid_less(client)
+}

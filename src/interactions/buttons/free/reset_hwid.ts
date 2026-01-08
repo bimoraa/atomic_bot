@@ -1,7 +1,8 @@
-import { ButtonInteraction, GuildMember }   from "discord.js"
-import { component, api, format }          from "../../../utils"
-import { http, env, logger }               from "../../../utils"
-import { remove_free_script_access }       from "../../../services/free_script_manager"
+import { ButtonInteraction, GuildMember }      from "discord.js"
+import { component, api, format }              from "../../../utils"
+import { http, env, logger }                   from "../../../utils"
+import { remove_free_script_access }           from "../../../services/free_script_manager"
+import { track_and_check_hwid_reset }          from "../../controllers/service_provider_controller"
 
 const __log               = logger.create_logger("free_reset_hwid")
 const FREE_PROJECT_ID     = "cd7560b7384fd815dafd993828c40d2b"
@@ -120,6 +121,8 @@ export async function handle_free_reset_hwid(interaction: ButtonInteraction): Pr
 
     if (reset_res.success === true || reset_res.message?.toLowerCase().includes("success")) {
       reset_cooldowns.set(member.id, now)
+      
+      await track_and_check_hwid_reset(interaction.client, member.id)
       
       await api.edit_deferred_reply(interaction, component.build_message({
         components: [
