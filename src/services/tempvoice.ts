@@ -356,6 +356,14 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
       __log.error(`Failed to move ${member.displayName} to channel:`, err)
     }
 
+    console.log(`[ - TEMPVOICE - ] Creating text channel for ${channel.name}...`)
+    const text_channel_id = await create_text_channel(channel, member)
+    if (text_channel_id) {
+      console.log(`[ - TEMPVOICE - ] Text channel created: ${text_channel_id}`)
+    } else {
+      console.log(`[ - TEMPVOICE - ] Failed to create text channel`)
+    }
+
     return channel
   } catch (error) {
     __log.error("Failed to create temp channel:", error)
@@ -486,13 +494,18 @@ export function is_waiting_room_enabled(channel_id: string): boolean {
 
 export async function create_text_channel(channel: VoiceChannel, owner: GuildMember): Promise<string | null> {
   try {
+    console.log(`[ - TEXT CHANNEL - ] Starting creation for voice channel ${channel.id}`)
+    
     if (__text_channels.has(channel.id)) {
+      console.log(`[ - TEXT CHANNEL - ] Already exists, returning cached ID`)
       return __text_channels.get(channel.id) || null
     }
 
     const bot_id = channel.guild.members.me?.id
+    console.log(`[ - TEXT CHANNEL - ] Bot ID: ${bot_id}`)
+    
     if (!bot_id) {
-      __log.error("[ - TEXT CHANNEL - ] Bot member not found in guild")
+      console.error("[ - TEXT CHANNEL - ] Bot member not found in guild")
       return null
     }
 
@@ -522,15 +535,16 @@ export async function create_text_channel(channel: VoiceChannel, owner: GuildMem
       ],
     })
 
-    __log.info(`[ - TEXT CHANNEL - ] Created: ${text_channel.name} (${text_channel.id})`)
+    console.log(`[ - TEXT CHANNEL - ] Created: ${text_channel.name} (${text_channel.id})`)
     
     __text_channels.set(channel.id, text_channel.id)
 
+    console.log(`[ - TEXT CHANNEL - ] Now creating interface...`)
     const interface_id = await create_in_voice_interface(channel, owner)
     if (interface_id) {
-      __log.info(`[ - INTERFACE - ] Created in text channel ${text_channel.id}`)
+      console.log(`[ - INTERFACE - ] Created successfully: ${interface_id}`)
     } else {
-      __log.error(`[ - INTERFACE - ] Failed to create in text channel ${text_channel.id}`)
+      console.error(`[ - INTERFACE - ] Failed to create interface`)
     }
 
     return text_channel.id
@@ -842,37 +856,44 @@ export function init_from_database(
  */
 export async function create_in_voice_interface(voice_channel: VoiceChannel, owner: GuildMember): Promise<string | null> {
   try {
+    console.log(`[ - INTERFACE - ] Starting creation for voice channel ${voice_channel.id}`)
+    
     if (__in_voice_interfaces.has(voice_channel.id)) {
-      __log.info(`[ - INTERFACE - ] Already exists for voice channel ${voice_channel.id}`)
+      console.log(`[ - INTERFACE - ] Already exists, returning cached ID`)
       return __in_voice_interfaces.get(voice_channel.id) || null
     }
 
     const text_channel_id = __text_channels.get(voice_channel.id)
+    console.log(`[ - INTERFACE - ] Text channel ID from map: ${text_channel_id}`)
+    
     if (!text_channel_id) {
-      __log.error(`[ - INTERFACE - ] No text channel ID found for voice channel ${voice_channel.id}`)
+      console.error(`[ - INTERFACE - ] No text channel ID found for voice channel ${voice_channel.id}`)
       return null
     }
 
     let text_channel = voice_channel.guild.channels.cache.get(text_channel_id)
+    console.log(`[ - INTERFACE - ] Text channel from cache: ${text_channel ? 'FOUND' : 'NOT FOUND'}`)
+    
     if (!text_channel) {
-      __log.warn(`[ - INTERFACE - ] Text channel not in cache, fetching...`)
+      console.log(`[ - INTERFACE - ] Text channel not in cache, fetching...`)
       try {
         const fetched = await voice_channel.guild.channels.fetch(text_channel_id)
         if (fetched) {
           text_channel = fetched
+          console.log(`[ - INTERFACE - ] Successfully fetched text channel`)
         }
       } catch (fetch_error) {
-        __log.error(`[ - INTERFACE - ] Failed to fetch text channel ${text_channel_id}:`, fetch_error)
+        console.error(`[ - INTERFACE - ] Failed to fetch text channel:`, fetch_error)
         return null
       }
     }
 
     if (!text_channel) {
-      __log.error(`[ - INTERFACE - ] Text channel ${text_channel_id} not found`)
+      console.error(`[ - INTERFACE - ] Text channel still not found after fetch`)
       return null
     }
 
-    __log.info(`[ - INTERFACE - ] Building message for channel ${text_channel_id}`)
+    console.log(`[ - INTERFACE - ] Building message for channel ${text_channel_id}`)
 
     const interface_message = component.build_message({
       components: [
@@ -910,7 +931,7 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
       ],
     })
 
-    __log.info(`[ - INTERFACE - ] Sending to channel ${text_channel_id}`)
+    console.log(`[ - INTERFACE - ] Sending message to channel ${text_channel_id}...`)
 
     const sent_message = await api.send_components_v2(
       text_channel_id,
@@ -918,16 +939,18 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
       interface_message
     )
 
+    console.log(`[ - INTERFACE - ] API response:`, sent_message)
+
     if (sent_message && sent_message.id) {
       __in_voice_interfaces.set(voice_channel.id, sent_message.id)
-      __log.info(`[ - INTERFACE - ] Successfully sent message ${sent_message.id}`)
+      console.log(`[ - INTERFACE - ] ✓ Successfully sent message ${sent_message.id}`)
       return sent_message.id
     }
 
-    __log.error(`[ - INTERFACE - ] Failed to send message, response:`, sent_message)
+    console.error(`[ - INTERFACE - ] ✗ Failed to send message, no ID in response`)
     return null
   } catch (error) {
-    __log.error("Failed to create in-voice interface:", error)
+    console.error("[ - INTERFACE - ] Exception during creation:", error)
     return null
   }
 }
