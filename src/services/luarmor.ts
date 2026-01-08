@@ -258,6 +258,8 @@ export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor
     const body     = { discord_id }
     const response = await http.post<any>(url, body, get_headers())
 
+    __log.info(`[ - LUARMOR - ] Reset HWID by discord_id ${discord_id}: ${JSON.stringify(response)}`)
+
     const rate_limit_error = check_rate_limit(response)
     if (rate_limit_error) {
       return { success: false, error: rate_limit_error }
@@ -279,6 +281,8 @@ export async function reset_hwid_by_key(user_key: string): Promise<luarmor_respo
     const url      = `${__base_url}/projects/${get_project_id()}/users/resethwid`
     const body     = { user_key }
     const response = await http.post<any>(url, body, get_headers())
+
+    __log.info(`[ - LUARMOR - ] Reset HWID by user_key ${user_key}: ${JSON.stringify(response)}`)
 
     const rate_limit_error = check_rate_limit(response)
     if (rate_limit_error) {
