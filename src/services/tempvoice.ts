@@ -34,6 +34,24 @@ const __config = load_config<tempvoice_config>("tempvoice")
 const __category_name  = __config.category_name  ?? "Temp Voice"
 const __generator_name = __config.generator_name ?? "➕ Create Voice"
 
+const emoji = {
+  name         : { id: "1449851618295283763", name: "name"         },
+  limit        : { id: "1449851533033214063", name: "limit"        },
+  privacy      : { id: "1449851430637797616", name: "privacy"      },
+  waiting_room : { id: "1449851292896858132", name: "waiting_room" },
+  chat         : { id: "1449851153289576519", name: "chat"         },
+  trust        : { id: "1449851587152449746", name: "trust"        },
+  untrust      : { id: "1449851506550509730", name: "untrust"      },
+  invite       : { id: "1449851345405218997", name: "invite"       },
+  kick         : { id: "1449851225427148860", name: "kick"         },
+  region       : { id: "1449851128295456918", name: "region"       },
+  block        : { id: "1449851559591809104", name: "block"        },
+  unblock      : { id: "1449851467304534017", name: "unblock"      },
+  claim        : { id: "1449851319350333613", name: "claim"        },
+  transfer     : { id: "1449851186772578315", name: "transfer"     },
+  delete       : { id: "1449851060922355824", name: "delete"       },
+}
+
 const __temp_channels: Map<string, string>              = new Map()
 const __channel_owners: Map<string, string>             = new Map()
 const __trusted_users: Map<string, Set<string>>         = new Map()
@@ -820,36 +838,31 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
         component.container({
           components: [
             component.text([
-              `## <:voice:1449851467304534017> Voice Channel Controls`,
+              `## Voice Channel Controls`,
               `**Owner:** <@${owner.id}>`,
               `**Channel:** ${voice_channel.name}`,
             ]),
             component.divider(2),
-            component.text([
-              `### <:settings:1449851467304534017> Channel Settings`,
-            ]),
             component.action_row(
-              component.secondary_button("Rename", "voice_rename"),
-              component.secondary_button("Set Limit", "voice_limit"),
-              component.secondary_button("Privacy", "voice_privacy")
+              component.secondary_button("", "tempvoice_name",        emoji.name),
+              component.secondary_button("", "tempvoice_limit",       emoji.limit),
+              component.secondary_button("", "tempvoice_privacy",     emoji.privacy),
+              component.secondary_button("", "tempvoice_waitingroom", emoji.waiting_room),
+              component.secondary_button("", "tempvoice_chat",        emoji.chat),
             ),
-            component.divider(1),
-            component.text([
-              `### <:users:1449851467304534017> User Management`,
-            ]),
             component.action_row(
-              component.secondary_button("Trust User", "voice_trust"),
-              component.secondary_button("Block User", "voice_block"),
-              component.secondary_button("Kick User", "voice_kick")
+              component.secondary_button("", "tempvoice_trust",   emoji.trust),
+              component.secondary_button("", "tempvoice_untrust", emoji.untrust),
+              component.secondary_button("", "tempvoice_invite",  emoji.invite),
+              component.secondary_button("", "tempvoice_kick",    emoji.kick),
+              component.secondary_button("", "tempvoice_region",  emoji.region),
             ),
-            component.divider(1),
-            component.text([
-              `### <:tools:1449851467304534017> Advanced`,
-            ]),
             component.action_row(
-              component.secondary_button("Transfer", "voice_transfer"),
-              component.secondary_button("Region", "voice_region"),
-              component.danger_button("Delete", "voice_delete")
+              component.secondary_button("", "tempvoice_block",    emoji.block),
+              component.secondary_button("", "tempvoice_unblock",  emoji.unblock),
+              component.secondary_button("", "tempvoice_claim",    emoji.claim),
+              component.secondary_button("", "tempvoice_transfer", emoji.transfer),
+              component.danger_button("", "tempvoice_delete",      emoji.delete),
             ),
           ],
         }),
@@ -916,37 +929,32 @@ export async function update_in_voice_interface(voice_channel: VoiceChannel, own
         component.container({
           components: [
             component.text([
-              `## <:voice:1449851467304534017> Voice Channel Controls`,
+              `## Voice Channel Controls`,
               `**Owner:** <@${owner.id}>`,
               `**Channel:** ${voice_channel.name}`,
               `**Members:** ${voice_channel.members.size}/${voice_channel.userLimit || "∞"}`,
             ]),
             component.divider(2),
-            component.text([
-              `### <:settings:1449851467304534017> Channel Settings`,
-            ]),
             component.action_row(
-              component.secondary_button("Rename", "voice_rename"),
-              component.secondary_button("Set Limit", "voice_limit"),
-              component.secondary_button("Privacy", "voice_privacy")
+              component.secondary_button("", "tempvoice_name",        emoji.name),
+              component.secondary_button("", "tempvoice_limit",       emoji.limit),
+              component.secondary_button("", "tempvoice_privacy",     emoji.privacy),
+              component.secondary_button("", "tempvoice_waitingroom", emoji.waiting_room),
+              component.secondary_button("", "tempvoice_chat",        emoji.chat),
             ),
-            component.divider(1),
-            component.text([
-              `### <:users:1449851467304534017> User Management`,
-            ]),
             component.action_row(
-              component.secondary_button("Trust User", "voice_trust"),
-              component.secondary_button("Block User", "voice_block"),
-              component.secondary_button("Kick User", "voice_kick")
+              component.secondary_button("", "tempvoice_trust",   emoji.trust),
+              component.secondary_button("", "tempvoice_untrust", emoji.untrust),
+              component.secondary_button("", "tempvoice_invite",  emoji.invite),
+              component.secondary_button("", "tempvoice_kick",    emoji.kick),
+              component.secondary_button("", "tempvoice_region",  emoji.region),
             ),
-            component.divider(1),
-            component.text([
-              `### <:tools:1449851467304534017> Advanced`,
-            ]),
             component.action_row(
-              component.secondary_button("Transfer", "voice_transfer"),
-              component.secondary_button("Region", "voice_region"),
-              component.danger_button("Delete", "voice_delete")
+              component.secondary_button("", "tempvoice_block",    emoji.block),
+              component.secondary_button("", "tempvoice_unblock",  emoji.unblock),
+              component.secondary_button("", "tempvoice_claim",    emoji.claim),
+              component.secondary_button("", "tempvoice_transfer", emoji.transfer),
+              component.danger_button("", "tempvoice_delete",      emoji.delete),
             ),
           ],
         }),
