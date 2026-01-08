@@ -75,15 +75,15 @@ export async function sync_service_provider_cache(client: Client): Promise<void>
         }
       }
     }
-try {
+
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Sync complete: ${cached_users} cached, ${failed_users} failed at ${new Date(now).toISOString()}`)
+  } catch (error) {
+    console.error("[ - SERVICE PROVIDER CACHE - ] Sync error:", error)
+    try {
       await log_error(client, error as Error, "service_provider_cache_sync", {})
     } catch (log_err) {
       console.error("[ - SERVICE PROVIDER CACHE - ] Failed to log error:", log_err)
     }
-    console.log(`[ - SERVICE PROVIDER CACHE - ] Sync complete: ${cached_users} cached, ${failed_users} failed at ${new Date(now).toISOString()}`)
-  } catch (error) {
-    console.error("[ - SERVICE PROVIDER CACHE - ] Sync error:", error)
-    await log_error(client, error as Error, "service_provider_cache_sync", {})
   } finally {
     is_syncing = false
   }
