@@ -490,6 +490,9 @@ export async function create_text_channel(channel: VoiceChannel, owner: GuildMem
       return __text_channels.get(channel.id) || null
     }
 
+    const bot_id = channel.guild.members.me?.id
+
+    // - allow bot + owner to see/send while hiding everyone - \
     const text_channel = await channel.guild.channels.create({
       name                 : `${channel.name}-chat`,
       type                 : ChannelType.GuildText,
@@ -503,6 +506,19 @@ export async function create_text_channel(channel: VoiceChannel, owner: GuildMem
           id    : owner.id,
           allow : [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
         },
+        ...(bot_id
+          ? [
+              {
+                id    : bot_id,
+                allow : [
+                  PermissionFlagsBits.ViewChannel,
+                  PermissionFlagsBits.SendMessages,
+                  PermissionFlagsBits.EmbedLinks,
+                  PermissionFlagsBits.AttachFiles,
+                ],
+              },
+            ]
+          : []),
       ],
     })
 
