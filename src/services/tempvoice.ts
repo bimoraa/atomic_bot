@@ -32,6 +32,7 @@ const __trusted_users: Map<string, Set<string>>         = new Map()
 const __blocked_users: Map<string, Set<string>>         = new Map()
 const __waiting_rooms: Map<string, boolean>             = new Map()
 const __text_channels: Map<string, string>              = new Map()
+const __in_voice_interfaces: Map<string, string>        = new Map()
 
 let __generator_channel_id : string | null = __config.generator_channel_id || null
 let __category_id          : string | null = __config.category_id || null
@@ -168,9 +169,10 @@ export async function setup_tempvoice(guild: Guild): Promise<setup_result> {
 
     if (!generator) {
       generator = await guild.channels.create({
-        name   : __generator_name,
-        type   : ChannelType.GuildVoice,
-        parent : category.id,
+        name    : __generator_name,
+        type    : ChannelType.GuildVoice,
+        parent  : category.id,
+        bitrate : 384000,
       })
       __log.info(`Created generator channel: ${generator.name}`)
     }
@@ -275,6 +277,7 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
       name                 : channel_name,
       type                 : ChannelType.GuildVoice,
       parent               : category.id,
+      bitrate              : 384000,
       videoQualityMode     : VideoQualityMode.Auto,
       permissionOverwrites : [
         {
@@ -370,6 +373,7 @@ export function cleanup_channel_data(channel_id: string): void {
   __blocked_users.delete(channel_id)
   __waiting_rooms.delete(channel_id)
   __text_channels.delete(channel_id)
+  __in_voice_interfaces.delete(channel_id)
 }
 
 export function is_temp_channel(channel_id: string): boolean {
@@ -455,6 +459,9 @@ export async function create_text_channel(channel: VoiceChannel, owner: GuildMem
     })
 
     __text_channels.set(channel.id, text_channel.id)
+
+    await create_in_voice_interface(channel, owner)
+
     return text_channel.id
   } catch (error) {
     __log.error("Failed to create text channel:", error)
@@ -466,6 +473,8 @@ export async function delete_text_channel(voice_channel_id: string): Promise<boo
   try {
     const text_channel_id = __text_channels.get(voice_channel_id)
     if (!text_channel_id) return false
+
+    await delete_in_voice_interface(voice_channel_id)
 
     __text_channels.delete(voice_channel_id)
     return true
@@ -728,4 +737,187 @@ export function init_from_database(
     __blocked_users.set(ch.channel_id, new Set())
     __waiting_rooms.set(ch.channel_id, false)
   }
+}
+
+/**
+ * - CREATE IN-VOICE CHAT INTERFACE - \\
+ * @param voice_channel - The voice channel to create interface for
+ * @param owner - The owner of the voice channel
+ * @returns The interface message ID or null if failed
+ */
+export async function create_in_voice_interface(voice_channel: VoiceChannel, owner: GuildMember): Promise<string | null> {
+  try {
+    if (__in_voice_interfaces.has(voice_channel.id)) {
+      return __in_voice_interfaces.get(voice_channel.id) || null
+    }
+
+    const text_channel_id = __text_channels.get(voice_channel.id)
+    if (!text_channel_id) {
+      return null
+    }
+
+    const text_channel = voice_channel.guild.channels.cache.get(text_channel_id)
+    if (!text_channel) {
+      return null
+    }
+
+    const interface_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text([
+              `## <:voice:1449851467304534017> Voice Channel Controls`,
+              `**Owner:** <@${owner.id}>`,
+              `**Channel:** ${voice_channel.name}`,
+            ]),
+            component.divider(2),
+            component.text([
+              `### <:settings:1449851467304534017> Channel Settings`,
+            ]),
+            component.action_row(
+              component.secondary_button("Rename", "voice_rename"),
+              component.secondary_button("Set Limit", "voice_limit"),
+              component.secondary_button("Privacy", "voice_privacy")
+            ),
+            component.divider(1),
+            component.text([
+              `### <:users:1449851467304534017> User Management`,
+            ]),
+            component.action_row(
+              component.secondary_button("Trust User", "voice_trust"),
+              component.secondary_button("Block User", "voice_block"),
+              component.secondary_button("Kick User", "voice_kick")
+            ),
+            component.divider(1),
+            component.text([
+              `### <:tools:1449851467304534017> Advanced`,
+            ]),
+            component.action_row(
+              component.secondary_button("Transfer", "voice_transfer"),
+              component.secondary_button("Region", "voice_region"),
+              component.danger_button("Delete", "voice_delete")
+            ),
+          ],
+        }),
+      ],
+    })
+
+    const sent_message = await api.send_components_v2(
+      text_channel_id,
+      api.get_token(),
+      interface_message
+    )
+
+    if (sent_message && sent_message.id) {
+      __in_voice_interfaces.set(voice_channel.id, sent_message.id)
+      return sent_message.id
+    }
+
+    return null
+  } catch (error) {
+    __log.error("Failed to create in-voice interface:", error)
+    return null
+  }
+}
+
+/**
+ * - DELETE IN-VOICE CHAT INTERFACE - \\
+ * @param voice_channel_id - The voice channel ID
+ * @returns True if deleted successfully
+ */
+export async function delete_in_voice_interface(voice_channel_id: string): Promise<boolean> {
+  try {
+    const message_id = __in_voice_interfaces.get(voice_channel_id)
+    if (!message_id) return false
+
+    const text_channel_id = __text_channels.get(voice_channel_id)
+    if (text_channel_id) {
+      await api.delete_message(text_channel_id, message_id, api.get_token())
+    }
+
+    __in_voice_interfaces.delete(voice_channel_id)
+    return true
+  } catch (error) {
+    __log.error("Failed to delete in-voice interface:", error)
+    return false
+  }
+}
+
+/**
+ * - UPDATE IN-VOICE CHAT INTERFACE - \\
+ * @param voice_channel - The voice channel
+ * @param owner - The owner of the voice channel
+ * @returns True if updated successfully
+ */
+export async function update_in_voice_interface(voice_channel: VoiceChannel, owner: GuildMember): Promise<boolean> {
+  try {
+    const message_id = __in_voice_interfaces.get(voice_channel.id)
+    if (!message_id) return false
+
+    const text_channel_id = __text_channels.get(voice_channel.id)
+    if (!text_channel_id) return false
+
+    const interface_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text([
+              `## <:voice:1449851467304534017> Voice Channel Controls`,
+              `**Owner:** <@${owner.id}>`,
+              `**Channel:** ${voice_channel.name}`,
+              `**Members:** ${voice_channel.members.size}/${voice_channel.userLimit || "∞"}`,
+            ]),
+            component.divider(2),
+            component.text([
+              `### <:settings:1449851467304534017> Channel Settings`,
+            ]),
+            component.action_row(
+              component.secondary_button("Rename", "voice_rename"),
+              component.secondary_button("Set Limit", "voice_limit"),
+              component.secondary_button("Privacy", "voice_privacy")
+            ),
+            component.divider(1),
+            component.text([
+              `### <:users:1449851467304534017> User Management`,
+            ]),
+            component.action_row(
+              component.secondary_button("Trust User", "voice_trust"),
+              component.secondary_button("Block User", "voice_block"),
+              component.secondary_button("Kick User", "voice_kick")
+            ),
+            component.divider(1),
+            component.text([
+              `### <:tools:1449851467304534017> Advanced`,
+            ]),
+            component.action_row(
+              component.secondary_button("Transfer", "voice_transfer"),
+              component.secondary_button("Region", "voice_region"),
+              component.danger_button("Delete", "voice_delete")
+            ),
+          ],
+        }),
+      ],
+    })
+
+    await api.edit_components_v2(
+      text_channel_id,
+      message_id,
+      api.get_token(),
+      interface_message
+    )
+
+    return true
+  } catch (error) {
+    __log.error("Failed to update in-voice interface:", error)
+    return false
+  }
+}
+
+/**
+ * - GET IN-VOICE INTERFACE MESSAGE ID - \\
+ * @param voice_channel_id - The voice channel ID
+ * @returns The message ID or null
+ */
+export function get_in_voice_interface_id(voice_channel_id: string): string | null {
+  return __in_voice_interfaces.get(voice_channel_id) || null
 }

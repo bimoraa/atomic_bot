@@ -330,63 +330,18 @@ export async function handle_tempvoice_invite(interaction: ButtonInteraction): P
     return
   }
 
-  await interaction.deferReply({ ephemeral: true })
-
-  const suggested_users = await voice_interaction.get_suggested_users(
-    member.id,
-    guild_id,
-    channel,
-    25
-  )
-
-  const user_options = await Promise.all(
-    suggested_users.slice(0, 25).map(async (user_id, index) => {
-      try {
-        const user          = await interaction.client.users.fetch(user_id)
-        const is_in_channel = channel.members.has(user_id)
-        const is_frequent   = index < 5
-        
-        let description = ""
-        if (is_in_channel && is_frequent) {
-          description = "In channel • Frequently interacted"
-        } else if (is_in_channel) {
-          description = "Currently in channel"
-        } else if (is_frequent) {
-          description = "Frequently interacted"
-        }
-        
-        return {
-          label      : user.username,
-          value      : user_id,
-          icon       : user.displayAvatarURL({ extension: 'png', size: 64 }),
-          description: description,
-        }
-      } catch (error) {
-        return null
-      }
-    })
-  )
-
-  const valid_options = user_options.filter(opt => opt !== null)
-
-  if (valid_options.length === 0) {
-    await interaction.editReply(create_error_reply("No users available to invite."))
-    return
-  }
-
   const reply = component.build_message({
     components: [
       component.container({
         components: [
           component.text("Select a user to invite:"),
-          component.divider(1),
-          component.select_menu("tempvoice_invite_select", "Select user to invite", valid_options),
+          component.user_select("tempvoice_invite_select", "Select user to invite"),
         ],
       }),
     ],
   })
 
-  await interaction.editReply(reply)
+  await interaction.reply({ ...reply, ephemeral: true })
 }
 
 export async function handle_tempvoice_kick(interaction: ButtonInteraction): Promise<void> {
