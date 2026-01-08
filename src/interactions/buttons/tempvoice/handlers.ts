@@ -342,16 +342,24 @@ export async function handle_tempvoice_invite(interaction: ButtonInteraction): P
   const user_options = await Promise.all(
     suggested_users.slice(0, 25).map(async (user_id, index) => {
       try {
-        const user = await interaction.client.users.fetch(user_id)
+        const user          = await interaction.client.users.fetch(user_id)
         const is_in_channel = channel.members.has(user_id)
-        const description = is_in_channel ? "Currently in channel" : 
-                          index < 5 ? "Frequently interacted" : ""
-        const emoji_value = is_in_channel ? "🔊" : index < 5 ? "⭐" : undefined
+        const is_frequent   = index < 5
+        
+        let description = ""
+        if (is_in_channel && is_frequent) {
+          description = "In channel • Frequently interacted"
+        } else if (is_in_channel) {
+          description = "Currently in channel"
+        } else if (is_frequent) {
+          description = "Frequently interacted"
+        }
+        
         return {
           label      : user.username,
           value      : user_id,
+          icon       : user.displayAvatarURL({ extension: 'png', size: 64 }),
           description: description,
-          ...(emoji_value ? { emoji: { name: emoji_value } } : {}),
         }
       } catch (error) {
         return null
@@ -370,10 +378,7 @@ export async function handle_tempvoice_invite(interaction: ButtonInteraction): P
     components: [
       component.container({
         components: [
-          component.text([
-            "Select a user to invite:",
-            "-# ⭐ = Frequently interacted | 🔊 = Currently in channel",
-          ]),
+          component.text("Select a user to invite:"),
           component.divider(1),
           component.select_menu("tempvoice_invite_select", "Select user to invite", valid_options),
         ],
