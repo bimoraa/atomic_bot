@@ -39,7 +39,23 @@ const SUSPICIOUS_PATTERNS = [
   /\b(?:airdrop|nft|crypto|bitcoin|eth|token).*\b(?:claim|free|win)\b/i,
 ];
 
-const LOG_CHANNEL_ID = "1452086939866894420"
+const LOG_CHANNEL_ID       = "1452086939866894420"
+const SUPPORT_ROLE_ID      = "1264915024707588208"
+
+/**
+ * @param {GuildMember} member - Guild member to check
+ * @return {boolean} True if member is admin or has role above support
+ */
+function is_admin_or_above(member: GuildMember): boolean {
+  if (member.permissions.has(PermissionFlagsBits.Administrator)) {
+    return true
+  }
+  
+  const support_role = member.guild.roles.cache.get(SUPPORT_ROLE_ID)
+  if (!support_role) return false
+  
+  return member.roles.highest.position > support_role.position
+}
 
 async function send_alert(client: Client, alert_message: any): Promise<void> {
   try {
@@ -85,6 +101,10 @@ export function check_spam(message: Message, client: Client): boolean {
     const member = message.member
     if (!member) {
       console.log("[anti_spam] Skip: no member found")
+      return false
+    }
+    
+    if (is_admin_or_above(member)) {
       return false
     }
     
