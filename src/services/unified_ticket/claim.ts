@@ -66,7 +66,10 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
 
   set_ticket(thread.id, data)
 
-  await thread.send({ content: `<@${interaction.user.id}> has claimed this ticket.` })
+  // - PARALLEL OPERATIONS - \\
+  const parallel_tasks: Promise<any>[] = [
+    thread.send({ content: `<@${interaction.user.id}> has claimed this ticket.` }).catch(() => {})
+  ]
 
   const log_message_id = data.log_message_id
   const log_channel    = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
@@ -74,51 +77,60 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
   if (log_message_id && log_channel) {
     const staff_mentions = data.staff.map((id: string) => `<@${id}>`)
 
-    try {
-      const owner      = await interaction.guild?.members.fetch(data.owner_id).catch(() => null)
-      const avatar_url = owner?.displayAvatarURL({ size: 128 }) || format.default_avatar
+    const update_task = interaction.guild?.members.fetch(data.owner_id)
+    if (update_task) {
+      const task_promise = update_task
+        .then(owner => {
+          const avatar_url = owner?.displayAvatarURL({ size: 128 }) || format.default_avatar
 
-      let log_content = [
-        `## Join Ticket`,
-        `A ${config.name} Ticket is Opened!`,
-        ``,
-        `- **Ticket ID:** ${format.code(data.ticket_id)}`,
-        `- **Opened by:** <@${data.owner_id}>`,
-      ]
+          let log_content = [
+            `## Join Ticket`,
+            `A ${config.name} Ticket is Opened!`,
+            ``,
+            `- **Ticket ID:** ${format.code(data.ticket_id)}`,
+            `- **Opened by:** <@${data.owner_id}>`,
+          ]
 
-      if (data.issue_type) {
-        log_content.push(`- **Issue:** ${data.issue_type}`)
-      }
+          if (data.issue_type) {
+            log_content.push(`- **Issue:** ${data.issue_type}`)
+          }
 
-      log_content.push(`- **Claimed by:** <@${interaction.user.id}>`)
+          log_content.push(`- **Claimed by:** <@${interaction.user.id}>`)
 
-      const message = component.build_message({
-        components: [
-          component.container({
+          const message = component.build_message({
             components: [
-              component.section({
-                content: log_content,
-                thumbnail: avatar_url,
+              component.container({
+                components: [
+                  component.section({
+                    content: log_content,
+                    thumbnail: avatar_url,
+                  }),
+                  component.divider(),
+                  component.text([
+                    `- **Staff in Ticket:** ${staff_mentions.length}`,
+                    `- **Staff Members:** ${staff_mentions.join(" ") || "None"}`,
+                  ]),
+                  component.divider(),
+                  component.action_row(
+                    component.success_button("Join Ticket", `${config.prefix}_join_${thread.id}`)
+                  ),
+                ],
               }),
-              component.divider(),
-              component.text([
-                `- **Staff in Ticket:** ${staff_mentions.length}`,
-                `- **Staff Members:** ${staff_mentions.join(" ") || "None"}`,
-              ]),
-              component.divider(),
-              component.action_row(
-                component.success_button("Join Ticket", `${config.prefix}_join_${thread.id}`)
-              ),
             ],
-          }),
-        ],
-      })
+          })
 
-      await api.edit_components_v2(log_channel.id, log_message_id, api.get_token(), message)
-    } catch {}
+          return api.edit_components_v2(log_channel.id, log_message_id, api.get_token(), message)
+        })
+        .catch(() => {})
+      
+      parallel_tasks.push(task_promise)
+    }
   }
 
-  await save_ticket(thread.id)
-
-  await interaction.editReply({ content: "You have claimed this ticket." })
+  // - NO AWAIT FOR FASTER RESPONSE - \\\\
+  save_ticket(thread.id)
+  interaction.editReply({ content: "You have claimed this ticket." })
+  
+  // - WAIT FOR PARALLEL TASKS IN BACKGROUND - \\\\
+  Promise.allSettled(parallel_tasks).catch(() => {})
 }

@@ -4,18 +4,23 @@ import { db } from "../../utils"
 
 const TICKETS_COLLECTION = "unified_tickets"
 
+// - BATCH SAVE OPTIMIZATION - \\
+let save_queue: Set<string> = new Set()
+let save_timeout: NodeJS.Timeout | null = null
+const BATCH_DELAY_MS = 500
+
 export interface TicketTypeConfig {
-  name:                  string
-  prefix:                string
-  thread_prefix:         string
-  ticket_parent_id:      string
-  log_channel_id:        string
+  name: string
+  prefix: string
+  thread_prefix: string
+  ticket_parent_id: string
+  log_channel_id: string
   closed_log_channel_id: string
-  panel_channel_id:      string
-  require_role:          boolean
-  required_role_id:      string
-  show_payment_message:  boolean
-  require_issue_type:    boolean
+  panel_channel_id: string
+  require_role: boolean
+  required_role_id: string
+  show_payment_message: boolean
+  require_issue_type: boolean
 }
 
 interface UnifiedTicketConfig {
@@ -24,25 +29,25 @@ interface UnifiedTicketConfig {
 }
 
 export interface TicketData {
-  thread_id:       string
-  ticket_type:     string
-  owner_id:        string
-  ticket_id:       string
-  open_time:       number
-  claimed_by?:     string
-  staff:           string[]
+  thread_id: string
+  ticket_type: string
+  owner_id: string
+  ticket_id: string
+  open_time: number
+  claimed_by?: string
+  staff: string[]
   log_message_id?: string
-  issue_type?:     string
-  description?:    string
+  issue_type?: string
+  description?: string
 }
 
 const unified_cfg = load_config<UnifiedTicketConfig>("unified_ticket")
 
-export const ticket_types  = unified_cfg.ticket_types
-export const issue_labels  = unified_cfg.issue_labels
+export const ticket_types = unified_cfg.ticket_types
+export const issue_labels = unified_cfg.issue_labels
 
-export const ticket_data:       Map<string, TicketData> = new Map()
-export const open_tickets:      Map<string, Map<string, string>> = new Map()
+export const ticket_data: Map<string, TicketData> = new Map()
+export const open_tickets: Map<string, Map<string, string>> = new Map()
 
 for (const type_key of Object.keys(ticket_types)) {
   open_tickets.set(type_key, new Map())
@@ -97,7 +102,45 @@ export async function save_ticket(thread_id: string): Promise<void> {
   const data = ticket_data.get(thread_id)
   if (!data) return
 
+  save_queue.add(thread_id)
+
+  if (save_timeout) clearTimeout(save_timeout)
+
+  save_timeout = setTimeout(async () => {
+    await flush_save_queue()
+  }, BATCH_DELAY_MS)
+}
+
+export async function save_ticket_immediate(thread_id: string): Promise<void> {
+  if (!db.is_connected()) return
+
+  const data = ticket_data.get(thread_id)
+  if (!data) return
+
   await db.update_one(TICKETS_COLLECTION, { thread_id }, data, true)
+}
+
+async function flush_save_queue(): Promise<void> {
+  if (save_queue.size === 0) return
+
+  const tickets_to_save = Array.from(save_queue)
+  save_queue.clear()
+
+  const save_promises = tickets_to_save.map(async (thread_id) => {
+    const data = ticket_data.get(thread_id)
+    if (!data) return
+    await db.update_one(TICKETS_COLLECTION, { thread_id }, data, true)
+  })
+
+  await Promise.allSettled(save_promises)
+}
+
+export async function flush_all_tickets(): Promise<void> {
+  if (save_timeout) {
+    clearTimeout(save_timeout)
+    save_timeout = null
+  }
+  await flush_save_queue()
 }
 
 export async function load_ticket(thread_id: string): Promise<boolean> {
@@ -121,7 +164,7 @@ export async function load_all_tickets(): Promise<void> {
   const tickets = await db.find_many<TicketData>(TICKETS_COLLECTION, {})
   for (const data of tickets) {
     ticket_data.set(data.thread_id, data)
-    
+
     if (data.owner_id && data.ticket_type) {
       set_user_open_ticket(data.ticket_type, data.owner_id, data.thread_id)
     }

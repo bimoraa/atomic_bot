@@ -63,158 +63,182 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
   console.log(`[ - TRANSCRIPT GENERATION - ] Thread ID: ${thread.id}`)
   console.log(`[ - TRANSCRIPT GENERATION - ] Owner ID: ${owner_id}`)
 
-  try {
-    transcript_id = await transcript.generate_transcript(
-      thread,
-      client,
-      ticket_id,
-      data.ticket_type,
-      owner_id,
-      open_time,
-      closed_by === "System" ? "System" : closed_by.id,
-      claimed_by,
-      issue_type,
-      description
-    )
-    console.log(`[ - TRANSCRIPT GENERATED - ] Ticket: ${ticket_id}, Transcript: ${transcript_id}`)
-  } catch (error) {
-    console.error(`[ - TRANSCRIPT ERROR - ] Ticket: ${ticket_id}`)
-    console.error(`[ - TRANSCRIPT ERROR - ] Error:`, error)
-    if (error instanceof Error) {
-      console.error(`[ - TRANSCRIPT ERROR - ] Message: ${error.message}`)
-      console.error(`[ - TRANSCRIPT ERROR - ] Stack:`, error.stack)
-    }
-  }
+  // - PARALLEL OPERATIONS - \\
+  const parallel_tasks = []
 
+  // - TRANSCRIPT GENERATION - \\
+  const transcript_promise = transcript.generate_transcript(
+    thread,
+    client,
+    ticket_id,
+    data.ticket_type,
+    owner_id,
+    open_time,
+    closed_by === "System" ? "System" : closed_by.id,
+    claimed_by,
+    issue_type,
+    description
+  )
+    .then(id => {
+      transcript_id = id
+      console.log(`[ - TRANSCRIPT GENERATED - ] Ticket: ${ticket_id}, Transcript: ${transcript_id}`)
+    })
+    .catch(error => {
+      console.error(`[ - TRANSCRIPT ERROR - ] Ticket: ${ticket_id}`)
+      console.error(`[ - TRANSCRIPT ERROR - ] Error:`, error)
+      if (error instanceof Error) {
+        console.error(`[ - TRANSCRIPT ERROR - ] Message: ${error.message}`)
+        console.error(`[ - TRANSCRIPT ERROR - ] Stack:`, error.stack)
+      }
+    })
+
+  parallel_tasks.push(transcript_promise)
+
+  // - DELETE OPEN LOG - \\
   const open_log_channel = client.channels.cache.get(config.log_channel_id) as TextChannel
   if (open_log_channel && open_log_id) {
-    await api.delete_message(open_log_channel.id, open_log_id, token)
+    parallel_tasks.push(
+      api.delete_message(open_log_channel.id, open_log_id, token).catch(() => {})
+    )
   }
+
+  // - WAIT FOR TRANSCRIPT BEFORE SENDING LOGS - \\
+  await Promise.allSettled(parallel_tasks)
 
   console.log(`[ - TICKET CLOSE LOG - ] Attempting to send for ticket: ${ticket_id}`)
   console.log(`[ - TICKET CLOSE LOG - ] Channel ID: ${config.closed_log_channel_id}`)
 
-  try {
-    const close_log_channel = await client.channels.fetch(config.closed_log_channel_id) as TextChannel
-    if (!close_log_channel) {
-      console.error(`[ - TICKET CLOSE LOG ERROR - ] Channel not found: ${config.closed_log_channel_id}`)
-      return
-    }
+  // - PARALLEL NOTIFICATION TASKS - \\
+  const notification_tasks = []
 
-    console.log(`[ - TICKET CLOSE LOG - ] Channel fetched: ${close_log_channel.name} (${close_log_channel.id})`)
+  // - CLOSE LOG - \\
+  notification_tasks.push(
+    client.channels.fetch(config.closed_log_channel_id)
+      .then(async (channel) => {
+        if (!channel) {
+          console.error(`[ - TICKET CLOSE LOG ERROR - ] Channel not found: ${config.closed_log_channel_id}`)
+          return
+        }
 
-    let owner_avatar = format.default_avatar
-    if (owner_id) {
-      try {
-        const owner  = await client.users.fetch(owner_id)
-        owner_avatar = owner.displayAvatarURL({ size: 128 })
-      } catch {}
-    }
+        const close_log_channel = channel as TextChannel
+        console.log(`[ - TICKET CLOSE LOG - ] Channel fetched: ${close_log_channel.name} (${close_log_channel.id})`)
 
-    const thread_url      = `https://discord.com/channels/${thread.guildId}/${thread.id}`
-    const closed_by_text  = closed_by === "System" ? "System" : `<@${closed_by.id}>`
+        let owner_avatar = format.default_avatar
+        if (owner_id) {
+          try {
+            const owner  = await client.users.fetch(owner_id)
+            owner_avatar = owner.displayAvatarURL({ size: 128 })
+          } catch {}
+        }
 
-    let log_content_1 = [
-      `- **Ticket ID:** ${format.code(ticket_id)}`,
-      `- **Opened By:** ${owner_id ? `<@${owner_id}>` : "Unknown"}`,
-      `- **Closed By:** ${closed_by_text}`,
-    ]
+        const thread_url      = `https://discord.com/channels/${thread.guildId}/${thread.id}`
+        const closed_by_text  = closed_by === "System" ? "System" : `<@${closed_by.id}>`
 
-    let log_content_2 = [
-      `- **Open Time:** ${open_time ? time.full_date_time(open_time) : "Unknown"}`,
-      `- **Claimed By:** ${claimed_by ? `<@${claimed_by}>` : "Not claimed"}`,
-      `- **Reason:** ${reason || "-"}`,
-    ]
+        let log_content_1 = [
+          `- **Ticket ID:** ${format.code(ticket_id)}`,
+          `- **Opened By:** ${owner_id ? `<@${owner_id}>` : "Unknown"}`,
+          `- **Closed By:** ${closed_by_text}`,
+        ]
 
-    if (issue_type) {
-      log_content_2.unshift(`- **Issue Type:** ${issue_type}`)
-    }
+        let log_content_2 = [
+          `- **Open Time:** ${open_time ? time.full_date_time(open_time) : "Unknown"}`,
+          `- **Claimed By:** ${claimed_by ? `<@${claimed_by}>` : "Not claimed"}`,
+          `- **Reason:** ${reason || "-"}`,
+        ]
 
-    const transcript_buttons = transcript_id 
-      ? [component.link_button("View Transcript", `${full_url}/transcript/${transcript_id}`)]
-      : []
+        if (issue_type) {
+          log_content_2.unshift(`- **Issue Type:** ${issue_type}`)
+        }
 
-    const log_message = component.build_message({
-      components: [
-        component.container({
+        const transcript_buttons = transcript_id 
+          ? [component.link_button("View Transcript", `${full_url}/transcript/${transcript_id}`)]
+          : []
+
+        const log_message = component.build_message({
           components: [
-            component.section({
-              content: [
-                `## ${config.name} Ticket Closed`,
-                `A ${config.name.toLowerCase()} ticket has been closed.`,
+            component.container({
+              components: [
+                component.section({
+                  content: [
+                    `## ${config.name} Ticket Closed`,
+                    `A ${config.name.toLowerCase()} ticket has been closed.`,
+                  ],
+                  thumbnail: owner_avatar,
+                }),
+                component.divider(),
+                component.text(log_content_1),
+                component.divider(),
+                component.text(log_content_2),
+                component.divider(),
+                component.action_row(
+                  component.link_button("View Thread", thread_url),
+                  ...transcript_buttons
+                ),
               ],
-              thumbnail: owner_avatar,
             }),
-            component.divider(),
-            component.text(log_content_1),
-            component.divider(),
-            component.text(log_content_2),
-            component.divider(),
-            component.action_row(
-              component.link_button("View Thread", thread_url),
-              ...transcript_buttons
-            ),
           ],
-        }),
-      ],
-    })
+        })
 
-    console.log(`[ - TICKET CLOSE LOG - ] Sending message to channel: ${close_log_channel.id}`)
-    const response = await api.send_components_v2(close_log_channel.id, token, log_message)
-    console.log(`[ - TICKET CLOSE LOG - ] API Response:`, response)
-    console.log(`[ - TICKET CLOSE LOG - ] Successfully sent for ticket: ${ticket_id}`)
-  } catch (error) {
-    console.error(`[ - TICKET CLOSE LOG ERROR - ] Ticket: ${ticket_id}`)
-    console.error(`[ - TICKET CLOSE LOG ERROR - ] Error details:`, error)
-    if (error instanceof Error) {
-      console.error(`[ - TICKET CLOSE LOG ERROR - ] Error message: ${error.message}`)
-      console.error(`[ - TICKET CLOSE LOG ERROR - ] Error stack:`, error.stack)
-    }
-  }
-
-  if (owner_id) {
-    try {
-      const owner      = await client.users.fetch(owner_id)
-      const dm_channel = await owner.createDM()
-
-      const closed_by_text = closed_by === "System" ? "System" : `<@${closed_by.id}>`
-
-      const dm_transcript_buttons = transcript_id 
-        ? [component.link_button("View Transcript", `${full_url}/transcript/${transcript_id}`)]
-        : []
-
-      const dm_message = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.text([
-                `## ${config.name} Ticket Closed`,
-                ``,
-                `Your ${config.name.toLowerCase()} ticket has been closed.`,
-                ``,
-                `- **Ticket ID:** ${format.code(ticket_id)}`,
-                ...(issue_type ? [`- **Issue Type:** ${issue_type}`] : []),
-                `- **Closed by:** ${closed_by_text}`,
-                `- **Reason:** ${reason || "-"}`,
-                `- **Closed:** ${time.full_date_time(timestamp)}`,
-                ``,
-                `Thank you for using our service!`,
-              ]),
-              component.action_row(
-                component.link_button("View Ticket", `https://discord.com/channels/${thread.guildId}/${thread.id}`),
-                ...dm_transcript_buttons
-              ),
-            ],
-          }),
-        ],
+        console.log(`[ - TICKET CLOSE LOG - ] Sending message to channel: ${close_log_channel.id}`)
+        const response = await api.send_components_v2(close_log_channel.id, token, log_message)
+        console.log(`[ - TICKET CLOSE LOG - ] API Response:`, response)
+        console.log(`[ - TICKET CLOSE LOG - ] Successfully sent for ticket: ${ticket_id}`)
       })
+      .catch(error => {
+        console.error(`[ - TICKET CLOSE LOG ERROR - ] Ticket: ${ticket_id}`)
+        console.error(`[ - TICKET CLOSE LOG ERROR - ] Error details:`, error)
+        if (error instanceof Error) {
+          console.error(`[ - TICKET CLOSE LOG ERROR - ] Error message: ${error.message}`)
+          console.error(`[ - TICKET CLOSE LOG ERROR - ] Error stack:`, error.stack)
+        }
+      })
+  )
 
-      await api.send_components_v2(dm_channel.id, token, dm_message)
-    } catch {}
+  // - SEND DM TO OWNER - \\
+  if (owner_id) {
+    notification_tasks.push(
+      client.users.fetch(owner_id)
+        .then(async owner => {
+          const dm_channel = await owner.createDM()
+          const closed_by_text = closed_by === "System" ? "System" : `<@${closed_by.id}>`
+          const dm_transcript_buttons = transcript_id 
+            ? [component.link_button("View Transcript", `${full_url}/transcript/${transcript_id}`)]
+            : []
+
+          const dm_message = component.build_message({
+            components: [
+              component.container({
+                components: [
+                  component.text([
+                    `## ${config.name} Ticket Closed`,
+                    ``,
+                    `Your ${config.name.toLowerCase()} ticket has been closed.`,
+                    ``,
+                    `- **Ticket ID:** ${format.code(ticket_id)}`,
+                    ...(issue_type ? [`- **Issue Type:** ${issue_type}`] : []),
+                    `- **Closed by:** ${closed_by_text}`,
+                    `- **Reason:** ${reason || "-"}`,
+                    `- **Closed:** ${time.full_date_time(timestamp)}`,
+                    ``,
+                    `Thank you for using our service!`,
+                  ]),
+                  component.action_row(
+                    component.link_button("View Ticket", `https://discord.com/channels/${thread.guildId}/${thread.id}`),
+                    ...dm_transcript_buttons
+                  ),
+                ],
+              }),
+            ],
+          })
+
+          await api.send_components_v2(dm_channel.id, token, dm_message)
+        })
+        .catch(() => {})
+    )
   }
 
+  // - SEND CLOSE MESSAGE IN THREAD - \\
   const closed_by_text = closed_by === "System" ? "System" : `<@${closed_by.id}>`
-
   const close_thread_message = component.build_message({
     components: [
       component.container({
@@ -233,7 +257,12 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
     ],
   })
 
-  await api.send_components_v2(thread.id, token, close_thread_message)
+  notification_tasks.push(
+    api.send_components_v2(thread.id, token, close_thread_message).catch(() => {})
+  )
+
+  // - WAIT FOR ALL NOTIFICATIONS - \\
+  await Promise.allSettled(notification_tasks)
 
   await thread.setLocked(true)
   await thread.setArchived(true)

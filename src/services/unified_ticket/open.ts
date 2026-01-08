@@ -19,9 +19,9 @@ import {
 import { component, time, api, format } from "../../utils"
 
 interface OpenTicketOptions {
-  interaction:  ButtonInteraction
-  ticket_type:  string
-  issue_type?:  string
+  interaction: ButtonInteraction
+  ticket_type: string
+  issue_type?: string
   description?: string
 }
 
@@ -34,7 +34,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
     return
   }
 
-  const user_id            = interaction.user.id
+  const user_id = interaction.user.id
   const existing_thread_id = get_user_open_ticket(ticket_type, user_id)
 
   if (existing_thread_id) {
@@ -74,8 +74,8 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
   }
 
   const thread = await ticket_channel.threads.create({
-    name:                `${config.thread_prefix}-${interaction.user.username}`,
-    type:                ChannelType.PrivateThread,
+    name: `${config.thread_prefix}-${interaction.user.username}`,
+    type: ChannelType.PrivateThread,
     autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
   })
 
@@ -87,13 +87,13 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
   const token = api.get_token()
 
   const ticket_data: TicketData = {
-    thread_id:   thread.id,
+    thread_id: thread.id,
     ticket_type: ticket_type,
-    owner_id:    user_id,
-    ticket_id:   ticket_id,
-    open_time:   timestamp,
-    staff:       [],
-    issue_type:  issue_type,
+    owner_id: user_id,
+    ticket_id: ticket_id,
+    open_time: timestamp,
+    staff: [],
+    issue_type: issue_type,
     description: description,
   }
 
@@ -141,6 +141,9 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
 
   await api.send_components_v2(thread.id, token, welcome_message)
 
+  // - PARALLEL OPERATIONS FOR SPEED - \\
+  const parallel_tasks = []
+
   if (config.show_payment_message) {
     const payment_message: component.message_payload = {
       flags: 32768,
@@ -185,7 +188,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
       ],
     }
 
-    await api.send_components_v2(thread.id, token, payment_message)
+    parallel_tasks.push(api.send_components_v2(thread.id, token, payment_message))
   }
 
   const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
@@ -238,44 +241,53 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
       ],
     })
 
-    const log_data = await api.send_components_v2(log_channel.id, token, log_message) as { id?: string }
-    if (log_data.id) {
-      const data = get_ticket(thread.id)
-      if (data) {
-        data.log_message_id = log_data.id
-        set_ticket(thread.id, data)
-      }
-    }
+    parallel_tasks.push(
+      api.send_components_v2(log_channel.id, token, log_message).then((log_data: any) => {
+        if (log_data.id) {
+          const data = get_ticket(thread.id)
+          if (data) {
+            data.log_message_id = log_data.id
+            set_ticket(thread.id, data)
+          }
+        }
+      })
+    )
   }
 
-  await save_ticket(thread.id)
-
-  try {
-    const dm_channel = await interaction.user.createDM()
-    const dm_message = component.build_message({
-      components: [
-        component.container({
+  // - SEND DM IN PARALLEL - \\
+  parallel_tasks.push(
+    interaction.user.createDM()
+      .then(dm_channel => {
+        const dm_message = component.build_message({
           components: [
-            component.text([
-              `## <:ticket:1411878131366891580> ${config.name} Ticket Opened`,
-              ``,
-              `Your ${config.name.toLowerCase()} ticket has been created!`,
-              ``,
-              `- **Ticket ID:** ${format.code(ticket_id)}`,
-              `- **Opened:** ${time.full_date_time(timestamp)}`,
-              ``,
-              `Please check the ticket thread to continue.`,
-            ]),
-            component.action_row(
-              component.link_button("View Ticket", format.channel_url(interaction.guildId!, thread.id))
-            ),
+            component.container({
+              components: [
+                component.text([
+                  `## <:ticket:1411878131366891580> ${config.name} Ticket Opened`,
+                  ``,
+                  `Your ${config.name.toLowerCase()} ticket has been created!`,
+                  ``,
+                  `- **Ticket ID:** ${format.code(ticket_id)}`,
+                  `- **Opened:** ${time.full_date_time(timestamp)}`,
+                  ``,
+                  `Please check the ticket thread to continue.`,
+                ]),
+                component.action_row(
+                  component.link_button("View Ticket", format.channel_url(interaction.guildId!, thread.id))
+                ),
+              ],
+            }),
           ],
-        }),
-      ],
-    })
+        })
+        return api.send_components_v2(dm_channel.id, token, dm_message)
+      })
+      .catch(() => {})
+  )
 
-    await api.send_components_v2(dm_channel.id, token, dm_message)
-  } catch {}
+  // - WAIT FOR ALL PARALLEL TASKS - \\
+  await Promise.allSettled(parallel_tasks)
+
+  save_ticket(thread.id)
 
   const reply_message = component.build_message({
     components: [
@@ -293,5 +305,6 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
     ],
   })
 
-  await api.edit_deferred_reply(interaction, reply_message)
+  // - NO AWAIT FOR FASTER RESPONSE - \\
+  api.edit_deferred_reply(interaction, reply_message)
 }

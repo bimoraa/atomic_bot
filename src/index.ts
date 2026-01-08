@@ -8,7 +8,7 @@ import { handle_interaction }                                            from ".
 import { handle_auto_reply }                                             from "./services/auto_reply"
 import { start_roblox_update_checker }                                   from "./services/roblox_update"
 import { load_close_requests }                                           from "./commands/tools/staff/close_request"
-import { load_all_tickets }                                              from "./services/unified_ticket"
+import { load_all_tickets, flush_all_tickets }                           from "./services/unified_ticket"
 import * as tempvoice                                                    from "./services/tempvoice"
 import { register_audit_logs }                                           from "./services/audit_log"
 import { handle_afk_return, handle_afk_mentions }                        from "./interactions/shared/controller/afk_controller"
@@ -253,6 +253,8 @@ process.on("SIGTERM", async () => {
   try {
     console.log("[SIGTERM] Stopping service provider cache...")
     stop_service_provider_cache()
+    console.log("[SIGTERM] Flushing ticket saves...")
+    await flush_all_tickets()
     console.log("[SIGTERM] Destroying client...")
     await client.destroy()
     console.log("[SIGTERM] Disconnecting database...")
@@ -270,6 +272,8 @@ process.on("SIGINT", async () => {
   try {
     console.log("[SIGINT] Stopping service provider cache...")
     stop_service_provider_cache()
+    console.log("[SIGINT] Flushing ticket saves...")
+    await flush_all_tickets()
     console.log("[SIGINT] Destroying client...")
     await client.destroy()
     console.log("[SIGINT] Disconnecting database...")
