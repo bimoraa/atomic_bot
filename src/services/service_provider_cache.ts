@@ -31,7 +31,11 @@ export async function sync_service_provider_cache(client: Client): Promise<void>
 
     if (!users_result.success || !users_result.data) {
       console.error("[ - SERVICE PROVIDER CACHE - ] Failed to fetch users from Luarmor:", users_result.error)
-      await log_error(client, new Error(users_result.error || "Failed to fetch users"), "service_provider_cache_fetch", {})
+      try {
+        await log_error(client, new Error(users_result.error || "Failed to fetch users"), "service_provider_cache_fetch", {})
+      } catch (log_err) {
+        console.error("[ - SERVICE PROVIDER CACHE - ] Failed to log error:", log_err)
+      }
       return
     }
 
@@ -64,10 +68,18 @@ export async function sync_service_provider_cache(client: Client): Promise<void>
       } catch (error) {
         failed_users += 1
         console.error(`[ - SERVICE PROVIDER CACHE - ] Failed to cache user ${user_id}:`, error)
-        await log_error(client, error as Error, "service_provider_cache_update", { user_id })
+        try {
+          await log_error(client, error as Error, "service_provider_cache_update", { user_id })
+        } catch (log_err) {
+          console.error("[ - SERVICE PROVIDER CACHE - ] Failed to log error:", log_err)
+        }
       }
     }
-
+try {
+      await log_error(client, error as Error, "service_provider_cache_sync", {})
+    } catch (log_err) {
+      console.error("[ - SERVICE PROVIDER CACHE - ] Failed to log error:", log_err)
+    }
     console.log(`[ - SERVICE PROVIDER CACHE - ] Sync complete: ${cached_users} cached, ${failed_users} failed at ${new Date(now).toISOString()}`)
   } catch (error) {
     console.error("[ - SERVICE PROVIDER CACHE - ] Sync error:", error)
