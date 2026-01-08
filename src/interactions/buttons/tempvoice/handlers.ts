@@ -216,7 +216,7 @@ export async function handle_tempvoice_chat(interaction: ButtonInteraction): Pro
 
   if (!tempvoice.is_channel_owner(channel.id, member.id)) {
     await interaction.reply({
-      ...create_not_owner_reply("Only the channel owner can create a text channel."),
+      ...create_not_owner_reply("Only the channel owner can view the thread."),
       ephemeral: true,
     })
     return
@@ -224,18 +224,18 @@ export async function handle_tempvoice_chat(interaction: ButtonInteraction): Pro
 
   await interaction.deferReply({ ephemeral: true })
 
-  const existing = tempvoice.get_text_channel_id(channel.id)
+  const existing = tempvoice.get_thread_id(channel.id)
   if (existing) {
-    await interaction.editReply(create_success_reply(`Text channel already exists: <#${existing}>`))
+    await interaction.editReply(create_success_reply(`Thread: <#${existing}>`))
     return
   }
 
-  const text_channel_id = await tempvoice.create_text_channel(channel, member)
+  const thread_id = await tempvoice.create_thread(channel, member)
 
-  if (text_channel_id) {
-    await interaction.editReply(create_success_reply(`Text channel created: <#${text_channel_id}>`))
+  if (thread_id) {
+    await interaction.editReply(create_success_reply(`Thread created: <#${thread_id}>`))
   } else {
-    await interaction.editReply(create_error_reply("Failed to create text channel."))
+    await interaction.editReply(create_error_reply("Failed to create thread."))
   }
 }
 
@@ -605,11 +605,11 @@ export async function handle_tempvoice_delete(interaction: ButtonInteraction): P
 
   await interaction.deferReply({ ephemeral: true })
 
-  const text_channel_id = tempvoice.get_text_channel_id(channel.id)
-  if (text_channel_id) {
-    const text_channel = channel.guild.channels.cache.get(text_channel_id)
-    if (text_channel) {
-      await text_channel.delete()
+  const thread_id = tempvoice.get_thread_id(channel.id)
+  if (thread_id) {
+    const thread = channel.guild.channels.cache.get(thread_id)
+    if (thread) {
+      await thread.delete()
     }
   }
 

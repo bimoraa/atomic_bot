@@ -31,8 +31,9 @@ interface saved_channel_settings {
 const __log    = logger.create_logger("tempvoice")
 const __config = load_config<tempvoice_config>("tempvoice")
 
-const __category_name  = __config.category_name  ?? "Temp Voice"
-const __generator_name = __config.generator_name ?? "➕ Create Voice"
+const __category_name       = __config.category_name  ?? "Temp Voice"
+const __generator_name      = __config.generator_name ?? "➕ Create Voice"
+const __thread_parent_id    = "1449863232071401534"
 
 const emoji = {
   name         : { id: "1449851618295283763", name: "name"         },
@@ -57,7 +58,7 @@ const __channel_owners: Map<string, string>             = new Map()
 const __trusted_users: Map<string, Set<string>>         = new Map()
 const __blocked_users: Map<string, Set<string>>         = new Map()
 const __waiting_rooms: Map<string, boolean>             = new Map()
-const __text_channels: Map<string, string>              = new Map()
+const __threads: Map<string, string>                    = new Map()
 const __in_voice_interfaces: Map<string, string>        = new Map()
 const __saved_settings: Map<string, saved_channel_settings> = new Map()
 
@@ -356,12 +357,12 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
       __log.error(`Failed to move ${member.displayName} to channel:`, err)
     }
 
-    console.log(`[ - TEMPVOICE - ] Creating text channel for ${channel.name}...`)
-    const text_channel_id = await create_text_channel(channel, member)
-    if (text_channel_id) {
-      console.log(`[ - TEMPVOICE - ] Text channel created: ${text_channel_id}`)
+    console.log(`[ - TEMPVOICE - ] Creating thread for ${channel.name}...`)
+    const thread_id = await create_thread(channel, member)
+    if (thread_id) {
+      console.log(`[ - TEMPVOICE - ] Thread created: ${thread_id}`)
     } else {
-      console.log(`[ - TEMPVOICE - ] Failed to create text channel`)
+      console.log(`[ - TEMPVOICE - ] Failed to create thread`)
     }
 
     return channel
@@ -384,13 +385,14 @@ export async function delete_temp_channel(channel: VoiceChannel | string): Promi
       channel_id    = channel.id
     }
 
-    const text_channel_id = __text_channels.get(channel_id)
-    if (text_channel_id && voice_channel) {
-      const text_channel = voice_channel.guild.channels.cache.get(text_channel_id)
-      if (text_channel) {
-        await text_channel.delete()
+    const thread_id = __threads.get(channel_id)
+    if (thread_id && voice_channel) {
+      const thread = voice_channel.guild.channels.cache.get(thread_id)
+      if (thread) {
+        await thread.delete()
+        console.log(`[ - THREAD - ] Deleted thread ${thread_id}`)
       }
-      __text_channels.delete(channel_id)
+      __threads.delete(channel_id)
     }
 
     await voice_tracker.track_channel_deleted(channel_id)
@@ -416,7 +418,7 @@ export function cleanup_channel_data(channel_id: string): void {
   __trusted_users.delete(channel_id)
   __blocked_users.delete(channel_id)
   __waiting_rooms.delete(channel_id)
-  __text_channels.delete(channel_id)
+  __threads.delete(channel_id)
   __in_voice_interfaces.delete(channel_id)
 }
 
@@ -492,54 +494,40 @@ export function is_waiting_room_enabled(channel_id: string): boolean {
   return __waiting_rooms.get(channel_id) || false
 }
 
-export async function create_text_channel(channel: VoiceChannel, owner: GuildMember): Promise<string | null> {
+/**
+ * - CREATE THREAD FOR VOICE CHANNEL - \\
+ * @param channel - Voice channel to create thread for
+ * @param owner - Owner of the voice channel
+ * @returns Thread ID or null
+ */
+export async function create_thread(channel: VoiceChannel, owner: GuildMember): Promise<string | null> {
   try {
-    console.log(`[ - TEXT CHANNEL - ] Starting creation for voice channel ${channel.id}`)
+    console.log(`[ - THREAD - ] Starting creation for voice channel ${channel.id}`)
     
-    if (__text_channels.has(channel.id)) {
-      console.log(`[ - TEXT CHANNEL - ] Already exists, returning cached ID`)
-      return __text_channels.get(channel.id) || null
+    if (__threads.has(channel.id)) {
+      console.log(`[ - THREAD - ] Already exists, returning cached ID`)
+      return __threads.get(channel.id) || null
     }
 
-    const bot_id = channel.guild.members.me?.id
-    console.log(`[ - TEXT CHANNEL - ] Bot ID: ${bot_id}`)
-    
-    if (!bot_id) {
-      console.error("[ - TEXT CHANNEL - ] Bot member not found in guild")
+    const parent_channel = channel.guild.channels.cache.get(__thread_parent_id)
+    if (!parent_channel || parent_channel.type !== ChannelType.GuildText) {
+      console.error(`[ - THREAD - ] Parent channel ${__thread_parent_id} not found or not a text channel`)
       return null
     }
 
-    // - allow bot + owner to see/send while hiding everyone - \
-    const text_channel = await channel.guild.channels.create({
-      name                 : `${channel.name}-chat`,
-      type                 : ChannelType.GuildText,
-      parent               : channel.parentId || undefined,
-      permissionOverwrites : [
-        {
-          id   : channel.guild.roles.everyone,
-          deny : [PermissionFlagsBits.ViewChannel],
-        },
-        {
-          id    : owner.id,
-          allow : [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-        },
-        {
-          id    : bot_id,
-          allow : [
-            PermissionFlagsBits.ViewChannel,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks,
-            PermissionFlagsBits.AttachFiles,
-          ],
-        },
-      ],
+    console.log(`[ - THREAD - ] Creating thread in parent ${__thread_parent_id}...`)
+    
+    const thread = await parent_channel.threads.create({
+      name               : `${channel.name}`,
+      autoArchiveDuration: 60,
+      reason             : `Voice channel thread for ${owner.displayName}`,
     })
 
-    console.log(`[ - TEXT CHANNEL - ] Created: ${text_channel.name} (${text_channel.id})`)
+    console.log(`[ - THREAD - ] Created: ${thread.name} (${thread.id})`)
     
-    __text_channels.set(channel.id, text_channel.id)
+    __threads.set(channel.id, thread.id)
 
-    console.log(`[ - TEXT CHANNEL - ] Now creating interface...`)
+    console.log(`[ - THREAD - ] Now creating interface...`)
     const interface_id = await create_in_voice_interface(channel, owner)
     if (interface_id) {
       console.log(`[ - INTERFACE - ] Created successfully: ${interface_id}`)
@@ -547,30 +535,40 @@ export async function create_text_channel(channel: VoiceChannel, owner: GuildMem
       console.error(`[ - INTERFACE - ] Failed to create interface`)
     }
 
-    return text_channel.id
+    return thread.id
   } catch (error) {
-    __log.error("Failed to create text channel:", error)
+    console.error("[ - THREAD - ] Failed to create thread:", error)
     return null
   }
 }
 
-export async function delete_text_channel(voice_channel_id: string): Promise<boolean> {
+/**
+ * - DELETE THREAD FOR VOICE CHANNEL - \\
+ * @param voice_channel_id - Voice channel ID
+ * @returns True if deleted successfully
+ */
+export async function delete_thread(voice_channel_id: string): Promise<boolean> {
   try {
-    const text_channel_id = __text_channels.get(voice_channel_id)
-    if (!text_channel_id) return false
+    const thread_id = __threads.get(voice_channel_id)
+    if (!thread_id) return false
 
     await delete_in_voice_interface(voice_channel_id)
 
-    __text_channels.delete(voice_channel_id)
+    __threads.delete(voice_channel_id)
     return true
   } catch (error) {
-    __log.error("Failed to delete text channel:", error)
+    console.error("[ - THREAD - ] Failed to delete thread:", error)
     return false
   }
 }
 
-export function get_text_channel_id(voice_channel_id: string): string | null {
-  return __text_channels.get(voice_channel_id) || null
+/**
+ * - GET THREAD ID FOR VOICE CHANNEL - \\
+ * @param voice_channel_id - Voice channel ID
+ * @returns Thread ID or null
+ */
+export function get_thread_id(voice_channel_id: string): string | null {
+  return __threads.get(voice_channel_id) || null
 }
 
 export async function trust_user(channel: VoiceChannel, user_id: string): Promise<boolean> {
@@ -863,37 +861,37 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
       return __in_voice_interfaces.get(voice_channel.id) || null
     }
 
-    const text_channel_id = __text_channels.get(voice_channel.id)
-    console.log(`[ - INTERFACE - ] Text channel ID from map: ${text_channel_id}`)
+    const thread_id = __threads.get(voice_channel.id)
+    console.log(`[ - INTERFACE - ] Thread ID from map: ${thread_id}`)
     
-    if (!text_channel_id) {
-      console.error(`[ - INTERFACE - ] No text channel ID found for voice channel ${voice_channel.id}`)
+    if (!thread_id) {
+      console.error(`[ - INTERFACE - ] No thread ID found for voice channel ${voice_channel.id}`)
       return null
     }
 
-    let text_channel = voice_channel.guild.channels.cache.get(text_channel_id)
-    console.log(`[ - INTERFACE - ] Text channel from cache: ${text_channel ? 'FOUND' : 'NOT FOUND'}`)
+    let thread = voice_channel.guild.channels.cache.get(thread_id)
+    console.log(`[ - INTERFACE - ] Thread from cache: ${thread ? 'FOUND' : 'NOT FOUND'}`)
     
-    if (!text_channel) {
-      console.log(`[ - INTERFACE - ] Text channel not in cache, fetching...`)
+    if (!thread) {
+      console.log(`[ - INTERFACE - ] Thread not in cache, fetching...`)
       try {
-        const fetched = await voice_channel.guild.channels.fetch(text_channel_id)
+        const fetched = await voice_channel.guild.channels.fetch(thread_id)
         if (fetched) {
-          text_channel = fetched
-          console.log(`[ - INTERFACE - ] Successfully fetched text channel`)
+          thread = fetched
+          console.log(`[ - INTERFACE - ] Successfully fetched thread`)
         }
       } catch (fetch_error) {
-        console.error(`[ - INTERFACE - ] Failed to fetch text channel:`, fetch_error)
+        console.error(`[ - INTERFACE - ] Failed to fetch thread:`, fetch_error)
         return null
       }
     }
 
-    if (!text_channel) {
-      console.error(`[ - INTERFACE - ] Text channel still not found after fetch`)
+    if (!thread) {
+      console.error(`[ - INTERFACE - ] Thread still not found after fetch`)
       return null
     }
 
-    console.log(`[ - INTERFACE - ] Building message for channel ${text_channel_id}`)
+    console.log(`[ - INTERFACE - ] Building message for thread ${thread_id}`)
 
     const interface_message = component.build_message({
       components: [
@@ -931,10 +929,10 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
       ],
     })
 
-    console.log(`[ - INTERFACE - ] Sending message to channel ${text_channel_id}...`)
+    console.log(`[ - INTERFACE - ] Sending message to thread ${thread_id}...`)
 
     const sent_message = await api.send_components_v2(
-      text_channel_id,
+      thread_id,
       api.get_token(),
       interface_message
     )
@@ -965,15 +963,15 @@ export async function delete_in_voice_interface(voice_channel_id: string): Promi
     const message_id = __in_voice_interfaces.get(voice_channel_id)
     if (!message_id) return false
 
-    const text_channel_id = __text_channels.get(voice_channel_id)
-    if (text_channel_id) {
-      await api.delete_message(text_channel_id, message_id, api.get_token())
+    const thread_id = __threads.get(voice_channel_id)
+    if (thread_id) {
+      await api.delete_message(thread_id, message_id, api.get_token())
     }
 
     __in_voice_interfaces.delete(voice_channel_id)
     return true
   } catch (error) {
-    __log.error("Failed to delete in-voice interface:", error)
+    console.error("[ - INTERFACE - ] Failed to delete interface:", error)
     return false
   }
 }
@@ -989,8 +987,8 @@ export async function update_in_voice_interface(voice_channel: VoiceChannel, own
     const message_id = __in_voice_interfaces.get(voice_channel.id)
     if (!message_id) return false
 
-    const text_channel_id = __text_channels.get(voice_channel.id)
-    if (!text_channel_id) return false
+    const thread_id = __threads.get(voice_channel.id)
+    if (!thread_id) return false
 
     const interface_message = component.build_message({
       components: [
@@ -1030,7 +1028,7 @@ export async function update_in_voice_interface(voice_channel: VoiceChannel, own
     })
 
     await api.edit_components_v2(
-      text_channel_id,
+      thread_id,
       message_id,
       api.get_token(),
       interface_message
@@ -1038,7 +1036,7 @@ export async function update_in_voice_interface(voice_channel: VoiceChannel, own
 
     return true
   } catch (error) {
-    __log.error("Failed to update in-voice interface:", error)
+    console.error("[ - INTERFACE - ] Failed to update interface:", error)
     return false
   }
 }
