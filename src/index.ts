@@ -155,7 +155,7 @@ client.once("ready", async () => {
       start_service_provider_cache(client)
     }
   } catch (error) {
-    console.error("[MongoDB] Connection error:", error)
+    console.error("[PostgreSQL] Connection error:", error)
   }
 
   join_voice_channel()

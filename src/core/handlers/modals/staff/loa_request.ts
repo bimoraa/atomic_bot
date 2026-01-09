@@ -1,7 +1,7 @@
 import { ModalSubmitInteraction } from "discord.js"
-import { request_loa }            from "../controllers/loa_controller"
-import { db }                     from "../../../shared/utils"
-import { log_error }              from "../../../shared/utils/error_logger"
+import { request_loa }            from "../../controllers/loa_controller"
+import { db }                     from "../../../../shared/utils"
+import { log_error }              from "../../../../shared/utils/error_logger"
 
 export async function handle_loa_request_modal(interaction: ModalSubmitInteraction): Promise<boolean> {
   if (interaction.customId !== "loa_request_modal") return false

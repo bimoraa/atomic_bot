@@ -1,6 +1,6 @@
 import { ModalSubmitInteraction, GuildMember, VoiceChannel } from "discord.js"
-import * as tempvoice                                        from "../../../shared/database/tempvoice"
-import { component }                                         from "../../../shared/utils"
+import * as tempvoice                                        from "../../../../shared/database/tempvoice"
+import { component }                                         from "../../../../shared/utils"
 
 function create_reply(message: string) {
   return component.build_message({

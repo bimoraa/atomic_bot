@@ -1,7 +1,6 @@
 import express, { Request, Response }   from "express"
 import { Client, ChannelType }          from "discord.js"
 import { handle_github_webhook }        from "../../infrastructure/webhooks/github"
-import { ObjectId }                     from "mongodb"
 import cors                             from "cors"
 import * as database                    from "../../shared/utils/database"
 
@@ -447,7 +446,7 @@ export function start_webhook_server(client: Client): void {
       const { trigger, response, match_type } = req.body
       
       const updated = await database.update_one("auto_responder", 
-        { _id: new ObjectId(id) },
+        { id: parseInt(id) },
         { 
           trigger    : trigger.toLowerCase(),
           response,
@@ -473,7 +472,7 @@ export function start_webhook_server(client: Client): void {
       const { enabled } = req.body
       
       const updated = await database.update_one("auto_responder", 
-        { _id: new ObjectId(id) },
+        { id: parseInt(id) },
         { enabled }
       )
 
@@ -494,7 +493,7 @@ export function start_webhook_server(client: Client): void {
       const { id } = req.params
       
       const deleted = await database.delete_one("auto_responder", { 
-        _id: new ObjectId(id) 
+        id: parseInt(id) 
       })
 
       if (!deleted) {
@@ -655,7 +654,7 @@ export function start_webhook_server(client: Client): void {
       const { title, description, buttons } = req.body
       
       const updated = await database.update_one("reaction_roles", 
-        { _id: new ObjectId(id) },
+        { id: parseInt(id) },
         { 
           title,
           description : description || "",
@@ -681,7 +680,7 @@ export function start_webhook_server(client: Client): void {
       const { id } = req.params
       
       const deleted = await database.delete_one("reaction_roles", { 
-        _id: new ObjectId(id) 
+        id: parseInt(id) 
       })
 
       if (!deleted) {
@@ -751,7 +750,7 @@ export function start_webhook_server(client: Client): void {
       const { name, description, response } = req.body
       
       const updated = await database.update_one("custom_commands", 
-        { _id: new ObjectId(id) },
+        { id: parseInt(id) },
         { 
           name        : name.toLowerCase(),
           description : description || "",
@@ -778,7 +777,7 @@ export function start_webhook_server(client: Client): void {
       const { enabled } = req.body
       
       const updated = await database.update_one("custom_commands", 
-        { _id: new ObjectId(id) },
+        { id: parseInt(id) },
         { enabled }
       )
 
@@ -799,7 +798,7 @@ export function start_webhook_server(client: Client): void {
       const { id } = req.params
       
       const deleted = await database.delete_one("custom_commands", { 
-        _id: new ObjectId(id) 
+        id: parseInt(id) 
       })
 
       if (!deleted) {

@@ -9,12 +9,17 @@ import {
   handle_ticket_user_select,
 }                                        from "../../shared/database/unified_ticket"
 import * as answer_stats_select          from "./select_menus/answer_stats"
-import * as devlog_modal                 from "./modals/devlog"
-import * as review_modal                 from "./modals/review"
-import * as edit_rules_modal             from "./modals/edit_rules"
-import * as ask_staff_modal              from "./modals/ask_staff"
-import * as script_redeem_modal          from "./modals/script_redeem"
-import * as tempvoice_modal              from "./modals/tempvoice"
+import {
+  handle_devlog,
+  handle_ask_staff_modal,
+  handle_loa_request_modal,
+  handle_edit_rules_modal,
+}                                        from "./modals/staff"
+import { handle_reminder_add_new_modal } from "./modals/tools"
+import { handle_script_redeem_modal }    from "./modals/service"
+import { handle_tempvoice_modal }        from "./modals/voice"
+import { handle_review_modal }           from "./modals/community"
+import { handle_music_modal }            from "./modals/music"
 import * as review_submit                from "./buttons/review/submit"
 import * as ask_staff_button             from "./buttons/ask/ask_staff"
 import * as ask_answer                   from "./buttons/ask/answer"
@@ -50,7 +55,6 @@ import * as music_skip                   from "./buttons/music/skip"
 import * as music_stop                   from "./buttons/music/stop"
 import * as music_select                 from "./select_menus/music/music_select"
 import * as music_play_select            from "./select_menus/music/play_select"
-import * as music_modal                  from "./modals/music/music_modal"
 
 import * as payment_method_select        from "./select_menus/payment_method";
 import * as guide_select                 from "./select_menus/guide_select";
@@ -59,8 +63,7 @@ import * as work_stats_select            from "./select_menus/work_stats/week_se
 import * as work_stats_year_select       from "./select_menus/work_stats/year_select";
 import * as work_stats_all_staff         from "./select_menus/work_stats/all_staff_week_select";
 import * as reminder_cancel_select       from "./select_menus/reminder_cancel_select";
-import { handle_reminder_add_new_modal } from "./modals/reminder_add_new";
-import { handle_loa_request_modal }      from "./modals/loa_request";
+
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
   try {
@@ -429,35 +432,35 @@ export async function handle_interaction(
   if (interaction.isModalSubmit()) {
     try {
       if (await handle_ticket_modal(interaction)) return
-      if (await devlog_modal.handle(interaction)) return
-      if (await tempvoice_modal.handle_tempvoice_modal(interaction)) return
+      if (await handle_devlog(interaction)) return
+      if (await handle_tempvoice_modal(interaction)) return
       if (interaction.customId === "review_modal") {
-        await review_modal.handle_review_modal(interaction)
+        await handle_review_modal(interaction)
         return
       }
       if (interaction.customId.startsWith("edit_rules:")) {
-        await edit_rules_modal.handle_edit_rules_modal(interaction);
-        return;
+        await handle_edit_rules_modal(interaction)
+        return
       }
       if (interaction.customId === "ask_staff_modal") {
-        await ask_staff_modal.handle_ask_staff_modal(interaction);
-        return;
+        await handle_ask_staff_modal(interaction)
+        return
       }
-      if (await handle_reminder_add_new_modal(interaction)) return;
-      if (await handle_loa_request_modal(interaction)) return;
-      if (await script_redeem_modal.handle_script_redeem_modal(interaction)) return;
+      if (await handle_reminder_add_new_modal(interaction)) return
+      if (await handle_loa_request_modal(interaction)) return
+      if (await handle_script_redeem_modal(interaction)) return
       if (interaction.customId.startsWith("music_modal:")) {
-        await music_modal.handle_music_modal(interaction);
-        return;
+        await handle_music_modal(interaction)
+        return
       }
     } catch (err) {
-      console.log("[modal] Error:", err);
+      console.log("[modal] Error:", err)
       await log_error(client, err as Error, "ModalSubmit", {
         custom_id: interaction.customId,
         user     : interaction.user.tag,
         guild    : interaction.guild?.name || "DM",
         channel  : interaction.channel?.id,
-      });
+      })
     }
   }
 
