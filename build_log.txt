@@ -1,0 +1,215 @@
+npm warn Unknown project config "no-audit". This will stop working in the next major version of npm.
+npm warn Unknown project config "no-fund". This will stop working in the next major version of npm.
+
+> atomic_bot@1.0.0 build
+> tsc && cp -r src/shared/config dist/shared/ && cp -r guide dist/
+
+src/core/handlers/buttons/close_request/handlers.ts(7,52): error TS18046: 'config' is of type 'unknown'.
+src/core/handlers/command_handler.ts(5,35): error TS2307: Cannot find module '../index' or its corresponding type declarations.
+src/core/handlers/controllers/moderation_controller.ts(372,42): error TS2307: Cannot find module '../../commands/tools/moderation/warnings' or its corresponding type declarations.
+src/core/handlers/controllers/reminder_controller.ts(149,48): error TS2307: Cannot find module '../../commands/tools/reminder/reminder' or its corresponding type declarations.
+src/core/handlers/controllers/reminder_controller.ts(224,49): error TS2307: Cannot find module '../../commands/tools/reminder/reminder' or its corresponding type declarations.
+src/core/handlers/controllers/reminder_controller.ts(247,49): error TS2307: Cannot find module '../../commands/tools/reminder/reminder' or its corresponding type declarations.
+src/core/handlers/interaction_create.ts(38,47): error TS2307: Cannot find module '../modules/utility/get_role_permission' or its corresponding type declarations.
+src/core/handlers/modals/ask_staff.ts(3,40): error TS2307: Cannot find module '../../modules/staff/ask' or its corresponding type declarations.
+src/core/handlers/modals/ticket/close.ts(2,30): error TS2307: Cannot find module '../../../../../../shared/database/unified_ticket' or its corresponding type declarations.
+src/core/handlers/modals/ticket/create.ts(2,29): error TS2307: Cannot find module '../../../../../../shared/database/unified_ticket' or its corresponding type declarations.
+src/core/handlers/select_menus/answer_stats.ts(3,52): error TS2307: Cannot find module '../../../modules/staff/get_answer_stats' or its corresponding type declarations.
+src/core/handlers/select_menus/tempvoice/region_select.ts(2,73): error TS2307: Cannot find module '../../../../../shared/database/tempvoice' or its corresponding type declarations.
+src/core/handlers/select_menus/tempvoice/region_select.ts(3,73): error TS2307: Cannot find module '../../../../../shared/utils' or its corresponding type declarations.
+src/core/handlers/select_menus/tempvoice/user_select.ts(2,70): error TS2307: Cannot find module '../../../../../shared/database/tempvoice' or its corresponding type declarations.
+src/core/handlers/select_menus/tempvoice/user_select.ts(3,70): error TS2307: Cannot find module '../../../../../shared/database/voice_interaction_tracker' or its corresponding type declarations.
+src/core/handlers/select_menus/tempvoice/user_select.ts(4,70): error TS2307: Cannot find module '../../../../../shared/utils' or its corresponding type declarations.
+src/core/handlers/select_menus/version/select.ts(2,50): error TS2307: Cannot find module '../../../../../shared/utils' or its corresponding type declarations.
+src/core/handlers/select_menus/work_stats/all_staff_week_select.ts(2,31): error TS2307: Cannot find module '../../../../../shared/utils' or its corresponding type declarations.
+src/core/handlers/select_menus/work_stats/all_staff_week_select.ts(3,31): error TS2307: Cannot find module '../../../../../shared/database/work_tracker' or its corresponding type declarations.
+src/core/handlers/select_menus/work_stats/all_staff_week_select.ts(102,46): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/core/handlers/select_menus/work_stats/all_staff_week_select.ts(111,41): error TS2339: Property 'total_work' does not exist on type '{}'.
+src/core/handlers/select_menus/work_stats/all_staff_week_select.ts(112,41): error TS2339: Property 'total_salary' does not exist on type '{}'.
+src/core/handlers/select_menus/work_stats/week_select.ts(2,32): error TS2307: Cannot find module '../../../../../shared/utils' or its corresponding type declarations.
+src/core/handlers/select_menus/work_stats/week_select.ts(8,8): error TS2307: Cannot find module '../../../../../shared/database/work_tracker' or its corresponding type declarations.
+src/core/handlers/select_menus/work_stats/week_select.ts(46,40): error TS7006: Parameter 'l' implicitly has an 'any' type.
+src/core/handlers/select_menus/work_stats/week_select.ts(47,40): error TS7006: Parameter 'l' implicitly has an 'any' type.
+src/core/handlers/select_menus/work_stats/week_select.ts(56,17): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/core/handlers/select_menus/work_stats/year_select.ts(2,27): error TS2307: Cannot find module '../../../../../shared/utils' or its corresponding type declarations.
+src/core/handlers/shared/controller/afk_controller.ts(2,45): error TS2307: Cannot find module '../../../infrastructure/cache/afk' or its corresponding type declarations.
+src/core/handlers/shared/controller/afk_controller.ts(3,27): error TS2307: Cannot find module '../../../shared/utils' or its corresponding type declarations.
+src/core/handlers/shared/controller/afk_controller.ts(4,27): error TS2307: Cannot find module '../../../shared/utils/error_logger' or its corresponding type declarations.
+src/index.ts(10,79): error TS2307: Cannot find module './modules/staff/close_request' or its corresponding type declarations.
+src/index.ts(25,79): error TS2307: Cannot find module './modules/staff/schedule_hwid_less' or its corresponding type declarations.
+src/infrastructure/api/luarmor.ts(1,35): error TS2307: Cannot find module '../../../shared/utils' or its corresponding type declarations.
+src/infrastructure/api/service_provider_cache.ts(2,20): error TS2307: Cannot find module '../../../shared/utils' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(1,38): error TS2307: Cannot find module './afk' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(2,38): error TS2307: Cannot find module './anti_spam' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(3,38): error TS2307: Cannot find module './audit_log' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(4,38): error TS2307: Cannot find module './auto_reply' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(5,38): error TS2307: Cannot find module './channel_manager' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(6,38): error TS2307: Cannot find module './free_script_manager' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(7,38): error TS2307: Cannot find module './loa_checker' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(9,38): error TS2307: Cannot find module './message_counter' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(10,38): error TS2307: Cannot find module './permissions' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(11,38): error TS2307: Cannot find module './roblox_update' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(12,38): error TS2307: Cannot find module './snipe' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(13,38): error TS2307: Cannot find module './tempvoice' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(14,38): error TS2307: Cannot find module './ticket_manager' or its corresponding type declarations.
+src/infrastructure/api/services_index.ts(15,38): error TS2307: Cannot find module './work_tracker' or its corresponding type declarations.
+src/infrastructure/cache/afk.ts(1,20): error TS2307: Cannot find module '../../../shared/utils' or its corresponding type declarations.
+src/infrastructure/cache/anti_spam.ts(2,66): error TS2307: Cannot find module '../../../shared/utils' or its corresponding type declarations.
+src/infrastructure/cache/message_counter.ts(2,31): error TS2307: Cannot find module '../../../shared/utils' or its corresponding type declarations.
+src/infrastructure/webhooks/github.ts(2,45): error TS2307: Cannot find module '../../../shared/utils' or its corresponding type declarations.
+src/modules/moderation/moderation/ban.ts(8,29): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/moderation/moderation/ban.ts(9,29): error TS2307: Cannot find module '../../core/handlers/controllers/moderation_controller' or its corresponding type declarations.
+src/modules/moderation/moderation/check_ghost_ping.ts(2,66): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/moderation/moderation/check_ghost_ping.ts(3,66): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/moderation/moderation/check_ghost_ping.ts(45,15): error TS7006: Parameter 'ping' implicitly has an 'any' type.
+src/modules/moderation/moderation/check_ghost_ping.ts(46,14): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/modules/moderation/moderation/check_ghost_ping.ts(46,17): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/modules/moderation/moderation/check_ghost_ping.ts(81,43): error TS7006: Parameter 'ping' implicitly has an 'any' type.
+src/modules/moderation/moderation/kick.ts(7,30): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/moderation/moderation/kick.ts(8,30): error TS2307: Cannot find module '../../core/handlers/controllers/moderation_controller' or its corresponding type declarations.
+src/modules/moderation/moderation/purge.ts(8,29): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/moderation/moderation/purge.ts(9,29): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/moderation/moderation/softban.ts(2,26): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/moderation/moderation/softban.ts(3,27): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/moderation/moderation/timeout.ts(7,32): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/moderation/moderation/timeout.ts(8,32): error TS2307: Cannot find module '../../core/handlers/controllers/moderation_controller' or its corresponding type declarations.
+src/modules/moderation/moderation/warn.ts(7,30): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/moderation/moderation/warn.ts(8,30): error TS2307: Cannot find module '../../core/handlers/controllers/moderation_controller' or its corresponding type declarations.
+src/modules/moderation/moderation/warnings.ts(7,29): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/moderation/moderation/warnings.ts(8,29): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/moderation/moderation/warnings.ts(9,29): error TS2307: Cannot find module '../../shared/utils/database' or its corresponding type declarations.
+src/modules/moderation/moderation/warnings.ts(23,27): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/modules/moderation/moderation/warnings.ts(23,30): error TS7006: Parameter 'b' implicitly has an 'any' type.
+src/modules/music/music/loop.ts(6,26): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/loop.ts(7,26): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/music/music/nowplaying.ts(6,27): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/nowplaying.ts(7,29): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/music/music/pause.ts(6,28): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/pause.ts(7,33): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/music/music/play.ts(9,28): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/play.ts(10,28): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/music/music/play.ts(11,33): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/music/music/play.ts(12,38): error TS2307: Cannot find module '../../core/handlers/select_menus/music/play_select' or its corresponding type declarations.
+src/modules/music/music/queue.ts(6,26): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/queue.ts(7,27): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/music/music/resume.ts(6,29): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/resume.ts(7,33): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/music/music/skip.ts(6,27): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/skip.ts(7,28): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/music/music/stop.ts(6,27): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/stop.ts(7,28): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/music/music/volume.ts(6,27): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/music/music/volume.ts(7,28): error TS2307: Cannot find module '../../core/handlers/controllers/music_controller' or its corresponding type declarations.
+src/modules/reputation/reputation/rep.ts(2,28): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/reputation/reputation/rep.ts(3,28): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/reputation/reputation/rep.ts(4,29): error TS2307: Cannot find module '../../shared/database/reputation_manager' or its corresponding type declarations.
+src/modules/reputation/reputation/rep_leaderboard.ts(2,28): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/reputation/reputation/rep_leaderboard.ts(3,28): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/reputation/reputation/rep_leaderboard.ts(4,29): error TS2307: Cannot find module '../../shared/database/reputation_manager' or its corresponding type declarations.
+src/modules/reputation/reputation/rep_leaderboard.ts(31,47): error TS7006: Parameter 'record' implicitly has an 'any' type.
+src/modules/reputation/reputation/rep_leaderboard.ts(31,55): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/modules/reputation/reputation/rep_profile.ts(2,28): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/reputation/reputation/rep_profile.ts(3,28): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/reputation/reputation/rep_profile.ts(4,29): error TS2307: Cannot find module '../../shared/database/reputation_manager' or its corresponding type declarations.
+src/modules/reputation/reputation/rep_profile.ts(26,18): error TS7006: Parameter 'log' implicitly has an 'any' type.
+src/modules/server/server/check_messages.ts(8,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/server/server/check_messages.ts(10,26): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/server/server/edit_rules.ts(10,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/server/server/edit_rules.ts(11,26): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/server/server/edit_rules.ts(12,21): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/server/server/leave_threads.ts(8,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/server/server/move_channel.ts(9,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/server/server/move_channel.ts(10,42): error TS2307: Cannot find module '../../shared/database/channel_manager' or its corresponding type declarations.
+src/modules/server/server/move_channel.ts(11,26): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/server/server/serverinfo.ts(6,29): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/server/server/serverinfo.ts(7,29): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/server/server/stats.ts(5,29): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/server/server/stats.ts(6,29): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/server/server/view_leaderboard.ts(6,38): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/server/server/view_leaderboard.ts(7,38): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/server/server/view_leaderboard.ts(9,40): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/ask.ts(7,46): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/ask.ts(8,46): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/ask.ts(9,53): error TS2307: Cannot find module '../../core/handlers/controllers/ask_controller' or its corresponding type declarations.
+src/modules/staff/staff/close_request.ts(2,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/close_request.ts(3,50): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/close_request.ts(5,42): error TS2307: Cannot find module '../../shared/database/unified_ticket' or its corresponding type declarations.
+src/modules/staff/staff/close_request.ts(6,30): error TS2307: Cannot find module '../../shared/database/unified_ticket/close' or its corresponding type declarations.
+src/modules/staff/staff/close_request.ts(7,43): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/staff/staff/close_request.ts(38,52): error TS18046: 'config' is of type 'unknown'.
+src/modules/staff/staff/devlog.ts(10,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/devlog.ts(11,26): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/staff/staff/get_answer_stats.ts(2,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/get_answer_stats.ts(3,36): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/get_answer_stats.ts(4,31): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/staff/staff/hwid_less.ts(2,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/hwid_less.ts(4,27): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/hwid_less_list.ts(2,66): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/hwid_less_list.ts(3,66): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/loa.ts(2,66): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/loa.ts(3,66): error TS2307: Cannot find module '../../core/handlers/controllers/loa_controller' or its corresponding type declarations.
+src/modules/staff/staff/mass_user_note.ts(6,32): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/mass_user_note.ts(7,32): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/staff/staff/mass_user_note.ts(8,32): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/mass_user_note.ts(9,35): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/schedule_hwid_less.ts(2,41): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/schedule_hwid_less.ts(4,41): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/set_discount.ts(5,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/set_discount.ts(7,22): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/submit_payment.ts(2,48): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/submit_payment.ts(3,48): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/staff/staff/submit_payment.ts(4,48): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/submit_payment.ts(5,48): error TS2307: Cannot find module '../../shared/utils/error_logger' or its corresponding type declarations.
+src/modules/staff/staff/submit_payment.ts(6,48): error TS2307: Cannot find module '../../shared/config/loader' or its corresponding type declarations.
+src/modules/staff/staff/submit_payment.ts(8,48): error TS2307: Cannot find module '../../shared/database/work_tracker' or its corresponding type declarations.
+src/modules/staff/staff/work_stats.ts(2,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/staff/staff/work_stats.ts(3,27): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/staff/staff/work_stats.ts(4,33): error TS2307: Cannot find module '../../shared/database/work_tracker' or its corresponding type declarations.
+src/modules/utility/utility/afk.ts(5,29): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/utility/utility/afk.ts(6,32): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/utility/utility/check_user_tag.ts(2,99): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/utility/utility/check_user_tag.ts(3,99): error TS2307: Cannot find module '../../shared/database/server_tag' or its corresponding type declarations.
+src/modules/utility/utility/check_user_tag.ts(4,99): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/utility/utility/check_user_tag.ts(92,13): error TS7006: Parameter 'user' implicitly has an 'any' type.
+src/modules/utility/utility/check_user_tag.ts(92,19): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/modules/utility/utility/get_role_permission.ts(6,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/utility/utility/get_role_permission.ts(9,38): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/utility/utility/ping.ts(5,29): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/utility/utility/ping.ts(6,32): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/utility/utility/role_add.ts(2,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/utility/utility/role_add.ts(3,26): error TS2307: Cannot find module '../../shared/database/permissions' or its corresponding type declarations.
+src/modules/utility/utility/role_add.ts(4,32): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/utility/utility/snipe.ts(5,43): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/utility/utility/snipe.ts(6,43): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/utility/utility/version.ts(2,25): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/utility/utility/version.ts(3,52): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/utility/utility/version.ts(11,64): error TS7006: Parameter 'target' implicitly has an 'any' type.
+src/modules/utility/utility/whois.ts(2,26): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/utility/utility/whois.ts(3,27): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/whitelister/whitelister/blacklist.ts(7,34): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/whitelister/whitelister/blacklist.ts(8,34): error TS2307: Cannot find module '../../core/handlers/controllers/whitelister_controller' or its corresponding type declarations.
+src/modules/whitelister/whitelister/edit_whitelist.ts(7,34): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/whitelister/whitelister/edit_whitelist.ts(8,34): error TS2307: Cannot find module '../../core/handlers/controllers' or its corresponding type declarations.
+src/modules/whitelister/whitelister/get_user_stats.ts(7,34): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/whitelister/whitelister/get_user_stats.ts(8,34): error TS2307: Cannot find module '../../core/handlers/controllers' or its corresponding type declarations.
+src/modules/whitelister/whitelister/unblacklist.ts(2,84): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/whitelister/whitelister/unblacklist.ts(3,84): error TS2307: Cannot find module '../../shared/database' or its corresponding type declarations.
+src/modules/whitelister/whitelister/unblacklist.ts(4,84): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/whitelister/whitelister/unwhitelist.ts(7,34): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/whitelister/whitelister/unwhitelist.ts(8,34): error TS2307: Cannot find module '../../core/handlers/controllers' or its corresponding type declarations.
+src/modules/whitelister/whitelister/whitelist.ts(7,34): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/modules/whitelister/whitelister/whitelist.ts(8,34): error TS2307: Cannot find module '../../core/handlers/controllers/whitelister_controller' or its corresponding type declarations.
+src/modules/work/work/check_all_staff_work_report.ts(2,27): error TS2307: Cannot find module '../../shared/utils' or its corresponding type declarations.
+src/modules/work/work/check_all_staff_work_report.ts(3,30): error TS2307: Cannot find module '../../shared/types/command' or its corresponding type declarations.
+src/shared/database/audit_log.ts(20,46): error TS2307: Cannot find module './snipe' or its corresponding type declarations.
+src/shared/database/index.ts(13,1): error TS2308: Module './channel_manager' has already exported a member named 'rename_channel'. Consider explicitly re-exporting to resolve the ambiguity.
+src/shared/database/unified_ticket/close.ts(11,29): error TS2307: Cannot find module '../utils/transcript' or its corresponding type declarations.
+src/shared/database/unified_ticket/close.ts(82,11): error TS7006: Parameter 'id' implicitly has an 'any' type.
+src/shared/database/unified_ticket/close.ts(86,12): error TS7006: Parameter 'error' implicitly has an 'any' type.
+src/shared/database/unified_ticket/handlers.ts(27,20): error TS18046: 'config' is of type 'unknown'.
+src/shared/database/unified_ticket/handlers.ts(109,20): error TS18046: 'config' is of type 'unknown'.
+src/shared/database/unified_ticket/handlers.ts(162,20): error TS18046: 'config' is of type 'unknown'.
+src/shared/database/unified_ticket/handlers.ts(167,11): error TS18046: 'config' is of type 'unknown'.
+src/shared/database/unified_ticket/handlers.ts(169,41): error TS18046: 'config' is of type 'unknown'.
+src/shared/database/unified_ticket/handlers.ts(202,20): error TS18046: 'config' is of type 'unknown'.
+src/shared/database/unified_ticket/state.ts(2,29): error TS2307: Cannot find module '../config/loader' or its corresponding type declarations.
