@@ -497,7 +497,7 @@ export const command: Command = {
           pending_result.id
         )
 
-        await interaction.editReply({ content: `Payment auto-approved! Customer <@${customer.id}> has been whitelisted.` })
+        await interaction.editReply({ content: `Payment submitted for review. Staff will review the payment shortly.` })
       } catch (approve_err) {
         await log_error(interaction.client, approve_err as Error, "submit_payment_auto_approve", {
           user       : interaction.user.id,
