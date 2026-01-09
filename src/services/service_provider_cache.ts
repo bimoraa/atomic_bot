@@ -3,7 +3,7 @@ import { db } from "../utils"
 import { log_error } from "../utils/error_logger"
 import * as luarmor from "./luarmor"
 
-const CACHE_INTERVAL_MS = 3 * 60 * 1000
+const CACHE_INTERVAL_MS = 10 * 60 * 1000
 
 let is_syncing          = false
 let sync_interval       : NodeJS.Timeout | null = null
@@ -102,7 +102,7 @@ export function start_service_provider_cache(client: Client): void {
   void run_sync()
   sync_interval = setInterval(run_sync, CACHE_INTERVAL_MS)
 
-  console.log("[ - SERVICE PROVIDER CACHE - ] Scheduler started (3 minutes)")
+  console.log("[ - SERVICE PROVIDER CACHE - ] Scheduler started (10 minutes)")
 }
 
 /**

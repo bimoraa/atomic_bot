@@ -5,11 +5,11 @@ const __log      = logger.create_logger("luarmor")
 
 let __users_cache: luarmor_user[] | null              = null
 let __users_cache_timestamp                           = 0
-const __users_cache_duration                          = 5 * 60 * 1000
+const __users_cache_duration                          = 15 * 60 * 1000
 
 let __user_cache: Map<string, luarmor_user>           = new Map()
 let __user_cache_timestamp: Map<string, number>       = new Map()
-const __user_cache_duration                           = 5 * 60 * 1000
+const __user_cache_duration                           = 15 * 60 * 1000
 
 function get_api_key(): string {
   return env.required("LUARMOR_API_KEY")
