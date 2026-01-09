@@ -496,6 +496,8 @@ export const command: Command = {
           gallery_items,
           pending_result.id
         )
+
+        await interaction.editReply({ content: `Payment auto-approved! Customer <@${customer.id}> has been whitelisted.` })
       } catch (approve_err) {
         await log_error(interaction.client, approve_err as Error, "submit_payment_auto_approve", {
           user       : interaction.user.id,
@@ -504,11 +506,44 @@ export const command: Command = {
           customer_id: customer.id,
         })
 
-        await interaction.editReply({ content: "Payment submitted but auto-approval failed. Please contact an admin." })
+        const manual_approval_message = component.build_message({
+          components: [
+            component.container({
+              accent_color: component.from_hex("#FFA500"),
+              components: [
+                component.text([
+                  "## <:rbx:1447976733050667061> | New Payment",
+                  `> Auto-approval failed after ${MAX_WHITELIST_RETRIES} attempts. Manual approval required.`,
+                  "",
+                  `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
+                  `- <:USERS:1381580388119613511> Customer: <@${customer.id}>`,
+                  `- <:calc:1381580377340117002> Payment Method: **${method}**`,
+                  `- <:JOBSS:1381580390330011732> Submitted by: <@${interaction.user.id}>`,
+                  `- <:app:1381680319207575552> Details: **${details}**`,
+                  `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
+                ]),
+                component.divider(2),
+                component.media_gallery(gallery_items),
+                component.divider(2),
+                component.action_row(
+                  component.success_button("Approve", `payment_approve_${interaction.user.id}_${amount}_${customer.id}_${interaction.channelId}`, undefined, false),
+                  component.danger_button("Reject", `payment_reject_${interaction.user.id}_${amount}_${customer.id}_${interaction.channelId}`, undefined, false)
+                ),
+              ],
+            }),
+          ],
+        })
+
+        await api.edit_components_v2(
+          payment_channel_id,
+          pending_result.id,
+          api.get_token(),
+          manual_approval_message
+        )
+
+        await interaction.editReply({ content: `Auto-approval failed after ${MAX_WHITELIST_RETRIES} attempts. Payment submitted for manual approval.` })
         return
       }
-
-      await interaction.editReply({ content: `Payment auto-approved! Customer <@${customer.id}> has been whitelisted.` })
     } catch (err) {
       await log_error(interaction.client, err as Error, "submit_payment_command", {
         user    : interaction.user.id,
