@@ -58,6 +58,10 @@ export async function handle_free_get_script(interaction: ButtonInteraction): Pr
                   "https://cdn.discordapp.com/attachments/1457787260966801602/1457787261859922093/ScreenRecording_01-04-2026_17-09-32_1.mp4?ex=69613a2f&is=695fe8af&hm=bea369e124ba0594c20bc1449a10e68664a1d1c9b0372b2d955884f483c90be9&",
                   "TUTORIAL - Credit: Moltres",
                 ),
+                component.gallery_item(
+                  "https://cdn.discordapp.com/attachments/1396090293987704913/1458975493905711124/Perekaman_Layar_2026-01-09_pukul_07.06.02.mov?ex=69619850&is=696046d0&hm=96199f3b1266a08fa2c7d4ff82237ee666ccfd5b99b1699801e395e54434b92e&",
+                  "Desktop Tutorial",
+                ),
               ]),
             ],
           }),
@@ -233,8 +237,8 @@ export async function handle_free_mobile_copy(interaction: ButtonInteraction): P
             component.divider(2),
             component.media_gallery([
               component.gallery_item(
-                "https://cdn.discordapp.com/attachments/1457787260966801602/1457787261859922093/ScreenRecording_01-04-2026_17-09-32_1.mp4?ex=69613a2f&is=695fe8af&hm=bea369e124ba0594c20bc1449a10e68664a1d1c9b0372b2d955884f483c90be9&",
-                "TUTORIAL - Credit: Moltres",
+                "https://cdn.discordapp.com/attachments/1396090293987704913/1458975493905711124/Perekaman_Layar_2026-01-09_pukul_07.06.02.mov?ex=69619850&is=696046d0&hm=96199f3b1266a08fa2c7d4ff82237ee666ccfd5b99b1699801e395e54434b92e&",
+                "Desktop Tutorial",
               ),
             ]),
           ],
