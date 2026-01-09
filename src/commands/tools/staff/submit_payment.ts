@@ -13,6 +13,7 @@ const ALLOWED_PARENT_CHANNEL  = "1250446131993903114"
 const LOGO_URL                = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"
 const LOG_CHANNEL_ID          = "1392574025498366061"
 const WHITELIST_PROJECT_ID    = "6958841b2d9e5e049a24a23e376e0d77"
+const BOT_USER_ID             = "1118453649727823974"
 
 /**
  * Sleep for specified milliseconds.
@@ -196,7 +197,7 @@ async function auto_approve_payment(
             `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
             "",
             "### Approval Information",
-            `- <:USERS:1381580388119613511> Approved by: <@${staff_id}>`,
+            `- <:USERS:1381580388119613511> Approved by: <@${BOT_USER_ID}>`,
             `- <:app:1381680319207575552> Payment ID: **${payment_id}**`,
           ]),
           component.divider(2),
