@@ -14,6 +14,15 @@ const LOGO_URL                = "https://github.com/bimoraa/atomic_bot/blob/main
 const LOG_CHANNEL_ID          = "1392574025498366061"
 const WHITELIST_PROJECT_ID    = "6958841b2d9e5e049a24a23e376e0d77"
 
+/**
+ * Sleep for specified milliseconds.
+ * @param ms Milliseconds to sleep.
+ * @returns Promise resolving after delay.
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 type payment_message_state = "loading" | "ready"
 
 interface payment_message_params {
@@ -187,7 +196,7 @@ async function auto_approve_payment(
             `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
             "",
             "### Approval Information",
-            `- <:USERS:1381580388119613511> Approved by: Auto-Approved`,
+            `- <:USERS:1381580388119613511> Approved by: <@${staff_id}>`,
             `- <:app:1381680319207575552> Payment ID: **${payment_id}**`,
           ]),
           component.divider(2),
@@ -375,6 +384,42 @@ export const command: Command = {
         await interaction.editReply({ content: `Error: ${JSON.stringify(update_result)}` })
         return
       }
+
+      await sleep(400)
+
+      const processing_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text([
+                "## <:rbx:1447976733050667061> | New Payment",
+                `> Processing payment by <@${interaction.user.id}>...`,
+                "",
+                `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
+                `- <:USERS:1381580388119613511> Customer: <@${customer.id}>`,
+                `- <:calc:1381580377340117002> Payment Method: **${method}**`,
+                `- <:JOBSS:1381580390330011732> Submitted by: <@${interaction.user.id}>`,
+                `- <:app:1381680319207575552> Details: **${details}**`,
+                `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
+              ]),
+              component.divider(2),
+              component.media_gallery(gallery_items),
+              component.divider(2),
+              component.action_row(
+                component.success_button("Approve", `payment_approve_${interaction.user.id}_${amount}_${customer.id}_${interaction.channelId}`, undefined, true),
+                component.danger_button("Reject", `payment_reject_${interaction.user.id}_${amount}_${customer.id}_${interaction.channelId}`, undefined, true)
+              ),
+            ],
+          }),
+        ],
+      })
+
+      await api.edit_components_v2(
+        payment_channel_id,
+        pending_result.id,
+        api.get_token(),
+        processing_message
+      )
 
       try {
         await auto_approve_payment(
