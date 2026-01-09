@@ -38,21 +38,26 @@ export async function handle_free_get_script(interaction: ButtonInteraction): Pr
       const no_tag_message = component.build_message({
         components: [
           component.container({
-            accent_color: 0xED4245,
+            accent_color: 15158332,
             components: [
               component.text([
-                `## Server Tag Required`,
-                `To use the free script, you must wear the ATMC server tag`,
-                ``,
-                `You have been unwhitelisted`,
-                ``,
-                `**How to set server tag:**`,
-                `1. Go to User Settings > Profile`,
-                `2. Click on Server Profiles`,
-                `3. Find this server and enable "Display on profile"`,
-                `4. Click "Use Server Tag"`,
-                ``,
-                `After setting the tag, click the button again`,
+                "## Server Tag Required",
+                "To use the free script, you must wear the ATMC server tag",
+              ]),
+              component.divider(2),
+              component.text([
+                "### How to equip the server tag:",
+                "",
+                "1. User Settings -> Profile",
+                "2. Server Tag Section",
+                "3. Select this server and equip **ATMC**",
+              ]),
+              component.divider(2),
+              component.media_gallery([
+                component.gallery_item(
+                  "https://cdn.discordapp.com/attachments/1457787260966801602/1457787261859922093/ScreenRecording_01-04-2026_17-09-32_1.mp4?ex=69613a2f&is=695fe8af&hm=bea369e124ba0594c20bc1449a10e68664a1d1c9b0372b2d955884f483c90be9&",
+                  "TUTORIAL - Credit: Moltres",
+                ),
               ]),
             ],
           }),
@@ -211,13 +216,26 @@ export async function handle_free_mobile_copy(interaction: ButtonInteraction): P
     await api.edit_deferred_reply(interaction, component.build_message({
       components: [
         component.container({
-          accent_color: 0xED4245,
+          accent_color: 15158332,
           components: [
             component.text([
-              `## Server Tag Required`,
-              `You must wear the ATMC server tag to use free script features`,
-              ``,
-              `You have been unwhitelisted. Set the server tag and click "Get Script" again`,
+              "## Server Tag Required",
+              "To use the free script, you must wear the ATMC server tag",
+            ]),
+            component.divider(2),
+            component.text([
+              "### How to equip the server tag:",
+              "",
+              "1. User Settings -> Profile",
+              "2. Server Tag Section",
+              "3. Select this server and equip **ATMC**",
+            ]),
+            component.divider(2),
+            component.media_gallery([
+              component.gallery_item(
+                "https://cdn.discordapp.com/attachments/1457787260966801602/1457787261859922093/ScreenRecording_01-04-2026_17-09-32_1.mp4?ex=69613a2f&is=695fe8af&hm=bea369e124ba0594c20bc1449a10e68664a1d1c9b0372b2d955884f483c90be9&",
+                "TUTORIAL - Credit: Moltres",
+              ),
             ]),
           ],
         }),
