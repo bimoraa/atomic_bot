@@ -1,12 +1,89 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, TextChannel, ThreadChannel } from "discord.js"
-import { Command } from "../../../types/command"
-import { is_staff } from "../../../services/permissions"
-import { api, time, component } from "../../../utils"
-import { load_config } from "../../../configuration/loader"
+import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, TextChannel, ThreadChannel, MessageFlags } from "discord.js"
+import { Command }                        from "../../../types/command"
+import { is_staff }                       from "../../../services/permissions"
+import { api, time, component }           from "../../../utils"
+import { log_error }                      from "../../../utils/error_logger"
+import { load_config }                    from "../../../configuration/loader"
 
-const payment_cfg = load_config<{ submit_channel_id: string }>("payment")
-const payment_channel_id = payment_cfg.submit_channel_id
-const ALLOWED_PARENT_CHANNEL = "1250446131993903114"
+const payment_cfg             = load_config<{ submit_channel_id: string }>("payment")
+const payment_channel_id      = payment_cfg.submit_channel_id
+const ALLOWED_PARENT_CHANNEL  = "1250446131993903114"
+
+type payment_message_state = "loading" | "ready"
+
+interface payment_message_params {
+  formatted_amount: string
+  customer_id     : string
+  method          : string
+  details         : string
+  staff_id        : string
+  timestamp       : number
+  gallery_items   : component.gallery_item[]
+  state           : payment_message_state
+  amount_value    : number
+  channel_id      : string
+}
+
+/**
+ * Build payment review message with loading or ready state.
+ * @param params Message parameters including state.
+ * @returns Formatted message payload.
+ */
+function build_payment_message(params: payment_message_params) {
+  const {
+    formatted_amount,
+    customer_id,
+    method,
+    details,
+    staff_id,
+    timestamp,
+    gallery_items,
+    state,
+    amount_value,
+    channel_id,
+  } = params
+
+  const status_line = state === "loading"
+    ? "- Status: Loading payment details..."
+    : "> Approve tanpa ngecek bukti dulu = instant demote"
+
+  const approve_btn = component.success_button(
+    "Approve",
+    `payment_approve_${staff_id}_${amount_value}_${customer_id}_${channel_id}`,
+    undefined,
+    state === "loading"
+  )
+  const reject_btn = component.danger_button(
+    "Reject",
+    `payment_reject_${staff_id}_${amount_value}_${customer_id}_${channel_id}`,
+    undefined,
+    state === "loading"
+  )
+
+  return component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text([
+            "## <:rbx:1447976733050667061> | New Payment",
+            status_line,
+            "",
+            `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
+            `- <:USERS:1381580388119613511> Customer: <@${customer_id}>`,
+            `- <:calc:1381580377340117002> Payment Method: **${method}**`,
+            `- <:JOBSS:1381580390330011732> Submitted by: <@${staff_id}>`,
+            `- <:app:1381680319207575552> Details: **${details}**`,
+            `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
+          ]),
+          component.divider(2),
+          component.media_gallery(gallery_items),
+          component.divider(2),
+          component.action_row(approve_btn, reject_btn),
+        ],
+      }),
+    ],
+  })
+}
 
 function parse_amount(input: string): number {
   const cleaned = input.replace(/[^\d]/g, "")
@@ -89,7 +166,7 @@ export const command: Command = {
       if (!is_valid_thread) {
         await interaction.reply({
           content: `This command can only be used in threads under <#${ALLOWED_PARENT_CHANNEL}>`,
-          flags: 64,
+          flags  : MessageFlags.Ephemeral,
         })
         return
       }
@@ -97,12 +174,12 @@ export const command: Command = {
       if (!is_staff(member)) {
         await interaction.reply({
           content: "Only staff can submit payments.",
-          flags: 64,
+          flags  : MessageFlags.Ephemeral,
         })
         return
       }
 
-      await interaction.deferReply({ flags: 64 })
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral })
 
       const amount_input     = interaction.options.getString("amount", true)
       const currency         = interaction.options.getString("currency", true)
@@ -128,43 +205,54 @@ export const command: Command = {
         gallery_items.push(component.gallery_item(proof2.url, "Proof 2"))
       }
 
-      const payment_message = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.text([
-                `## <:rbx:1447976733050667061> | New Payment`,
-                `> Approve tanpa ngecek bukti dulu = instant demote`,
-                ``,
-                `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
-                `- <:USERS:1381580388119613511> Customer: <@${customer.id}>`,
-                `- <:calc:1381580377340117002> Payment Method: **${method}**`,
-                `- <:JOBSS:1381580390330011732> Submitted by: <@${interaction.user.id}>`,
-                `- <:app:1381680319207575552> Details: **${details}**`,
-                `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
-              ]),
-              component.divider(2),
-              component.media_gallery(gallery_items),
-              component.divider(2),
-              component.action_row(
-                component.success_button("Approve", `payment_approve_${interaction.user.id}_${amount}_${customer.id}_${interaction.channelId}`),
-                component.danger_button("Reject", `payment_reject_${interaction.user.id}_${amount}_${customer.id}_${interaction.channelId}`)
-              ),
-            ],
-          }),
-        ],
-      })
-
       const channel = interaction.client.channels.cache.get(payment_channel_id) as TextChannel
       if (!channel) {
         await interaction.editReply({ content: "Payment channel not found." })
         return
       }
 
-      const result = await api.send_components_v2(channel.id, api.get_token(), payment_message)
+      const loading_message = build_payment_message({
+        formatted_amount,
+        customer_id  : customer.id,
+        method,
+        details,
+        staff_id     : interaction.user.id,
+        timestamp,
+        gallery_items,
+        state        : "loading",
+        amount_value : amount,
+        channel_id   : interaction.channelId,
+      })
 
-      if (result.error) {
-        await interaction.editReply({ content: `Error: ${JSON.stringify(result)}` })
+      const pending_result = await api.send_components_v2(channel.id, api.get_token(), loading_message)
+
+      if (pending_result.error || !pending_result.id) {
+        await interaction.editReply({ content: `Error: ${JSON.stringify(pending_result)}` })
+        return
+      }
+
+      const ready_message = build_payment_message({
+        formatted_amount,
+        customer_id  : customer.id,
+        method,
+        details,
+        staff_id     : interaction.user.id,
+        timestamp,
+        gallery_items,
+        state        : "ready",
+        amount_value : amount,
+        channel_id   : interaction.channelId,
+      })
+
+      const update_result = await api.edit_components_v2(
+        payment_channel_id,
+        pending_result.id,
+        api.get_token(),
+        ready_message
+      )
+
+      if (update_result.error) {
+        await interaction.editReply({ content: `Error: ${JSON.stringify(update_result)}` })
         return
       }
 
@@ -177,9 +265,9 @@ export const command: Command = {
               component.section({
                 content: [
                   `## <:OLOCK:1381580385892171816> | Payment in Review`,
-                  `Hello! Your payment is currently being processed by our team. This process may take approximately 1–2 hours (depending on the admin's online schedule). Once the payment is complete, you will receive a DM from our bot.`,
+                  `Hello! Your payment is currently being processed by our team. This process may take approximately 1-2 hours (depending on the admin's online schedule). Once the payment is complete, you will receive a DM from our bot.`,
                   ``,
-                  `Thank you for patiently waiting ❤️`,
+                  `Thank you for patiently waiting.`,
                 ],
                 thumbnail: logo_url,
               }),
@@ -199,11 +287,30 @@ export const command: Command = {
 
       await interaction.editReply({ content: `Payment submitted for approval in <#${payment_channel_id}>` })
     } catch (err) {
-      console.error("[Submit Payment Error]", err)
+      await log_error(interaction.client, err as Error, "submit_payment_command", {
+        user    : interaction.user.id,
+        channel : interaction.channelId,
+        guild_id: interaction.guildId,
+      })
+
+      const error_payload = component.build_message({
+        components: [
+          component.container({
+            accent_color: component.from_hex("#FF0000"),
+            components  : [
+              component.text([
+                "## Error",
+                "An error occurred while submitting the payment. Please try again later.",
+              ]),
+            ],
+          }),
+        ],
+      })
+
       if (interaction.deferred) {
-        await interaction.editReply({ content: "An error occurred while submitting the payment." })
+        await interaction.editReply(error_payload)
       } else {
-        await interaction.reply({ content: "An error occurred while submitting the payment.", flags: 64 })
+        await interaction.reply({ ...error_payload, flags: MessageFlags.Ephemeral })
       }
     }
   },
