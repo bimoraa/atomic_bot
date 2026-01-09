@@ -449,24 +449,6 @@ export const command: Command = {
         return
       }
 
-      const approved_message = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.section({
-                content: [
-                  "## <:money:1381580383090380951> | Whitelisted!",
-                  "Your payment has been approved and you have been whitelisted!",
-                ],
-                thumbnail: LOGO_URL,
-              }),
-            ],
-          }),
-        ],
-      })
-
-      await api.send_components_v2(interaction.channelId, api.get_token(), approved_message)
-
       await interaction.editReply({ content: `Payment auto-approved! Customer <@${customer.id}> has been whitelisted.` })
     } catch (err) {
       await log_error(interaction.client, err as Error, "submit_payment_command", {
