@@ -1,41 +1,42 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, MessageFlags } from "discord.js"
 import { Command }     from "../../types/command"
 import { component }   from "../../utils"
-import { file }        from "../../utils"
-import { join }        from "path"
+import { db }          from "../../utils"
 
 interface hwid_config {
+  _id?   : string
   enabled: boolean
 }
 
-const CONFIG_PATH = join(__dirname, "../../configuration/hwid.cfg")
+const COLLECTION_NAME = "hwid_control"
 
 /**
- * Load HWID configuration.
+ * Load HWID configuration from database.
  * @returns HWID config object.
  */
-function load_config(): hwid_config {
+async function load_config(): Promise<hwid_config> {
   try {
-    return file.read_json<hwid_config>(CONFIG_PATH)
+    const config = await db.find_one<hwid_config>(COLLECTION_NAME, {})
+    return config || { enabled: true }
   } catch {
     return { enabled: true }
   }
 }
 
 /**
- * Save HWID configuration.
+ * Save HWID configuration to database.
  * @param config Config to save.
  */
-function save_config(config: hwid_config): void {
-  file.write_json(CONFIG_PATH, config)
+async function save_config(config: hwid_config): Promise<void> {
+  await db.update_one(COLLECTION_NAME, {}, config, true)
 }
 
 /**
- * Get current HWID status.
+ * Get current HWID status from database.
  * @returns True if enabled, false otherwise.
  */
-export function is_hwid_enabled(): boolean {
-  const config = load_config()
+export async function is_hwid_enabled(): Promise<boolean> {
+  const config = await load_config()
   return config.enabled
 }
 
@@ -63,7 +64,7 @@ export const command: Command = {
     const subcommand = interaction.options.getSubcommand()
 
     if (subcommand === "enable") {
-      save_config({ enabled: true })
+      await save_config({ enabled: true })
 
       await interaction.reply({
         ...component.build_message({
@@ -84,7 +85,7 @@ export const command: Command = {
         flags: MessageFlags.Ephemeral,
       })
     } else if (subcommand === "disable") {
-      save_config({ enabled: false })
+      await save_config({ enabled: false })
 
       await interaction.reply({
         ...component.build_message({
@@ -105,7 +106,7 @@ export const command: Command = {
         flags: MessageFlags.Ephemeral,
       })
     } else if (subcommand === "status") {
-      const config = load_config()
+      const config = await load_config()
       const status = config.enabled ? "Enabled" : "Disabled"
       const color  = config.enabled ? "#57F287" : "#ED4245"
 

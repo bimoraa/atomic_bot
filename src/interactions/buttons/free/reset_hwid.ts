@@ -25,7 +25,8 @@ function get_headers(): Record<string, string> {
 export async function handle_free_reset_hwid(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true })
 
-  if (!is_hwid_enabled()) {
+  const hwid_enabled = await is_hwid_enabled()
+  if (!hwid_enabled) {
     await api.edit_deferred_reply(interaction, component.build_message({
       components: [
         component.container({
