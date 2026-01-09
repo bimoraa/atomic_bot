@@ -3,6 +3,7 @@ import { component, api, format }              from "../../../utils"
 import { http, env, logger }                   from "../../../utils"
 import { remove_free_script_access }           from "../../../services/free_script_manager"
 import { track_and_check_hwid_reset, create_rate_limit_message } from "../../controllers/service_provider_controller"
+import { is_hwid_enabled }                     from "../../../commands/setup/hwid_control"
 
 const __log               = logger.create_logger("free_reset_hwid")
 const FREE_PROJECT_ID     = "cd7560b7384fd815dafd993828c40d2b"
@@ -23,6 +24,25 @@ function get_headers(): Record<string, string> {
 
 export async function handle_free_reset_hwid(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true })
+
+  if (!is_hwid_enabled()) {
+    await api.edit_deferred_reply(interaction, component.build_message({
+      components: [
+        component.container({
+          accent_color: component.from_hex("#ED4245"),
+          components  : [
+            component.text([
+              "## HWID Reset Disabled",
+              "HWID reset functionality is currently disabled.",
+              "",
+              "Please contact an administrator for assistance.",
+            ]),
+          ],
+        }),
+      ],
+    }))
+    return
+  }
 
   const member      = interaction.member as GuildMember
   const user        = member.user

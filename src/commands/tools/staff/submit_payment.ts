@@ -14,6 +14,7 @@ const LOGO_URL                = "https://github.com/bimoraa/atomic_bot/blob/main
 const LOG_CHANNEL_ID          = "1392574025498366061"
 const WHITELIST_PROJECT_ID    = "6958841b2d9e5e049a24a23e376e0d77"
 const BOT_USER_ID             = "1118453649727823974"
+const MAX_WHITELIST_RETRIES   = 3
 
 /**
  * Sleep for specified milliseconds.
@@ -140,13 +141,70 @@ async function auto_approve_payment(
 
   await delete_user_from_project(WHITELIST_PROJECT_ID, customer_id)
 
-  const whitelist_result = await create_key_for_project(WHITELIST_PROJECT_ID, {
-    discord_id: customer_id,
-    note      : whitelist_note,
-  })
+  let whitelist_result: any = null
+  let retry_count = 0
+  let last_error: Error | null = null
 
-  if (!whitelist_result.success || !whitelist_result.data?.user_key) {
-    throw new Error("Failed to whitelist user")
+  while (retry_count < MAX_WHITELIST_RETRIES) {
+    try {
+      if (retry_count > 0) {
+        const retry_delay = Math.pow(2, retry_count) * 1000
+        await sleep(retry_delay)
+
+        const retry_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  "## <:rbx:1447976733050667061> | New Payment",
+                  `> Retrying whitelist (Attempt ${retry_count + 1}/${MAX_WHITELIST_RETRIES})...`,
+                  "",
+                  `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
+                  `- <:USERS:1381580388119613511> Customer: <@${customer_id}>`,
+                  `- <:calc:1381580377340117002> Payment Method: **${method}**`,
+                  `- <:JOBSS:1381580390330011732> Submitted by: <@${staff_id}>`,
+                  `- <:app:1381680319207575552> Details: **${details}**`,
+                  `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
+                ]),
+                component.divider(2),
+                component.media_gallery(gallery_items),
+                component.divider(2),
+                component.action_row(
+                  component.success_button("Approve", `payment_approve_${staff_id}_${amount_value}_${customer_id}_${channel_id}`, undefined, true),
+                  component.danger_button("Reject", `payment_reject_${staff_id}_${amount_value}_${customer_id}_${channel_id}`, undefined, true)
+                ),
+              ],
+            }),
+          ],
+        })
+
+        await api.edit_components_v2(
+          payment_channel_id,
+          pending_message_id,
+          api.get_token(),
+          retry_message
+        )
+      }
+
+      whitelist_result = await create_key_for_project(WHITELIST_PROJECT_ID, {
+        discord_id: customer_id,
+        note      : whitelist_note,
+      })
+
+      if (whitelist_result.success && whitelist_result.data?.user_key) {
+        break
+      }
+
+      last_error = new Error(whitelist_result.error || "Unknown whitelist error")
+      retry_count++
+    } catch (err) {
+      last_error = err as Error
+      retry_count++
+    }
+  }
+
+  if (!whitelist_result?.success || !whitelist_result?.data?.user_key) {
+    throw last_error || new Error("Failed to whitelist user after retries")
   }
 
   const submitter  = await interaction.guild?.members.fetch(staff_id).catch(() => null)
