@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, MessageFlags } from "discord.js"
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }     from "../../types/command"
 import { component }   from "../../utils"
 import { db }          from "../../utils"
@@ -66,70 +66,67 @@ export const command: Command = {
     if (subcommand === "enable") {
       await save_config({ enabled: true })
 
-      await interaction.reply({
-        ...component.build_message({
-          components: [
-            component.container({
-              accent_color: component.from_hex("#57F287"),
-              components  : [
-                component.text([
-                  "## HWID Reset Enabled",
-                  "HWID reset functionality has been enabled.",
-                  "",
-                  "Users can now reset their HWID using the Reset HWID button.",
-                ]),
-              ],
-            }),
-          ],
-        }),
-        flags: MessageFlags.Ephemeral,
+      const message = component.build_message({
+        components: [
+          component.container({
+            accent_color: component.from_hex("#57F287"),
+            components  : [
+              component.text([
+                "## HWID Reset Enabled",
+                "HWID reset functionality has been enabled.",
+                "",
+                "Users can now reset their HWID using the Reset HWID button.",
+              ]),
+            ],
+          }),
+        ],
       })
+
+      await interaction.reply({ ...message, flags: (message.flags ?? 0) | 64 })
     } else if (subcommand === "disable") {
       await save_config({ enabled: false })
 
-      await interaction.reply({
-        ...component.build_message({
-          components: [
-            component.container({
-              accent_color: component.from_hex("#ED4245"),
-              components  : [
-                component.text([
-                  "## HWID Reset Disabled",
-                  "HWID reset functionality has been disabled.",
-                  "",
-                  "Users will not be able to reset their HWID until re-enabled.",
-                ]),
-              ],
-            }),
-          ],
-        }),
-        flags: MessageFlags.Ephemeral,
+      const message = component.build_message({
+        components: [
+          component.container({
+            accent_color: component.from_hex("#ED4245"),
+            components  : [
+              component.text([
+                "## HWID Reset Disabled",
+                "HWID reset functionality has been disabled.",
+                "",
+                "Users will not be able to reset their HWID until re-enabled.",
+              ]),
+            ],
+          }),
+        ],
       })
+
+      await interaction.reply({ ...message, flags: (message.flags ?? 0) | 64 })
     } else if (subcommand === "status") {
       const config = await load_config()
       const status = config.enabled ? "Enabled" : "Disabled"
       const color  = config.enabled ? "#57F287" : "#ED4245"
 
-      await interaction.reply({
-        ...component.build_message({
-          components: [
-            component.container({
-              accent_color: component.from_hex(color),
-              components  : [
-                component.text([
-                  "## HWID Reset Status",
-                  `Current Status: **${status}**`,
-                  "",
-                  config.enabled
-                    ? "Users can reset their HWID normally."
-                    : "HWID reset is currently disabled.",
-                ]),
-              ],
-            }),
-          ],
-        }),
-        flags: MessageFlags.Ephemeral,
+      const message = component.build_message({
+        components: [
+          component.container({
+            accent_color: component.from_hex(color),
+            components  : [
+              component.text([
+                "## HWID Reset Status",
+                `Current Status: **${status}**`,
+                "",
+                config.enabled
+                  ? "Users can reset their HWID normally."
+                  : "HWID reset is currently disabled.",
+              ]),
+            ],
+          }),
+        ],
       })
+
+      await interaction.reply({ ...message, flags: (message.flags ?? 0) | 64 })
     }
   },
 }
