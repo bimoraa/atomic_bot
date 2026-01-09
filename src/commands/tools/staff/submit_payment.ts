@@ -4,10 +4,15 @@ import { is_staff }                       from "../../../services/permissions"
 import { api, time, component }           from "../../../utils"
 import { log_error }                      from "../../../utils/error_logger"
 import { load_config }                    from "../../../configuration/loader"
+import { create_key_for_project, delete_user_from_project } from "../../../services/luarmor"
+import { add_work_log }                   from "../../../services/work_tracker"
 
 const payment_cfg             = load_config<{ submit_channel_id: string }>("payment")
 const payment_channel_id      = payment_cfg.submit_channel_id
 const ALLOWED_PARENT_CHANNEL  = "1250446131993903114"
+const LOGO_URL                = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"
+const LOG_CHANNEL_ID          = "1392574025498366061"
+const WHITELIST_PROJECT_ID    = "6958841b2d9e5e049a24a23e376e0d77"
 
 type payment_message_state = "loading" | "ready"
 
@@ -83,6 +88,121 @@ function build_payment_message(params: payment_message_params) {
       }),
     ],
   })
+}
+
+/**
+ * Generate unique payment ID.
+ * @returns Payment ID string.
+ */
+function generate_payment_id(): string {
+  const random = Math.floor(1000 + Math.random() * 9000)
+  return `ATMC-${random}`
+}
+
+/**
+ * Auto-approve payment and log to payment log channel.
+ * @param interaction Command interaction.
+ * @param payment_data Payment details.
+ * @param gallery_items Proof images.
+ * @param pending_message_id Message ID in payment channel.
+ * @returns Promise resolving when approval is complete.
+ */
+async function auto_approve_payment(
+  interaction: ChatInputCommandInteraction,
+  payment_data: {
+    formatted_amount: string
+    customer_id     : string
+    method          : string
+    details         : string
+    staff_id        : string
+    timestamp       : number
+    amount_value    : number
+    channel_id      : string
+  },
+  gallery_items: component.gallery_item[],
+  pending_message_id: string
+): Promise<void> {
+  const { formatted_amount, customer_id, method, details, staff_id, timestamp, amount_value, channel_id } = payment_data
+  const payment_id   = generate_payment_id()
+  const thread_link  = `https://discord.com/channels/${interaction.guildId}/${channel_id}`
+  const message_link = `https://discord.com/channels/${interaction.guildId}/${payment_channel_id}/${pending_message_id}`
+  const whitelist_note = `AUTO-WHITELISTED by submit-payment - at ${time.full_date_time(time.now())}`
+
+  await delete_user_from_project(WHITELIST_PROJECT_ID, customer_id)
+
+  const whitelist_result = await create_key_for_project(WHITELIST_PROJECT_ID, {
+    discord_id: customer_id,
+    note      : whitelist_note,
+  })
+
+  if (!whitelist_result.success || !whitelist_result.data?.user_key) {
+    throw new Error("Failed to whitelist user")
+  }
+
+  const submitter  = await interaction.guild?.members.fetch(staff_id).catch(() => null)
+  const staff_name = submitter?.user.username || `Unknown (${staff_id})`
+
+  await add_work_log(staff_id, staff_name, "ticket", message_link, undefined, amount_value)
+
+  const approved_message = component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.section({
+            content: [
+              "## <:money:1381580383090380951> | Whitelisted!",
+              "Your payment has been approved and you have been whitelisted!",
+            ],
+            thumbnail: LOGO_URL,
+          }),
+        ],
+      }),
+    ],
+  })
+
+  await api.send_components_v2(channel_id, api.get_token(), approved_message)
+
+  try {
+    const customer   = await interaction.client.users.fetch(customer_id)
+    const dm_channel = await customer.createDM()
+    await api.send_components_v2(dm_channel.id, api.get_token(), approved_message)
+  } catch (err) {
+    console.error("[DM Error]", err)
+  }
+
+  const done_message = component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text([
+            "## <:rbx:1447976733050667061> | Payment Done!",
+            "> Auto-approved by system",
+            "",
+            "### Payment Information",
+            `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
+            `- <:USERS:1381580388119613511> Customer Discord: <@${customer_id}>`,
+            `- <:calc:1381580377340117002> Payment Method: **${method}**`,
+            `- <:JOBSS:1381580390330011732> Submitted by: <@${staff_id}>`,
+            `- <:app:1381680319207575552> Transaction Details: **${details}**`,
+            `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
+            "",
+            "### Approval Information",
+            `- <:USERS:1381580388119613511> Approved by: Auto-Approved`,
+            `- <:app:1381680319207575552> Payment ID: **${payment_id}**`,
+          ]),
+          component.divider(2),
+          ...(gallery_items.length > 0 ? [component.media_gallery(gallery_items), component.divider(2)] : []),
+          component.action_row(
+            component.link_button("View Ticket (Thread)", thread_link)
+          ),
+        ],
+      }),
+    ],
+  })
+
+  await api.send_components_v2(LOG_CHANNEL_ID, api.get_token(), done_message)
+
+  await api.delete_message(payment_channel_id, pending_message_id, api.get_token())
 }
 
 function parse_amount(input: string): number {
@@ -256,36 +376,53 @@ export const command: Command = {
         return
       }
 
-      const logo_url = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"
+      try {
+        await auto_approve_payment(
+          interaction,
+          {
+            formatted_amount,
+            customer_id  : customer.id,
+            method,
+            details,
+            staff_id     : interaction.user.id,
+            timestamp,
+            amount_value : amount,
+            channel_id   : interaction.channelId,
+          },
+          gallery_items,
+          pending_result.id
+        )
+      } catch (approve_err) {
+        await log_error(interaction.client, approve_err as Error, "submit_payment_auto_approve", {
+          user       : interaction.user.id,
+          channel    : interaction.channelId,
+          guild_id   : interaction.guildId,
+          customer_id: customer.id,
+        })
 
-      const review_message = component.build_message({
+        await interaction.editReply({ content: "Payment submitted but auto-approval failed. Please contact an admin." })
+        return
+      }
+
+      const approved_message = component.build_message({
         components: [
           component.container({
             components: [
               component.section({
                 content: [
-                  `## <:OLOCK:1381580385892171816> | Payment in Review`,
-                  `Hello! Your payment is currently being processed by our team. This process may take approximately 1-2 hours (depending on the admin's online schedule). Once the payment is complete, you will receive a DM from our bot.`,
-                  ``,
-                  `Thank you for patiently waiting.`,
+                  "## <:money:1381580383090380951> | Whitelisted!",
+                  "Your payment has been approved and you have been whitelisted!",
                 ],
-                thumbnail: logo_url,
+                thumbnail: LOGO_URL,
               }),
             ],
           }),
         ],
       })
 
-      await api.send_components_v2(interaction.channelId, api.get_token(), review_message)
+      await api.send_components_v2(interaction.channelId, api.get_token(), approved_message)
 
-      try {
-        const dm_channel = await customer.createDM()
-        await api.send_components_v2(dm_channel.id, api.get_token(), review_message)
-      } catch (err) {
-        console.error("[DM Error]", err)
-      }
-
-      await interaction.editReply({ content: `Payment submitted for approval in <#${payment_channel_id}>` })
+      await interaction.editReply({ content: `Payment auto-approved! Customer <@${customer.id}> has been whitelisted.` })
     } catch (err) {
       await log_error(interaction.client, err as Error, "submit_payment_command", {
         user    : interaction.user.id,
