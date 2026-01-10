@@ -57,8 +57,9 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
 
   if (ticket_data && config) {
     const range_data    = TRANSACTION_RANGES[ticket_data.issue_type || ""]
-    const partner_match = ticket_data.description?.match(/Partner: (.+)/)
-    const partner_tag   = partner_match ? partner_match[1] : "Unknown"
+    const partner_match = ticket_data.description?.match(/Partner: <@(\d+)>/)
+    const partner_id    = partner_match ? partner_match[1] : "unknown"
+    const partner_tag   = partner_id !== "unknown" ? `<@${partner_id}>` : "Unknown"
     const timestamp     = time.now()
     const token         = api.get_token()
 
@@ -67,7 +68,7 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
         await db.insert_one("middleman_transactions", {
           ticket_id        : ticket_data.ticket_id,
           requester_id     : ticket_data.owner_id,
-          partner_id       : partner_tag.includes("<@") ? partner_tag.replace(/<@|>/g, "") : "unknown",
+          partner_id       : partner_id,
           partner_tag      : partner_tag,
           transaction_range: range_data.range,
           fee              : range_data.fee,
