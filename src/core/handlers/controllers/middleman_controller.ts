@@ -123,8 +123,6 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
     set_ticket(thread.id, ticket_data)
     set_user_open_ticket(ticket_type, user_id, thread.id)
 
-    const staff_role_id = config.required_role_id || "1398313779380617459"
-
     const welcome_message = component.build_message({
       components: [
         component.container({
@@ -137,7 +135,7 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
               `- Fee Rekber: ${range_data.fee}`,
             ]),
             component.divider(2),
-            component.text(`<@&${staff_role_id}> akan membantu memproses transaksi ini.`),
+            component.text(`<@${staff_ids[0]}> dan <@${staff_ids[1]}> akan membantu memproses transaksi ini.`),
           ],
         }),
         component.container({
