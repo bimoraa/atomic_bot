@@ -20,6 +20,7 @@ import { handle_script_redeem_modal }    from "./modals/service"
 import { handle_tempvoice_modal }        from "./modals/voice"
 import { handle_review_modal }           from "./modals/community"
 import { handle_music_modal }            from "./modals/music"
+import { handle_middleman_close_reason_modal } from "./modals/ticket"
 import * as review_submit                from "./buttons/review/submit"
 import * as ask_staff_button             from "./buttons/ask/ask_staff"
 import * as ask_answer                   from "./buttons/ask/answer"
@@ -61,8 +62,10 @@ import * as guide_select                 from "./select_menus/guide_select";
 import * as version_select               from "./select_menus/version/select";
 import * as work_stats_select            from "./select_menus/work_stats/week_select";
 import * as work_stats_year_select       from "./select_menus/work_stats/year_select";
-import * as work_stats_all_staff         from "./select_menus/work_stats/all_staff_week_select";
-import * as reminder_cancel_select       from "./select_menus/reminder_cancel_select";
+import * as work_stats_all_staff         from "./select_menus/work_stats/all_staff_week_select"
+import * as reminder_cancel_select       from "./select_menus/reminder_cancel_select"
+import * as middleman_select             from "./select_menus/middleman"
+import * as middleman_buttons            from "./buttons/middleman"
 
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
@@ -181,11 +184,15 @@ export async function handle_interaction(
         return;
       }
       if (interaction.customId.startsWith("music_play_select:")) {
-        await music_play_select.handle_music_play_select(interaction);
-        return;
+        await music_play_select.handle_music_play_select(interaction)
+        return
       }
-      if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return;
-      if (await handle_ticket_select_menu(interaction)) return;
+      if (interaction.customId === "middleman_transaction_range_select") {
+        await middleman_select.handle_middleman_transaction_range_select(interaction)
+        return
+      }
+      if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return
+      if (await handle_ticket_select_menu(interaction)) return
     } catch (err) {
       console.log("[select] Error:", err);
       await log_error(client, err as Error, "StringSelectMenu", {
@@ -199,8 +206,10 @@ export async function handle_interaction(
 
   if (interaction.isUserSelectMenu()) {
     try {
-      if (await handle_ticket_user_select(interaction)) return;
-      if (await tempvoice_user_select.handle_tempvoice_user_select(interaction)) return;
+      if (await handle_ticket_user_select(interaction)) return
+      if (await middleman_select.handle_middleman_partner_select(interaction)) return
+      if (await middleman_select.handle_middleman_member_select(interaction)) return
+      if (await tempvoice_user_select.handle_tempvoice_user_select(interaction)) return
     } catch (err) {
       console.log("[user_select] Error:", err);
       await log_error(client, err as Error, "UserSelectMenu", {
@@ -219,7 +228,11 @@ export async function handle_interaction(
         await handle_anti_spam_button(interaction, client)
         return
       }
-      if (await handle_ticket_button(interaction)) return;
+      if (await handle_ticket_button(interaction)) return
+      if (await middleman_buttons.handle_middleman_close(interaction)) return
+      if (await middleman_buttons.handle_middleman_close_reason(interaction)) return
+      if (await middleman_buttons.handle_middleman_add_member(interaction)) return
+      if (await middleman_buttons.handle_middleman_complete(interaction)) return
       if (interaction.customId === "review_submit") {
         await review_submit.handle_review_submit(interaction);
         return;
@@ -449,6 +462,7 @@ export async function handle_interaction(
       if (await handle_reminder_add_new_modal(interaction)) return
       if (await handle_loa_request_modal(interaction)) return
       if (await handle_script_redeem_modal(interaction)) return
+      if (await handle_middleman_close_reason_modal(interaction)) return
       if (interaction.customId.startsWith("music_modal:")) {
         await handle_music_modal(interaction)
         return

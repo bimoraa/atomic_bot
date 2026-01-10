@@ -1,6 +1,7 @@
 export * from "./ask_controller"
 export * from "./devlog_controller"
 export * from "./loa_controller"
+export * from "./middleman_controller"
 export * from "./moderation_controller"
 export * from "./music_controller"
 export * from "./reminder_controller"

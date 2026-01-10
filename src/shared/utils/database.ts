@@ -363,6 +363,24 @@ async function init_tables(): Promise<void> {
       )
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS middleman_transactions (
+        id                SERIAL PRIMARY KEY,
+        ticket_id         VARCHAR(255) NOT NULL,
+        requester_id      VARCHAR(255) NOT NULL,
+        partner_id        VARCHAR(255) NOT NULL,
+        partner_tag       VARCHAR(255),
+        transaction_range VARCHAR(255) NOT NULL,
+        fee               VARCHAR(255) NOT NULL,
+        range_id          VARCHAR(255) NOT NULL,
+        completed_by      VARCHAR(255) NOT NULL,
+        completed_at      BIGINT NOT NULL,
+        thread_id         VARCHAR(255),
+        guild_id          VARCHAR(255),
+        created_at        TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")

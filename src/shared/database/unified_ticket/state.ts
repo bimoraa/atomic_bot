@@ -10,17 +10,18 @@ let save_timeout: NodeJS.Timeout | null = null
 const BATCH_DELAY_MS = 500
 
 export interface TicketTypeConfig {
-  name: string
-  prefix: string
-  thread_prefix: string
-  ticket_parent_id: string
-  log_channel_id: string
+  name                 : string
+  prefix               : string
+  thread_prefix        : string
+  ticket_parent_id     : string
+  log_channel_id       : string
   closed_log_channel_id: string
-  panel_channel_id: string
-  require_role: boolean
-  required_role_id: string
-  show_payment_message: boolean
-  require_issue_type: boolean
+  panel_channel_id     : string
+  require_role         : boolean
+  required_role_id     : string
+  show_payment_message : boolean
+  require_issue_type   : boolean
+  authorized_users?    : string[]
 }
 
 interface UnifiedTicketConfig {
