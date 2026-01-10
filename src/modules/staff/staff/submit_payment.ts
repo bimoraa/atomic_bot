@@ -212,6 +212,22 @@ async function auto_approve_payment(
 
   await add_work_log(staff_id, staff_name, "ticket", message_link, undefined, amount_value)
 
+  // - ADD ROLES AFTER WHITELIST - \\
+  try {
+    const customer_member = await interaction.guild?.members.fetch(customer_id)
+    if (customer_member) {
+      await customer_member.roles.add("1398313779380617459")
+      await customer_member.roles.add("1364930933148352522")
+      console.log(`[ - SUBMIT PAYMENT - ] Roles added to ${customer_id}`)
+    }
+  } catch (role_err) {
+    console.error(`[ - SUBMIT PAYMENT - ] Failed to add roles to ${customer_id}:`, role_err)
+    await log_error(interaction.client, role_err as Error, "submit_payment_add_roles", {
+      customer_id,
+      staff_id,
+    })
+  }
+
   const approved_message = component.build_message({
     components: [
       component.container({
