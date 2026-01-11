@@ -93,7 +93,7 @@ const bypass_support_command: Command = {
         )
 
         for (const service of type_services) {
-          const status_icon = service.status === "active" ? "🟢" : "🔴"
+          const status_icon = service.status === "active" ? "<:Green_Circle:1250450026233204797>" : "<:Red_Circle:1250450004959821877>"
           const domains     = service.domains?.length > 0 
             ? service.domains.slice(0, 3).map((d: string) => `\`${d}\``).join(", ") + 
               (service.domains.length > 3 ? ` +${service.domains.length - 3} more` : "")
