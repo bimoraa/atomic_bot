@@ -12,6 +12,7 @@ import { load_all_tickets, flush_all_tickets }                           from ".
 import * as tempvoice                                                    from "./shared/database/tempvoice"
 import { register_audit_logs }                                           from "./shared/database/audit_log"
 import { handle_afk_return, handle_afk_mentions }                        from "./core/handlers/shared/controller/afk_controller"
+import { handle_auto_bypass }                                            from "./core/handlers/auto_bypass"
 import { load_afk_from_db }                                              from "./infrastructure/cache/afk"
 import { check_server_tag_change }                                       from "./shared/database/server_tag"
 import { start_free_script_checker }                                     from "./shared/database/free_script_manager"
@@ -201,6 +202,8 @@ client.on("messageCreate", async (message: Message) => {
 
   await handle_afk_return(message)
   await handle_afk_mentions(message)
+
+  if (await handle_auto_bypass(message)) return
 
   if (check_spam(message, client)) return
 
