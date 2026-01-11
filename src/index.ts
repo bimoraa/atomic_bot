@@ -153,6 +153,9 @@ client.once("ready", async () => {
       start_scheduler(client)
       start_free_script_checker(client)
       start_service_provider_cache(client)
+      
+      // - CLEANUP BYPASS CACHE EVERY 10 MINUTES - \\
+      setInterval(() => db.cleanup_expired_bypass_cache(), 10 * 60 * 1000)
     }
   } catch (error) {
     console.error("[PostgreSQL] Connection error:", error)

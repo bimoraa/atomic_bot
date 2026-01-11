@@ -5,7 +5,7 @@ import {
 import { Command } from "../../../shared/types/command"
 import { bypass_link } from "../../../core/handlers/shared/controller/bypass_controller"
 import * as component from "../../../shared/utils/components"
-import { api, cache } from "../../../shared/utils"
+import { api, cache, db } from "../../../shared/utils"
 
 /**
  * - BYPASS LINK COMMAND - \\
@@ -110,10 +110,21 @@ const bypass_command: Command = {
         return
       }
 
-      // - STORE RESULT IN CACHE - \\  
+      // - STORE RESULT IN DATABASE - \\
       const cache_key = `bypass_result_${interaction.id}`
-      cache.set(cache_key, result.result, 300) // 5min TTL
-      console.log(`[ - BYPASS - ] Stored in cache with key: ${cache_key}`)
+      
+      try {
+        await db.get_pool().query(
+          `INSERT INTO bypass_cache (key, url, expires_at) 
+           VALUES ($1, $2, NOW() + INTERVAL '5 minutes')
+           ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '5 minutes'`,
+          [cache_key, result.result]
+        )
+        console.log(`[ - BYPASS - ] Stored in database with key: ${cache_key}`)
+      } catch (db_error) {
+        console.error(`[ - BYPASS - ] Failed to store in database:`, db_error)
+      }
+      
       console.log(`[ - BYPASS - ] Button custom_id will be: bypass_mobile_copy:${interaction.id}`)
 
       const success_message = component.build_message({

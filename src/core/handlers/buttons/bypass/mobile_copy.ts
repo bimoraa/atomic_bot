@@ -1,5 +1,5 @@
 import { ButtonInteraction } from "discord.js"
-import { component, cache }  from "../../../../shared/utils"
+import { component, cache, db }  from "../../../../shared/utils"
 import { log_error }         from "../../../../shared/utils/error_logger"
 
 /**
@@ -14,11 +14,17 @@ export async function handle_bypass_mobile_copy(interaction: ButtonInteraction):
     console.log(`[ - BYPASS MOBILE - ] Button clicked, custom_id: ${interaction.customId}`)
     console.log(`[ - BYPASS MOBILE - ] Extracted interaction_id: ${interaction_id}`)
 
-    // - GET CACHED RESULT - \\
-    const cache_key    = `bypass_result_${interaction_id}`
-    console.log(`[ - BYPASS MOBILE - ] Looking for cache key: ${cache_key}`)
-    const bypass_url   = cache.get<string>(cache_key)
-    console.log(`[ - BYPASS MOBILE - ] Cache result:`, bypass_url ? "FOUND" : "NOT FOUND")
+    // - GET RESULT FROM DATABASE - \\
+    const cache_key = `bypass_result_${interaction_id}`
+    console.log(`[ - BYPASS MOBILE - ] Looking for database key: ${cache_key}`)
+    
+    const result = await db.get_pool().query(
+      `SELECT url FROM bypass_cache WHERE key = $1 AND expires_at > NOW()`,
+      [cache_key]
+    )
+    
+    const bypass_url = result.rows[0]?.url
+    console.log(`[ - BYPASS MOBILE - ] Database result:`, bypass_url ? "FOUND" : "NOT FOUND")
 
     if (!bypass_url) {
       const expired_message = component.build_message({

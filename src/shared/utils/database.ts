@@ -160,6 +160,15 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS bypass_cache (
+        key        VARCHAR(255) PRIMARY KEY,
+        url        TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS work_logs (
         id          SERIAL PRIMARY KEY,
         work_id     VARCHAR(255) NOT NULL,
@@ -1015,4 +1024,18 @@ function convert_row_to_object<T>(row: any): T {
 export async function raw_query<T = any>(query: string, values: any[] = []): Promise<T[]> {
   const result = await get_pool().query(query, values)
   return result.rows as T[]
+}
+
+/**
+ * - CLEANUP EXPIRED BYPASS CACHE - \\
+ */
+export async function cleanup_expired_bypass_cache(): Promise<void> {
+  try {
+    const result = await get_pool().query(`DELETE FROM bypass_cache WHERE expires_at < NOW()`)
+    if (result.rowCount && result.rowCount > 0) {
+      console.log(`[ - BYPASS CACHE - ] Cleaned up ${result.rowCount} expired entries`)
+    }
+  } catch (error) {
+    console.error(`[ - BYPASS CACHE - ] Cleanup failed:`, error)
+  }
 }
