@@ -395,61 +395,31 @@ export async function get_user_script(options: { client: Client; user_id: string
 
 export async function reset_user_hwid(options: { client: Client; user_id: string }): Promise<{ success: boolean; message?: any; error?: string }> {
   try {
-    const user_result = await luarmor.get_user_by_discord(options.user_id)
-
-    if (!user_result.success || !user_result.data) {
-      if (is_rate_limited(user_result.error)) {
-        return {
-          success : false,
-          message : create_rate_limit_message("HWID Reset"),
-        }
-      }
-      return {
-        success : false,
-        error   : user_result.error || "User not found",
-      }
-    }
-
     let reset_result = await luarmor.reset_hwid_by_discord(options.user_id)
 
-    if (!reset_result.success && user_result.data.user_key) {
-      reset_result = await luarmor.reset_hwid_by_key(user_result.data.user_key)
+    if (!reset_result.success) {
+      if (is_rate_limited(reset_result.error)) {
+        return { success: false, message: create_rate_limit_message("HWID Reset") }
+      }
+      
+      const user_result = await luarmor.get_user_by_discord(options.user_id)
+      if (user_result.success && user_result.data?.user_key) {
+        reset_result = await luarmor.reset_hwid_by_key(user_result.data.user_key)
+      }
     }
 
     if (reset_result.success) {
-      save_cached_user(options.user_id, user_result.data)
       track_and_check_hwid_reset(options.client, options.user_id)
-      
-      return {
-        success : true,
-        message : "HWID reset successfully",
-      }
+      return { success: true, message: "HWID reset successfully" }
     }
 
     if (is_rate_limited(reset_result.error)) {
-      return {
-        success : false,
-        message : create_rate_limit_message("HWID Reset"),
-      }
+      return { success: false, message: create_rate_limit_message("HWID Reset") }
     }
 
-    log_error(options.client, new Error(reset_result.error || "Failed to reset HWID"), "reset_user_hwid_api_failure", {
-      user_id : options.user_id,
-      user_key: user_result.data.user_key,
-    })
-
-    return {
-      success : false,
-      error   : reset_result.error || "Failed to reset HWID",
-    }
+    return { success: false, error: reset_result.error || "Failed to reset HWID" }
   } catch (error) {
-    await log_error(options.client, error as Error, "reset_user_hwid", {
-      user_id: options.user_id,
-    })
-    return {
-      success : false,
-      error   : "Failed to reset HWID",
-    }
+    return { success: false, error: "Failed to reset HWID" }
   }
 }
 

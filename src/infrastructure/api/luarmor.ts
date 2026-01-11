@@ -174,7 +174,6 @@ export async function get_user_by_discord(discord_id: string, project_id?: strin
   const cached_time     = __user_cache_timestamp.get(discord_id) || 0
 
   if (cached_user && (now - cached_time) < __user_cache_duration && !project_id) {
-    __log.info("Returning cached user for discord_id:", discord_id)
     return { success: true, data: cached_user }
   }
 
@@ -183,14 +182,9 @@ export async function get_user_by_discord(discord_id: string, project_id?: strin
     const url      = `${__base_url}/projects/${pid}/users?discord_id=${discord_id}`
     const response = await http.get<any>(url, get_headers())
 
-    __log.info("Luarmor get_user_by_discord response:", JSON.stringify(response))
-
     const rate_limit_error = check_rate_limit(response)
     if (rate_limit_error) {
-      if (cached_user) {
-        __log.info("Rate limited, returning stale cache for discord_id:", discord_id)
-        return { success: true, data: cached_user }
-      }
+      if (cached_user) return { success: true, data: cached_user }
       return { success: false, error: rate_limit_error, is_error: true }
     }
 
@@ -212,11 +206,7 @@ export async function get_user_by_discord(discord_id: string, project_id?: strin
 
     return { success: false, error: "User not found", is_error: false }
   } catch (error) {
-    __log.error("Failed to get user:", error)
-    if (cached_user) {
-      __log.info("Error occurred, returning stale cache for discord_id:", discord_id)
-      return { success: true, data: cached_user }
-    }
+    if (cached_user) return { success: true, data: cached_user }
     return { success: false, error: "Failed to connect to server.", is_error: true }
   }
 }
@@ -226,28 +216,14 @@ export async function get_user_by_key(user_key: string): Promise<luarmor_respons
     const url      = `${__base_url}/projects/${get_project_id()}/users?user_key=${user_key}`
     const response = await http.get<any>(url, get_headers())
 
-    __log.info("Luarmor get_user_by_key response:", JSON.stringify(response))
-
     const rate_limit_error = check_rate_limit(response)
-    if (rate_limit_error) {
-      return { success: false, error: rate_limit_error }
-    }
+    if (rate_limit_error) return { success: false, error: rate_limit_error }
 
-    if (response.users && Array.isArray(response.users) && response.users.length > 0) {
-      return { success: true, data: response.users[0] }
-    }
-
-    if (response.user_key) {
-      return { success: true, data: response }
-    }
-
-    if (Array.isArray(response) && response.length > 0) {
-      return { success: true, data: response[0] }
-    }
+    const user_data = response.users?.[0] || (response.user_key ? response : null) || (Array.isArray(response) ? response[0] : null)
+    if (user_data) return { success: true, data: user_data }
 
     return { success: false, error: response.message || "User not found" }
   } catch (error) {
-    __log.error("Failed to get user by key:", error)
     return { success: false, error: "Failed to connect to server." }
   }
 }
