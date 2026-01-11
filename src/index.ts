@@ -142,7 +142,9 @@ function update_presence(): void {
 }
 
 client.once("ready", async () => {
-  console.log(`[Bot] Logged in as ${client.user?.tag}`)
+  console.log(`[ - BOT - ] Logged in as ${client.user?.tag}`)
+  console.log(`[ - BOT - ] Gateway: ${client.ws.gateway}`)
+  console.log(`[ - BOT - ] Ping: ${client.ws.ping}ms`)
 
   try {
     const mongo = await db.connect()
