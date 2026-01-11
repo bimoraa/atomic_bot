@@ -150,16 +150,11 @@ export async function handle_free_reset_hwid(interaction: ButtonInteraction): Pr
         components: [
           component.container({
             components: [
+              component.text("## HWID Reset Successful\nYour hardware ID has been reset successfully!"),
+              component.divider(2),
               component.section({
-                content: [
-                  `## HWID Reset Successful`,
-                  `Your hardware ID has been reset successfully!`,
-                  ``,
-                  `You can now use the script on a new device.`,
-                  ``,
-                  `-# Note: You can only reset your HWID a limited number of times.`,
-                ],
-                thumbnail : format.logo_url,
+                content: "You can now use the script on a new device.",
+                accessory: component.secondary_button("View Stats", "free_view_stats"),
               }),
             ],
           }),
