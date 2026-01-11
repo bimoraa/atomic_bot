@@ -410,18 +410,15 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
       }
     }
 
-    let reset_attempt = "discord_id"
-    let reset_result  = await luarmor.reset_hwid_by_discord(options.user_id)
+    let reset_result = await luarmor.reset_hwid_by_discord(options.user_id)
 
     if (!reset_result.success && user_result.data.user_key) {
-      reset_attempt = "user_key"
-      reset_result  = await luarmor.reset_hwid_by_key(user_result.data.user_key)
+      reset_result = await luarmor.reset_hwid_by_key(user_result.data.user_key)
     }
 
     if (reset_result.success) {
-      await save_cached_user(options.user_id, user_result.data)
-      
-      await track_and_check_hwid_reset(options.client, options.user_id)
+      save_cached_user(options.user_id, user_result.data)
+      track_and_check_hwid_reset(options.client, options.user_id)
       
       return {
         success : true,
@@ -436,10 +433,9 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
       }
     }
 
-    await log_error(options.client, new Error(reset_result.error || "Failed to reset HWID"), "reset_user_hwid_api_failure", {
-      user_id      : options.user_id,
-      reset_attempt: reset_attempt,
-      user_key     : user_result.data.user_key,
+    log_error(options.client, new Error(reset_result.error || "Failed to reset HWID"), "reset_user_hwid_api_failure", {
+      user_id : options.user_id,
+      user_key: user_result.data.user_key,
     })
 
     return {

@@ -255,23 +255,22 @@ export async function get_user_by_key(user_key: string): Promise<luarmor_respons
 export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor_response<null>> {
   try {
     const url      = `${__base_url}/projects/${get_project_id()}/users/resethwid`
-    const body     = { discord_id }
-    const response = await http.post<any>(url, body, get_headers())
+    const response = await http.request<any>(url, {
+      method  : "POST",
+      body    : { discord_id },
+      headers : get_headers(),
+      timeout : 8000,
+    })
 
-    __log.info(`[ - LUARMOR - ] Reset HWID by discord_id ${discord_id}: ${JSON.stringify(response)}`)
+    const rate_limit_error = check_rate_limit(response.data)
+    if (rate_limit_error) return { success: false, error: rate_limit_error }
 
-    const rate_limit_error = check_rate_limit(response)
-    if (rate_limit_error) {
-      return { success: false, error: rate_limit_error }
-    }
-
-    if (response.success === true || response.message?.toLowerCase().includes("success")) {
+    if (response.data.success === true || response.data.message?.toLowerCase().includes("success")) {
       return { success: true, message: "HWID reset successfully" }
     }
 
-    return { success: false, error: response.message || "Failed to reset HWID" }
+    return { success: false, error: response.data.message || "Failed to reset HWID" }
   } catch (error) {
-    __log.error("Failed to reset HWID:", error)
     return { success: false, error: "Failed to connect to server." }
   }
 }
@@ -279,23 +278,22 @@ export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor
 export async function reset_hwid_by_key(user_key: string): Promise<luarmor_response<null>> {
   try {
     const url      = `${__base_url}/projects/${get_project_id()}/users/resethwid`
-    const body     = { user_key }
-    const response = await http.post<any>(url, body, get_headers())
+    const response = await http.request<any>(url, {
+      method  : "POST",
+      body    : { user_key },
+      headers : get_headers(),
+      timeout : 8000,
+    })
 
-    __log.info(`[ - LUARMOR - ] Reset HWID by user_key ${user_key}: ${JSON.stringify(response)}`)
+    const rate_limit_error = check_rate_limit(response.data)
+    if (rate_limit_error) return { success: false, error: rate_limit_error }
 
-    const rate_limit_error = check_rate_limit(response)
-    if (rate_limit_error) {
-      return { success: false, error: rate_limit_error }
-    }
-
-    if (response.success === true || response.message?.toLowerCase().includes("success")) {
+    if (response.data.success === true || response.data.message?.toLowerCase().includes("success")) {
       return { success: true, message: "HWID reset successfully" }
     }
 
-    return { success: false, error: response.message || "Failed to reset HWID" }
+    return { success: false, error: response.data.message || "Failed to reset HWID" }
   } catch (error) {
-    __log.error("Failed to reset HWID:", error)
     return { success: false, error: "Failed to connect to server." }
   }
 }
