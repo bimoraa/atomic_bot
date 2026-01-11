@@ -86,7 +86,7 @@ export const command: Command = {
 
       if (existing_schedule) {
         const existing_status = enabled ? "ON" : "OFF"
-        const existing_unix   = Math.floor(existing_schedule.scheduled_time / 1000)
+        const existing_unix   = existing_schedule.scheduled_time
         
         await interaction.editReply({
           content: `A schedule for HWID-Less **${existing_status}** already exists at <t:${existing_unix}:F>. Please delete it first before creating a new one.`,
@@ -99,11 +99,11 @@ export const command: Command = {
         {
           guild_id       : interaction.guildId!,
           channel_id     : interaction.channelId!,
-          scheduled_time : scheduled_time.getTime(),
+          scheduled_time : Math.floor(scheduled_time.getTime() / 1000),
           enabled        : enabled,
           created_by     : interaction.user.id,
           executed       : false,
-          created_at     : Date.now(),
+          created_at     : Math.floor(Date.now() / 1000),
         }
       )
 
@@ -201,14 +201,14 @@ async function start_scheduler(client: any): Promise<void> {
 
   const check_schedules = async () => {
     try {
-      const now = Date.now()
+      const now_seconds = Math.floor(Date.now() / 1000)
       __log.info(`Checking schedules at ${new Date().toISOString()}`)
       
       const schedules = await db.find_many<hwid_less_schedule>(
         COLLECTION,
         {
           executed       : false,
-          scheduled_time : { $lte: now },
+          scheduled_time : { $lte: now_seconds },
         }
       )
 
