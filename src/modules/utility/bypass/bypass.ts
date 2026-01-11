@@ -5,7 +5,7 @@ import {
 import { Command } from "../../../shared/types/command"
 import { bypass_link } from "../../../core/handlers/shared/controller/bypass_controller"
 import * as component from "../../../shared/utils/components"
-import { api } from "../../../shared/utils"
+import { api, cache } from "../../../shared/utils"
 
 /**
  * - BYPASS LINK COMMAND - \\
@@ -110,6 +110,10 @@ const bypass_command: Command = {
         return
       }
 
+      // - STORE RESULT IN CACHE - \\  
+      const cache_key = `bypass_result_${interaction.id}`
+      cache.set(cache_key, result.result, 300) // 5min TTL
+
       const success_message = component.build_message({
         components: [
           component.container({
@@ -126,7 +130,7 @@ const bypass_command: Command = {
               component.action_row(
                 component.secondary_button(
                   "Mobile Copy (See Result)",
-                  `bypass_mobile_copy:${interaction.user.id}:${result.result}`
+                  `bypass_mobile_copy:${interaction.id}`
                 )
               ),
             ],
