@@ -77,7 +77,7 @@ export async function handle_free_reset_hwid(interaction: ButtonInteraction): Pr
   const last_reset  = reset_cooldowns.get(member.id)
 
   if (last_reset && now - last_reset < COOLDOWN_MS) {
-    const remaining = Math.ceil((COOLDOWN_MS - (now - last_reset)) / 1000 / 60)
+    const retry_at = Math.floor((last_reset + COOLDOWN_MS) / 1000)
     
     await api.edit_deferred_reply(interaction, component.build_message({
       components: [
@@ -86,7 +86,7 @@ export async function handle_free_reset_hwid(interaction: ButtonInteraction): Pr
             component.section({
               content: [
                 `## Cooldown Active`,
-                `You can reset your HWID again in **${remaining} minutes**.`,
+                `You can reset your HWID again <t:${retry_at}:R>.`,
                 ``,
                 `-# This cooldown prevents abuse.`,
               ],

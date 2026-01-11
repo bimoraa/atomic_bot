@@ -8,7 +8,9 @@ interface hwid_config {
   enabled: boolean
 }
 
-const COLLECTION_NAME = "hwid_control"
+const COLLECTION_NAME       = "hwid_control"
+const SERVICE_PROVIDER_ID   = "6958841b2d9e5e049a24a23e376e0d77"
+const FREE_PROJECT_ID       = "cd7560b7384fd815dafd993828c40d2b"
 
 /**
  * Load HWID configuration from database.
@@ -64,6 +66,8 @@ export const command: Command = {
     const subcommand = interaction.options.getSubcommand()
 
     if (subcommand === "enable") {
+      await interaction.deferReply({ flags: 64 })
+      
       await save_config({ enabled: true })
 
       const message = component.build_message({
@@ -73,7 +77,10 @@ export const command: Command = {
             components  : [
               component.text([
                 "## HWID Reset Enabled",
-                "HWID reset functionality has been enabled.",
+                "HWID reset functionality has been enabled for both projects.",
+                "",
+                "- Service Provider Script",
+                "- Free Script",
                 "",
                 "Users can now reset their HWID using the Reset HWID button.",
               ]),
@@ -82,8 +89,10 @@ export const command: Command = {
         ],
       })
 
-      await interaction.reply({ ...message, flags: (message.flags ?? 0) | 64 })
+      await interaction.editReply(message)
     } else if (subcommand === "disable") {
+      await interaction.deferReply({ flags: 64 })
+      
       await save_config({ enabled: false })
 
       const message = component.build_message({
@@ -93,7 +102,10 @@ export const command: Command = {
             components  : [
               component.text([
                 "## HWID Reset Disabled",
-                "HWID reset functionality has been disabled.",
+                "HWID reset functionality has been disabled for both projects.",
+                "",
+                "- Service Provider Script",
+                "- Free Script",
                 "",
                 "Users will not be able to reset their HWID until re-enabled.",
               ]),
@@ -102,7 +114,7 @@ export const command: Command = {
         ],
       })
 
-      await interaction.reply({ ...message, flags: (message.flags ?? 0) | 64 })
+      await interaction.editReply(message)
     } else if (subcommand === "status") {
       const config = await load_config()
       const status = config.enabled ? "Enabled" : "Disabled"
@@ -116,6 +128,10 @@ export const command: Command = {
               component.text([
                 "## HWID Reset Status",
                 `Current Status: **${status}**`,
+                "",
+                "**Projects:**",
+                "- Service Provider Script",
+                "- Free Script",
                 "",
                 config.enabled
                   ? "Users can reset their HWID normally."
