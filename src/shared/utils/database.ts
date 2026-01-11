@@ -743,8 +743,11 @@ export async function insert_one<T extends object>(
   const keys   = Object.keys(doc)
   const values = Object.keys(doc).map(key => {
     const value = (doc as any)[key]
-    if (table === "guild_settings" && key === "settings" && typeof value === "object") {
+    if (table === "guild_settings" && key === "settings" && typeof value === "object" && !Array.isArray(value)) {
       return JSON.stringify(value)
+    }
+    if (Array.isArray(value)) {
+      return value
     }
     return value
   })
@@ -796,8 +799,11 @@ export async function update_one<T extends object>(
     const update_keys   = Object.keys(update)
     const update_values = Object.keys(update).map(key => {
       const value = (update as any)[key]
-      if (table === "guild_settings" && key === "settings" && typeof value === "object") {
+      if (table === "guild_settings" && key === "settings" && typeof value === "object" && !Array.isArray(value)) {
         return JSON.stringify(value)
+      }
+      if (Array.isArray(value)) {
+        return value
       }
       return value
     })
