@@ -3,7 +3,7 @@ import { client } from "../../../../index"
 import { log_error } from "../../../../shared/utils/error_logger"
 
 const BYPASS_API_KEY = process.env.BYPASS_API_KEY || ""
-const BYPASS_API_URL = "https://api.izen.lol/v1/bypass"
+const BYPASS_API_URL = process.env.BYPASS_API_URL || ""
 
 interface BypassResponse {
   success : boolean
@@ -69,7 +69,7 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
  */
 export async function get_supported_services(): Promise<string[]> {
   try {
-    const response = await axios.get("https://api.izen.lol/v1/supported", {
+    const response = await axios.get(`${BYPASS_API_URL.replace('/bypass', '/supported')}`, {
       headers: {
         "x-api-key": BYPASS_API_KEY,
       },
