@@ -37,6 +37,7 @@ import * as free_get_script              from "./buttons/free/get_script"
 import * as free_reset_hwid              from "./buttons/free/reset_hwid"
 import * as free_get_stats               from "./buttons/free/get_stats"
 import * as free_leaderboard             from "./buttons/free/leaderboard"
+import * as bypass_mobile_copy           from "./buttons/bypass/bypass_mobile_copy"
 import * as download_all_staff_report    from "./buttons/work/download_all_staff_report"
 import * as tempvoice_handlers           from "./buttons/tempvoice/handlers"
 import * as tempvoice_user_select        from "./select_menus/tempvoice/user_select"
@@ -293,6 +294,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "script_mobile_copy") {
         await script_get_script.handle_mobile_copy(interaction)
+        return
+      }
+      if (interaction.customId.startsWith("bypass_mobile_copy:")) {
+        await bypass_mobile_copy.handle_bypass_mobile_copy(interaction)
         return
       }
       if (interaction.customId === "free_get_script") {

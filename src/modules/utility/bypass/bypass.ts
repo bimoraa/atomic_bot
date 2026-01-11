@@ -5,6 +5,7 @@ import {
 import { Command } from "../../../shared/types/command"
 import { bypass_link } from "../../../core/handlers/shared/controller/bypass_controller"
 import * as component from "../../../shared/utils/components"
+import { api } from "../../../shared/utils"
 
 /**
  * - BYPASS LINK COMMAND - \\
@@ -41,7 +42,7 @@ const bypass_command: Command = {
           ],
         })
 
-        await interaction.editReply({ components: error_message.components })
+        await api.edit_deferred_reply(interaction, error_message)
         return
       }
 
@@ -59,7 +60,7 @@ const bypass_command: Command = {
         ],
       })
 
-      await interaction.editReply({ components: processing_message.components })
+      await api.edit_deferred_reply(interaction, processing_message)
 
       const result = await bypass_link(url)
 
@@ -80,7 +81,7 @@ const bypass_command: Command = {
           ],
         })
 
-        await interaction.editReply({ components: error_message.components })
+        await api.edit_deferred_reply(interaction, error_message)
         return
       }
 
@@ -108,9 +109,7 @@ const bypass_command: Command = {
         ],
       })
 
-      await interaction.editReply({ 
-        components : success_components.components,
-      })
+      await api.edit_deferred_reply(interaction, success_components)
 
     } catch (error: any) {
       console.error(`[ - BYPASS COMMAND - ] Error:`, error)
@@ -130,7 +129,7 @@ const bypass_command: Command = {
       })
 
       try {
-        await interaction.editReply({ components: error_message.components })
+        await api.edit_deferred_reply(interaction, error_message)
       } catch (edit_error) {
         console.error(`[ - BYPASS COMMAND - ] Failed to send error message:`, edit_error)
       }

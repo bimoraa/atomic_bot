@@ -1,13 +1,10 @@
 import { ButtonInteraction, EmbedBuilder } from "discord.js"
-import { client } from "../../../index"
 
 /**
- * - HANDLE BYPASS MOBILE COPY BUTTON - \\
+ * @param {ButtonInteraction} interaction - Button interaction
+ * @returns {Promise<void>}
  */
-client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isButton()) return
-  if (!interaction.customId.startsWith("bypass_mobile_copy:")) return
-
+export async function handle_bypass_mobile_copy(interaction: ButtonInteraction): Promise<void> {
   try {
     const [, user_id, ...key_parts] = interaction.customId.split(":")
     const key                        = key_parts.join(":")
@@ -44,4 +41,4 @@ client.on("interactionCreate", async (interaction) => {
       console.error(`[ - BYPASS MOBILE COPY - ] Failed to send error message:`, reply_error)
     }
   }
-})
+}

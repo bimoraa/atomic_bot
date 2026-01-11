@@ -57,7 +57,6 @@ import "./core/handlers/guild_member_add"
 import "./core/handlers/guild_member_booster"
 import "./core/handlers/voice_state_update"
 import "./core/handlers/message_delete"
-import "./core/handlers/buttons/bypass_mobile_copy"
 
 /**
  * - JOIN VOICE CHANNEL WITH AUTO-RECONNECT - \\
