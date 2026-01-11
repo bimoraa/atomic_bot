@@ -1,0 +1,141 @@
+import { 
+  ChatInputCommandInteraction, 
+  SlashCommandBuilder,
+} from "discord.js"
+import { Command } from "../../../shared/types/command"
+import { bypass_link } from "../../../core/handlers/shared/controller/bypass_controller"
+import * as component from "../../../shared/utils/components"
+
+/**
+ * - BYPASS LINK COMMAND - \\
+ */
+const bypass_command: Command = {
+  data: new SlashCommandBuilder()
+    .setName("bypass")
+    .setDescription("Bypass link protection services")
+    .addStringOption((option) =>
+      option
+        .setName("url")
+        .setDescription("The URL to bypass")
+        .setRequired(true)
+    ),
+
+  execute: async (interaction: ChatInputCommandInteraction) => {
+    try {
+      await interaction.deferReply({ ephemeral: true })
+
+      const url = interaction.options.getString("url", true)
+
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        const error_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  "## <:lcok:1417196069716234341> Invalid URL",
+                  "",
+                  "Please provide a valid URL starting with `http://` or `https://`",
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        await interaction.editReply({ components: error_message.components })
+        return
+      }
+
+      const processing_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text([
+                "## <a:GTA_Loading:1459707117840629832> Processing...",
+                "",
+                "Bypassing link, please wait...",
+              ]),
+            ],
+          }),
+        ],
+      })
+
+      await interaction.editReply({ components: processing_message.components })
+
+      const result = await bypass_link(url)
+
+      if (!result.success || !result.result) {
+        const error_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  "## <:lcok:1417196069716234341> Bypass Failed",
+                  "",
+                  `**Error:** ${result.error || "Unknown error occurred"}`,
+                  "",
+                  `**URL:** ${url}`,
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        await interaction.editReply({ components: error_message.components })
+        return
+      }
+
+      const success_components = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text("## <:checkmark:1417196825110253780> Bypass Success!"),
+              component.divider(2),
+              component.text(`##  Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``),
+              component.divider(2),
+              component.section({
+                content   : `Processed in ${result.time}s`,
+                thumbnail : undefined,
+              }),
+              component.divider(1),
+              component.action_row(
+                component.secondary_button(
+                  "Mobile Copy (See Result)",
+                  `bypass_mobile_copy:${interaction.user.id}:${result.result}`
+                )
+              ),
+            ],
+          }),
+        ],
+      })
+
+      await interaction.editReply({ 
+        components : success_components.components,
+      })
+
+    } catch (error: any) {
+      console.error(`[ - BYPASS COMMAND - ] Error:`, error)
+      
+      const error_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text([
+                "## <:lcok:1417196069716234341> Error",
+                "",
+                "An error occurred while processing your request",
+              ]),
+            ],
+          }),
+        ],
+      })
+
+      try {
+        await interaction.editReply({ components: error_message.components })
+      } catch (edit_error) {
+        console.error(`[ - BYPASS COMMAND - ] Failed to send error message:`, edit_error)
+      }
+    }
+  },
+}
+
+export default bypass_command
