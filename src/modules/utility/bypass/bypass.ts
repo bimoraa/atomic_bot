@@ -23,7 +23,7 @@ const bypass_command: Command = {
 
   execute: async (interaction: ChatInputCommandInteraction) => {
     try {
-      await interaction.deferReply({ ephemeral: true })
+      await interaction.deferReply()
 
       const url = interaction.options.getString("url", true)
 
@@ -87,13 +87,16 @@ const bypass_command: Command = {
         return
       }
 
-      const success_components = component.build_message({
+      const success_message = component.build_message({
         components: [
           component.container({
             components: [
-              component.text("## <:checkmark:1417196825110253780> Bypass Success!"),
+              component.text("## Bypass Success!\n\n"),
               component.divider(2),
-              component.text(`##  Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``),
+              component.section({
+                content   : `##  Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``,
+                thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
+              }),
               component.divider(2),
               component.text(`Processed in ${result.time}s`),
               component.divider(1),
@@ -109,7 +112,7 @@ const bypass_command: Command = {
       })
 
       console.log(`[ - BYPASS COMMAND - ] Sending success message...`)
-      const send_result = await api.edit_deferred_reply(interaction, success_components)
+      const send_result = await api.edit_deferred_reply(interaction, success_message)
       
       if (send_result.error) {
         console.error(`[ - BYPASS COMMAND - ] Failed to send success message:`, JSON.stringify(send_result))

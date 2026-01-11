@@ -62,21 +62,37 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
   }
 }
 
+interface SupportedService {
+  name    : string
+  type    : string
+  status  : string
+  domains : string[]
+}
+
+interface SupportedResponse {
+  status : string
+  result : SupportedService[]
+}
+
 /**
  * - GET SUPPORTED SERVICES - \\
  * 
  * @returns Promise with list of supported services
  */
-export async function get_supported_services(): Promise<string[]> {
+export async function get_supported_services(): Promise<SupportedService[]> {
   try {
-    const response = await axios.get(`${BYPASS_API_URL.replace('/bypass', '/supported')}`, {
+    console.log(`[ - BYPASS - ] Fetching supported services...`)
+    
+    const response = await axios.get<SupportedResponse>(`${BYPASS_API_URL.replace('/bypass', '/supported')}`, {
       headers: {
         "x-api-key": BYPASS_API_KEY,
       },
       timeout: 10000,
     })
     
-    return response.data.services || []
+    console.log(`[ - BYPASS - ] Received ${response.data.result?.length || 0} services`)
+    
+    return response.data.result || []
     
   } catch (error: any) {
     console.error(`[ - BYPASS - ] Error fetching supported services:`, error.message)
