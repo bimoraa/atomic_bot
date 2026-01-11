@@ -34,6 +34,8 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
     
     const process_time = ((Date.now() - start_time) / 1000).toFixed(2)
     
+    console.log(`[ - BYPASS - ] API Response:`, JSON.stringify(response.data))
+    
     if (response.data && response.data.result) {
       console.log(`[ - BYPASS - ] Successfully bypassed in ${process_time}s`)
       return {
@@ -43,7 +45,7 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
       }
     }
     
-    console.log(`[ - BYPASS - ] No result found in response`)
+    console.log(`[ - BYPASS - ] No result found in response, full data:`, response.data)
     return {
       success : false,
       error   : "No result found in response",

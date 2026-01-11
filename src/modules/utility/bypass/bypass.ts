@@ -64,6 +64,8 @@ const bypass_command: Command = {
 
       const result = await bypass_link(url)
 
+      console.log(`[ - BYPASS COMMAND - ] Bypass result:`, JSON.stringify(result))
+
       if (!result.success || !result.result) {
         const error_message = component.build_message({
           components: [
@@ -109,7 +111,9 @@ const bypass_command: Command = {
         ],
       })
 
+      console.log(`[ - BYPASS COMMAND - ] Sending success message...`)
       await api.edit_deferred_reply(interaction, success_components)
+      console.log(`[ - BYPASS COMMAND - ] Success message sent!`)
 
     } catch (error: any) {
       console.error(`[ - BYPASS COMMAND - ] Error:`, error)
