@@ -154,7 +154,7 @@ export async function handle_free_reset_hwid(interaction: ButtonInteraction): Pr
               component.divider(2),
               component.section({
                 content: "You can now use the script on a new device.",
-                accessory: component.secondary_button("View Stats", "free_view_stats"),
+                accessory: component.secondary_button("View Stats", "free_get_stats"),
               }),
             ],
           }),

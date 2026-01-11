@@ -64,7 +64,7 @@ export async function handle_reset_hwid(interaction: ButtonInteraction): Promise
             component.divider(2),
             component.section({
               content: "You can now use the script on a new device.",
-              accessory: component.secondary_button("View Stats", "script_view_stats"),
+              accessory: component.secondary_button("View Stats", "script_get_stats"),
             }),
           ],
         }),
