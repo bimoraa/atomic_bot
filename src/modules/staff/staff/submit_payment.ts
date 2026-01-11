@@ -207,6 +207,14 @@ async function auto_approve_payment(
     throw last_error || new Error("Failed to whitelist user after retries")
   }
 
+  // - DELETE PENDING MESSAGE IMMEDIATELY AFTER WHITELIST SUCCESS - \\
+  try {
+    await api.delete_message(payment_channel_id, pending_message_id, api.get_token())
+    console.log(`[ - SUBMIT PAYMENT - ] Deleted pending message ${pending_message_id}`)
+  } catch (del_err) {
+    console.error(`[ - SUBMIT PAYMENT - ] Failed to delete message:`, del_err)
+  }
+
   const submitter  = await interaction.guild?.members.fetch(staff_id).catch(() => null)
   const staff_name = submitter?.user.username || `Unknown (${staff_id})`
 
@@ -244,49 +252,58 @@ async function auto_approve_payment(
     ],
   })
 
-  await api.send_components_v2(channel_id, api.get_token(), approved_message)
+  // - SEND APPROVED MESSAGE TO THREAD - \\
+  try {
+    await api.send_components_v2(channel_id, api.get_token(), approved_message)
+  } catch (send_err) {
+    console.error(`[ - SUBMIT PAYMENT - ] Failed to send approved message to thread:`, send_err)
+  }
 
+  // - SEND DM TO CUSTOMER - \\
   try {
     const customer   = await interaction.client.users.fetch(customer_id)
     const dm_channel = await customer.createDM()
     await api.send_components_v2(dm_channel.id, api.get_token(), approved_message)
-  } catch (err) {
-    console.error("[DM Error]", err)
+  } catch (dm_err) {
+    console.error(`[ - SUBMIT PAYMENT - ] Failed to send DM:`, dm_err)
   }
 
-  const done_message = component.build_message({
-    components: [
-      component.container({
-        components: [
-          component.text([
-            "## <:rbx:1447976733050667061> | Payment Done!",
-            "> Auto-approved by system",
-            "",
-            "### Payment Information",
-            `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
-            `- <:USERS:1381580388119613511> Customer Discord: <@${customer_id}>`,
-            `- <:calc:1381580377340117002> Payment Method: **${method}**`,
-            `- <:JOBSS:1381580390330011732> Submitted by: <@${staff_id}>`,
-            `- <:app:1381680319207575552> Transaction Details: **${details}**`,
-            `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
-            "",
-            "### Approval Information",
-            `- <:USERS:1381580388119613511> Approved by: <@${BOT_USER_ID}>`,
-            `- <:app:1381680319207575552> Payment ID: **${payment_id}**`,
-          ]),
-          component.divider(2),
-          ...(gallery_items.length > 0 ? [component.media_gallery(gallery_items), component.divider(2)] : []),
-          component.action_row(
-            component.link_button("View Ticket (Thread)", thread_link)
-          ),
-        ],
-      }),
-    ],
-  })
+  // - SEND LOG TO PAYMENT LOG CHANNEL - \\
+  try {
+    const done_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text([
+              "## <:rbx:1447976733050667061> | Payment Done!",
+              "> Auto-approved by system",
+              "",
+              "### Payment Information",
+              `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
+              `- <:USERS:1381580388119613511> Customer Discord: <@${customer_id}>`,
+              `- <:calc:1381580377340117002> Payment Method: **${method}**`,
+              `- <:JOBSS:1381580390330011732> Submitted by: <@${staff_id}>`,
+              `- <:app:1381680319207575552> Transaction Details: **${details}**`,
+              `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
+              "",
+              "### Approval Information",
+              `- <:USERS:1381580388119613511> Approved by: <@${BOT_USER_ID}>`,
+              `- <:app:1381680319207575552> Payment ID: **${payment_id}**`,
+            ]),
+            component.divider(2),
+            ...(gallery_items.length > 0 ? [component.media_gallery(gallery_items), component.divider(2)] : []),
+            component.action_row(
+              component.link_button("View Ticket (Thread)", thread_link)
+            ),
+          ],
+        }),
+      ],
+    })
 
-  await api.send_components_v2(LOG_CHANNEL_ID, api.get_token(), done_message)
-
-  await api.delete_message(payment_channel_id, pending_message_id, api.get_token())
+    await api.send_components_v2(LOG_CHANNEL_ID, api.get_token(), done_message)
+  } catch (log_err) {
+    console.error(`[ - SUBMIT PAYMENT - ] Failed to send log message:`, log_err)
+  }
 }
 
 function parse_amount(input: string): number {
