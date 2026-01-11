@@ -57,7 +57,14 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
     
     let error_message = "Unknown error occurred"
     
-    if (error.code === "ECONNABORTED" || error.message.includes("timeout")) {
+    // - CHECK RESPONSE DATA FIRST - \\
+    const response_message = error.response?.data?.message || error.response?.data?.result
+    
+    if (response_message && 
+        (response_message.toLowerCase().includes("not supported") || 
+         response_message.toLowerCase().includes("unsupported"))) {
+      error_message = "Bypass service not available for this link - Link is not supported."
+    } else if (error.code === "ECONNABORTED" || error.message.includes("timeout")) {
       error_message = "Request timeout - The bypass service is taking too long to respond. Please try again."
     } else if (error.response?.status === 429) {
       error_message = "Rate limit exceeded - Please wait a moment before trying again."
@@ -65,8 +72,8 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
       error_message = "Bypass service is currently unavailable - Please try again later."
     } else if (error.response?.status === 400 || error.response?.status === 404) {
       error_message = "Bypass service not available for this link - Link might not be supported or invalid."
-    } else if (error.response?.data?.message) {
-      error_message = error.response.data.message
+    } else if (response_message) {
+      error_message = response_message
     } else if (error.message) {
       error_message = error.message
     }
