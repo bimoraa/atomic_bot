@@ -23,6 +23,29 @@ const bypass_command: Command = {
 
   execute: async (interaction: ChatInputCommandInteraction) => {
     try {
+      const allowed_channel_id = "1459729966974505086"
+
+      if (interaction.channelId !== allowed_channel_id) {
+        const error_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  "## Invalid Channel",
+                  "",
+                  `This command can only be used in <#${allowed_channel_id}>`,
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        error_message.flags = 64
+
+        await interaction.reply(error_message)
+        return
+      }
+
       await interaction.deferReply()
 
       const url = interaction.options.getString("url", true)

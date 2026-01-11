@@ -18,7 +18,7 @@ export async function handle_bypass_mobile_copy(interaction: ButtonInteraction):
     }
 
     await interaction.reply({
-      content   : `\`\`\`\n${key}\n\`\`\``,
+      content   : `\`${key}\``,
       ephemeral : true,
     })
 
