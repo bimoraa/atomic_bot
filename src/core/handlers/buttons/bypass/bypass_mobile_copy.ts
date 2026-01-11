@@ -1,4 +1,4 @@
-import { ButtonInteraction, EmbedBuilder } from "discord.js"
+import { ButtonInteraction } from "discord.js"
 
 /**
  * @param {ButtonInteraction} interaction - Button interaction
@@ -17,15 +17,8 @@ export async function handle_bypass_mobile_copy(interaction: ButtonInteraction):
       return
     }
 
-    const mobile_embed = new EmbedBuilder()
-      .setColor(0x00FF00)
-      .setTitle("Bypass Key")
-      .setDescription(`\`\`\`\n${key}\n\`\`\``)
-      .setFooter({ text: "Copy the key above" })
-      .setTimestamp()
-
     await interaction.reply({
-      embeds    : [mobile_embed],
+      content   : `\`\`\`\n${key}\n\`\`\``,
       ephemeral : true,
     })
 
