@@ -4,7 +4,7 @@ import {
 } from "discord.js"
 import { Command }                 from "../../../shared/types/command"
 import { get_supported_services }  from "../../../core/handlers/shared/controller/bypass_controller"
-import { component, api }          from "../../../shared/utils"
+import { component, api, cache }   from "../../../shared/utils"
 
 /**
  * - BYPASS SUPPORT COMMAND - \\
@@ -23,7 +23,7 @@ const bypass_support_command: Command = {
           component.container({
             components: [
               component.text([
-                "## <a:GTA_Loading:1459707117840629832> Loading...",
+                "## Loading...",
                 "",
                 "Fetching supported services...",
               ]),
@@ -42,7 +42,7 @@ const bypass_support_command: Command = {
             component.container({
               components: [
                 component.text([
-                  "## <:lcok:1417196069716234341> Error",
+                  "## Error",
                   "",
                   "Failed to fetch supported services",
                 ]),
@@ -66,54 +66,37 @@ const bypass_support_command: Command = {
         grouped_services[type].push(service)
       }
 
-      // - BUILD MESSAGE COMPONENTS - \\
-      const message_components: any[] = []
+      // - CACHE SERVICES DATA - \\
+      const cache_key = `bypass_services_${interaction.id}`
+      cache.set(cache_key, grouped_services, 300000)
 
-      message_components.push(
-        component.text([
-          "## <:checkmark:1417196825110253780> Supported Bypass Services",
-          "",
-          `Total Services: **${services.length}**`,
-        ])
-      )
-
-      message_components.push(component.divider(2))
-
-      // - ADD EACH TYPE SECTION - \\
-      const types = Object.keys(grouped_services).sort()
-
-      for (const type of types) {
-        const type_services = grouped_services[type]
-        
-        message_components.push(
-          component.text([
-            `### ${type}`,
-            `**Count:** ${type_services.length}`,
-          ])
-        )
-
-        for (const service of type_services) {
-          const status_icon = service.status === "active" ? "<:Green_Circle:1250450026233204797>" : "<:Red_Circle:1250450004959821877>"
-          const domains     = service.domains?.length > 0 
-            ? service.domains.slice(0, 3).map((d: string) => `\`${d}\``).join(", ") + 
-              (service.domains.length > 3 ? ` +${service.domains.length - 3} more` : "")
-            : "N/A"
-
-          message_components.push(
-            component.text([
-              `**${status_icon} ${service.name}**`,
-              `**Domains:** ${domains}`,
-            ])
-          )
-        }
-
-        message_components.push(component.divider(1))
-      }
+      // - BUILD DROPDOWN OPTIONS - \\
+      const types          = Object.keys(grouped_services).sort()
+      const dropdown_options = types.map(type => ({
+        label       : type,
+        value       : type,
+        description : `${grouped_services[type].length} services`,
+      }))
 
       const success_message = component.build_message({
         components: [
           component.container({
-            components: message_components,
+            components: [
+              component.section({
+                content   : [
+                  "## <:ticket:1411878131366891580> Supported Bypass Services",
+                  `Atomic Guard provides reliable bypass support for ${services.length} services.`,
+                  "",
+                ],
+                thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
+              }),
+            ],
+          }),
+          component.container({
+            components: [
+              component.select_menu(`bypass_support_type_select:${interaction.id}`, "Select a service type", dropdown_options),
+              component.text("Made by Ophelia."),
+            ],
           }),
         ],
       })
@@ -128,7 +111,7 @@ const bypass_support_command: Command = {
           component.container({
             components: [
               component.text([
-                "## <:lcok:1417196069716234341> Error",
+                "## Error",
                 "",
                 "An unexpected error occurred",
               ]),

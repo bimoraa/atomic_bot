@@ -67,6 +67,7 @@ import * as work_stats_all_staff         from "./select_menus/work_stats/all_sta
 import * as reminder_cancel_select       from "./select_menus/reminder_cancel_select"
 import * as middleman_select             from "./select_menus/middleman"
 import * as middleman_buttons            from "./buttons/middleman"
+import * as bypass_support_type_select   from "./select_menus/bypass_support_type_select"
 
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
@@ -190,6 +191,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "middleman_transaction_range_select") {
         await middleman_select.handle_middleman_transaction_range_select(interaction)
+        return
+      }
+      if (interaction.customId.startsWith("bypass_support_type_select:")) {
+        await bypass_support_type_select.handle_bypass_support_type_select(interaction)
         return
       }
       if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return
