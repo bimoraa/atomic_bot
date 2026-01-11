@@ -128,22 +128,23 @@ export async function handle_free_get_stats(interaction: ButtonInteraction): Pro
       components: [
         component.container({
           components: [
-            component.section({
-              content: [
-                `## Your Script Statistics`,
-                `${leaderboard_text}`,
-                ``,
-                `- **Total Executions:** ${user.total_executions}`,
-                `- **HWID Status:** ${hwid_status}`,
-                `- **Key:** ||${user.user_key}||`,
-                `- **Total HWID Resets:** ${user.total_resets}`,
-                `- **Last Reset:** ${last_reset_ts}`,
-                `- **Expires At:** ${expires_text}`,
-                `- **Banned:** ${banned_text}`,
-                `- **Note:** ${note_text}`,
-              ],
-              thumbnail : format.logo_url,
-            }),
+            component.text("## Your Script Statistics\n"),
+          ],
+        }),
+        component.container({
+          components: [
+            component.text([
+              `- Total Executions: **${user.total_executions}**`,
+              `- HWID Status: **${hwid_status}**`,
+              `- Key: ||${user.user_key}||`,
+              `- Total HWID Resets: **${user.total_resets}**`,
+              `- Last Reset: **${last_reset_ts}**`,
+              `- Expires At: **${expires_text}**`,
+              `- Banned: **${banned_text}**`,
+              `- Note: **${note_text}**`,
+            ]),
+            component.divider(2),
+            component.text(`${leaderboard_text}\n`),
           ],
         }),
       ],
