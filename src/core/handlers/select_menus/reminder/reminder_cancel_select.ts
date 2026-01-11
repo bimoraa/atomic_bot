@@ -1,5 +1,5 @@
 import { StringSelectMenuInteraction } from "discord.js"
-import { cancel_reminder }             from "../controllers/reminder_controller"
+import { cancel_reminder }             from "../../controllers/reminder_controller"
 
 export async function handle_reminder_cancel_select(interaction: StringSelectMenuInteraction): Promise<void> {
   const selected_time = parseInt(interaction.values[0], 10)

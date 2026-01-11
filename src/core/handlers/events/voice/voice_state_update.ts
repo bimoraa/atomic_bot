@@ -1,6 +1,6 @@
 import { Events, VoiceState } from "discord.js"
-import { client }             from "../.."
-import * as tempvoice         from "../../shared/database/tempvoice"
+import { client }             from "../../../.."
+import * as tempvoice         from "../../../../shared/database/tempvoice"
 
 client.on(Events.VoiceStateUpdate, async (old_state: VoiceState, new_state: VoiceState) => {
   try {

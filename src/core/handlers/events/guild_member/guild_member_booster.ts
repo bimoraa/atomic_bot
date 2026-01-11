@@ -1,10 +1,10 @@
 import { Events, GuildMember, PartialGuildMember } from "discord.js"
-import { client }                    from "../.."
-import { load_config }               from "../../shared/config/loader"
-import { send_booster_log }          from "./controllers/booster_controller"
-import * as booster_manager          from "../../shared/database/booster_manager"
-import { log_error }                 from "../../shared/utils/error_logger"
-import { format }                    from "../../shared/utils"
+import { client }                    from "../../../.."
+import { load_config }               from "../../../../shared/config/loader"
+import { send_booster_log }          from "../../controllers/booster_controller"
+import * as booster_manager          from "../../../../shared/database/booster_manager"
+import { log_error }                 from "../../../../shared/utils/error_logger"
+import { format }                    from "../../../../shared/utils"
 
 interface booster_config {
   booster_log_channel_id: string

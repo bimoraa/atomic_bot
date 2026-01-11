@@ -1,6 +1,6 @@
 import { Message } from "discord.js"
-import { bypass_link } from "./shared/controller/bypass_controller"
-import { component, db } from "../../shared/utils"
+import { bypass_link } from "../../shared/controller/bypass_controller"
+import { component, db } from "../../../../shared/utils"
 
 const BYPASS_CHANNEL_ID = "1459729966974505086"
 

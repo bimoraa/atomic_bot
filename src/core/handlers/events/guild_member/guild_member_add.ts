@@ -1,7 +1,7 @@
 import { Events, GuildMember }      from "discord.js"
-import { client }                   from "../.."
-import { load_config }              from "../../shared/config/loader"
-import { component, api, format }   from "../../shared/utils"
+import { client }                   from "../../../.."
+import { load_config }              from "../../../../shared/config/loader"
+import { component, api, format }   from "../../../../shared/utils"
 
 interface welcomer_config {
   welcome_channel_id: string

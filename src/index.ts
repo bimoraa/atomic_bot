@@ -12,7 +12,7 @@ import { load_all_tickets, flush_all_tickets }                           from ".
 import * as tempvoice                                                    from "./shared/database/tempvoice"
 import { register_audit_logs }                                           from "./shared/database/audit_log"
 import { handle_afk_return, handle_afk_mentions }                        from "./core/handlers/shared/controller/afk_controller"
-import { handle_auto_bypass }                                            from "./core/handlers/auto_bypass"
+import { handle_auto_bypass }                                            from "./core/handlers/events/message"
 import { load_afk_from_db }                                              from "./infrastructure/cache/afk"
 import { check_server_tag_change }                                       from "./shared/database/server_tag"
 import { start_free_script_checker }                                     from "./shared/database/free_script_manager"
@@ -54,10 +54,10 @@ let voice_connection: VoiceConnection | null = null
 
 export { client }
 
-import "./core/handlers/guild_member_add"
-import "./core/handlers/guild_member_booster"
-import "./core/handlers/voice_state_update"
-import "./core/handlers/message_delete"
+import "./core/handlers/events/guild_member/guild_member_add"
+import "./core/handlers/events/guild_member/guild_member_booster"
+import "./core/handlers/events/voice/voice_state_update"
+import "./core/handlers/events/message/message_delete"
 
 /**
  * - JOIN VOICE CHANNEL WITH AUTO-RECONNECT - \\

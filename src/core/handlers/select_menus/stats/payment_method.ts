@@ -1,5 +1,5 @@
 import { StringSelectMenuInteraction } from "discord.js"
-import { component, api } from "../../../shared/utils"
+import { component, api } from "../../../../shared/utils"
 
 const payment_details: Record<string, { title: string; content: string[]; image?: string }> = {
   qris: {

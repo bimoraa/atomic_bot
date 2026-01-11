@@ -1,6 +1,6 @@
 import { StringSelectMenuInteraction } from "discord.js"
-import { component, cache }            from "../../../shared/utils"
-import { log_error }                   from "../../../shared/utils/error_logger"
+import { component, cache }            from "../../../../shared/utils"
+import { log_error }                   from "../../../../shared/utils/error_logger"
 
 /**
  * - HANDLE BYPASS SUPPORT TYPE SELECT - \\

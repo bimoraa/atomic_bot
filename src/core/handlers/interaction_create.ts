@@ -8,7 +8,7 @@ import {
   handle_ticket_select_menu,
   handle_ticket_user_select,
 }                                        from "../../shared/database/unified_ticket"
-import * as answer_stats_select          from "./select_menus/answer_stats"
+import * as answer_stats_select          from "./select_menus/stats"
 import {
   handle_devlog,
   handle_ask_staff_modal,
@@ -58,16 +58,16 @@ import * as music_stop                   from "./buttons/music/stop"
 import * as music_select                 from "./select_menus/music/music_select"
 import * as music_play_select            from "./select_menus/music/play_select"
 
-import * as payment_method_select        from "./select_menus/payment_method";
-import * as guide_select                 from "./select_menus/guide_select";
+import * as payment_method_select        from "./select_menus/stats";
+import * as guide_select                 from "./select_menus/guide";
 import * as version_select               from "./select_menus/version/select";
 import * as work_stats_select            from "./select_menus/work_stats/week_select";
 import * as work_stats_year_select       from "./select_menus/work_stats/year_select";
 import * as work_stats_all_staff         from "./select_menus/work_stats/all_staff_week_select"
-import * as reminder_cancel_select       from "./select_menus/reminder_cancel_select"
+import * as reminder_cancel_select       from "./select_menus/reminder"
 import * as middleman_select             from "./select_menus/middleman"
 import * as middleman_buttons            from "./buttons/middleman"
-import * as bypass_support_type_select   from "./select_menus/bypass_support_type_select"
+import * as bypass_support_type_select   from "./select_menus/bypass"
 
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {

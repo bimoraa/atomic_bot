@@ -1,6 +1,6 @@
 import { StringSelectMenuInteraction, TextChannel } from "discord.js"
-import { component, api }                           from "../../../shared/utils"
-import { guide_buttons, ParsedButton }              from "../../../modules/setup/guide_panel"
+import { component, api }                           from "../../../../shared/utils"
+import { guide_buttons, ParsedButton }              from "../../../../modules/setup/guide_panel"
 import fs                                           from "fs"
 import path                                         from "path"
 

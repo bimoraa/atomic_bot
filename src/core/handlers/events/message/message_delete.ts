@@ -1,6 +1,6 @@
 import { Events, Message, PartialMessage, TextChannel } from "discord.js"
-import { client }                                       from "../.."
-import { component, format, api, db, time }             from "../../shared/utils"
+import { client }                                       from "../../../.."
+import { component, format, api, db, time }             from "../../../../shared/utils"
 
 interface ghost_ping_entry {
   message_id : string
