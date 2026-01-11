@@ -86,7 +86,9 @@ export const command: Command = {
 
       if (existing_schedule) {
         const existing_status = enabled ? "ON" : "OFF"
-        const existing_unix   = existing_schedule.scheduled_time
+        const existing_unix   = typeof existing_schedule.scheduled_time === 'number' 
+          ? existing_schedule.scheduled_time 
+          : Math.floor(new Date(existing_schedule.scheduled_time).getTime() / 1000)
         
         await interaction.editReply({
           content: `A schedule for HWID-Less **${existing_status}** already exists at <t:${existing_unix}:F>. Please delete it first before creating a new one.`,
