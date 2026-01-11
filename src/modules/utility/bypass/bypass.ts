@@ -131,21 +131,23 @@ const bypass_command: Command = {
         components: [
           component.container({
             components: [
-              component.text("## Bypass Success!\n\n"),
-              component.divider(2),
               component.section({
-                content   : `##  Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``,
+                content   : "## <:checkmark:1417196825110253780> Bypass Completed Successfully\nThe bypass process has finished successfully. Use `/bypass` or send a link to bypass.",
                 thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
               }),
+            ],
+          }),
+          component.container({
+            components: [
+              component.text(`## <:rbx:1447976733050667061> Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``),
               component.divider(2),
-              component.text(`Processed in ${result.time}s`),
-              component.divider(1),
-              component.action_row(
-                component.secondary_button(
-                  "Mobile Copy (See Result)",
+              component.section({
+                content   : `Completed in ${result.time}s • Requested by <@${interaction.user.id}>`,
+                accessory : component.secondary_button(
+                  "Mobile Copy",
                   `bypass_mobile_copy:${interaction.id}`
-                )
-              ),
+                ),
+              }),
             ],
           }),
         ],
@@ -160,6 +162,14 @@ const bypass_command: Command = {
       }
       
       console.log(`[ - BYPASS COMMAND - ] Success message sent!`)
+
+      // - SEND TO DM - \\
+      try {
+        await interaction.user.send(success_message)
+        console.log(`[ - BYPASS COMMAND - ] Sent result to ${interaction.user.tag}'s DM`)
+      } catch (dm_error) {
+        console.log(`[ - BYPASS COMMAND - ] Could not send DM to ${interaction.user.tag}`)
+      }
 
     } catch (error: any) {
       console.error(`[ - BYPASS COMMAND - ] Error:`, error)

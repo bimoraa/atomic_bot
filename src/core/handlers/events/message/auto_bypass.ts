@@ -56,21 +56,23 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
         components: [
           component.container({
             components: [
-              component.text(["## Bypass Success!"]),
-              component.divider(2),
               component.section({
-                content   : `##  Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``,
+                content   : "## <:checkmark:1417196825110253780> Bypass Completed Successfully\nThe bypass process has finished successfully. Use `/bypass` or send a link to bypass.",
                 thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
               }),
+            ],
+          }),
+          component.container({
+            components: [
+              component.text(`## <:rbx:1447976733050667061> Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``),
               component.divider(2),
-              component.text([`Processed in ${result.time}s`]),
-              component.divider(1),
-              component.action_row(
-                component.secondary_button(
-                  "Mobile Copy (See Result)",
+              component.section({
+                content   : `Completed in ${result.time}s • Requested by <@${message.author.id}>`,
+                accessory : component.secondary_button(
+                  "Mobile Copy",
                   `bypass_mobile_copy:${message.id}`
-                )
-              ),
+                ),
+              }),
             ],
           }),
         ],
@@ -78,6 +80,14 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
 
       await processing_msg.edit(success_message)
       console.log(`[ - AUTO BYPASS - ] Success!`)
+
+      // - SEND TO DM - \\
+      try {
+        await message.author.send(success_message)
+        console.log(`[ - AUTO BYPASS - ] Sent result to ${message.author.tag}'s DM`)
+      } catch (dm_error) {
+        console.log(`[ - AUTO BYPASS - ] Could not send DM to ${message.author.tag}`)
+      }
     } else {
       const error_message = component.build_message({
         components: [
