@@ -95,10 +95,7 @@ const bypass_command: Command = {
               component.divider(2),
               component.text(`##  Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``),
               component.divider(2),
-              component.section({
-                content   : `Processed in ${result.time}s`,
-                thumbnail : undefined,
-              }),
+              component.text(`Processed in ${result.time}s`),
               component.divider(1),
               component.action_row(
                 component.secondary_button(
