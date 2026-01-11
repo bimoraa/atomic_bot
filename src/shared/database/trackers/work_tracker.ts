@@ -120,16 +120,21 @@ export async function update_work_report(
   if (existing) {
     const is_same_week = existing.week_number === week_number && existing.year === year
 
+    const total_work           = parseInt(String(existing.total_work || 0)) + 1
+    const total_work_this_week = is_same_week ? parseInt(String(existing.total_work_this_week || 0)) + 1 : 1
+    const total_salary         = parseInt(String(existing.total_salary || 0)) + parseInt(String(salary))
+    const salary_this_week     = is_same_week ? parseInt(String(existing.salary_this_week || 0)) + parseInt(String(salary)) : parseInt(String(salary))
+
     await db.update_one(WORK_REPORTS_COLLECTION, { staff_id }, {
       staff_id,
       staff_name,
-      total_work:           Number(existing.total_work || 0) + 1,
-      total_work_this_week: is_same_week ? Number(existing.total_work_this_week || 0) + 1 : 1,
-      total_salary:         Number(existing.total_salary || 0) + Number(salary),
-      salary_this_week:     is_same_week ? Number(existing.salary_this_week || 0) + Number(salary) : Number(salary),
+      total_work,
+      total_work_this_week,
+      total_salary,
+      salary_this_week,
       week_number,
       year,
-      last_work:            now,
+      last_work: now,
     }, true)
   } else {
     await db.update_one(WORK_REPORTS_COLLECTION, { staff_id }, {
@@ -137,8 +142,8 @@ export async function update_work_report(
       staff_name,
       total_work:           1,
       total_work_this_week: 1,
-      total_salary:         Number(salary),
-      salary_this_week:     Number(salary),
+      total_salary:         parseInt(String(salary)),
+      salary_this_week:     parseInt(String(salary)),
       week_number,
       year,
       last_work:            now,
