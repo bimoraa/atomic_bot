@@ -40,7 +40,7 @@ const bypass_command: Command = {
           ],
         })
 
-        error_message.flags = 64
+        error_message.flags = (error_message.flags ?? 0) | 64
 
         await interaction.reply(error_message)
         return
