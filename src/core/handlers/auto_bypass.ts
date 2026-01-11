@@ -20,9 +20,17 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   const url = url_match[0]
 
   try {
-    const processing_msg = await message.reply({
-      content: "<a:GTA_Loading:1459707117840629832> Bypassing link...",
-    })
+    const processing_msg = await message.reply(
+      component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text(["<a:GTA_Loading:1459707117840629832> Bypassing link..."]),
+            ],
+          }),
+        ],
+      })
+    )
 
     console.log(`[ - AUTO BYPASS - ] Processing URL: ${url}`)
     const result = await bypass_link(url)
@@ -44,14 +52,14 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
         components: [
           component.container({
             components: [
-              component.text("## Bypass Success!\n\n"),
+              component.text(["## Bypass Success!"]),
               component.divider(2),
               component.section({
                 content   : `##  Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``,
                 thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
               }),
               component.divider(2),
-              component.text(`Processed in ${result.time}s`),
+              component.text([`Processed in ${result.time}s`]),
               component.divider(1),
               component.action_row(
                 component.secondary_button(
