@@ -113,6 +113,8 @@ const bypass_command: Command = {
       // - STORE RESULT IN CACHE - \\  
       const cache_key = `bypass_result_${interaction.id}`
       cache.set(cache_key, result.result, 300) // 5min TTL
+      console.log(`[ - BYPASS - ] Stored in cache with key: ${cache_key}`)
+      console.log(`[ - BYPASS - ] Button custom_id will be: bypass_mobile_copy:${interaction.id}`)
 
       const success_message = component.build_message({
         components: [

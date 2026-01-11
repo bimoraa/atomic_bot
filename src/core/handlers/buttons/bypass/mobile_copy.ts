@@ -11,10 +11,14 @@ import { log_error }         from "../../../../shared/utils/error_logger"
 export async function handle_bypass_mobile_copy(interaction: ButtonInteraction): Promise<void> {
   try {
     const [, interaction_id] = interaction.customId.split(":")
+    console.log(`[ - BYPASS MOBILE - ] Button clicked, custom_id: ${interaction.customId}`)
+    console.log(`[ - BYPASS MOBILE - ] Extracted interaction_id: ${interaction_id}`)
 
     // - GET CACHED RESULT - \\
     const cache_key    = `bypass_result_${interaction_id}`
+    console.log(`[ - BYPASS MOBILE - ] Looking for cache key: ${cache_key}`)
     const bypass_url   = cache.get<string>(cache_key)
+    console.log(`[ - BYPASS MOBILE - ] Cache result:`, bypass_url ? "FOUND" : "NOT FOUND")
 
     if (!bypass_url) {
       const expired_message = component.build_message({
