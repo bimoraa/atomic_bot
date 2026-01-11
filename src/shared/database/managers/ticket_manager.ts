@@ -5,8 +5,8 @@ import {
   GuildMember,
   CategoryChannel,
 } from "discord.js"
-import { load_config } from "../config/loader"
-import { component, api, time, logger } from "../utils"
+import { load_config } from "../../config/loader"
+import { component, api, time, logger } from "../../utils"
 
 interface ticket_config {
   ticket_category_id: string

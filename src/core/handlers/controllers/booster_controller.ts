@@ -1,5 +1,5 @@
 import { component, api } from "../../../shared/utils"
-import * as booster_manager from "../../../shared/database/booster_manager"
+import * as booster_manager from "../../../shared/database/managers/booster_manager"
 
 export async function send_booster_log(
   channel_id  : string,

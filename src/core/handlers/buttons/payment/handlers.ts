@@ -1,7 +1,7 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { api, component, time } from "../../../../shared/utils"
 import { create_key_for_project, delete_user_from_project } from "../../../../infrastructure/api/luarmor"
-import { add_work_log } from "../../../../shared/database/work_tracker"
+import { add_work_log } from "../../../../shared/database/trackers/work_tracker"
 
 const ADMIN_ROLE_ID = "1277272542914281512"
 const LOGO_URL = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"

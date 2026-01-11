@@ -1,6 +1,6 @@
 import { StringSelectMenuInteraction } from "discord.js"
 import { component, db } from "../../../../shared/utils"
-import { format_salary } from "../../../../shared/database/work_tracker"
+import { format_salary } from "../../../../shared/database/trackers/work_tracker"
 
 interface WorkLog {
   staff_id    : string

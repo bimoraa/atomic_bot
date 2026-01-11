@@ -1,5 +1,5 @@
 import { GuildMember, PermissionFlagsBits } from "discord.js"
-import { load_config } from "../config/loader"
+import { load_config } from "../../config/loader"
 
 interface permissions_config {
   admin_role_id:     string

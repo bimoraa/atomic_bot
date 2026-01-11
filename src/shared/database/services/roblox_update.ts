@@ -1,7 +1,7 @@
 import { Client } from "discord.js"
-import { load_config } from "../config/loader"
-import { component, api, time, format, logger } from "../utils"
-import { get_platform_version, platform_targets, version_info } from "../utils/version"
+import { load_config } from "../../config/loader"
+import { component, api, time, format, logger } from "../../utils"
+import { get_platform_version, platform_targets, version_info } from "../../utils/version"
 
 interface roblox_config {
   roblox_update_channel_id: string

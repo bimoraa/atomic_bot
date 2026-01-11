@@ -1,6 +1,6 @@
 import { Client, User, PartialUser } from "discord.js"
-import { db, component }             from "../utils"
-import { log_error }                 from "../utils/error_logger"
+import { db, component }             from "../../utils"
+import { log_error }                 from "../../utils/error_logger"
 
 interface server_tag_user {
   user_id    : string

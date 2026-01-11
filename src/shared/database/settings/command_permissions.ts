@@ -1,6 +1,6 @@
 import { GuildMember } from "discord.js"
 import { join } from "path"
-import { file, cache } from "../utils"
+import { file, cache } from "../../utils"
 
 interface CommandPermission {
   role_ids:           string[] | null

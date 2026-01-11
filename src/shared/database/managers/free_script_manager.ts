@@ -1,6 +1,6 @@
 import { Client }     from "discord.js"
-import { db, http }  from "../utils"
-import { log_error } from "../utils/error_logger"
+import { db, http }  from "../../utils"
+import { log_error } from "../../utils/error_logger"
 
 interface free_script_user {
   user_id    : string

@@ -1,7 +1,7 @@
 import { ButtonInteraction, GuildMember, VoiceChannel } from "discord.js"
-import * as tempvoice                                   from "../../../../shared/database/tempvoice"
-import * as voice_tracker                               from "../../../../shared/database/voice_time_tracker"
-import * as voice_interaction                           from "../../../../shared/database/voice_interaction_tracker"
+import * as tempvoice                                   from "../../../../shared/database/services/tempvoice"
+import * as voice_tracker                               from "../../../../shared/database/trackers/voice_time_tracker"
+import * as voice_interaction                           from "../../../../shared/database/trackers/voice_interaction_tracker"
 import { component, modal }                             from "../../../../shared/utils"
 
 function create_not_in_channel_reply(guild_id: string, generator_channel_id: string | null) {

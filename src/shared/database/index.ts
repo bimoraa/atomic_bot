@@ -1,18 +1,25 @@
 // - BARREL EXPORT FOR SHARED DATABASE - \\
-export * from './audit_log'
-export * from './auto_reply'
-export * from './booster_manager'
-export * from './channel_manager'
-export * from './command_permissions'
-export * from './free_script_manager'
-export * from './loa_checker'
-export * from './middleman_manager'
-export * from './permissions'
-export * from './reputation_manager'
-export * from './roblox_update'
-export * from './server_tag'
-export * from './tempvoice'
-export * from './ticket_manager'
-export * from './voice_interaction_tracker'
-export * from './voice_time_tracker'
-export * from './work_tracker'
+export * from "./managers"
+export * from "./services"
+export * from "./settings"
+export * from "./trackers"
+
+// - RE-EXPORT WITH ORIGINAL NAMES FOR BACKWARD COMPATIBILITY - \\
+export * from "./managers/booster_manager"
+export * from "./managers/channel_manager"
+export * from "./managers/free_script_manager"
+export * from "./managers/middleman_manager"
+export * from "./managers/reputation_manager"
+export * from "./managers/ticket_manager"
+export * from "./services/audit_log"
+export * from "./services/loa_checker"
+export * from "./services/roblox_update"
+export * from "./services/tempvoice"
+export * from "./settings/auto_reply"
+export * from "./settings/command_permissions"
+export * from "./settings/permissions"
+export * from "./settings/server_tag"
+export * from "./trackers/voice_interaction_tracker"
+export * from "./trackers/voice_time_tracker"
+export * from "./trackers/work_tracker"
+

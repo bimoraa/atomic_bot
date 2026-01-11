@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, GuildMember, ChannelType } from "discord.js"
 import { guild_settings, component } from "../../../shared/utils"
-import { is_admin } from "../../../shared/database/permissions"
+import { is_admin } from "../../../shared/database/settings/permissions"
 import { log_error } from "../../../shared/utils/error_logger"
 
 /**

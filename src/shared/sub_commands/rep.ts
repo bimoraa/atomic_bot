@@ -1,7 +1,7 @@
 import { Message, Client } from "discord.js"
 import { SubCommand }      from "../types/sub_command"
 import { component }       from "../utils"
-import * as reputation     from "../database/reputation_manager"
+import * as reputation     from "../database/managers/reputation_manager"
 
 const rep_command: SubCommand = {
   name       : "rep",

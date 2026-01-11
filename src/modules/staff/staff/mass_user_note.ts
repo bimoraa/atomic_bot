@@ -4,7 +4,7 @@ import {
   GuildMember,
 } from "discord.js"
 import { Command }        from "../../../shared/types/command"
-import { is_admin }       from "../../../shared/database/permissions"
+import { is_admin }       from "../../../shared/database/settings/permissions"
 import { component, api } from "../../../shared/utils"
 import { http, env, logger } from "../../../shared/utils"
 

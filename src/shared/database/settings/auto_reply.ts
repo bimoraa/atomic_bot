@@ -1,5 +1,5 @@
 import { Client, Message } from "discord.js"
-import { component }        from "../utils"
+import { component }        from "../../utils"
 import * as fs              from "fs"
 import * as path            from "path"
 

@@ -4,7 +4,7 @@ import { component, time, api, format, db } from "../../../shared/utils"
 import { client } from "../../../index"
 import { ticket_types, get_ticket } from "../../../shared/database/unified_ticket"
 import { close_ticket } from "../../../shared/database/unified_ticket/close"
-import { is_staff, is_admin_or_mod } from "../../../shared/database/permissions"
+import { is_staff, is_admin_or_mod } from "../../../shared/database/settings/permissions"
 
 const COLLECTION_NAME = "close_requests"
 

@@ -1,5 +1,5 @@
 import { Client } from "discord.js"
-import { db, api, component } from "../utils"
+import { db, api, component } from "../../utils"
 
 const is_dev        = process.env.NODE_ENV === "development"
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN

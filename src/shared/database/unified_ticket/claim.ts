@@ -4,7 +4,7 @@ import {
   ThreadChannel,
   GuildMember,
 } from "discord.js"
-import { is_admin, is_staff } from "../permissions"
+import { is_admin, is_staff } from "../settings/permissions"
 import {
   get_ticket_config,
   get_ticket,

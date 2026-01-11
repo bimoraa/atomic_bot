@@ -1,5 +1,5 @@
 import { GuildChannel, CategoryChannel } from "discord.js"
-import { logger } from "../utils"
+import { logger } from "../../utils"
 
 const log = logger.create_logger("channel_manager")
 

@@ -1,4 +1,4 @@
-import { db } from "../utils"
+import { db } from "../../utils"
 import { VoiceChannel } from "discord.js"
 
 interface voice_interaction {

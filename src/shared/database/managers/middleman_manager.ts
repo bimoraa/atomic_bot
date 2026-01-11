@@ -1,4 +1,4 @@
-import { db } from "../utils"
+import { db } from "../../utils"
 
 const COLLECTION = "middleman_transactions"
 

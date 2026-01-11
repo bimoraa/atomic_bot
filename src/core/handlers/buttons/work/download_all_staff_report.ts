@@ -1,6 +1,6 @@
 import { ButtonInteraction }            from "discord.js"
 import { db, component }                from "../../../../shared/utils"
-import { format_salary }                from "../../../../shared/database/work_tracker"
+import { format_salary }                from "../../../../shared/database/trackers/work_tracker"
 import { get_week_date_range }          from "../../select_menus/work_stats/year_select"
 
 interface WorkLog {

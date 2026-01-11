@@ -6,7 +6,7 @@ import {
   UserSelectMenuBuilder,
 } from "discord.js"
 import { get_ticket } from "./state"
-import { is_admin, is_staff } from "../permissions"
+import { is_admin, is_staff } from "../settings/permissions"
 
 const HELPER_ROLE_ID = "1357767950421065981"
 

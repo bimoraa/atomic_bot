@@ -1,4 +1,4 @@
-import { db } from "../utils"
+import { db } from "../../utils"
 
 interface reputation_record {
   user_id       : string

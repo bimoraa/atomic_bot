@@ -1,6 +1,6 @@
 import { UserSelectMenuInteraction, GuildMember, VoiceChannel, StringSelectMenuInteraction } from "discord.js"
-import * as tempvoice                                           from "../../../../shared/database/tempvoice"
-import * as voice_interaction                                   from "../../../../shared/database/voice_interaction_tracker"
+import * as tempvoice                                           from "../../../../shared/database/services/tempvoice"
+import * as voice_interaction                                   from "../../../../shared/database/trackers/voice_interaction_tracker"
 import { component, modal }                                     from "../../../../shared/utils"
 
 function create_reply(message: string) {

@@ -8,7 +8,7 @@ import {
   ActionRowBuilder,
 } from "discord.js";
 import { Command } from "../../../shared/types/command";
-import { is_admin } from "../../../shared/database/permissions";
+import { is_admin } from "../../../shared/database/settings/permissions";
 
 export const command: Command = {
   data: new SlashCommandBuilder()

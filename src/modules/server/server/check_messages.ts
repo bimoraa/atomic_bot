@@ -7,7 +7,7 @@ import {
 } from "discord.js";
 import { Command } from "../../../shared/types/command";
 import { count_user_messages, format_logs } from "../../../infrastructure/cache/message_counter";
-import { is_admin } from "../../../shared/database/permissions";
+import { is_admin } from "../../../shared/database/settings/permissions";
 
 const duration_map: Record<string, number> = {
   "1d": 24 * 60 * 60 * 1000,

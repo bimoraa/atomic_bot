@@ -1,4 +1,4 @@
-import { db } from "../utils"
+import { db } from "../../utils"
 
 interface voice_channel_record {
   channel_id     : string

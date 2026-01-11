@@ -1,4 +1,4 @@
-import { db } from "../utils"
+import { db } from "../../utils"
 
 interface booster_whitelist {
   user_id       : string

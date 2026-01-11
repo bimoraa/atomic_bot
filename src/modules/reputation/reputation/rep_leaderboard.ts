@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js"
 import { Command }    from "../../../shared/types/command"
 import { component }  from "../../../shared/utils"
-import * as reputation from "../../../shared/database/reputation_manager"
+import * as reputation from "../../../shared/database/managers/reputation_manager"
 
 const rep_leaderboard: Command = {
   data: new SlashCommandBuilder()

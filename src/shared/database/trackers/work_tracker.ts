@@ -1,4 +1,4 @@
-import { db, time, logger } from "../utils"
+import { db, time, logger } from "../../utils"
 
 const WORK_LOGS_COLLECTION    = "work_logs"
 const WORK_REPORTS_COLLECTION = "work_reports"

@@ -1,5 +1,5 @@
 import { ButtonInteraction, ThreadChannel, GuildMember } from "discord.js"
-import { is_staff, is_admin } from "../permissions"
+import { is_staff, is_admin } from "../settings/permissions"
 import {
   get_ticket_config,
   get_ticket,

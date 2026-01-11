@@ -7,8 +7,8 @@ import {
   GuildMember,
 } from "discord.js";
 import { Command } from "../../../shared/types/command";
-import { move_channel_to_category } from "../../../shared/database/channel_manager";
-import { is_admin } from "../../../shared/database/permissions";
+import { move_channel_to_category } from "../../../shared/database/managers/channel_manager";
+import { is_admin } from "../../../shared/database/settings/permissions";
 
 export const command: Command = {
   data: new SlashCommandBuilder()

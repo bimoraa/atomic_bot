@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, PermissionFlagsBits } from "discord.js"
 import { Command }                                                                           from "../../../shared/types/command"
-import { get_all_tagged_users, sync_guild_tagged_users }                                     from "../../../shared/database/server_tag"
+import { get_all_tagged_users, sync_guild_tagged_users }                                     from "../../../shared/database/settings/server_tag"
 import { component }                                                                         from "../../../shared/utils"
 
 export const command: Command = {

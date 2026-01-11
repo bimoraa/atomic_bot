@@ -1,6 +1,6 @@
 import { Client, Collection, Interaction, ThreadChannel, GuildMember, ButtonInteraction } from "discord.js"
 import { Command }                                                     from "../../shared/types/command"
-import { can_use_command }                                             from "../../shared/database/command_permissions"
+import { can_use_command }                                             from "../../shared/database/settings/command_permissions"
 import { log_error, handle_error_log_button }                          from "../../shared/utils/error_logger"
 import {
   handle_ticket_button,

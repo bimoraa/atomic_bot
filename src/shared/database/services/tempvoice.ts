@@ -9,9 +9,9 @@ import {
   OverwriteType,
   VideoQualityMode,
 }                         from "discord.js"
-import { logger, component, api, db } from "../utils"
-import { load_config }    from "../config/loader"
-import * as voice_tracker from "./voice_time_tracker"
+import { logger, component, api, db } from "../../utils"
+import { load_config }    from "../../config/loader"
+import * as voice_tracker from "../trackers/voice_time_tracker"
 
 interface tempvoice_config {
   category_name         : string

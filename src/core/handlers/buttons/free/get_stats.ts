@@ -1,7 +1,7 @@
 import { ButtonInteraction, GuildMember }      from "discord.js"
 import { component, api, format }              from "../../../../shared/utils"
 import { http, env, logger }                   from "../../../../shared/utils"
-import { remove_free_script_access }           from "../../../../shared/database/free_script_manager"
+import { remove_free_script_access }           from "../../../../shared/database/managers/free_script_manager"
 import { create_rate_limit_message }           from "../../controllers/service_provider_controller"
 
 const __log               = logger.create_logger("free_stats")

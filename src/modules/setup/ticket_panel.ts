@@ -5,7 +5,7 @@ import {
   GuildMember,
 } from "discord.js"
 import { Command } from "../../shared/types/command"
-import { is_admin } from "../../shared/database/permissions"
+import { is_admin } from "../../shared/database/settings/permissions"
 import { get_ticket_config } from "../../shared/database/unified_ticket"
 import { component, api, format } from "../../shared/utils"
 
