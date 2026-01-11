@@ -112,7 +112,13 @@ const bypass_command: Command = {
       })
 
       console.log(`[ - BYPASS COMMAND - ] Sending success message...`)
-      await api.edit_deferred_reply(interaction, success_components)
+      const send_result = await api.edit_deferred_reply(interaction, success_components)
+      
+      if (send_result.error) {
+        console.error(`[ - BYPASS COMMAND - ] Failed to send success message:`, JSON.stringify(send_result))
+        throw new Error(`Failed to send message: ${JSON.stringify(send_result)}`)
+      }
+      
       console.log(`[ - BYPASS COMMAND - ] Success message sent!`)
 
     } catch (error: any) {
