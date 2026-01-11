@@ -63,6 +63,8 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
       error_message = "Rate limit exceeded - Please wait a moment before trying again."
     } else if (error.response?.status >= 500) {
       error_message = "Bypass service is currently unavailable - Please try again later."
+    } else if (error.response?.status === 400 || error.response?.status === 404) {
+      error_message = "Bypass service not available for this link - Link might not be supported or invalid."
     } else if (error.response?.data?.message) {
       error_message = error.response.data.message
     } else if (error.message) {
