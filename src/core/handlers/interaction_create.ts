@@ -33,6 +33,7 @@ import * as script_get_script            from "./buttons/script/get_script"
 import * as script_get_role              from "./buttons/script/get_role"
 import * as script_reset_hwid            from "./buttons/script/reset_hwid"
 import * as script_get_stats             from "./buttons/script/get_stats"
+import * as script_view_leaderboard      from "./buttons/script/view_leaderboard"
 import * as free_get_script              from "./buttons/free/get_script"
 import * as free_reset_hwid              from "./buttons/free/reset_hwid"
 import * as free_get_stats               from "./buttons/free/get_stats"
@@ -295,6 +296,10 @@ export async function handle_interaction(
       }
       if (interaction.customId === "script_get_stats") {
         await script_get_stats.handle_get_stats(interaction);
+        return;
+      }
+      if (interaction.customId === "script_view_leaderboard") {
+        await script_view_leaderboard.handle_view_leaderboard(interaction);
         return;
       }
       if (interaction.customId === "script_mobile_copy") {

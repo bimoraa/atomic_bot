@@ -563,3 +563,34 @@ export async function track_and_check_hwid_reset(client: Client, user_id: string
   await track_hwid_reset(user_id)
   await check_and_enable_hwid_less(client)
 }
+
+/**
+ * @description Get execution leaderboard for service provider script
+ * @param {Object} options - Options containing client
+ * @returns {Promise<{success: boolean; data?: any[]; error?: string}>}
+ */
+export async function get_execution_leaderboard(options: { client: Client }): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  try {
+    const all_users = await luarmor.get_all_users()
+
+    if (!all_users.success || !all_users.data) {
+      return {
+        success : false,
+        error   : all_users.error || "Failed to fetch users",
+      }
+    }
+
+    const sorted = all_users.data.sort((a: any, b: any) => b.total_executions - a.total_executions)
+
+    return {
+      success : true,
+      data    : sorted,
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "get_execution_leaderboard", {})
+    return {
+      success : false,
+      error   : "Failed to fetch leaderboard",
+    }
+  }
+}
