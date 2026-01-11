@@ -13,7 +13,7 @@ interface BypassResponse {
 }
 
 /**
- * - BYPASS LINK USING IZEN.LOL API - \\
+ * - BYPASS LINK USING API - \\
  * 
  * @param url - The URL to bypass
  * @returns Promise with bypass result

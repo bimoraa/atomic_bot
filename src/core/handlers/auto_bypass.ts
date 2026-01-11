@@ -11,7 +11,10 @@ const BYPASS_CHANNEL_ID = "1459729966974505086"
  * @returns {Promise<boolean>} True if message was handled
  */
 export async function handle_auto_bypass(message: Message): Promise<boolean> {
-  if (message.channelId !== BYPASS_CHANNEL_ID) return false
+  const is_bypass_channel = message.channelId === BYPASS_CHANNEL_ID
+  const is_dm             = message.channel.isDMBased()
+  
+  if (!is_bypass_channel && !is_dm) return false
   if (!message.content.includes("https://")) return false
 
   const url_match = message.content.match(/https?:\/\/[^\s]+/)
@@ -32,7 +35,8 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
       })
     )
 
-    console.log(`[ - AUTO BYPASS - ] Processing URL: ${url}`)
+    const source = is_dm ? "DM" : "Channel"
+    console.log(`[ - AUTO BYPASS - ] Processing URL from ${source}: ${url}`)
     const result = await bypass_link(url)
 
     if (result.success && result.result) {
