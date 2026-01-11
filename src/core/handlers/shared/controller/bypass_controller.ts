@@ -20,12 +20,14 @@ interface BypassResponse {
  */
 export async function bypass_link(url: string): Promise<BypassResponse> {
   try {
-    console.log(`[ - BYPASS - ] Attempting to bypass URL: ${url}`)
+    const trimmed_url = url.trim()
+
+    console.log(`[ - BYPASS - ] Attempting to bypass URL: ${trimmed_url}`)
     
-    const encoded_url = encodeURIComponent(url)
-    const start_time  = Date.now()
+    const start_time = Date.now()
+    const params     = new URLSearchParams({ url: trimmed_url }).toString()
     
-    const response = await axios.get(`${BYPASS_API_URL}?url=${encoded_url}`, {
+    const response = await axios.get(`${BYPASS_API_URL}?${params}`, {
       headers: {
         "x-api-key": BYPASS_API_KEY,
       },

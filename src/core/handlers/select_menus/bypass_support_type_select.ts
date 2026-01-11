@@ -52,16 +52,10 @@ export async function handle_bypass_support_type_select(interaction: StringSelec
     }
 
     // - BUILD SERVICE LIST MESSAGE - \\
-    const message_components: any[] = []
-
-    message_components.push(
-      component.text([
-        `## ${selected_type}`,
-        `Total: **${type_services.length}** services`,
-      ])
-    )
-
-    message_components.push(component.divider(2))
+    const lines: string[] = [
+      `## ${selected_type}`,
+      `Total: **${type_services.length}** services`,
+    ]
 
     for (const service of type_services) {
       const status_icon = service.status === "active" 
@@ -72,20 +66,15 @@ export async function handle_bypass_support_type_select(interaction: StringSelec
         ? service.domains.map((d: string) => `\`${d}\``).join(", ")
         : "N/A"
 
-      message_components.push(
-        component.text([
-          `**${status_icon} ${service.name}**`,
-          `Domains: ${domains}`,
-        ])
-      )
-
-      message_components.push(component.divider(1))
+      lines.push(``)
+      lines.push(`**${status_icon} ${service.name}**`)
+      lines.push(`Domains: ${domains}`)
     }
 
     const response_message = component.build_message({
       components: [
         component.container({
-          components: message_components,
+          components: [component.text(lines)],
         }),
       ],
     })

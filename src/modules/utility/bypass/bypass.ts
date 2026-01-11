@@ -48,7 +48,7 @@ const bypass_command: Command = {
 
       await interaction.deferReply()
 
-      const url = interaction.options.getString("url", true)
+      const url = interaction.options.getString("url", true).trim()
 
       if (!url.startsWith("http://") && !url.startsWith("https://")) {
         const error_message = component.build_message({

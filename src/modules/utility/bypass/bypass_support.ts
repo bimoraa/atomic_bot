@@ -90,12 +90,10 @@ const bypass_support_command: Command = {
                 ],
                 thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
               }),
-            ],
-          }),
-          component.container({
-            components: [
+              component.divider(2),
               component.select_menu(`bypass_support_type_select:${interaction.id}`, "Select a service type", dropdown_options),
-              component.text("Made by Ophelia."),
+              component.divider(1),
+              component.text("-# Made by Ophelia."),
             ],
           }),
         ],
