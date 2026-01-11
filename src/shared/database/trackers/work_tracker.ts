@@ -120,10 +120,33 @@ export async function update_work_report(
   if (existing) {
     const is_same_week = existing.week_number === week_number && existing.year === year
 
-    const total_work           = parseInt(String(existing.total_work || 0)) + 1
-    const total_work_this_week = is_same_week ? parseInt(String(existing.total_work_this_week || 0)) + 1 : 1
-    const total_salary         = parseInt(String(existing.total_salary || 0)) + parseInt(String(salary))
-    const salary_this_week     = is_same_week ? parseInt(String(existing.salary_this_week || 0)) + parseInt(String(salary)) : parseInt(String(salary))
+    const current_total_work      = Math.max(0, parseInt(String(existing.total_work || 0)))
+    const current_total_work_week = Math.max(0, parseInt(String(existing.total_work_this_week || 0)))
+    const current_total_salary    = Math.max(0, parseInt(String(existing.total_salary || 0)))
+    const current_salary_week     = Math.max(0, parseInt(String(existing.salary_this_week || 0)))
+    const new_salary              = Math.max(0, parseInt(String(salary)))
+
+    // - VALIDATE AND PREVENT CORRUPTION - \\
+    if (current_total_salary > 1000000000) {
+      log.error(`Corrupted data detected for ${staff_id}, resetting total_salary from ${current_total_salary}`)
+      await db.update_one(WORK_REPORTS_COLLECTION, { staff_id }, {
+        staff_id,
+        staff_name,
+        total_work:           1,
+        total_work_this_week: 1,
+        total_salary:         new_salary,
+        salary_this_week:     new_salary,
+        week_number,
+        year,
+        last_work:            now,
+      }, true)
+      return
+    }
+
+    const total_work           = current_total_work + 1
+    const total_work_this_week = is_same_week ? current_total_work_week + 1 : 1
+    const total_salary         = current_total_salary + new_salary
+    const salary_this_week     = is_same_week ? current_salary_week + new_salary : new_salary
 
     await db.update_one(WORK_REPORTS_COLLECTION, { staff_id }, {
       staff_id,
@@ -136,14 +159,18 @@ export async function update_work_report(
       year,
       last_work: now,
     }, true)
+
+    log.info(`Updated work report for ${staff_name}: +${new_salary} (Total: ${total_salary})`)
   } else {
+    const new_salary = Math.max(0, parseInt(String(salary)))
+    
     await db.update_one(WORK_REPORTS_COLLECTION, { staff_id }, {
       staff_id,
       staff_name,
       total_work:           1,
       total_work_this_week: 1,
-      total_salary:         parseInt(String(salary)),
-      salary_this_week:     parseInt(String(salary)),
+      total_salary:         new_salary,
+      salary_this_week:     new_salary,
       week_number,
       year,
       last_work:            now,
