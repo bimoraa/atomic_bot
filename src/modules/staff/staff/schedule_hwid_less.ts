@@ -17,7 +17,7 @@ interface hwid_less_schedule {
   enabled         : boolean
   created_by      : string
   executed        : boolean
-  created_at      : number
+  created_at      : Date | number
 }
 
 let __scheduler_running = false
@@ -103,7 +103,7 @@ export const command: Command = {
           enabled        : enabled,
           created_by     : interaction.user.id,
           executed       : false,
-          created_at     : Math.floor(Date.now() / 1000),
+          created_at     : new Date(),
         }
       )
 
