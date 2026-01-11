@@ -3,7 +3,7 @@ import { component, api, format }             from "../../../../shared/utils"
 import { reset_user_hwid }                    from "../../controllers/service_provider_controller"
 import { is_hwid_enabled }                    from "../../../../modules/setup/hwid_control"
 
-const COOLDOWN_MS     = 1000
+const COOLDOWN_MS     = 7000
 const reset_cooldowns = new Map<string, number>()
 
 export async function handle_reset_hwid(interaction: ButtonInteraction): Promise<void> {
