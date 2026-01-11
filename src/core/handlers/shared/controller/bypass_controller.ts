@@ -29,7 +29,7 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
       headers: {
         "x-api-key": BYPASS_API_KEY,
       },
-      timeout: 30000,
+      timeout: 120000,
     })
     
     const process_time = ((Date.now() - start_time) / 1000).toFixed(2)
@@ -55,9 +55,23 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
     console.error(`[ - BYPASS - ] Error bypassing link:`, error.message)
     log_error(client, error, "bypass_link", { url })
     
+    let error_message = "Unknown error occurred"
+    
+    if (error.code === "ECONNABORTED" || error.message.includes("timeout")) {
+      error_message = "Request timeout - The bypass service is taking too long to respond. Please try again."
+    } else if (error.response?.status === 429) {
+      error_message = "Rate limit exceeded - Please wait a moment before trying again."
+    } else if (error.response?.status >= 500) {
+      error_message = "Bypass service is currently unavailable - Please try again later."
+    } else if (error.response?.data?.message) {
+      error_message = error.response.data.message
+    } else if (error.message) {
+      error_message = error.message
+    }
+    
     return {
       success : false,
-      error   : error.response?.data?.message || error.message || "Unknown error occurred",
+      error   : error_message,
     }
   }
 }
