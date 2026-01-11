@@ -1,5 +1,5 @@
 import { StringSelectMenuInteraction } from "discord.js"
-import { cache }                       from "../../../shared/utils"
+import { component, cache }            from "../../../shared/utils"
 
 /**
  * - HANDLE BYPASS SUPPORT TYPE SELECT - \\
@@ -35,11 +35,16 @@ export async function handle_bypass_support_type_select(interaction: StringSelec
     }
 
     // - BUILD SERVICE LIST MESSAGE - \\
-    let content_parts: string[] = []
-    
-    content_parts.push(`## ${selected_type}`)
-    content_parts.push(`Total: **${type_services.length}** services`)
-    content_parts.push("")
+    const message_components: any[] = []
+
+    message_components.push(
+      component.text([
+        `## ${selected_type}`,
+        `Total: **${type_services.length}** services`,
+      ])
+    )
+
+    message_components.push(component.divider(2))
 
     for (const service of type_services) {
       const status_icon = service.status === "active" 
@@ -50,15 +55,27 @@ export async function handle_bypass_support_type_select(interaction: StringSelec
         ? service.domains.map((d: string) => `\`${d}\``).join(", ")
         : "N/A"
 
-      content_parts.push(`**${status_icon} ${service.name}**`)
-      content_parts.push(`Domains: ${domains}`)
-      content_parts.push("")
+      message_components.push(
+        component.text([
+          `**${status_icon} ${service.name}**`,
+          `Domains: ${domains}`,
+        ])
+      )
+
+      message_components.push(component.divider(1))
     }
 
-    await interaction.reply({
-      content   : content_parts.join("\n"),
-      flags     : 64,
+    const response_message = component.build_message({
+      components: [
+        component.container({
+          components: message_components,
+        }),
+      ],
     })
+
+    response_message.flags = 64
+
+    await interaction.reply(response_message)
 
   } catch (error: any) {
     console.error(`[ - BYPASS SUPPORT TYPE SELECT - ] Error:`, error)
