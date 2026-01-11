@@ -55,7 +55,6 @@ export { client }
 
 import "./core/handlers/guild_member_add"
 import "./core/handlers/guild_member_booster"
-import "./core/handlers/guild_member_bio_check"
 import "./core/handlers/voice_state_update"
 import "./core/handlers/message_delete"
 
