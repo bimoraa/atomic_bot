@@ -45,52 +45,61 @@ export async function handle_ticket_button(interaction: ButtonInteraction): Prom
       }
 
       if (type_key === "content_creator") {
-        const creator_modal = modal.create_modal(
-          `${prefix}_application_modal`,
-          "Content Creator Application",
-          modal.create_text_input({
-            custom_id:   "channel_links",
-            label:       "Channel Links",
-            style:       "short",
-            placeholder: "YouTube/TikTok channel URLs",
-            required:    true,
-            max_length:  200,
-          }),
-          modal.create_text_input({
-            custom_id:   "platform",
-            label:       "Primary Platform",
-            style:       "short",
-            placeholder: "YouTube, TikTok, or Both",
-            required:    true,
-            max_length:  50,
-          }),
-          modal.create_text_input({
-            custom_id:   "content_type",
-            label:       "Content Type",
-            style:       "short",
-            placeholder: "What type of content do you create?",
-            required:    true,
-            max_length:  100,
-          }),
-          modal.create_text_input({
-            custom_id:   "upload_frequency",
-            label:       "Upload Frequency",
-            style:       "short",
-            placeholder: "How often do you upload? (e.g., 3x per week)",
-            required:    true,
-            max_length:  100,
-          }),
-          modal.create_text_input({
-            custom_id:   "reason",
-            label:       "Why do you want to join?",
-            style:       "paragraph",
-            placeholder: "Tell us why you want to be an ATMC Content Creator",
-            required:    true,
-            max_length:  500,
+        try {
+          const creator_modal = modal.create_modal(
+            `${prefix}_application_modal`,
+            "Content Creator Application",
+            modal.create_text_input({
+              custom_id:   "channel_links",
+              label:       "Channel Links",
+              style:       "short",
+              placeholder: "YouTube/TikTok channel URLs",
+              required:    true,
+              max_length:  200,
+            }),
+            modal.create_text_input({
+              custom_id:   "platform",
+              label:       "Primary Platform",
+              style:       "short",
+              placeholder: "YouTube, TikTok, or Both",
+              required:    true,
+              max_length:  50,
+            }),
+            modal.create_text_input({
+              custom_id:   "content_type",
+              label:       "Content Type",
+              style:       "short",
+              placeholder: "What type of content do you create?",
+              required:    true,
+              max_length:  100,
+            }),
+            modal.create_text_input({
+              custom_id:   "upload_frequency",
+              label:       "Upload Frequency",
+              style:       "short",
+              placeholder: "How often do you upload? (e.g., 3x per week)",
+              required:    true,
+              max_length:  100,
+            }),
+            modal.create_text_input({
+              custom_id:   "reason",
+              label:       "Why do you want to join?",
+              style:       "paragraph",
+              placeholder: "Tell us why you want to be an ATMC Content Creator",
+              required:    true,
+              max_length:  500,
+            })
+          )
+          await interaction.showModal(creator_modal)
+          return true
+        } catch (error) {
+          console.error("[ticket_handler] Error showing content creator modal:", error)
+          await interaction.reply({
+            content: "Failed to show application form. Please try again.",
+            flags: 64,
           })
-        )
-        await interaction.showModal(creator_modal)
-        return true
+          return true
+        }
       }
 
       await interaction.deferReply({ flags: 64 })
