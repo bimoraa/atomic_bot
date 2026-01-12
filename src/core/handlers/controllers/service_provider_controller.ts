@@ -395,22 +395,29 @@ export async function get_user_script(options: { client: Client; user_id: string
 
 export async function reset_user_hwid(options: { client: Client; user_id: string }): Promise<{ success: boolean; message?: any; error?: string }> {
   try {
-    let reset_result = await luarmor.reset_hwid_by_discord(options.user_id)
-
-    if (!reset_result.success) {
-      if (is_rate_limited(reset_result.error)) {
-        return { success: false, message: create_rate_limit_message("HWID Reset") }
-      }
-      
-      const user_result = await luarmor.get_user_by_discord(options.user_id)
-      if (user_result.success && user_result.data?.user_key) {
-        reset_result = await luarmor.reset_hwid_by_key(user_result.data.user_key)
-      }
-    }
+    // - PARALLEL OPTIMIZATION: Start both requests simultaneously - \\
+    const reset_promise = luarmor.reset_hwid_by_discord(options.user_id)
+    const user_promise = luarmor.get_user_by_discord(options.user_id)
+    
+    // - Wait for reset first (fastest path) - \\
+    let reset_result = await reset_promise
 
     if (reset_result.success) {
       track_and_check_hwid_reset(options.client, options.user_id)
       return { success: true, message: "HWID reset successfully" }
+    }
+
+    // - FALLBACK: Use user_key if discord_id failed - \\
+    if (!is_rate_limited(reset_result.error)) {
+      const user_result = await user_promise
+      if (user_result.success && user_result.data?.user_key) {
+        reset_result = await luarmor.reset_hwid_by_key(user_result.data.user_key)
+        
+        if (reset_result.success) {
+          track_and_check_hwid_reset(options.client, options.user_id)
+          return { success: true, message: "HWID reset successfully" }
+        }
+      }
     }
 
     if (is_rate_limited(reset_result.error)) {

@@ -19,6 +19,7 @@ const __pending_requests: Map<string, Promise<any>>   = new Map()
 // - PERFORMANCE OPTIMIZATION - \\
 const __default_timeout                               = 5000
 const __fast_timeout                                  = 3000
+const __hwid_reset_timeout                            = 2000
 
 function get_api_key(): string {
   return env.required("LUARMOR_API_KEY")
@@ -311,52 +312,62 @@ export async function get_user_by_key(user_key: string): Promise<luarmor_respons
 }
 
 export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor_response<null>> {
-  try {
-    const url      = `${__base_url}/projects/${get_project_id()}/users/resethwid`
-    const response = await http.request<any>(url, {
-      method  : "POST",
-      body    : { discord_id },
-      headers : get_headers(),
-      timeout : __fast_timeout,
-    })
+  const cache_key = `reset_hwid:${discord_id}`
+  
+  return deduplicate_request(cache_key, async () => {
+    try {
+      const response = await http.request<any>(`${__base_url}/projects/${get_project_id()}/users/resethwid`, {
+        method  : "POST",
+        body    : { discord_id },
+        headers : get_headers(),
+      })
 
-    const rate_limit_error = check_rate_limit(response.data)
-    if (rate_limit_error) return { success: false, error: rate_limit_error }
+      const data = response.data
+      
+      // - FAST PATH: Early return on success - \\
+      if (data.success === true || data.message?.toLowerCase().includes("success")) {
+        __user_cache.delete(discord_id)
+        __user_cache_timestamp.delete(discord_id)
+        return { success: true, message: "HWID reset successfully" }
+      }
 
-    if (response.data.success === true || response.data.message?.toLowerCase().includes("success")) {
-      // - INVALIDATE CACHE ON HWID RESET - \\
-      __user_cache.delete(discord_id)
-      __user_cache_timestamp.delete(discord_id)
-      return { success: true, message: "HWID reset successfully" }
+      // - Rate limit check only on failure - \\
+      const rate_limit_error = check_rate_limit(data)
+      if (rate_limit_error) return { success: false, error: rate_limit_error }
+
+      return { success: false, error: data.message || "Failed to reset HWID" }
+    } catch (error: any) {
+      return { success: false, error: error?.message || "Failed to connect to server." }
     }
-
-    return { success: false, error: response.data.message || "Failed to reset HWID" }
-  } catch (error) {
-    return { success: false, error: "Failed to connect to server." }
-  }
+  })
 }
 
 export async function reset_hwid_by_key(user_key: string): Promise<luarmor_response<null>> {
-  try {
-    const url      = `${__base_url}/projects/${get_project_id()}/users/resethwid`
-    const response = await http.request<any>(url, {
-      method  : "POST",
-      body    : { user_key },
-      headers : get_headers(),
-      timeout : __fast_timeout,
-    })
+  const cache_key = `reset_hwid_key:${user_key}`
+  
+  return deduplicate_request(cache_key, async () => {
+    try {
+      const response = await http.request<any>(`${__base_url}/projects/${get_project_id()}/users/resethwid`, {
+        method  : "POST",
+        body    : { user_key },
+        headers : get_headers(),
+      })
 
-    const rate_limit_error = check_rate_limit(response.data)
-    if (rate_limit_error) return { success: false, error: rate_limit_error }
+      const data = response.data
+      
+      // - FAST PATH: Early return on success - \\
+      if (data.success === true || data.message?.toLowerCase().includes("success")) {
+        return { success: true, message: "HWID reset successfully" }
+      }
 
-    if (response.data.success === true || response.data.message?.toLowerCase().includes("success")) {
-      return { success: true, message: "HWID reset successfully" }
+      const rate_limit_error = check_rate_limit(data)
+      if (rate_limit_error) return { success: false, error: rate_limit_error }
+
+      return { success: false, error: data.message || "Failed to reset HWID" }
+    } catch (error: any) {
+      return { success: false, error: error?.message || "Failed to connect to server." }
     }
-
-    return { success: false, error: response.data.message || "Failed to reset HWID" }
-  } catch (error) {
-    return { success: false, error: "Failed to connect to server." }
-  }
+  })
 }
 
 export async function link_discord(user_key: string, discord_id: string): Promise<luarmor_response<null>> {
@@ -609,6 +620,27 @@ export async function get_users_batch(discord_ids: string[], project_id?: string
     if (response.success && response.data) {
       results.set(discord_id, response.data)
     }
+  })
+  
+  await Promise.all(promises)
+  return results
+}
+
+/**
+ * - BATCH RESET HWID FOR MULTIPLE USERS - \\
+ * @param discord_ids Array of Discord IDs to reset
+ * @returns Map of discord_id -> success status
+ */
+export async function reset_hwid_batch(discord_ids: string[]): Promise<Map<string, { success: boolean, error?: string }>> {
+  const results = new Map<string, { success: boolean, error?: string }>()
+  
+  // - PARALLEL HWID RESETS - \\
+  const promises = discord_ids.map(async (discord_id) => {
+    const response = await reset_hwid_by_discord(discord_id)
+    results.set(discord_id, { 
+      success: response.success, 
+      error: response.error 
+    })
   })
   
   await Promise.all(promises)
