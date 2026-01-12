@@ -223,9 +223,17 @@ async function start_scheduler(client: any): Promise<void> {
           const result = await update_project_settings(PROJECT_ID, schedule.enabled)
 
           if (result.success) {
+            const scheduled_time_unix = typeof schedule.scheduled_time === 'number'
+              ? schedule.scheduled_time
+              : Math.floor(new Date(schedule.scheduled_time).getTime() / 1000)
+
             await db.update_one(
               COLLECTION,
-              { scheduled_time: schedule.scheduled_time, created_by: schedule.created_by },
+              { 
+                scheduled_time : scheduled_time_unix,
+                created_by     : schedule.created_by,
+                executed       : false,
+              },
               { executed: true }
             )
 
