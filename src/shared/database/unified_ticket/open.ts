@@ -446,5 +446,4 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
 
   // - NO AWAIT FOR FASTER RESPONSE - \\
   api.edit_deferred_reply(interaction, reply_message)
-  }
 }
