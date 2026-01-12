@@ -142,6 +142,11 @@ function update_presence(): void {
 }
 
 client.once("ready", async () => {
+  if (login_timeout) {
+    clearTimeout(login_timeout)
+    login_timeout = null
+  }
+  
   console.log(`[ - BOT - ] Logged in as ${client.user?.tag}`)
   console.log(`[ - BOT - ] Guilds: ${client.guilds.cache.size}`)
   console.log(`[ - BOT - ] Users: ${client.users.cache.size}`)
@@ -317,15 +322,14 @@ if (!client_id) {
 
 start_webhook_server(client)
 
-const login_timeout = setTimeout(() => {
-  console.error("[Login] Timeout")
+let login_timeout: NodeJS.Timeout | null = setTimeout(() => {
+  console.error("[Login] Timeout - failed to receive ready event within 60 seconds")
   process.exit(1)
-}, 30000)
+}, 60000)
 
 client.login(discord_token)
-  .then(() => clearTimeout(login_timeout))
   .catch((error) => {
-    clearTimeout(login_timeout)
+    if (login_timeout) clearTimeout(login_timeout)
     console.error("[Login] Failed:", error.message)
     process.exit(1)
   })
