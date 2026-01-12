@@ -86,6 +86,16 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
   const avatar_url = interaction.user.displayAvatarURL({ size: 128 })
   const token = api.get_token()
 
+  // - PARSE APPLICATION DATA FOR CONTENT CREATOR - \\
+  let application_data: any = undefined
+  if (ticket_type === "content_creator" && description) {
+    try {
+      application_data = JSON.parse(description)
+    } catch {
+      application_data = undefined
+    }
+  }
+
   const ticket_data: TicketData = {
     thread_id: thread.id,
     ticket_type: ticket_type,
@@ -95,6 +105,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
     staff: [],
     issue_type: issue_type,
     description: description,
+    application_data: application_data,
   }
 
   set_ticket(thread.id, ticket_data)
@@ -106,18 +117,146 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
     ``,
   ]
 
-  if (issue_type) {
-    welcome_content.push(`- **Issue Type:** ${issue_type}`)
-  }
-  if (description) {
-    welcome_content.push(`- **Description:** ${description}`)
-    welcome_content.push(``)
-  }
+  if (ticket_type === "content_creator" && description) {
+    try {
+      const app_data = ticket_data.application_data || JSON.parse(description)
+      
+      const cc_welcome_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text(`## <:checkmark:1417196825110253780> - Media Creator Ticket\n- Dibuka oleh: <@${user_id}>\nTerima kasih telah mendaftar sebagai Media Creator.\nMohon tunggu, staff kami akan meninjau aplikasi Anda dalam waktu dekat.\n\n`),
+            ],
+          }),
+          component.container({
+            components: [
+              component.text(`## <:rbx:1447976733050667061> - Application Details:\n\n1. Link channel:\n> ${app_data.channel_links}\n\n2. Platform yang digunakan:\n> ${app_data.platform}\n\n3. Jenis konten yang dibuat:\n> ${app_data.content_type}\n\n4. Frekuensi upload / live per minggu:\n> ${app_data.upload_frequency}\n\n5. Alasan ingin bergabung sebagai Media Creator:\n> ${app_data.reason}`),
+              component.divider(2),
+              component.section({
+                content: "Sudah selesai? Silakan tutup ticket ini.",
+                accessory: component.danger_button("Close", `${config.prefix}_close`),
+              }),
+            ],
+          }),
+        ],
+      })
+      
+      await api.send_components_v2(thread.id, token, cc_welcome_message)
+      
+      const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
+      if (log_channel) {
+        const log_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.section({
+                  content: [
+                    `## Join Ticket`,
+                    `A ${config.name} Ticket is Opened!`,
+                    ``,
+                    `- **Ticket ID:** ${format.code(ticket_id)}`,
+                    `- **Type:** ${config.name}`,
+                    `- **Opened by:** <@${user_id}>`,
+                    `- **Claimed by:** Not claimed`,
+                  ],
+                  thumbnail: avatar_url,
+                }),
+                component.divider(),
+                component.text([
+                  `**Application Details:**`,
+                  `- **Channel:** ${app_data.channel_links}`,
+                  `- **Platform:** ${app_data.platform}`,
+                  `- **Content Type:** ${app_data.content_type}`,
+                  `- **Frequency:** ${app_data.upload_frequency}`,
+                ]),
+                component.divider(),
+                component.action_row(
+                  component.success_button("Join Ticket", `${config.prefix}_join_${thread.id}`)
+                ),
+              ],
+            }),
+          ],
+        })
 
-  if (config.show_payment_message) {
-    welcome_content.push(`Please tell us which script you want to purchase and your preferred payment method.`)
-  } else {
-    welcome_content.push(`Our staff will assist you shortly.`)
+        await api.send_components_v2(log_channel.id, token, log_message).then((log_data: any) => {
+          if (log_data.id) {
+            const data = get_ticket(thread.id)
+            if (data) {
+              data.log_message_id = log_data.id
+              set_ticket(thread.id, data)
+            }
+          }
+        }).catch(() => {})
+      }
+
+      interaction.user.createDM()
+        .then(dm_channel => {
+          const dm_message = component.build_message({
+            components: [
+              component.container({
+                components: [
+                  component.text([
+                    `## <:ticket:1411878131366891580> ${config.name} Ticket Opened`,
+                    ``,
+                    `Your ${config.name.toLowerCase()} ticket has been created!`,
+                    ``,
+                    `- **Ticket ID:** ${format.code(ticket_id)}`,
+                    `- **Opened:** ${time.full_date_time(timestamp)}`,
+                    ``,
+                    `Please check the ticket thread to continue.`,
+                  ]),
+                  component.action_row(
+                    component.link_button("View Ticket", format.channel_url(interaction.guildId!, thread.id))
+                  ),
+                ],
+              }),
+            ],
+          })
+          return api.send_components_v2(dm_channel.id, token, dm_message)
+        })
+        .catch(() => {})
+
+      save_ticket(thread.id)
+
+      const reply_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text([
+                `## ${config.name} Ticket Created`,
+                `Your ${config.name.toLowerCase()} ticket has been created.`,
+              ]),
+              component.action_row(
+                component.link_button("Jump to Ticket", format.channel_url(interaction.guildId!, thread.id))
+              ),
+            ],
+          }),
+        ],
+      })
+
+      api.edit_deferred_reply(interaction, reply_message)
+      return
+    } catch {
+      welcome_content.push(`- **Description:** ${description}`)
+      welcome_content.push(``)
+      welcome_content.push(`Our staff will assist you shortly.`)
+    }
+  }
+  
+  if (ticket_type !== "content_creator") {
+    if (issue_type) {
+      welcome_content.push(`- **Issue Type:** ${issue_type}`)
+    }
+    if (description) {
+      welcome_content.push(`- **Description:** ${description}`)
+      welcome_content.push(``)
+    }
+
+    if (config.show_payment_message) {
+      welcome_content.push(`Please tell us which script you want to purchase and your preferred payment method.`)
+    } else {
+      welcome_content.push(`Our staff will assist you shortly.`)
+    }
   }
 
   const welcome_message = component.build_message({
@@ -307,4 +446,5 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
 
   // - NO AWAIT FOR FASTER RESPONSE - \\
   api.edit_deferred_reply(interaction, reply_message)
+  }
 }

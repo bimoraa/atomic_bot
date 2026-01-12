@@ -43,6 +43,56 @@ export async function handle_ticket_button(interaction: ButtonInteraction): Prom
         await interaction.showModal(helper_modal)
         return true
       }
+
+      if (type_key === "content_creator") {
+        const creator_modal = modal.create_modal(
+          `${prefix}_application_modal`,
+          "Content Creator Application",
+          modal.create_text_input({
+            custom_id:   "channel_links",
+            label:       "Channel Links",
+            style:       "short",
+            placeholder: "YouTube/TikTok channel URLs",
+            required:    true,
+            max_length:  200,
+          }),
+          modal.create_text_input({
+            custom_id:   "platform",
+            label:       "Primary Platform",
+            style:       "short",
+            placeholder: "YouTube, TikTok, or Both",
+            required:    true,
+            max_length:  50,
+          }),
+          modal.create_text_input({
+            custom_id:   "content_type",
+            label:       "Content Type",
+            style:       "short",
+            placeholder: "What type of content do you create?",
+            required:    true,
+            max_length:  100,
+          }),
+          modal.create_text_input({
+            custom_id:   "upload_frequency",
+            label:       "Upload Frequency",
+            style:       "short",
+            placeholder: "How often do you upload? (e.g., 3x per week)",
+            required:    true,
+            max_length:  100,
+          }),
+          modal.create_text_input({
+            custom_id:   "reason",
+            label:       "Why do you want to join?",
+            style:       "paragraph",
+            placeholder: "Tell us why you want to be an ATMC Content Creator",
+            required:    true,
+            max_length:  500,
+          })
+        )
+        await interaction.showModal(creator_modal)
+        return true
+      }
+
       await interaction.deferReply({ flags: 64 })
       await open_ticket({ interaction, ticket_type: type_key })
       return true
@@ -132,6 +182,31 @@ export async function handle_ticket_modal(interaction: ModalSubmitInteraction): 
         interaction: interaction as any,
         ticket_type: type_key,
         description: issue_description,
+      })
+      return true
+    }
+
+    if (custom_id === `${prefix}_application_modal`) {
+      const channel_links     = interaction.fields.getTextInputValue("channel_links")
+      const platform          = interaction.fields.getTextInputValue("platform")
+      const content_type      = interaction.fields.getTextInputValue("content_type")
+      const upload_frequency  = interaction.fields.getTextInputValue("upload_frequency")
+      const reason            = interaction.fields.getTextInputValue("reason")
+
+      const application_data = {
+        channel_links,
+        platform,
+        content_type,
+        upload_frequency,
+        reason,
+      }
+
+      await interaction.deferReply({ ephemeral: true })
+      await open_ticket({
+        interaction:   interaction as any,
+        ticket_type:   type_key,
+        issue_type:    "Content Creator Application",
+        description:   JSON.stringify(application_data),
       })
       return true
     }

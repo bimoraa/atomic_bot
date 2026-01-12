@@ -40,6 +40,13 @@ export interface TicketData {
   log_message_id?: string
   issue_type?: string
   description?: string
+  application_data?: {
+    channel_links?: string
+    platform?: string
+    content_type?: string
+    upload_frequency?: string
+    reason?: string
+  }
 }
 
 const unified_cfg = load_config<UnifiedTicketConfig>("unified_ticket")
