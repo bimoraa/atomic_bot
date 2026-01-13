@@ -23,24 +23,22 @@ export async function handle_work_stats_week_select(interaction: StringSelectMen
     return
   }
 
-  const report = await get_work_report(staff_id)
-  const logs   = await get_work_logs(staff_id, week_number, year)
+  let report = await get_work_report(staff_id)
+  const logs = await get_work_logs(staff_id, week_number, year)
 
+  // - AUTO-CREATE REPORT IF NOT EXISTS - \\
   if (!report) {
-    const error_message = component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.text(`No work data found for <@${staff_id}>`),
-          ],
-        }),
-      ],
-    })
-
-    await interaction.editReply({
-      ...error_message,
-    })
-    return
+    report = {
+      staff_id,
+      staff_name:           staff.username,
+      total_work:           0,
+      total_work_this_week: 0,
+      total_salary:         0,
+      salary_this_week:     0,
+      week_number,
+      year,
+      last_work:            0,
+    }
   }
 
   const ticket_logs      = logs.filter(l => l.type === "ticket")

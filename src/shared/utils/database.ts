@@ -46,7 +46,14 @@ export async function connect(): Promise<Pool | null> {
 }
 
 export function is_connected(): boolean {
-  return connected
+  if (!pool || !connected) return false
+  
+  // - QUICK POOL CHECK - \\
+  try {
+    return pool.totalCount >= 0
+  } catch {
+    return false
+  }
 }
 
 export async function disconnect(): Promise<void> {

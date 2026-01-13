@@ -179,7 +179,10 @@ export async function update_work_report(
 }
 
 export async function get_work_report(staff_id: string): Promise<WorkReport | null> {
-  if (!db.is_connected()) return null
+  if (!db.is_connected()) {
+    console.warn("[ - WORK TRACKER - ] Database not connected, cannot get work report")
+    return null
+  }
   return await db.find_one<WorkReport>(WORK_REPORTS_COLLECTION, { staff_id })
 }
 
@@ -188,7 +191,10 @@ export async function get_work_logs(
   week_number: number,
   year:        number
 ): Promise<WorkLog[]> {
-  if (!db.is_connected()) return []
+  if (!db.is_connected()) {
+    console.warn("[ - WORK TRACKER - ] Database not connected, cannot get work logs")
+    return []
+  }
   return await db.find_many<WorkLog>(WORK_LOGS_COLLECTION, { staff_id, week_number, year })
 }
 
