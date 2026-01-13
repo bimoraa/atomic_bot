@@ -7,7 +7,8 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "tsc && cp -r src/shared/config dist/shared/ && cp -r guide dist/",
+    "build": "tsc --incremental && cp -r src/shared/config dist/shared/ && cp -r guide dist/",
+    "build:fast": "tsc --incremental --skipLibCheck && cp -r src/shared/config dist/shared/ && cp -r guide dist/",
     "start": "node dist/index.js",
     "dev": "NODE_ENV=development nodemon --exec ts-node src/index.ts --ext ts",
     "heroku-postbuild": "npm run build"
