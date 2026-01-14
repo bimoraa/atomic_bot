@@ -420,14 +420,21 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
     if (!is_rate_limited(reset_result.error)) {
       const user_result = await user_promise
       if (user_result.success && user_result.data?.user_key) {
-        console.log(`[ - RESET HWID - ] Retrying with user_key for ${options.user_id}`)
-        reset_result = await luarmor.reset_hwid_by_key(user_result.data.user_key)
-        
-        if (reset_result.success) {
-          console.log(`[ - RESET HWID - ] Success for user ${options.user_id} (user_key method)`)
-          track_and_check_hwid_reset(options.client, options.user_id)
-          return { success: true, message: "HWID reset successfully" }
+        const user_key = user_result.data.user_key.trim()
+        if (user_key && user_key.length > 0) {
+          console.log(`[ - RESET HWID - ] Retrying with user_key for ${options.user_id}`)
+          reset_result = await luarmor.reset_hwid_by_key(user_key)
+          
+          if (reset_result.success) {
+            console.log(`[ - RESET HWID - ] Success for user ${options.user_id} (user_key method)`)
+            track_and_check_hwid_reset(options.client, options.user_id)
+            return { success: true, message: "HWID reset successfully" }
+          }
+        } else {
+          console.error(`[ - RESET HWID - ] Empty user_key for ${options.user_id}`)
         }
+      } else {
+        console.error(`[ - RESET HWID - ] User not found or no user_key for ${options.user_id}`)
       }
     }
 

@@ -74,7 +74,13 @@ function validate_discord_id(discord_id: string): boolean {
  */
 function validate_user_key(user_key: string): boolean {
   if (!user_key || typeof user_key !== "string") return false
-  return user_key.length > 0 && user_key.length < 256
+  const trimmed = user_key.trim()
+  if (trimmed.length === 0) return false
+  if (trimmed.length > 255) return false
+  // - CHECK FOR COMMON INVALID VALUES - \\
+  const invalid_values = ["null", "undefined", "none", ""]
+  if (invalid_values.includes(trimmed.toLowerCase())) return false
+  return true
 }
 
 /**
@@ -752,6 +758,7 @@ export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor
  */
 export async function reset_hwid_by_key(user_key: string): Promise<luarmor_response<null>> {
   if (!validate_user_key(user_key)) {
+    __log.warn("Invalid user_key provided to reset_hwid_by_key:", { user_key })
     return { success: false, error: "Invalid user key format" }
   }
   
@@ -762,7 +769,7 @@ export async function reset_hwid_by_key(user_key: string): Promise<luarmor_respo
     
     const result = await make_request<any>(url, {
       method : "POST",
-      body   : { user_key },
+      body   : { user_key: user_key.trim() },
       timeout: __fast_timeout,
     })
     
