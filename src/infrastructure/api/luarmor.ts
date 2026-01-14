@@ -1,4 +1,5 @@
 import { logger, env } from "../../shared/utils"
+import * as luarmor_db_cache from "./luarmor_db_cache"
 
 const __base_url = "https://api.luarmor.net/v3"
 const __log      = logger.create_logger("luarmor")
@@ -599,13 +600,25 @@ export async function get_user_by_discord(
   
   return deduplicate_request(cache_key, async () => {
     const now         = Date.now()
+    
+    // - CHECK DATABASE CACHE FIRST - \\
+    if (!project_id) {
+      const db_cached = await luarmor_db_cache.get_cached_user_from_db(discord_id)
+      if (db_cached) {
+        __log.debug("DB cache hit:", discord_id)
+        __user_cache.set(discord_id, db_cached)
+        __user_cache_timestamp.set(discord_id, now)
+        return { success: true, data: db_cached }
+      }
+    }
+    
+    // - CHECK MEMORY CACHE - \\
     const cached_user = __user_cache.get(discord_id)
     const cached_time = __user_cache_timestamp.get(discord_id) || 0
     const cache_age   = now - cached_time
     
-    // - RETURN FRESH CACHE - \\
     if (cached_user && cache_age < __user_cache_duration && !project_id) {
-      __log.debug("Cache hit (fresh):", discord_id)
+      __log.debug("Memory cache hit:", discord_id)
       return { success: true, data: cached_user }
     }
     
@@ -661,6 +674,12 @@ export async function get_user_by_discord(
     if (user_data) {
       __user_cache.set(discord_id, user_data)
       __user_cache_timestamp.set(discord_id, now)
+      
+      // - SAVE TO DATABASE CACHE - \\
+      if (!project_id) {
+        await luarmor_db_cache.save_user_to_db_cache(discord_id, user_data)
+      }
+      
       return { success: true, data: user_data }
     }
     
@@ -722,14 +741,24 @@ export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor
       return { success: false, error: "Please wait before resetting HWID again" }
     }
     
-    // - FETCH USER TO GET USER_KEY - \\
-    const user_result = await get_user_by_discord(discord_id)
+    // - TRY DATABASE CACHE FIRST - \\
+    let user_key: string | null = null
+    const db_cached = await luarmor_db_cache.get_cached_user_from_db(discord_id)
     
-    if (!user_result.success || !user_result.data?.user_key) {
-      return { success: false, error: user_result.error || "User not found" }
+    if (db_cached?.user_key) {
+      user_key = db_cached.user_key
+      __log.debug("Using user_key from DB cache for reset:", discord_id)
+    } else {
+      // - FETCH USER FROM API IF NOT IN CACHE - \\
+      const user_result = await get_user_by_discord(discord_id)
+      
+      if (!user_result.success || !user_result.data?.user_key) {
+        return { success: false, error: user_result.error || "User not found" }
+      }
+      
+      user_key = user_result.data.user_key
+      __log.debug("Fetched user_key from API for reset:", discord_id)
     }
-    
-    const user_key = user_result.data.user_key
     
     // - RESET HWID USING USER_KEY - \\
     const url = `${__base_url}/projects/${get_project_id()}/users/resethwid`
@@ -754,6 +783,10 @@ export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor
     if (data?.success === true || data?.message?.toLowerCase().includes("success")) {
       __user_cache.delete(discord_id)
       __user_cache_timestamp.delete(discord_id)
+      
+      // - CLEAR DATABASE CACHE - \\
+      await luarmor_db_cache.delete_user_from_db_cache(discord_id)
+      
       return { success: true, message: "HWID reset successfully" }
     }
     
