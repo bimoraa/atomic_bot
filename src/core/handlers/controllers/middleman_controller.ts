@@ -11,6 +11,7 @@ import {
   remove_user_open_ticket,
   generate_ticket_id,
   set_ticket,
+  save_ticket_immediate,
   TicketData,
 } from "../../../shared/database/unified_ticket"
 import { component, time, api, format } from "../../../shared/utils"
@@ -188,6 +189,9 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
 
       await api.send_components_v2(log_channel.id, token, log_message)
     }
+
+    // - SAVE TICKET IMMEDIATELY TO PREVENT RACE CONDITION - \\
+    await save_ticket_immediate(thread.id)
 
     return {
       success: true,

@@ -14,6 +14,7 @@ import {
   remove_user_open_ticket,
   generate_ticket_id,
   save_ticket,
+  save_ticket_immediate,
   TicketData,
 } from "./state"
 import { component, time, api, format } from "../../utils"
@@ -216,7 +217,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
         })
         .catch(() => {})
 
-      save_ticket(thread.id)
+      await save_ticket_immediate(thread.id)
 
       const reply_message = component.build_message({
         components: [
@@ -426,7 +427,8 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
   // - WAIT FOR ALL PARALLEL TASKS - \\
   await Promise.allSettled(parallel_tasks)
 
-  save_ticket(thread.id)
+  // - SAVE IMMEDIATELY TO PREVENT RACE CONDITION - \\
+  await save_ticket_immediate(thread.id)
 
   const reply_message = component.build_message({
     components: [

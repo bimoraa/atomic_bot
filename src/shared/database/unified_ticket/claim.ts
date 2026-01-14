@@ -10,6 +10,7 @@ import {
   get_ticket,
   set_ticket,
   save_ticket,
+  load_ticket,
 } from "./state"
 import { component, api, format } from "../../utils"
 
@@ -46,10 +47,20 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
     return
   }
 
-  const data = get_ticket(thread.id)
+  let data = get_ticket(thread.id)
+  
+  // - FALLBACK: LOAD FROM DATABASE - \\
   if (!data) {
-    await interaction.editReply({ content: "Ticket data not found." })
-    return
+    const loaded = await load_ticket(thread.id)
+    if (!loaded) {
+      await interaction.editReply({ content: "Ticket data not found." })
+      return
+    }
+    data = get_ticket(thread.id)
+    if (!data) {
+      await interaction.editReply({ content: "Ticket data not found." })
+      return
+    }
   }
 
   if (data.claimed_by) {
