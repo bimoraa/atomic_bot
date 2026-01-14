@@ -364,12 +364,18 @@ export async function get_user_script(options: { client: Client; user_id: string
     const user_result = await get_user_with_cache(options.user_id, options.client)
 
     if (!user_result.success || !user_result.data) {
+      // - HANDLE RATE LIMIT - \\
       if (is_rate_limited(user_result.error)) {
+        console.warn(`[ - GET SCRIPT - ] Rate limited for user ${options.user_id}`)
         return {
           success : false,
           message : create_rate_limit_message("Get Script"),
         }
       }
+      
+      // - LOG ERROR WITH DETAILS - \\
+      console.error(`[ - GET SCRIPT - ] Failed for user ${options.user_id}:`, user_result.error)
+      
       return {
         success : false,
         error   : user_result.error || "User not found",
@@ -377,6 +383,8 @@ export async function get_user_script(options: { client: Client; user_id: string
     }
 
     const loader_script = luarmor.get_full_loader_script(user_result.data.user_key)
+    
+    console.log(`[ - GET SCRIPT - ] Success for user ${options.user_id}`)
 
     return {
       success : true,
@@ -397,12 +405,13 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
   try {
     // - PARALLEL OPTIMIZATION: Start both requests simultaneously - \\
     const reset_promise = luarmor.reset_hwid_by_discord(options.user_id)
-    const user_promise = luarmor.get_user_by_discord(options.user_id)
+    const user_promise  = luarmor.get_user_by_discord(options.user_id)
     
     // - Wait for reset first (fastest path) - \\
     let reset_result = await reset_promise
 
     if (reset_result.success) {
+      console.log(`[ - RESET HWID - ] Success for user ${options.user_id} (discord_id method)`)
       track_and_check_hwid_reset(options.client, options.user_id)
       return { success: true, message: "HWID reset successfully" }
     }
@@ -411,21 +420,29 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
     if (!is_rate_limited(reset_result.error)) {
       const user_result = await user_promise
       if (user_result.success && user_result.data?.user_key) {
+        console.log(`[ - RESET HWID - ] Retrying with user_key for ${options.user_id}`)
         reset_result = await luarmor.reset_hwid_by_key(user_result.data.user_key)
         
         if (reset_result.success) {
+          console.log(`[ - RESET HWID - ] Success for user ${options.user_id} (user_key method)`)
           track_and_check_hwid_reset(options.client, options.user_id)
           return { success: true, message: "HWID reset successfully" }
         }
       }
     }
 
+    // - HANDLE RATE LIMIT - \\
     if (is_rate_limited(reset_result.error)) {
+      console.warn(`[ - RESET HWID - ] Rate limited for user ${options.user_id}`)
       return { success: false, message: create_rate_limit_message("HWID Reset") }
     }
 
+    // - LOG FINAL ERROR - \\
+    console.error(`[ - RESET HWID - ] Failed for user ${options.user_id}:`, reset_result.error)
+    
     return { success: false, error: reset_result.error || "Failed to reset HWID" }
   } catch (error) {
+    console.error(`[ - RESET HWID - ] Exception for user ${options.user_id}:`, error)
     return { success: false, error: "Failed to reset HWID" }
   }
 }
@@ -435,6 +452,7 @@ export async function get_user_stats(options: { client: Client; user_id: string 
     const user_result = await get_user_with_cache(options.user_id, options.client)
 
     if (!user_result.success || !user_result.data) {
+      console.error(`[ - GET STATS - ] Failed for user ${options.user_id}:`, user_result.error)
       return {
         success : false,
         error   : user_result.error || "User not found",
@@ -451,7 +469,11 @@ export async function get_user_stats(options: { client: Client; user_id: string 
       } else {
         leaderboard_text = `Not ranked yet (${all_users_result.data.length} total users)`
       }
+    } else {
+      console.warn(`[ - GET STATS - ] Failed to fetch leaderboard for ${options.user_id}:`, all_users_result.error)
     }
+
+    console.log(`[ - GET STATS - ] Success for user ${options.user_id}`)
 
     return {
       success : true,
@@ -473,34 +495,43 @@ export async function get_user_stats(options: { client: Client; user_id: string 
 
 export async function redeem_user_key(options: { client: Client; user_id: string; user_key: string }): Promise<{ success: boolean; message?: string; error?: string; script?: string }> {
   try {
+    // - CHECK IF USER ALREADY HAS A KEY - \\
     const existing_user = await luarmor.get_user_by_discord(options.user_id)
 
     if (existing_user.success && existing_user.data) {
+      console.warn(`[ - REDEEM KEY - ] User ${options.user_id} already has a key`)
       return {
         success : false,
         error   : "You already have a key linked to your Discord account",
       }
     }
 
+    // - VERIFY KEY EXISTS - \\
     const verify_result = await luarmor.get_user_by_key(options.user_key)
 
     if (!verify_result.success || !verify_result.data) {
+      console.error(`[ - REDEEM KEY - ] Invalid key for user ${options.user_id}`)
       return {
         success : false,
         error   : "Invalid key or key does not exist",
       }
     }
 
+    // - CHECK IF KEY IS ALREADY LINKED - \\
     if (verify_result.data.discord_id && verify_result.data.discord_id !== options.user_id) {
+      console.warn(`[ - REDEEM KEY - ] Key ${options.user_key} already linked to another user`)
       return {
         success : false,
         error   : "This key is already linked to another Discord account",
       }
     }
 
+    // - LINK DISCORD TO KEY - \\
     const link_result = await luarmor.link_discord(options.user_key, options.user_id)
 
     if (link_result.success) {
+      console.log(`[ - REDEEM KEY - ] Successfully linked key for user ${options.user_id}`)
+      
       if (verify_result.data) {
         await save_cached_user(options.user_id, verify_result.data)
       }
@@ -512,6 +543,7 @@ export async function redeem_user_key(options: { client: Client; user_id: string
         script  : loader_script,
       }
     } else {
+      console.error(`[ - REDEEM KEY - ] Failed to link key for user ${options.user_id}:`, link_result.error)
       return {
         success : false,
         error   : link_result.error || "Failed to link key",
