@@ -403,39 +403,12 @@ export async function get_user_script(options: { client: Client; user_id: string
 
 export async function reset_user_hwid(options: { client: Client; user_id: string }): Promise<{ success: boolean; message?: any; error?: string }> {
   try {
-    // - PARALLEL OPTIMIZATION: Start both requests simultaneously - \\
-    const reset_promise = luarmor.reset_hwid_by_discord(options.user_id)
-    const user_promise  = luarmor.get_user_by_discord(options.user_id)
-    
-    // - Wait for reset first (fastest path) - \\
-    let reset_result = await reset_promise
+    const reset_result = await luarmor.reset_hwid_by_discord(options.user_id)
 
     if (reset_result.success) {
-      console.log(`[ - RESET HWID - ] Success for user ${options.user_id} (discord_id method)`)
+      console.log(`[ - RESET HWID - ] Success for user ${options.user_id}`)
       track_and_check_hwid_reset(options.client, options.user_id)
       return { success: true, message: "HWID reset successfully" }
-    }
-
-    // - FALLBACK: Use user_key if discord_id failed - \\
-    if (!is_rate_limited(reset_result.error)) {
-      const user_result = await user_promise
-      if (user_result.success && user_result.data?.user_key) {
-        const user_key = user_result.data.user_key.trim()
-        if (user_key && user_key.length > 0) {
-          console.log(`[ - RESET HWID - ] Retrying with user_key for ${options.user_id}`)
-          reset_result = await luarmor.reset_hwid_by_key(user_key)
-          
-          if (reset_result.success) {
-            console.log(`[ - RESET HWID - ] Success for user ${options.user_id} (user_key method)`)
-            track_and_check_hwid_reset(options.client, options.user_id)
-            return { success: true, message: "HWID reset successfully" }
-          }
-        } else {
-          console.error(`[ - RESET HWID - ] Empty user_key for ${options.user_id}`)
-        }
-      } else {
-        console.error(`[ - RESET HWID - ] User not found or no user_key for ${options.user_id}`)
-      }
     }
 
     // - HANDLE RATE LIMIT - \\
@@ -444,7 +417,7 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
       return { success: false, message: create_rate_limit_message("HWID Reset") }
     }
 
-    // - LOG FINAL ERROR - \\
+    // - LOG ERROR - \\
     console.error(`[ - RESET HWID - ] Failed for user ${options.user_id}:`, reset_result.error)
     
     return { success: false, error: reset_result.error || "Failed to reset HWID" }

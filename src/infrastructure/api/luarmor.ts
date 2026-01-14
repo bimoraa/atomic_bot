@@ -722,11 +722,21 @@ export async function reset_hwid_by_discord(discord_id: string): Promise<luarmor
       return { success: false, error: "Please wait before resetting HWID again" }
     }
     
+    // - FETCH USER TO GET USER_KEY - \\
+    const user_result = await get_user_by_discord(discord_id)
+    
+    if (!user_result.success || !user_result.data?.user_key) {
+      return { success: false, error: user_result.error || "User not found" }
+    }
+    
+    const user_key = user_result.data.user_key
+    
+    // - RESET HWID USING USER_KEY - \\
     const url = `${__base_url}/projects/${get_project_id()}/users/resethwid`
     
     const result = await make_request<any>(url, {
       method  : "POST",
-      body    : { discord_id },
+      body    : { user_key },
       timeout : __fast_timeout,
     })
     
