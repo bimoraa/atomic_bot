@@ -210,17 +210,21 @@ async function init_tables(): Promise<void> {
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS loa_requests (
-        id          SERIAL PRIMARY KEY,
-        message_id  VARCHAR(255),
-        user_id     VARCHAR(255) NOT NULL,
-        user_tag    VARCHAR(255),
-        guild_id    VARCHAR(255) NOT NULL,
-        channel_id  VARCHAR(255),
-        reason      TEXT,
-        start_date  BIGINT,
-        end_date    BIGINT,
-        status      VARCHAR(50) DEFAULT 'pending',
-        created_at  BIGINT
+        id                SERIAL PRIMARY KEY,
+        message_id        VARCHAR(255),
+        user_id           VARCHAR(255) NOT NULL,
+        user_tag          VARCHAR(255),
+        guild_id          VARCHAR(255) NOT NULL,
+        channel_id        VARCHAR(255),
+        reason            TEXT,
+        type              VARCHAR(255),
+        start_date        BIGINT,
+        end_date          BIGINT,
+        status            VARCHAR(50) DEFAULT 'pending',
+        approved_by       VARCHAR(255),
+        rejected_by       VARCHAR(255),
+        original_nickname VARCHAR(255),
+        created_at        BIGINT
       )
     `)
 
