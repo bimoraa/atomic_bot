@@ -25,6 +25,7 @@ import { start_loa_checker }                                             from ".
 import { start_webhook_server }                                          from "./core/client/server"
 import { start_scheduler }                                               from "./modules/staff/staff/schedule_hwid_less"
 import { start_weekly_reset_scheduler }                                  from "./core/handlers/schedulers/weekly_work_reset"
+import { load_middleman_tickets_on_startup }                             from "./core/handlers/schedulers/load_middleman_tickets"
 
 config()
 
@@ -158,6 +159,7 @@ client.once("ready", async () => {
     if (mongo) {
       await load_close_requests()
       await load_all_tickets()
+      await load_middleman_tickets_on_startup(client)
       await load_reminders_from_db(client)
       await load_afk_from_db()
       start_loa_checker(client)

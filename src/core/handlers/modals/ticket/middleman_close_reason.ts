@@ -1,5 +1,6 @@
 import { ModalSubmitInteraction, ThreadChannel } from "discord.js"
 import { close_ticket } from "../../../../shared/database/unified_ticket"
+import { cancel_middleman_ticket } from "../../../../shared/database/managers/middleman_manager"
 
 /**
  * @description Handles close reason modal submission for middleman ticket
@@ -18,6 +19,9 @@ export async function handle_middleman_close_reason_modal(interaction: ModalSubm
     await interaction.editReply({ content: "This can only be used in a ticket thread." })
     return true
   }
+
+  // - MARK TICKET AS CANCELLED IN DATABASE - \\
+  await cancel_middleman_ticket(thread.id, close_reason)
 
   await close_ticket({
     thread,

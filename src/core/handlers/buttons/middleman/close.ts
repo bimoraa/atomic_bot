@@ -1,5 +1,6 @@
 import { ButtonInteraction, ThreadChannel } from "discord.js"
 import { close_ticket, get_ticket_config } from "../../../../shared/database/unified_ticket"
+import { cancel_middleman_ticket } from "../../../../shared/database/managers/middleman_manager"
 
 /**
  * @description Handles direct close for middleman ticket
@@ -31,6 +32,9 @@ export async function handle_middleman_close(interaction: ButtonInteraction): Pr
   }
 
   await interaction.deferReply({ ephemeral: true })
+
+  // - MARK TICKET AS CANCELLED IN DATABASE - \\
+  await cancel_middleman_ticket(thread.id, "Closed by staff")
 
   await close_ticket({
     thread,

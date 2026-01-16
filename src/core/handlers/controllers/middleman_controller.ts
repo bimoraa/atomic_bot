@@ -14,7 +14,12 @@ import {
   save_ticket_immediate,
   TicketData,
 } from "../../../shared/database/unified_ticket"
+import {
+  create_middleman_ticket,
+  get_user_active_ticket,
+} from "../../../shared/database/managers/middleman_manager"
 import { component, time, api, format } from "../../../shared/utils"
+import { log_error } from "../../../shared/utils/error_logger"
 
 interface TransactionRange {
   label : string
@@ -64,6 +69,22 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
 
   const user_id            = interaction.user.id
   const existing_thread_id = get_user_open_ticket(ticket_type, user_id)
+
+  // - CHECK DATABASE FOR ACTIVE TICKET - \\
+  const db_active_ticket = await get_user_active_ticket(user_id)
+  if (db_active_ticket) {
+    try {
+      const thread = await interaction.client.channels.fetch(db_active_ticket.thread_id)
+      if (thread && thread.isThread() && !thread.locked && !thread.archived) {
+        return {
+          success: false,
+          error  : `You already have an open ${config.name.toLowerCase()} ticket. Please close it first.`,
+        }
+      }
+    } catch {
+      // - THREAD NOT FOUND, CONTINUE - \\
+    }
+  }
 
   if (existing_thread_id) {
     try {
@@ -123,6 +144,22 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
 
     set_ticket(thread.id, ticket_data)
     set_user_open_ticket(ticket_type, user_id, thread.id)
+
+    // - SAVE TO DATABASE FOR PERSISTENCE - \\
+    await create_middleman_ticket({
+      thread_id        : thread.id,
+      ticket_id        : ticket_id,
+      requester_id     : user_id,
+      partner_id       : partner_id,
+      partner_tag      : partner.tag,
+      transaction_range: range_data.range,
+      fee              : range_data.fee,
+      range_id         : range_id,
+      guild_id         : interaction.guildId || "",
+      status           : "open",
+      created_at       : timestamp,
+      updated_at       : timestamp,
+    })
 
     const welcome_message = component.build_message({
       components: [
@@ -199,6 +236,11 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
     }
   } catch (error) {
     console.error("[ - MIDDLEMAN TICKET - ] Error creating ticket:", error)
+    await log_error(interaction.client, error as Error, "Middleman Controller - Create Ticket", {
+      user_id   : user_id,
+      partner_id: partner_id,
+      range_id  : range_id,
+    })
     return {
       success: false,
       error  : "Failed to create ticket. Please try again later.",

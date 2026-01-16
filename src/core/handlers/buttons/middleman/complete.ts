@@ -4,6 +4,10 @@ import {
   get_ticket,
   get_ticket_config,
 } from "../../../../shared/database/unified_ticket"
+import {
+  complete_middleman_ticket,
+  get_middleman_ticket,
+} from "../../../../shared/database/managers/middleman_manager"
 import { component, time, api, db } from "../../../../shared/utils"
 import { log_error } from "../../../../shared/utils/error_logger"
 
@@ -54,6 +58,7 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
 
   const ticket_data = get_ticket(thread.id)
   const config      = get_ticket_config("middleman")
+  const db_ticket   = await get_middleman_ticket(thread.id)
 
   if (ticket_data && config) {
     const range_data    = TRANSACTION_RANGES[ticket_data.issue_type || ""]
@@ -65,6 +70,7 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
 
     if (db.is_connected() && range_data) {
       try {
+        // - SAVE TRANSACTION TO DATABASE - \\
         await db.insert_one("middleman_transactions", {
           ticket_id        : ticket_data.ticket_id,
           requester_id     : ticket_data.owner_id,
@@ -78,6 +84,10 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
           thread_id        : thread.id,
           guild_id         : interaction.guildId || "",
         })
+        
+        // - MARK TICKET AS COMPLETED IN DATABASE - \\
+        await complete_middleman_ticket(thread.id, interaction.user.id)
+        
         console.log(`[ - MIDDLEMAN - ] Transaction saved to database: ${ticket_data.ticket_id}`)
       } catch (error) {
         console.error(`[ - MIDDLEMAN - ] Failed to save transaction:`, error)
