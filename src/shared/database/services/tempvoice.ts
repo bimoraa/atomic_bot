@@ -21,11 +21,12 @@ interface tempvoice_config {
 }
 
 interface saved_channel_settings {
-  name           : string
-  user_limit     : number
-  is_private     : boolean
-  trusted_users  : string[]
-  blocked_users  : string[]
+  name                    : string
+  user_limit              : number
+  is_private              : boolean
+  trusted_users           : string[]
+  blocked_users           : string[]
+  owner_permissions?      : string[]
 }
 
 const __log    = logger.create_logger("tempvoice")
@@ -1098,12 +1099,29 @@ async function save_channel_settings(channel: VoiceChannel, owner_id: string): P
   try {
     const is_private = channel.permissionOverwrites.cache.get(channel.guild.roles.everyone.id)?.deny.has(PermissionFlagsBits.Connect) || false
 
+    // - GET OWNER PERMISSIONS FROM CHANNEL OVERWRITES - \\
+    const owner_overwrite = channel.permissionOverwrites.cache.get(owner_id)
+    const owner_permissions: string[] = []
+    
+    if (owner_overwrite) {
+      const allow_perms = owner_overwrite.allow
+      if (allow_perms.has(PermissionFlagsBits.ViewChannel))     owner_permissions.push("ViewChannel")
+      if (allow_perms.has(PermissionFlagsBits.Connect))         owner_permissions.push("Connect")
+      if (allow_perms.has(PermissionFlagsBits.Speak))           owner_permissions.push("Speak")
+      if (allow_perms.has(PermissionFlagsBits.UseVAD))          owner_permissions.push("UseVAD")
+      if (allow_perms.has(PermissionFlagsBits.ManageChannels))  owner_permissions.push("ManageChannels")
+      if (allow_perms.has(PermissionFlagsBits.MoveMembers))     owner_permissions.push("MoveMembers")
+      if (allow_perms.has(PermissionFlagsBits.MuteMembers))     owner_permissions.push("MuteMembers")
+      if (allow_perms.has(PermissionFlagsBits.DeafenMembers))   owner_permissions.push("DeafenMembers")
+    }
+
     const settings: saved_channel_settings = {
-      name          : channel.name,
-      user_limit    : channel.userLimit,
-      is_private    : is_private,
-      trusted_users : Array.from(__trusted_users.get(channel.id) || []),
-      blocked_users : Array.from(__blocked_users.get(channel.id) || []),
+      name              : channel.name,
+      user_limit        : channel.userLimit,
+      is_private        : is_private,
+      trusted_users     : Array.from(__trusted_users.get(channel.id) || []),
+      blocked_users     : Array.from(__blocked_users.get(channel.id) || []),
+      owner_permissions : owner_permissions,
     }
 
     __saved_settings.set(owner_id, settings)
@@ -1113,20 +1131,21 @@ async function save_channel_settings(channel: VoiceChannel, owner_id: string): P
         "tempvoice_saved_settings",
         { user_id: owner_id },
         {
-          user_id       : owner_id,
-          guild_id      : channel.guild.id,
-          name          : settings.name,
-          user_limit    : settings.user_limit,
-          is_private    : settings.is_private,
-          trusted_users : settings.trusted_users,
-          blocked_users : settings.blocked_users,
-          updated_at    : new Date(),
+          user_id           : owner_id,
+          guild_id          : channel.guild.id,
+          name              : settings.name,
+          user_limit        : settings.user_limit,
+          is_private        : settings.is_private,
+          trusted_users     : settings.trusted_users,
+          blocked_users     : settings.blocked_users,
+          owner_permissions : settings.owner_permissions,
+          updated_at        : new Date(),
         },
         true
       )
     }
 
-    __log.info(`[ - SETTINGS SAVED - ] User ${owner_id}: ${channel.name}`)
+    __log.info(`[ - SETTINGS SAVED - ] User ${owner_id}: ${channel.name} (${owner_permissions.length} perms)`)
   } catch (error) {
     __log.error("Failed to save channel settings:", error)
   }
@@ -1147,6 +1166,25 @@ export async function restore_channel_settings(channel: VoiceChannel, owner: Gui
 
     await channel.setName(settings.name)
     await channel.setUserLimit(settings.user_limit)
+
+    // - RESTORE OWNER PERMISSIONS - \\
+    if (settings.owner_permissions && settings.owner_permissions.length > 0) {
+      const permissions_map: { [key: string]: any } = {}
+      
+      for (const perm of settings.owner_permissions) {
+        if (perm === "ViewChannel")    permissions_map.ViewChannel    = true
+        if (perm === "Connect")        permissions_map.Connect        = true
+        if (perm === "Speak")          permissions_map.Speak          = true
+        if (perm === "UseVAD")         permissions_map.UseVAD         = true
+        if (perm === "ManageChannels") permissions_map.ManageChannels = true
+        if (perm === "MoveMembers")    permissions_map.MoveMembers    = true
+        if (perm === "MuteMembers")    permissions_map.MuteMembers    = true
+        if (perm === "DeafenMembers")  permissions_map.DeafenMembers  = true
+      }
+      
+      await channel.permissionOverwrites.edit(owner.id, permissions_map)
+      __log.info(`[ - PERMISSIONS RESTORED - ] Owner ${owner.id} got ${settings.owner_permissions.length} permissions`)
+    }
 
     if (settings.is_private) {
       await channel.permissionOverwrites.edit(channel.guild.roles.everyone, {
@@ -1219,21 +1257,23 @@ export async function load_saved_settings_from_db(guild_id: string): Promise<voi
     }
 
     const records = await db.find_many<{
-      user_id       : string
-      name          : string
-      user_limit    : number
-      is_private    : boolean
-      trusted_users : string[]
-      blocked_users : string[]
+      user_id           : string
+      name              : string
+      user_limit        : number
+      is_private        : boolean
+      trusted_users     : string[]
+      blocked_users     : string[]
+      owner_permissions?: string[]
     }>("tempvoice_saved_settings", { guild_id })
 
     for (const record of records) {
       const settings: saved_channel_settings = {
-        name          : record.name,
-        user_limit    : record.user_limit,
-        is_private    : record.is_private,
-        trusted_users : record.trusted_users || [],
-        blocked_users : record.blocked_users || [],
+        name              : record.name,
+        user_limit        : record.user_limit,
+        is_private        : record.is_private,
+        trusted_users     : record.trusted_users || [],
+        blocked_users     : record.blocked_users || [],
+        owner_permissions : record.owner_permissions || [],
       }
       __saved_settings.set(record.user_id, settings)
     }
