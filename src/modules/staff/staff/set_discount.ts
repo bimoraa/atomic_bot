@@ -5,6 +5,7 @@ import {
 import { Command } from "../../../shared/types/command"
 import { join } from "path"
 import { file } from "../../../shared/utils"
+import { load_config as load_cfg } from "../../../shared/config/loader"
 import { update_price_panel } from "../../setup/script_price"
 
 interface PricingConfig {
@@ -18,10 +19,10 @@ interface PricingConfig {
   }
 }
 
-const CONFIG_PATH = join(__dirname, "../../../configuration/pricing.cfg")
+const CONFIG_PATH = join(__dirname, "../../../shared/config/pricing.cfg")
 
 function load_config(): PricingConfig {
-  return file.read_json<PricingConfig>(CONFIG_PATH)
+  return load_cfg<PricingConfig>("pricing")
 }
 
 function save_config(config: PricingConfig): void {

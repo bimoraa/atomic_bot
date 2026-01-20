@@ -5,6 +5,7 @@ import {
 } from "discord.js"
 import { Command } from "../../shared/types/command"
 import { component, api, format, file, http } from "../../shared/utils"
+import { load_config as load_cfg } from "../../shared/config/loader"
 import { join } from "path"
 
 interface PricingConfig {
@@ -26,7 +27,7 @@ interface ExchangeRateResponse {
   }
 }
 
-const CONFIG_PATH = join(__dirname, "../../configuration/pricing.cfg")
+const CONFIG_PATH = join(__dirname, "../../shared/config/pricing.cfg")
 
 async function get_usd_rate(): Promise<number> {
   try {
@@ -38,7 +39,7 @@ async function get_usd_rate(): Promise<number> {
 }
 
 function load_config(): PricingConfig {
-  return file.read_json<PricingConfig>(CONFIG_PATH)
+  return load_cfg<PricingConfig>("pricing")
 }
 
 function save_config(config: PricingConfig): void {
