@@ -181,8 +181,10 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
             component.text("## Metode Pembayaran\nSilakan pilih metode pembayaran yang tersedia melalui dropdown di bawah."),
             component.select_menu("payment_method_select", "Pilih metode pembayaran", [
               { label: "QRIS", value: "qris", description: "All banks & e-wallets" },
-              { label: "Dana", value: "dana", description: "Transfer via Dana" },
-              { label: "GoPay", value: "gopay", description: "Transfer via GoPay" },
+              { label: "Dana/OVO/GoPay", value: "dana", description: "085763794032 — Daniel Yedija Laowo" },
+              { label: "Bank Jago", value: "bank_jago", description: "107329884762 — Daniel Yedija Laowo" },
+              { label: "Seabank", value: "seabank", description: "901996695987 — Daniel Yedija Laowo" },
+              { label: "BRI", value: "bri", description: "817201005576534 — Daniel Yedija Laowo" },
               { label: "PayPal", value: "paypal", description: "International payment" },
             ]),
           ],
