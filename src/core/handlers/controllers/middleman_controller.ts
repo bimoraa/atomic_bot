@@ -185,7 +185,6 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
               { label: "Bank Jago", value: "bank_jago", description: "107329884762 — Daniel Yedija Laowo" },
               { label: "Seabank", value: "seabank", description: "901996695987 — Daniel Yedija Laowo" },
               { label: "BRI", value: "bri", description: "817201005576534 — Daniel Yedija Laowo" },
-              { label: "PayPal", value: "paypal", description: "International payment" },
             ]),
           ],
         }),

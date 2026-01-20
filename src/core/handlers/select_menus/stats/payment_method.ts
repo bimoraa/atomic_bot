@@ -69,7 +69,7 @@ const middleman_payment_details: Record<string, payment_detail> = {
       ``,
       `> **Supported:** All banks, e-wallets (Dana, GoPay, OVO, ShopeePay, etc.)`,
     ],
-    image   : "https://raw.githubusercontent.com/bimoraa/atomic_bot/main/assets/images/qris_lendow.png",
+    image   : "https://raw.githubusercontent.com/bimoraa/atomic_bot/main/assets/images/QRIS.png",
   },
   dana: {
     title   : "Dana/OVO/GoPay Payment",
@@ -113,18 +113,6 @@ const middleman_payment_details: Record<string, payment_detail> = {
       `**Name:** Daniel Yedija Laowo`,
       ``,
       `> Transfer to the account above and send screenshot as proof.`,
-    ],
-  },
-  paypal: {
-    title   : "PayPal Payment",
-    content : [
-      `### <:paypal:1251913398816604381> PayPal`,
-      ``,
-      `**Email:** \`starrykitsch@gmail.com\``,
-      `**Name:** Rian Febriansyah`,
-      ``,
-      `> Send as **Friends & Family** to avoid fees.`,
-      `> Send screenshot as proof after payment.`,
     ],
   },
 }
