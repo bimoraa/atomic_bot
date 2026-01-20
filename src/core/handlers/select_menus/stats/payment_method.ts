@@ -69,7 +69,7 @@ const middleman_payment_details: Record<string, payment_detail> = {
       ``,
       `> **Supported:** All banks, e-wallets (Dana, GoPay, OVO, ShopeePay, etc.)`,
     ],
-    image   : "https://raw.githubusercontent.com/bimoraa/atomic_bot/main/assets/images/QRIS.png",
+    image   : "https://raw.githubusercontent.com/bimoraa/atomic_bot/main/assets/images/qris_lendow.png",
   },
   dana: {
     title   : "Dana/OVO/GoPay Payment",
