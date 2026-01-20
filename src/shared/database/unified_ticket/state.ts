@@ -16,6 +16,7 @@ export interface TicketTypeConfig {
   ticket_parent_id     : string
   log_channel_id       : string
   closed_log_channel_id: string
+  complete_channel_id? : string
   panel_channel_id     : string
   require_role         : boolean
   required_role_id     : string

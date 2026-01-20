@@ -98,7 +98,8 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
       }
     }
 
-    const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
+    const complete_channel_id = config.complete_channel_id || config.log_channel_id
+    const log_channel         = interaction.client.channels.cache.get(complete_channel_id) as TextChannel
     if (log_channel && range_data) {
       const log_message = component.build_message({
         components: [
