@@ -139,7 +139,7 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
       open_time  : timestamp,
       staff      : [],
       issue_type : range_id,
-      description: `Partner: ${partner.tag}`,
+      description: `Partner: <@${partner_id}>`,
     }
 
     set_ticket(thread.id, ticket_data)
