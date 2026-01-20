@@ -1,5 +1,6 @@
 import { StringSelectMenuInteraction } from "discord.js"
 import { component, api } from "../../../../shared/utils"
+import { get_ticket } from "../../../../shared/database/unified_ticket"
 
 // - PAYMENT DETAIL INTERFACES - \\
 interface payment_detail {
@@ -68,7 +69,7 @@ const middleman_payment_details: Record<string, payment_detail> = {
       ``,
       `> **Supported:** All banks, e-wallets (Dana, GoPay, OVO, ShopeePay, etc.)`,
     ],
-    image   : "https://raw.githubusercontent.com/bimoraa/atomic_bot/main/assets/images/QRIS.png",
+    image   : "https://raw.githubusercontent.com/bimoraa/atomic_bot/main/assets/images/qris_lendow.png",
   },
   dana: {
     title   : "Dana/OVO/GoPay Payment",
@@ -136,8 +137,10 @@ const middleman_payment_details: Record<string, payment_detail> = {
 export async function handle_payment_method_select(interaction: StringSelectMenuInteraction): Promise<void> {
   const selected = interaction.values[0]
   
-  // - CHECK IF MIDDLEMAN TICKET - \\
-  const is_middleman = interaction.channel?.isThread() && interaction.channel.name.toLowerCase().includes("middleman")
+  // - CHECK IF MIDDLEMAN TICKET FROM TICKET DATA - \\
+  const thread_id    = interaction.channel?.id
+  const ticket_data  = thread_id ? get_ticket(thread_id) : undefined
+  const is_middleman = ticket_data?.ticket_type === "middleman"
   const details      = is_middleman ? middleman_payment_details[selected] : payment_details[selected]
 
   if (!details) {

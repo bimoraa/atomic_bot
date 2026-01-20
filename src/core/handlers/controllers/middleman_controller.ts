@@ -210,17 +210,18 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
         components: [
           component.container({
             components: [
+              component.section({
+                content   : "## New Middleman Ticket !",
+                accessory : component.link_button("View Ticket", format.channel_url(interaction.guildId!, thread.id)),
+              }),
+              component.divider(2),
               component.text([
-                `## New Middleman Ticket`,
-                `**ID:** ${ticket_id}`,
-                `**Requester:** <@${user_id}>`,
-                `**Partner:** <@${partner_id}>`,
-                `**Range:** ${range_data.range}`,
-                `**Fee:** ${range_data.fee}`,
+                `- Ticket ID: **${ticket_id}**`,
+                `- Requester: <@${user_id}>`,
+                `- Partner: <@${partner_id}>`,
+                `- Range: ${range_data.range}`,
+                `- Fee: ${range_data.fee}`,
               ]),
-              component.action_row(
-                component.link_button("Jump to Ticket", format.channel_url(interaction.guildId!, thread.id))
-              ),
             ],
           }),
         ],
