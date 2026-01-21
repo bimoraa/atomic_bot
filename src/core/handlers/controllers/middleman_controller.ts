@@ -17,6 +17,7 @@ import {
 import {
   create_middleman_ticket,
   get_user_active_ticket,
+  count_user_active_tickets,
 } from "../../../shared/database/managers/middleman_manager"
 import { component, time, api, format } from "../../../shared/utils"
 import { log_error } from "../../../shared/utils/error_logger"
@@ -69,6 +70,24 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
 
   const user_id            = interaction.user.id
   const existing_thread_id = get_user_open_ticket(ticket_type, user_id)
+
+  // - CHECK MAX TICKET LIMIT PER USER (5 TICKETS) - \\
+  const user_ticket_count = await count_user_active_tickets(user_id)
+  const partner_ticket_count = await count_user_active_tickets(partner_id)
+  
+  if (user_ticket_count >= 5) {
+    return {
+      success: false,
+      error  : "You have reached the maximum limit of 5 active middleman tickets. Please close some tickets first.",
+    }
+  }
+  
+  if (partner_ticket_count >= 5) {
+    return {
+      success: false,
+      error  : "The partner has reached the maximum limit of 5 active middleman tickets. Please ask them to close some tickets first.",
+    }
+  }
 
   // - CHECK DATABASE FOR ACTIVE TICKET - \\
   const db_active_ticket = await get_user_active_ticket(user_id)

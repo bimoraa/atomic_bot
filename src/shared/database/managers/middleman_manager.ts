@@ -121,6 +121,27 @@ export async function get_user_active_ticket(user_id: string): Promise<Middleman
 }
 
 /**
+ * @description Count user's active middleman tickets
+ * @param {string} user_id - User ID
+ * @returns {Promise<number>} - Number of active tickets
+ */
+export async function count_user_active_tickets(user_id: string): Promise<number> {
+  if (!db.is_connected()) return 0
+  
+  const as_requester = await db.find_many<MiddlemanTicket>(TICKETS_COLLECTION, {
+    requester_id: user_id,
+    status      : "open"
+  })
+  
+  const as_partner = await db.find_many<MiddlemanTicket>(TICKETS_COLLECTION, {
+    partner_id: user_id,
+    status    : "open"
+  })
+  
+  return as_requester.length + as_partner.length
+}
+
+/**
  * @description Complete a middleman ticket
  * @param {string} thread_id - Thread ID
  * @param {string} completed_by - User who completed the ticket
