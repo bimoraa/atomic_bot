@@ -16,7 +16,6 @@ import {
 } from "../../../shared/database/unified_ticket"
 import {
   create_middleman_ticket,
-  get_user_active_ticket,
   count_user_active_tickets,
 } from "../../../shared/database/managers/middleman_manager"
 import { component, time, api, format } from "../../../shared/utils"
@@ -86,37 +85,6 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
     return {
       success: false,
       error  : "The partner has reached the maximum limit of 5 active middleman tickets. Please ask them to close some tickets first.",
-    }
-  }
-
-  // - CHECK DATABASE FOR ACTIVE TICKET - \\
-  const db_active_ticket = await get_user_active_ticket(user_id)
-  if (db_active_ticket) {
-    try {
-      const thread = await interaction.client.channels.fetch(db_active_ticket.thread_id)
-      if (thread && thread.isThread() && !thread.locked && !thread.archived) {
-        return {
-          success: false,
-          error  : `You already have an open ${config.name.toLowerCase()} ticket. Please close it first.`,
-        }
-      }
-    } catch {
-      // - THREAD NOT FOUND, CONTINUE - \\
-    }
-  }
-
-  if (existing_thread_id) {
-    try {
-      const thread = await interaction.client.channels.fetch(existing_thread_id)
-      if (thread && thread.isThread() && !thread.locked && !thread.archived) {
-        return {
-          success: false,
-          error  : `You already have an open ${config.name.toLowerCase()} ticket. Please close it first.`,
-        }
-      }
-      remove_user_open_ticket(ticket_type, user_id)
-    } catch {
-      remove_user_open_ticket(ticket_type, user_id)
     }
   }
 
