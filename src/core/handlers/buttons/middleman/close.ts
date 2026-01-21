@@ -1,6 +1,7 @@
-import { ButtonInteraction, ThreadChannel } from "discord.js"
+import { ButtonInteraction, ThreadChannel, TextChannel } from "discord.js"
 import { close_ticket, get_ticket_config } from "../../../../shared/database/unified_ticket"
-import { cancel_middleman_ticket } from "../../../../shared/database/managers/middleman_manager"
+import { cancel_middleman_ticket, get_middleman_ticket } from "../../../../shared/database/managers/middleman_manager"
+import { api } from "../../../../shared/utils"
 
 /**
  * @description Handles direct close for middleman ticket
@@ -35,6 +36,19 @@ export async function handle_middleman_close(interaction: ButtonInteraction): Pr
 
   // - MARK TICKET AS CANCELLED IN DATABASE - \\
   await cancel_middleman_ticket(thread.id, "Closed by staff")
+
+  // - DELETE LOG MESSAGE IF EXISTS - \\
+  const ticket = await get_middleman_ticket(thread.id)
+  if (ticket?.log_message_id) {
+    const config = get_ticket_config("middleman")
+    if (config?.log_channel_id) {
+      const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
+      if (log_channel) {
+        const token = api.get_token()
+        await api.delete_message(log_channel.id, ticket.log_message_id, token)
+      }
+    }
+  }
 
   await close_ticket({
     thread,

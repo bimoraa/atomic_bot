@@ -35,6 +35,7 @@ export interface MiddlemanTicket {
   completed_at?    : number
   completed_by?    : string
   close_reason?    : string
+  log_message_id?  : string
 }
 
 /**

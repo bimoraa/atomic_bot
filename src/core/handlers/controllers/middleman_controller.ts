@@ -145,22 +145,6 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
     set_ticket(thread.id, ticket_data)
     set_user_open_ticket(ticket_type, user_id, thread.id)
 
-    // - SAVE TO DATABASE FOR PERSISTENCE - \\
-    await create_middleman_ticket({
-      thread_id        : thread.id,
-      ticket_id        : ticket_id,
-      requester_id     : user_id,
-      partner_id       : partner_id,
-      partner_tag      : partner.tag,
-      transaction_range: range_data.range,
-      fee              : range_data.fee,
-      range_id         : range_id,
-      guild_id         : interaction.guildId || "",
-      status           : "open",
-      created_at       : timestamp,
-      updated_at       : timestamp,
-    })
-
     const welcome_message = component.build_message({
       components: [
         component.container({
@@ -203,6 +187,8 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
 
     await api.send_components_v2(thread.id, token, welcome_message)
 
+    let log_message_id: string | undefined
+
     const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
     if (log_channel) {
       const log_message = component.build_message({
@@ -226,8 +212,28 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
         ],
       })
 
-      await api.send_components_v2(log_channel.id, token, log_message)
+      const log_response = await api.send_components_v2(log_channel.id, token, log_message)
+      if (log_response.id) {
+        log_message_id = log_response.id
+      }
     }
+
+    // - SAVE TO DATABASE FOR PERSISTENCE - \\
+    await create_middleman_ticket({
+      thread_id        : thread.id,
+      ticket_id        : ticket_id,
+      requester_id     : user_id,
+      partner_id       : partner_id,
+      partner_tag      : partner.tag,
+      transaction_range: range_data.range,
+      fee              : range_data.fee,
+      range_id         : range_id,
+      guild_id         : interaction.guildId || "",
+      status           : "open",
+      created_at       : timestamp,
+      updated_at       : timestamp,
+      log_message_id   : log_message_id,
+    })
 
     // - SAVE TICKET IMMEDIATELY TO PREVENT RACE CONDITION - \\
     await save_ticket_immediate(thread.id)

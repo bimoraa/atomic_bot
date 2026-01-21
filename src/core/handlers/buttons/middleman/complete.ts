@@ -124,6 +124,14 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
 
       await api.send_components_v2(log_channel.id, token, log_message)
     }
+
+    // - DELETE OPEN LOG MESSAGE IF EXISTS - \\
+    if (db_ticket?.log_message_id) {
+      const open_log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
+      if (open_log_channel) {
+        await api.delete_message(open_log_channel.id, db_ticket.log_message_id, token)
+      }
+    }
   }
 
   await close_ticket({
