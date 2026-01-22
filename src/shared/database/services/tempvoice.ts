@@ -849,6 +849,22 @@ export async function handle_voice_state_update(old_state: VoiceState, new_state
     }
   }
 
+  // - REMOVE MEMBER FROM THREAD WHEN LEAVING TEMP CHANNEL - \\
+  if (old_state.channelId && is_temp_channel(old_state.channelId) && old_state.channelId !== new_state.channelId) {
+    const thread_id = __threads.get(old_state.channelId)
+    if (thread_id) {
+      try {
+        const channel = old_state.guild.channels.cache.get(thread_id)
+        if (channel && channel.isThread()) {
+          await channel.members.remove(member.id)
+          console.log(`[ - THREAD - ] Removed ${member.displayName} from thread`)
+        }
+      } catch (error) {
+        console.error(`[ - THREAD - ] Failed to remove member from thread:`, error)
+      }
+    }
+  }
+
   if (old_state.channelId && is_temp_channel(old_state.channelId)) {
     const channel = old_state.channel as VoiceChannel
     if (channel && channel.members.size === 0) {
