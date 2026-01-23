@@ -52,6 +52,7 @@ import * as booster_claim                from "./buttons/booster/claim"
 import * as loa_approve                  from "./buttons/loa/approve"
 import * as loa_reject                   from "./buttons/loa/reject"
 import * as loa_end                      from "./buttons/loa/end"
+import * as quarantine_release           from "./buttons/quarantine/release"
 import * as music_pause                  from "./buttons/music/pause"
 import * as music_resume                 from "./buttons/music/resume"
 import * as music_skip                   from "./buttons/music/skip"
@@ -444,6 +445,10 @@ export async function handle_interaction(
       }
       if (interaction.customId.startsWith("booster_claim_")) {
         await booster_claim.handle(interaction)
+        return
+      }
+      if (interaction.customId.startsWith("quarantine_release:")) {
+        await quarantine_release.handle_quarantine_release(interaction)
         return
       }
     } catch (err) {

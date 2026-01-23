@@ -25,6 +25,7 @@ import { start_loa_checker }                                             from ".
 import { start_webhook_server }                                          from "./core/client/server"
 import { start_scheduler }                                               from "./modules/staff/staff/schedule_hwid_less"
 import { start_weekly_reset_scheduler }                                  from "./core/handlers/schedulers/weekly_work_reset"
+import { start_quarantine_scheduler }                                    from "./core/handlers/schedulers/quarantine_release"
 import { load_middleman_tickets_on_startup }                             from "./core/handlers/schedulers/load_middleman_tickets"
 
 config()
@@ -165,6 +166,7 @@ client.once("ready", async () => {
       start_loa_checker(client)
       start_scheduler(client)
       start_weekly_reset_scheduler()
+      start_quarantine_scheduler(client)
       start_free_script_checker(client)
       start_service_provider_cache(client)
       
