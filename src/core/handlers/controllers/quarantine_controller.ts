@@ -111,31 +111,6 @@ export async function quarantine_member(options: quarantine_member_options) {
       days
     )
 
-    const server_icon = guild.iconURL({ size: 512 }) || ""
-
-    const dm_message = component.build_message({
-      components: [
-        component.container({
-          accent_color: 0x808080,
-          components: [
-            component.section({
-              content   : "### You have been quarantined",
-              thumbnail : server_icon,
-            }),
-            component.divider(),
-            component.text([
-              `- Server: ${guild.name}`,
-              `- Duration: ${days} days`,
-              `- Release: ${time.full_date_time(release_at)}`,
-              `- Reason: ${reason}`,
-            ]),
-          ],
-        }),
-      ],
-    })
-
-    await target.send(dm_message).catch(() => {})
-
     const avatar_url = target.user.displayAvatarURL({ size: 512 })
 
     const quarantine_message = component.build_message({
@@ -219,24 +194,6 @@ export async function release_quarantine(options: release_quarantine_options) {
 
     await member.roles.set(valid_roles, "Released from quarantine")
     await remove_quarantine(user_id, guild.id)
-
-    const dm_message = component.build_message({
-      components: [
-        component.container({
-          accent_color: 0x57F287,
-          components: [
-            component.text("### Quarantine Released"),
-            component.divider(),
-            component.text([
-              `You have been released from quarantine in **${guild.name}**.`,
-              `Your previous roles have been restored.`,
-            ]),
-          ],
-        }),
-      ],
-    })
-
-    await member.send(dm_message).catch(() => {})
 
     return {
       success : true,
