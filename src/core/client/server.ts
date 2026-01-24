@@ -11,20 +11,50 @@ const main_guild_id = process.env.MAIN_GUILD_ID || "1250337227582472243"
 let bot_ready = false
 let discord_client: Client | null = null
 
+/**
+ * @description Set bot ready status for health checks
+ * @param ready - Boolean indicating if bot is ready
+ * @returns void
+ */
+export function set_bot_ready(ready: boolean): void {
+  bot_ready = ready
+  if (ready) {
+    console.log("[ - SERVER - ] Bot marked as ready for health checks")
+  }
+}
+
 // - MEMBER CACHE - \\
 const member_cache = new Map<string, { data: any; timestamp: number }>()
 const cache_ttl = 5 * 60 * 1000 // - 5 minutes - \\
 
+/**
+ * @description Start Express HTTP server for Railway deployment
+ * @param client - Discord client instance
+ * @returns void
+ */
 export function start_webhook_server(client: Client): void {
   discord_client = client
+  bot_ready      = false
   
   const app = express()
+
+  // - TRUST PROXY FOR RAILWAY - \\
+  app.set("trust proxy", 1)
+  app.disable("x-powered-by")
 
   app.use(cors({
     origin     : process.env.DASHBOARD_URL || "http://localhost:3000",
     credentials: true,
   }))
-  app.use(express.json())
+  app.use(express.json({ limit: "10mb" }))
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }))
+
+  // - RAILWAY KEEPALIVE MIDDLEWARE - \\
+  app.use((req: Request, res: Response, next) => {
+    res.setHeader("Connection", "keep-alive")
+    res.setHeader("Keep-Alive", "timeout=120")
+    next()
+  })
 
   app.post("/webhook/github", async (req: Request, res: Response) => {
     try {
@@ -829,17 +859,30 @@ export function start_webhook_server(client: Client): void {
       res.status(500).json({ error: "Failed to get activity logs" })
     }
   })
-
+  
   app.get("/health", (req: Request, res: Response) => {
-    const is_ready = discord_client?.isReady() || false
-    const status   = is_ready ? "healthy" : "starting"
+    const is_ready = (discord_client?.isReady() && bot_ready) || false
+    const status   = is_ready ? "alive" : "starting"
     
-    res.status(200).json({ 
-      status,
-      bot_ready : is_ready,
-      uptime    : process.uptime(),
-      memory    : process.memoryUsage(),
-      timestamp : new Date().toISOString(),
+    res.status(is_ready ? 200 : 503).send(status)
+  })
+
+  app.get("/health/detailed", (req: Request, res: Response) => {
+    const is_ready = (discord_client?.isReady() && bot_ready) || false
+    const mem      = process.memoryUsage()
+    
+    res.status(is_ready ? 200 : 503).json({ 
+      status      : is_ready ? "alive" : "starting",
+      bot_ready   : is_ready,
+      uptime      : process.uptime(),
+      memory      : {
+        rss        : `${(mem.rss / 1024 / 1024).toFixed(2)} MB`,
+        heap_used  : `${(mem.heapUsed / 1024 / 1024).toFixed(2)} MB`,
+        heap_total : `${(mem.heapTotal / 1024 / 1024).toFixed(2)} MB`,
+      },
+      guilds      : discord_client?.guilds?.cache?.size || 0,
+      ping        : discord_client?.ws?.ping || -1,
+      timestamp   : new Date().toISOString(),
     })
   })
 

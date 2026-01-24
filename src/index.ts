@@ -22,7 +22,7 @@ import { log_error }                                                     from ".
 import { check_spam }                                                    from "./infrastructure/cache/anti_spam"
 import { load_reminders_from_db }                                        from "./modules/reminder/reminder"
 import { start_loa_checker }                                             from "./shared/database/services/loa_checker"
-import { start_webhook_server }                                          from "./core/client/server"
+import { start_webhook_server, set_bot_ready }                           from "./core/client/server"
 import { start_scheduler }                                               from "./modules/staff/staff/schedule_hwid_less"
 import { start_weekly_reset_scheduler }                                  from "./core/handlers/schedulers/weekly_work_reset"
 import { start_quarantine_scheduler }                                    from "./core/handlers/schedulers/quarantine_release"
@@ -49,6 +49,41 @@ const client = new Client({
     Partials.Message,
     Partials.Channel,
   ],
+  makeCache            : () => new Collection(),
+  sweepers             : {
+    messages          : { interval: 3600, lifetime: 1800 },
+    users             : { interval: 3600, filter: () => user => user.bot && user.id !== client.user?.id },
+    guildMembers      : { interval: 3600, filter: () => member => member.id !== client.user?.id },
+    threadMembers     : { interval: 3600, filter: () => () => true },
+    presences         : { interval: 300, filter: () => () => true },
+    voiceStates       : { interval: 300, filter: () => state => state.member?.id !== client.user?.id },
+    emojis            : { interval: 3600, filter: () => () => true },
+    stickers          : { interval: 3600, filter: () => () => true },
+    invites           : { interval: 3600, filter: () => () => true },
+    bans              : { interval: 3600, filter: () => () => true },
+    applicationCommands: { interval: 3600, filter: () => () => true },
+    autoModerationRules: { interval: 3600, filter: () => () => true },
+    stageInstances    : { interval: 3600, filter: () => () => true },
+  },
+  presence: {
+    status    : "dnd",
+    activities: [{
+      name : "Made with ❤️ by Atomic Team",
+      type : ActivityType.Custom,
+      state: "Made with ❤️ by Atomic Team",
+    }],
+  },
+  rest: {
+    timeout         : 30000,
+    retries         : 3,
+    rejectOnRateLimit: () => false,
+  },
+  shards              : "auto",
+  failIfNotExists     : false,
+  allowedMentions     : {
+    parse          : ["users", "roles"],
+    repliedUser    : true,
+  },
 }) as Client & { commands: Collection<string, Command> }
 
 client.commands = new Collection()
@@ -180,7 +215,7 @@ client.once("ready", async () => {
   join_voice_channel()
 
   update_presence()
-  setInterval(update_presence, 3000)
+  setInterval(update_presence, 60000)
 
   try {
     const commands_data = await load_commands(client)
@@ -201,7 +236,8 @@ client.once("ready", async () => {
     console.error("[Services] Initialization error:", error)
   }
 
-  console.log("[Bot] Ready")
+  set_bot_ready(true)
+  console.log("[Bot] Ready and accepting connections")
 })
 
 client.on("interactionCreate", (interaction) => {
@@ -256,6 +292,21 @@ client.on("messageCreate", async (message: Message) => {
 client.on("error", (error) => {
   console.error("[Client] Error:", error.message)
   log_error(client, error, "Discord Client", {}).catch(() => {})
+})
+
+// - WEBSOCKET RECONNECTION HANDLING - \\
+client.ws.on("disconnect" as any, () => {
+  console.log("[WebSocket] Disconnected from Discord gateway")
+  set_bot_ready(false)
+})
+
+client.ws.on("resumed" as any, () => {
+  console.log("[WebSocket] Resumed connection to Discord gateway")
+  set_bot_ready(true)
+})
+
+client.ws.on("ready" as any, () => {
+  console.log("[WebSocket] WebSocket ready")
 })
 
 process.on("unhandledRejection", (error: Error) => {
