@@ -1,6 +1,27 @@
-import { ModalSubmitInteraction, GuildMember, VoiceChannel } from "discord.js"
-import * as tempvoice                                        from "../../../../shared/database/services/tempvoice"
-import { component }                                         from "../../../../shared/utils"
+import { ModalSubmitInteraction, GuildMember, VoiceChannel, Guild } from "discord.js"
+import * as tempvoice                                               from "../../../../shared/database/services/tempvoice"
+import { component }                                                from "../../../../shared/utils"
+
+/**
+ * - VALIDATE AND FETCH VOICE CHANNEL - \\
+ * @param guild - Guild instance
+ * @param channel_id - Channel ID to validate
+ * @returns VoiceChannel or null if not valid
+ */
+async function validate_voice_channel(guild: Guild, channel_id: string): Promise<VoiceChannel | null> {
+  try {
+    let channel = guild.channels.cache.get(channel_id) as VoiceChannel
+    if (!channel) {
+      const fetched = await guild.channels.fetch(channel_id)
+      if (fetched && fetched.isVoiceBased()) {
+        channel = fetched as VoiceChannel
+      }
+    }
+    return channel || null
+  } catch (error) {
+    return null
+  }
+}
 
 function create_reply(message: string) {
   return component.build_message({
@@ -126,7 +147,14 @@ async function handle_name_modal(
 
   await interaction.deferReply({ ephemeral: true })
 
-  const success = await tempvoice.rename_tempvoice_channel(channel, new_name)
+  // - VALIDATE CHANNEL STILL EXISTS - \\
+  const validated = await validate_voice_channel(member.guild, channel.id)
+  if (!validated) {
+    await interaction.editReply(create_reply("Channel no longer exists."))
+    return
+  }
+
+  const success = await tempvoice.rename_tempvoice_channel(validated, new_name)
 
   if (success) {
     await interaction.editReply(create_reply(`Channel renamed to **${new_name}**.`))
@@ -161,7 +189,14 @@ async function handle_limit_modal(
 
   await interaction.deferReply({ ephemeral: true })
 
-  const success = await tempvoice.set_user_limit(channel, limit)
+  // - VALIDATE CHANNEL STILL EXISTS - \\
+  const validated = await validate_voice_channel(member.guild, channel.id)
+  if (!validated) {
+    await interaction.editReply(create_reply("Channel no longer exists."))
+    return
+  }
+
+  const success = await tempvoice.set_user_limit(validated, limit)
 
   if (success) {
     const message = limit === 0

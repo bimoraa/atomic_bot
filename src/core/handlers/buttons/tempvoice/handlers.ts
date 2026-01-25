@@ -1,8 +1,29 @@
-import { ButtonInteraction, GuildMember, VoiceChannel } from "discord.js"
-import * as tempvoice                                   from "../../../../shared/database/services/tempvoice"
-import * as voice_tracker                               from "../../../../shared/database/trackers/voice_time_tracker"
-import * as voice_interaction                           from "../../../../shared/database/trackers/voice_interaction_tracker"
-import { component, modal }                             from "../../../../shared/utils"
+import { ButtonInteraction, GuildMember, VoiceChannel, Guild } from "discord.js"
+import * as tempvoice                                          from "../../../../shared/database/services/tempvoice"
+import * as voice_tracker                                      from "../../../../shared/database/trackers/voice_time_tracker"
+import * as voice_interaction                                  from "../../../../shared/database/trackers/voice_interaction_tracker"
+import { component, modal }                                    from "../../../../shared/utils"
+
+/**
+ * - VALIDATE AND FETCH VOICE CHANNEL - \\
+ * @param guild - Guild instance
+ * @param channel_id - Channel ID to validate
+ * @returns VoiceChannel or null if not valid
+ */
+async function validate_voice_channel(guild: Guild, channel_id: string): Promise<VoiceChannel | null> {
+  try {
+    let channel = guild.channels.cache.get(channel_id) as VoiceChannel
+    if (!channel) {
+      const fetched = await guild.channels.fetch(channel_id)
+      if (fetched && fetched.isVoiceBased()) {
+        channel = fetched as VoiceChannel
+      }
+    }
+    return channel || null
+  } catch (error) {
+    return null
+  }
+}
 
 function create_not_in_channel_reply(guild_id: string, generator_channel_id: string | null) {
   return component.build_message({
@@ -133,9 +154,10 @@ export async function handle_tempvoice_limit(interaction: ButtonInteraction): Pr
 }
 
 export async function handle_tempvoice_privacy(interaction: ButtonInteraction): Promise<void> {
-  const member   = interaction.member as GuildMember
-  const channel  = member.voice.channel as VoiceChannel
-  const guild_id = interaction.guildId!
+  const member        = interaction.member as GuildMember
+  let channel         = member.voice.channel as VoiceChannel
+  const guild_id      = interaction.guildId!
+  const orig_chan_id  = channel?.id
 
   if (!channel || !tempvoice.is_temp_channel(channel.id)) {
     await interaction.reply({
@@ -154,6 +176,14 @@ export async function handle_tempvoice_privacy(interaction: ButtonInteraction): 
   }
 
   await interaction.deferReply({ ephemeral: true })
+
+  // - VALIDATE CHANNEL STILL EXISTS - \\
+  const validated = await validate_voice_channel(member.guild, orig_chan_id)
+  if (!validated) {
+    await interaction.editReply(create_error_reply("Channel no longer exists."))
+    return
+  }
+  channel = validated
 
   const everyone_perms = channel.permissionOverwrites.cache.get(channel.guild.roles.everyone.id)
   const is_private     = everyone_perms?.deny.has("Connect") || false
@@ -503,10 +533,11 @@ export async function handle_tempvoice_unblock(interaction: ButtonInteraction): 
 }
 
 export async function handle_tempvoice_claim(interaction: ButtonInteraction): Promise<void> {
-  const member       = interaction.member as GuildMember
-  const channel      = member.voice.channel as VoiceChannel
-  const generator_id = tempvoice.get_generator_channel_id()
-  const guild_id     = interaction.guildId!
+  const member        = interaction.member as GuildMember
+  let channel         = member.voice.channel as VoiceChannel
+  const generator_id  = tempvoice.get_generator_channel_id()
+  const guild_id      = interaction.guildId!
+  const orig_chan_id  = channel?.id
 
   if (!channel || !tempvoice.is_temp_channel(channel.id)) {
     const reply = component.build_message({
@@ -537,6 +568,14 @@ export async function handle_tempvoice_claim(interaction: ButtonInteraction): Pr
   }
 
   await interaction.deferReply({ ephemeral: true })
+
+  // - VALIDATE CHANNEL STILL EXISTS - \\
+  const validated = await validate_voice_channel(member.guild, orig_chan_id)
+  if (!validated) {
+    await interaction.editReply(create_error_reply("Channel no longer exists."))
+    return
+  }
+  channel = validated
 
   const success = await tempvoice.claim_channel(channel, member)
 
@@ -583,9 +622,10 @@ export async function handle_tempvoice_transfer(interaction: ButtonInteraction):
 }
 
 export async function handle_tempvoice_delete(interaction: ButtonInteraction): Promise<void> {
-  const member   = interaction.member as GuildMember
-  const channel  = member.voice.channel as VoiceChannel
-  const guild_id = interaction.guildId!
+  const member        = interaction.member as GuildMember
+  let channel         = member.voice.channel as VoiceChannel
+  const guild_id      = interaction.guildId!
+  const orig_chan_id  = channel?.id
 
   if (!channel || !tempvoice.is_temp_channel(channel.id)) {
     await interaction.reply({
@@ -605,11 +645,20 @@ export async function handle_tempvoice_delete(interaction: ButtonInteraction): P
 
   await interaction.deferReply({ ephemeral: true })
 
+  // - VALIDATE CHANNEL STILL EXISTS - \\
+  const validated = await validate_voice_channel(member.guild, orig_chan_id)
+  if (!validated) {
+    await interaction.editReply(create_error_reply("Channel already deleted."))
+    tempvoice.cleanup_channel_data(orig_chan_id)
+    return
+  }
+  channel = validated
+
   const thread_id = tempvoice.get_thread_id(channel.id)
   if (thread_id) {
     const thread = channel.guild.channels.cache.get(thread_id)
     if (thread) {
-      await thread.delete()
+      await thread.delete().catch(() => {})
     }
   }
 

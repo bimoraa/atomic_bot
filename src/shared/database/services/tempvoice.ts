@@ -36,6 +36,27 @@ const __category_name       = __config.category_name  ?? "Temp Voice"
 const __generator_name      = __config.generator_name ?? "➕ Create Voice"
 const __thread_parent_id    = "1449863232071401534"
 
+/**
+ * - FETCH CHANNEL WITH FALLBACK - \\
+ * @param guild - Guild to fetch from
+ * @param channel_id - Channel ID to fetch
+ * @returns VoiceChannel or null
+ */
+async function fetch_voice_channel(guild: Guild, channel_id: string): Promise<VoiceChannel | null> {
+  try {
+    let channel = guild.channels.cache.get(channel_id) as VoiceChannel
+    if (!channel) {
+      const fetched = await guild.channels.fetch(channel_id)
+      if (fetched && fetched.type === ChannelType.GuildVoice) {
+        channel = fetched as VoiceChannel
+      }
+    }
+    return channel || null
+  } catch (error) {
+    return null
+  }
+}
+
 const emoji = {
   name         : { id: "1449851618295283763", name: "name"         },
   limit        : { id: "1449851533033214063", name: "limit"        },
@@ -63,6 +84,7 @@ const __waiting_rooms: Map<string, boolean>             = new Map()
 const __threads: Map<string, string>                    = new Map()
 const __in_voice_interfaces: Map<string, string>        = new Map()
 const __saved_settings: Map<string, saved_channel_settings> = new Map()
+const __deletion_timers: Map<string, NodeJS.Timeout>    = new Map()
 
 let __generator_channel_id : string | null = __config.generator_channel_id || null
 let __category_id          : string | null = __config.category_id || null
@@ -128,15 +150,22 @@ export async function reconcile_tempvoice_guild(guild: Guild): Promise<void> {
     for (const ch of voice_channels.values()) {
       const channel = ch as VoiceChannel
 
-      if (channel.members.size === 0) {
-        await channel.delete().catch(() => {})
+      // - FETCH FRESH DATA TO VERIFY CHANNEL STATE - \\
+      const fresh_channel = await fetch_voice_channel(guild, channel.id)
+      if (!fresh_channel) {
         cleanup_channel_data(channel.id)
         continue
       }
 
-      const owner_id = get_owner_id_from_overwrites(channel)
+      if (fresh_channel.members.size === 0) {
+        await fresh_channel.delete().catch(() => {})
+        cleanup_channel_data(fresh_channel.id)
+        continue
+      }
+
+      const owner_id = get_owner_id_from_overwrites(fresh_channel)
       if (owner_id) {
-        register_existing_channel(channel, owner_id)
+        register_existing_channel(fresh_channel, owner_id)
       }
     }
   } catch (error) {
@@ -240,11 +269,12 @@ export function set_category_id(id: string): void {
   __category_id = id
 }
 
-export function get_user_temp_channel(guild: Guild, user_id: string): VoiceChannel | null {
+export async function get_user_temp_channel(guild: Guild, user_id: string): Promise<VoiceChannel | null> {
   for (const [channel_id, owner_id] of __channel_owners.entries()) {
     if (owner_id === user_id) {
-      const channel = guild.channels.cache.get(channel_id) as VoiceChannel
+      const channel = await fetch_voice_channel(guild, channel_id)
       if (channel) return channel
+      else cleanup_channel_data(channel_id)
     }
   }
 
@@ -290,7 +320,7 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
       return null
     }
 
-    const existing_channel = get_user_temp_channel(guild, member.id)
+    const existing_channel = await get_user_temp_channel(guild, member.id)
     if (existing_channel) {
       __log.info(`User ${member.displayName} already has channel, moving to existing: ${existing_channel.name}`)
       try {
@@ -375,9 +405,11 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
 }
 
 export async function delete_temp_channel(channel: VoiceChannel | string): Promise<boolean> {
+  let channel_id: string | undefined
+  
   try {
     let voice_channel: VoiceChannel | undefined
-    let channel_id: string
+    let guild: Guild | undefined
 
     if (typeof channel === "string") {
       channel_id = channel
@@ -385,6 +417,19 @@ export async function delete_temp_channel(channel: VoiceChannel | string): Promi
     } else {
       voice_channel = channel
       channel_id    = channel.id
+      guild         = channel.guild
+    }
+
+    // - VERIFY CHANNEL STILL EXISTS - \\
+    if (guild) {
+      const fetched = await fetch_voice_channel(guild, channel_id)
+      if (!fetched) {
+        __log.warn(`Channel ${channel_id} already deleted or not found, cleaning up data`)
+        cleanup_channel_data(channel_id)
+        await voice_tracker.track_channel_deleted(channel_id)
+        return true
+      }
+      voice_channel = fetched
     }
 
     const thread_id = __threads.get(channel_id)
@@ -403,23 +448,32 @@ export async function delete_temp_channel(channel: VoiceChannel | string): Promi
     }
 
     await voice_tracker.track_channel_deleted(channel_id)
-    await voice_channel.delete()
+    
+    if (voice_channel) {
+      await voice_channel.delete()
+    }
 
-    __temp_channels.delete(channel_id)
-    __channel_owners.delete(channel_id)
-    __trusted_users.delete(channel_id)
-    __blocked_users.delete(channel_id)
-    __waiting_rooms.delete(channel_id)
+    cleanup_channel_data(channel_id)
 
     __log.info(`Deleted temp channel: ${channel_id}`)
     return true
   } catch (error) {
     __log.error("Failed to delete temp channel:", error)
+    if (channel_id !== undefined) {
+      cleanup_channel_data(channel_id)
+    }
     return false
   }
 }
 
 export function cleanup_channel_data(channel_id: string): void {
+  // - CLEAR DELETION TIMER IF EXISTS - \\
+  const timer = __deletion_timers.get(channel_id)
+  if (timer) {
+    clearTimeout(timer)
+    __deletion_timers.delete(channel_id)
+  }
+
   __temp_channels.delete(channel_id)
   __channel_owners.delete(channel_id)
   __trusted_users.delete(channel_id)
@@ -866,11 +920,42 @@ export async function handle_voice_state_update(old_state: VoiceState, new_state
   }
 
   if (old_state.channelId && is_temp_channel(old_state.channelId)) {
-    const channel = old_state.channel as VoiceChannel
-    if (channel && channel.members.size === 0) {
-      __log.info(`Channel empty, deleting immediately: ${old_state.channelId}`)
-      await delete_temp_channel(channel)
+    const guild      = old_state.guild
+    const channel_id = old_state.channelId
+    
+    // - CLEAR EXISTING DELETION TIMER - \\
+    const existing_timer = __deletion_timers.get(channel_id)
+    if (existing_timer) {
+      clearTimeout(existing_timer)
+      __deletion_timers.delete(channel_id)
     }
+    
+    // - DELAY DELETION TO AVOID RACE CONDITIONS - \\
+    const deletion_timer = setTimeout(async () => {
+      try {
+        // - FETCH FRESH CHANNEL DATA TO AVOID CACHE ISSUES - \\
+        const channel = await fetch_voice_channel(guild, channel_id)
+        
+        if (!channel) {
+          __log.warn(`Channel ${channel_id} not found, cleaning up data`)
+          cleanup_channel_data(channel_id)
+          return
+        }
+        
+        if (channel.members.size === 0) {
+          __log.info(`Channel empty after delay, deleting: ${channel_id}`)
+          await delete_temp_channel(channel)
+        } else {
+          __log.info(`Channel ${channel_id} has ${channel.members.size} members, keeping alive`)
+        }
+      } catch (error) {
+        __log.error(`Error in delayed deletion for ${channel_id}:`, error)
+      } finally {
+        __deletion_timers.delete(channel_id)
+      }
+    }, 2000)
+    
+    __deletion_timers.set(channel_id, deletion_timer)
   }
 }
 
