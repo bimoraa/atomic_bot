@@ -1,12 +1,33 @@
-import { component, api } from "../../../shared/utils"
-import * as booster_manager from "../../../shared/database/managers/booster_manager"
+import { Client }            from "discord.js"
+import { component, api }    from "../../../shared/utils"
+import { log_error }         from "../../../shared/utils/error_logger"
+import * as booster_manager  from "../../../shared/database/managers/booster_manager"
 
+/**
+ * - WAIT FOR MS - \\
+ * @param ms Delay in milliseconds
+ * @returns {Promise<void>} Resolves after delay
+ */
+function wait_ms(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * - SEND BOOSTER LOG - \\
+ * @param client Discord client
+ * @param channel_id Target channel id
+ * @param user_id Booster user id
+ * @param boost_count Total boost count
+ * @param media_url Optional media url
+ * @returns {Promise<api.api_response>} API response
+ */
 export async function send_booster_log(
+  client      : Client,
   channel_id  : string,
   user_id     : string,
   boost_count : number,
   media_url   : string = ""
-): Promise<void> {
+): Promise<api.api_response> {
   const message = component.build_message({
     components: [
       component.container({
@@ -31,9 +52,45 @@ export async function send_booster_log(
     ],
   })
 
-  await api.send_components_v2(channel_id, api.get_token(), message)
+  let response = await api.send_components_v2(channel_id, api.get_token(), message)
+
+  if (response.error) {
+    const retry_after_value = typeof response.retry_after === "number"
+      ? response.retry_after
+      : null
+    const retry_after_ms    = retry_after_value
+      ? retry_after_value > 1000 ? retry_after_value : Math.ceil(retry_after_value * 1000)
+      : 1500
+
+    // - RETRY ONCE AFTER COOLDOWN - \\
+    await wait_ms(retry_after_ms)
+    response = await api.send_components_v2(channel_id, api.get_token(), message)
+  }
+
+  if (response.error) {
+    console.error("[ - BOOSTER LOG - ] Failed to send booster log:", response)
+    await log_error(
+      client,
+      new Error("Failed to send booster log"),
+      "booster_log_send",
+      {
+        channel_id  : channel_id,
+        user_id     : user_id,
+        boost_count : boost_count,
+        response    : response,
+      }
+    )
+  }
+
+  return response
 }
 
+/**
+ * - HANDLE BOOSTER CLAIM - \\
+ * @param user_id Booster user id
+ * @param guild_id Guild id
+ * @returns {Promise<string>} Result message
+ */
 export async function handle_claim(user_id: string, guild_id: string): Promise<string> {
   const is_whitelisted = await booster_manager.is_whitelisted(user_id, guild_id)
   
