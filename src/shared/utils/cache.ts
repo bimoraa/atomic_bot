@@ -12,15 +12,25 @@ export type CacheItem<T> = {
  * Generic cache class with TTL support
  */
 export class Cache<T> {
-  private store: Map<string, CacheItem<T>> = new Map()
-  private default_ttl: number | null
+  private store                 : Map<string, CacheItem<T>> = new Map()
+  private default_ttl           : number | null
+  private max_size              : number | null
+  private cleanup_interval_ms   : number | null
+  private cleanup_timer         : NodeJS.Timeout | null     = null
+  private pending_requests      : Map<string, Promise<T>>   = new Map()
 
   /**
    * Creates a new cache instance
    * @param {number | null} default_ttl_ms - Default time-to-live in milliseconds
    */
-  constructor(default_ttl_ms: number | null = null) {
-    this.default_ttl = default_ttl_ms
+  constructor(default_ttl_ms: number | null = null, max_size: number | null = null, cleanup_interval_ms: number | null = null) {
+    this.default_ttl         = default_ttl_ms
+    this.max_size            = max_size
+    this.cleanup_interval_ms = cleanup_interval_ms
+
+    if (this.cleanup_interval_ms && this.cleanup_interval_ms > 0) {
+      this.start_cleanup_interval(this.cleanup_interval_ms)
+    }
   }
 
   /**
@@ -32,7 +42,11 @@ export class Cache<T> {
    */
   set(key: string, value: T, ttl_ms: number | null = this.default_ttl): void {
     const expires_at = ttl_ms ? Date.now() + ttl_ms : null
+    if (this.store.has(key)) {
+      this.store.delete(key)
+    }
     this.store.set(key, { value, expires_at })
+    this.enforce_limit()
   }
 
   /**
@@ -47,6 +61,8 @@ export class Cache<T> {
       this.store.delete(key)
       return undefined
     }
+    this.store.delete(key)
+    this.store.set(key, item)
     return item.value
   }
 
@@ -74,6 +90,7 @@ export class Cache<T> {
    */
   clear(): void {
     this.store.clear()
+    this.pending_requests.clear()
   }
 
   /**
@@ -137,9 +154,22 @@ export class Cache<T> {
   async get_or_set_async(key: string, factory: () => Promise<T>, ttl_ms?: number): Promise<T> {
     const existing = this.get(key)
     if (existing !== undefined) return existing
-    const value = await factory()
-    this.set(key, value, ttl_ms)
-    return value
+    const pending = this.pending_requests.get(key)
+    if (pending) return pending
+
+    const request = (async () => {
+      const value = await factory()
+      this.set(key, value, ttl_ms)
+      return value
+    })()
+
+    this.pending_requests.set(key, request)
+
+    try {
+      return await request
+    } finally {
+      this.pending_requests.delete(key)
+    }
   }
 
   /**
@@ -153,6 +183,7 @@ export class Cache<T> {
         this.store.delete(key)
       }
     }
+    this.enforce_limit()
   }
 
   /**
@@ -179,12 +210,48 @@ export class Cache<T> {
     item.expires_at = Date.now() + ttl_ms
     return true
   }
+
+  /**
+   * - START AUTO CLEANUP INTERVAL - \\
+   * @param cleanup_interval_ms Cleanup interval in milliseconds
+   * @returns {void}
+   */
+  start_cleanup_interval(cleanup_interval_ms: number): void {
+    this.stop_cleanup_interval()
+    this.cleanup_interval_ms = cleanup_interval_ms
+    this.cleanup_timer       = setInterval(() => this.cleanup(), cleanup_interval_ms)
+  }
+
+  /**
+   * - STOP AUTO CLEANUP INTERVAL - \\
+   * @returns {void}
+   */
+  stop_cleanup_interval(): void {
+    if (this.cleanup_timer) {
+      clearInterval(this.cleanup_timer)
+      this.cleanup_timer = null
+    }
+  }
+
+  /**
+   * - ENFORCE CACHE SIZE LIMIT - \\
+   * @returns {void}
+   */
+  private enforce_limit(): void {
+    if (!this.max_size || this.max_size <= 0) return
+
+    while (this.store.size > this.max_size) {
+      const oldest_key = this.store.keys().next().value
+      if (!oldest_key) break
+      this.store.delete(oldest_key)
+    }
+  }
 }
 
 // - Global Cache Instance - \\
 // - Singleton cache for application-wide use - \\
 
-const global_cache = new Cache<any>()
+const global_cache = new Cache<any>(null, 5000, 5 * 60 * 1000)
 
 /**
  * Sets a value in the global cache
