@@ -321,8 +321,18 @@ export const command: Command = {
                     closed_by : interaction.user,
                     reason    : `Bulk close - tickets before ${date_str}`,
                   })
+                  try {
+                    await thread.delete(`Bulk clear ticket before ${date_str}`)
+                  } catch (error) {
+                    log_error(client, error as Error, "clear_ticket_delete_thread", { thread_id: thread.id })
+                  }
                   closed++
                 } else {
+                  try {
+                    await thread.delete(`Bulk clear ticket before ${date_str}`)
+                  } catch (error) {
+                    log_error(client, error as Error, "clear_ticket_delete_thread", { thread_id: thread.id })
+                  }
                   closed++
                 }
               } else {

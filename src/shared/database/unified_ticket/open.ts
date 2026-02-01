@@ -18,12 +18,83 @@ import {
   TicketData,
 } from "./state"
 import { component, time, api, format } from "../../utils"
+import type { message_payload } from "../../utils"
+import { log_error } from "../../utils/error_logger"
 
 interface OpenTicketOptions {
   interaction: ButtonInteraction
   ticket_type: string
   issue_type?: string
   description?: string
+}
+
+/**
+ * @description Build thread limit message
+ * @param channel_id - Parent channel ID
+ * @returns Message payload
+ */
+function build_thread_limit_message(channel_id: string): message_payload {
+  return component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text([
+            "## Ticket Limit Reached",
+            "Ticket tidak bisa dibuat karena thread aktif sudah mencapai batas.",
+            "Silakan tunggu atau minta staff untuk mengarsipkan ticket lama.",
+            `Parent Channel: <#${channel_id}>`,
+          ]),
+        ],
+      }),
+    ],
+  })
+}
+
+/**
+ * @description Build simple error message
+ * @param text - Message text
+ * @returns Message payload
+ */
+function build_simple_error_message(text: string): message_payload {
+  return component.build_message({
+    components: [
+      component.container({
+        components: [component.text(text)],
+      }),
+    ],
+  })
+}
+
+/**
+ * @description Archive oldest active threads to free slots
+ * @param channel - Ticket parent channel
+ * @param limit - Max threads to archive
+ * @returns Number of threads archived
+ */
+async function archive_oldest_threads(channel: TextChannel, limit: number): Promise<number> {
+  const active = await channel.threads.fetchActive()
+
+  const sorted = [...active.threads.values()]
+    .filter(thread => !thread.archived)
+    .sort((a, b) => (a.createdTimestamp || 0) - (b.createdTimestamp || 0))
+
+  const to_archive = sorted.slice(0, limit)
+  let archived_count = 0
+
+  for (const thread of to_archive.values()) {
+    try {
+      await thread.setLocked(true)
+      await thread.setArchived(true)
+      archived_count++
+    } catch (error) {
+      log_error(channel.client, error as Error, "open_ticket_archive_oldest", {
+        thread_id : thread.id,
+        channel_id: channel.id,
+      })
+    }
+  }
+
+  return archived_count
 }
 
 export async function open_ticket(options: OpenTicketOptions): Promise<void> {
@@ -74,11 +145,47 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
     return
   }
 
-  const thread = await ticket_channel.threads.create({
-    name: `${config.thread_prefix}-${interaction.user.username}`,
-    type: ChannelType.PrivateThread,
-    autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
-  })
+  let thread: any = null
+
+  try {
+    thread = await ticket_channel.threads.create({
+      name: `${config.thread_prefix}-${interaction.user.username}`,
+      type: ChannelType.PrivateThread,
+      autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+    })
+  } catch (error: any) {
+    if (error?.code === 160006) {
+      const archived = await archive_oldest_threads(ticket_channel, 50)
+
+      if (archived > 0) {
+        try {
+          thread = await ticket_channel.threads.create({
+            name: `${config.thread_prefix}-${interaction.user.username}`,
+            type: ChannelType.PrivateThread,
+            autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+          })
+        } catch (retry_error: any) {
+          log_error(interaction.client, retry_error as Error, "open_ticket_thread_limit_retry", {
+            channel_id     : ticket_channel.id,
+            ticket_type    : ticket_type,
+            archived_count : archived,
+          })
+        }
+      }
+
+      if (!thread) {
+        await api.edit_deferred_reply(interaction, build_thread_limit_message(ticket_channel.id))
+        return
+      }
+    } else {
+      log_error(interaction.client, error as Error, "open_ticket_create_thread", {
+        channel_id  : ticket_channel.id,
+        ticket_type : ticket_type,
+      })
+      await api.edit_deferred_reply(interaction, build_simple_error_message("Failed to create ticket. Please try again."))
+      return
+    }
+  }
 
   await thread.members.add(user_id)
 
