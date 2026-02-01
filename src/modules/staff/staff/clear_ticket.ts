@@ -3,6 +3,7 @@ import {
   SlashCommandBuilder,
   PermissionFlagsBits,
   GuildMember,
+  Guild,
   ThreadChannel,
   ChannelType,
   MessageFlags,
@@ -14,6 +15,7 @@ import { close_ticket }      from "../../../shared/database/unified_ticket/close
 import { client }            from "../../../index"
 import {
   ticket_data,
+  ticket_types,
   load_all_tickets,
 }                            from "../../../shared/database/unified_ticket"
 import { log_error }         from "../../../shared/utils/error_logger"
@@ -21,13 +23,8 @@ import { log_error }         from "../../../shared/utils/error_logger"
 const TICKETS_COLLECTION = "unified_tickets"
 
 interface TicketData {
-  thread_id   : string
-  ticket_type : string
-  owner_id    : string
-  ticket_id   : string
-  open_time   : number
-  claimed_by? : string
-  staff       : string[]
+  thread_id : string
+  open_time?: number
 }
 
 /**
@@ -40,11 +37,50 @@ async function get_tickets_before_date(before_date: number): Promise<TicketData[
 
   for (const [, data] of ticket_data) {
     if (data.open_time && data.open_time < before_date) {
-      tickets.push(data as TicketData)
+      tickets.push({
+        thread_id : data.thread_id,
+        open_time : data.open_time,
+      })
     }
   }
 
   return tickets
+}
+
+/**
+ * @description Get all ticket parent IDs from config
+ * @returns Array of parent channel IDs
+ */
+function get_ticket_parent_ids(): string[] {
+  return Object.values(ticket_types).map(config => config.ticket_parent_id)
+}
+
+/**
+ * @description Get active ticket threads opened before a specific date
+ * @param before_date - Unix timestamp in milliseconds
+ * @param guild - Guild instance
+ * @returns Array of thread IDs
+ */
+async function get_active_threads_before_date(before_date: number, guild: Guild): Promise<TicketData[]> {
+
+  const parent_ids = new Set(get_ticket_parent_ids())
+
+  try {
+    const active_threads = await guild.channels.fetchActiveThreads()
+    const threads = active_threads.threads.filter(thread => {
+      if (!thread.parentId || !parent_ids.has(thread.parentId)) return false
+      if (!thread.createdTimestamp) return false
+      return thread.createdTimestamp < before_date
+    })
+
+    return threads.map(thread => ({
+      thread_id : thread.id,
+      open_time : thread.createdTimestamp || undefined,
+    }))
+  } catch (error) {
+    log_error(client, error as Error, "clear_ticket_fetch_active_threads")
+    return []
+  }
 }
 
 /**
@@ -184,6 +220,14 @@ export const command: Command = {
       return
     }
 
+    if (!interaction.guild) {
+      await interaction.reply({
+        content   : "This command can only be used in a server.",
+        ephemeral : true,
+      })
+      return
+    }
+
     const date_str    = interaction.options.getString("before", true)
     const before_date = parse_date(date_str)
 
@@ -201,7 +245,20 @@ export const command: Command = {
       // - RELOAD TICKETS FROM DATABASE - \\
       await load_all_tickets()
 
-      const tickets = await get_tickets_before_date(before_date)
+      const tickets_from_db = await get_tickets_before_date(before_date)
+      const active_threads  = await get_active_threads_before_date(before_date, interaction.guild)
+
+      const ticket_map = new Map<string, TicketData>()
+      for (const ticket of tickets_from_db) {
+        ticket_map.set(ticket.thread_id, ticket)
+      }
+      for (const thread of active_threads) {
+        if (!ticket_map.has(thread.thread_id)) {
+          ticket_map.set(thread.thread_id, thread)
+        }
+      }
+
+      const tickets = Array.from(ticket_map.values())
 
       if (tickets.length === 0) {
         await interaction.editReply({
