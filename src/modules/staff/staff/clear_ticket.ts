@@ -63,6 +63,38 @@ function build_simple_message(text: string): component.message_payload {
 }
 
 /**
+ * @description Build progress message for bulk close
+ * @param closed - Number of closed tickets
+ * @param failed - Number of failed tickets
+ * @param total - Total tickets to process
+ * @param before_date - Date string
+ * @returns Message payload
+ */
+function build_progress_message(closed: number, failed: number, total: number, before_date: string): component.message_payload {
+  const processed = closed + failed
+  const remaining = Math.max(total - processed, 0)
+
+  return component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text([
+            `## Clear Ticket Progress`,
+            `Closing tickets opened before **${before_date}**`,
+            ``,
+            `- **Total:** ${total}`,
+            `- **Processed:** ${processed}`,
+            `- **Closed:** ${closed}`,
+            `- **Failed:** ${failed}`,
+            `- **Remaining:** ${remaining}`,
+          ]),
+        ],
+      }),
+    ],
+  })
+}
+
+/**
  * @description Build confirmation message for clear ticket operation
  * @param count - Number of tickets to be closed
  * @param before_date - Date string
@@ -211,14 +243,14 @@ export const command: Command = {
 
         if (button_interaction.customId === "clear_ticket_confirm") {
           await button_interaction.update({
-            ...build_simple_message(`Closing ${tickets.length} tickets... This may take a while.`),
+            ...build_progress_message(0, 0, tickets.length, date_str),
             flags: MessageFlags.IsComponentsV2,
           })
 
           let closed = 0
           let failed = 0
 
-          for (const ticket of tickets) {
+          for (const [index, ticket] of tickets.entries()) {
             try {
               const channel = await client.channels.fetch(ticket.thread_id).catch(() => null)
 
@@ -244,8 +276,16 @@ export const command: Command = {
                 closed++
               }
 
+              // - PROGRESS UPDATE - \\
+              if ((index + 1) % 25 === 0 || index + 1 === tickets.length) {
+                await interaction.editReply({
+                  ...build_progress_message(closed, failed, tickets.length, date_str),
+                  flags: MessageFlags.IsComponentsV2,
+                }).catch(() => {})
+              }
+
               // - DELAY TO AVOID RATE LIMITING - \\
-              await new Promise(resolve => setTimeout(resolve, 1000))
+              await new Promise(resolve => setTimeout(resolve, 300))
             } catch (error) {
               failed++
               log_error(client, error as Error, "clear_ticket", { thread_id: ticket.thread_id })
