@@ -314,27 +314,18 @@ export const command: Command = {
               if (channel && channel.type === ChannelType.PublicThread) {
                 const thread = channel as ThreadChannel
 
-                if (!thread.archived) {
+                try {
                   await close_ticket({
                     thread,
                     client,
                     closed_by : interaction.user,
                     reason    : `Bulk close - tickets before ${date_str}`,
                   })
-                  try {
-                    await thread.delete(`Bulk clear ticket before ${date_str}`)
-                  } catch (error) {
-                    log_error(client, error as Error, "clear_ticket_delete_thread", { thread_id: thread.id })
-                  }
-                  closed++
-                } else {
-                  try {
-                    await thread.delete(`Bulk clear ticket before ${date_str}`)
-                  } catch (error) {
-                    log_error(client, error as Error, "clear_ticket_delete_thread", { thread_id: thread.id })
-                  }
-                  closed++
+                } catch (error) {
+                  log_error(client, error as Error, "clear_ticket_close_thread", { thread_id: thread.id })
                 }
+
+                closed++
               } else {
                 // - CHANNEL NOT FOUND, DELETE FROM DATABASE - \\
                 if (db.is_connected()) {
@@ -381,7 +372,8 @@ export const command: Command = {
     } catch (error) {
       log_error(client, error as Error, "clear_ticket")
       await interaction.editReply({
-        content: "An error occurred while processing the command.",
+        ...build_simple_message("An error occurred while processing the command."),
+        flags: MessageFlags.IsComponentsV2,
       })
     }
   },
