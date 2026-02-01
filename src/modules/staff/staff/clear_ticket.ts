@@ -58,14 +58,12 @@ function build_confirmation_message(count: number, before_date: string): compone
     components: [
       component.container({
         components: [
-          component.section({
-            content: [
-              `## Clear Ticket Confirmation`,
-              `Found **${count}** tickets opened before **${before_date}**`,
-              ``,
-              `Are you sure you want to close all these tickets?`,
-            ],
-          }),
+          component.text([
+            `## Clear Ticket Confirmation`,
+            `Found **${count}** tickets opened before **${before_date}**`,
+            ``,
+            `Are you sure you want to close all these tickets?`,
+          ]),
           component.divider(),
           component.action_row(
             component.danger_button("Confirm Close All", "clear_ticket_confirm"),
@@ -89,15 +87,13 @@ function build_result_message(closed: number, failed: number, before_date: strin
     components: [
       component.container({
         components: [
-          component.section({
-            content: [
-              `## Clear Ticket Complete`,
-              `Closed tickets opened before **${before_date}**`,
-              ``,
-              `- **Closed:** ${closed}`,
-              `- **Failed:** ${failed}`,
-            ],
-          }),
+          component.text([
+            `## Clear Ticket Complete`,
+            `Closed tickets opened before **${before_date}**`,
+            ``,
+            `- **Closed:** ${closed}`,
+            `- **Failed:** ${failed}`,
+          ]),
         ],
       }),
     ],
