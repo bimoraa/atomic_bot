@@ -48,6 +48,21 @@ async function get_tickets_before_date(before_date: number): Promise<TicketData[
 }
 
 /**
+ * @description Build simple text message for component v2
+ * @param text - Message text
+ * @returns Message payload
+ */
+function build_simple_message(text: string): component.message_payload {
+  return component.build_message({
+    components: [
+      component.container({
+        components: [component.text(text)],
+      }),
+    ],
+  })
+}
+
+/**
  * @description Build confirmation message for clear ticket operation
  * @param count - Number of tickets to be closed
  * @param before_date - Date string
@@ -187,9 +202,8 @@ export const command: Command = {
 
         if (button_interaction.customId === "clear_ticket_cancel") {
           await button_interaction.update({
-            content    : "Operation cancelled.",
-            components : [],
-            flags      : MessageFlags.IsComponentsV2,
+            ...build_simple_message("Operation cancelled."),
+            flags: MessageFlags.IsComponentsV2,
           })
           collector.stop()
           return
@@ -197,9 +211,8 @@ export const command: Command = {
 
         if (button_interaction.customId === "clear_ticket_confirm") {
           await button_interaction.update({
-            content    : `Closing ${tickets.length} tickets... This may take a while.`,
-            components : [],
-            flags      : MessageFlags.IsComponentsV2,
+            ...build_simple_message(`Closing ${tickets.length} tickets... This may take a while.`),
+            flags: MessageFlags.IsComponentsV2,
           })
 
           let closed = 0
@@ -253,8 +266,8 @@ export const command: Command = {
       collector.on("end", async (_, reason) => {
         if (reason === "time") {
           await interaction.editReply({
-            content    : "Confirmation timed out.",
-            components : [],
+            ...build_simple_message("Confirmation timed out."),
+            flags: MessageFlags.IsComponentsV2,
           }).catch(() => {})
         }
       })
