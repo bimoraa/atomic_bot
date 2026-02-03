@@ -8,8 +8,10 @@ import { Client }      from "discord.js"
 import * as file       from "../../shared/utils/file"
 import { log_error }   from "../../shared/utils/error_logger"
 
-const SHOWROOM_API_BASE = process.env.JKT48_SHOWROOM_API_BASE || "https://jkt48showroom-api.vercel.app/api"
 const SHOWROOM_CFG_PATH = process.env.JKT48_SHOWROOM_CFG_PATH || file.resolve("assets", "jkt48", "jkt48_showroom.cfg")
+const SHOWROOM_WEB_BASE = "https://www.showroom-live.com"
+
+let showroom_sr_id = ""
 
 export interface showroom_member {
   room_id : number
@@ -36,6 +38,70 @@ export interface showroom_live_room {
   viewers     : number
   image       : string
   url         : string
+}
+
+/**
+ * - EXTRACT SHOWROOM SR ID - \\
+ * @param {string[] | string | undefined} set_cookie - Set-Cookie header value
+ * @returns {string} sr_id cookie value
+ */
+function extract_showroom_sr_id(set_cookie: string[] | string | undefined): string {
+  if (!set_cookie) return ""
+
+  const cookies = Array.isArray(set_cookie) ? set_cookie : [set_cookie]
+  for (const cookie of cookies) {
+    const match = cookie.match(/(?:^|;\s*)sr_id=([^;]+)/i)
+    if (match?.[1]) return match[1]
+  }
+
+  return ""
+}
+
+/**
+ * - GET SHOWROOM DEFAULT HEADERS - \\
+ * @returns {Record<string, string>} Headers
+ */
+function get_showroom_headers(): Record<string, string> {
+  return {
+    "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Referer"    : "https://www.showroom-live.com/",
+    "Accept"     : "application/json",
+    "Cookie"     : showroom_sr_id ? `sr_id=${showroom_sr_id};` : "",
+  }
+}
+
+/**
+ * - REFRESH SHOWROOM SESSION - \\
+ * @returns {Promise<void>} Void
+ */
+async function refresh_showroom_session(): Promise<void> {
+  const response = await axios.get(`${SHOWROOM_WEB_BASE}/`, {
+    timeout : 15000,
+    headers : {
+      "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+      "Referer"    : "https://www.showroom-live.com/",
+      "Accept"     : "text/html",
+    },
+  })
+
+  showroom_sr_id = extract_showroom_sr_id(response.headers?.["set-cookie"])
+}
+
+/**
+ * - SHOWROOM GET REQUEST - \\
+ * @param {string} path - API path
+ * @param {object} params - Query params
+ * @returns {Promise<any>} Response data
+ */
+async function showroom_get(path: string, params: Record<string, any> = {}): Promise<any> {
+  const url = `${SHOWROOM_WEB_BASE}${path}`
+  const response = await axios.get(url, {
+    timeout : 15000,
+    params  : params,
+    headers : get_showroom_headers(),
+  })
+
+  return response.data
 }
 
 //
@@ -112,34 +178,11 @@ async function load_showroom_cfg_members(client: Client): Promise<showroom_membe
  */
 export async function fetch_showroom_members(client: Client): Promise<showroom_member[]> {
   try {
-    const response = await axios.get(`${SHOWROOM_API_BASE}/member`, {
-      timeout : 15000,
-      headers : {
-        "User-Agent" : "JKT48-Discord-Bot/2.0",
-        "Accept"     : "application/json",
-      },
-    })
-
-    const data = response.data?.data || response.data || []
-    if (!Array.isArray(data)) {
-      return await load_showroom_cfg_members(client)
-    }
-
-    const members = data.map((member: any) => {
-      const room_id = Number(member.room_id || member.roomId || member.showroom_id || member.id || 0)
-      return {
-        room_id : room_id,
-        name    : member.name || member.member_name || member.nickname || "Unknown",
-        image   : member.image || member.img || member.profile_image || "",
-      } as showroom_member
-    }).filter((member: showroom_member) => member.room_id)
-    if (members.length > 0) {
-      return members
-    }
-
     return await load_showroom_cfg_members(client)
   } catch (error) {
-    await log_error(client, error as Error, "showroom_fetch_members", {})
+    await log_error(client, error as Error, "showroom_fetch_members", {
+      path : SHOWROOM_CFG_PATH,
+    })
     return await load_showroom_cfg_members(client)
   }
 }
@@ -151,36 +194,44 @@ export async function fetch_showroom_members(client: Client): Promise<showroom_m
  */
 export async function fetch_showroom_live_rooms(client: Client): Promise<showroom_live_room[]> {
   try {
-    const response = await axios.get(`${SHOWROOM_API_BASE}/now_live`, {
-      timeout : 15000,
-      params  : { group: "jkt48" },
-      headers : {
-        "User-Agent" : "JKT48-Discord-Bot/2.0",
-        "Accept"     : "application/json",
-      },
-    })
+    const members = await load_showroom_cfg_members(client)
+    const member_room_ids = new Set<number>(members.map((member) => member.room_id))
+    const member_name_map = new Map<number, string>(members.map((member) => [member.room_id, member.name]))
 
-    const data = response.data?.data || response.data || []
-    if (!Array.isArray(data)) return []
+    let onlives_response = await showroom_get("/api/live/onlives")
+    if (!showroom_sr_id) {
+      await refresh_showroom_session()
+      onlives_response = await showroom_get("/api/live/onlives")
+    }
 
-    return data.map((room: any) => {
-      const room_id    = Number(room.room_id || room.roomId || room.id || 0)
-      const started_at = normalize_showroom_timestamp(room.live_at || room.started_at || room.start_time || Date.now())
-      const member_name = room.name || room.member_name || room.nickname || "Unknown"
-      const image = room.image || room.img || room.profile_image || ""
-      const url   = room.url || room.stream_url || room.showroom_url || (room_id ? `https://www.showroom-live.com/r/${room_id}` : "")
+    const onlives = onlives_response?.onlives || []
+    const live_rooms = Array.isArray(onlives)
+      ? onlives.flatMap((genre: any) => Array.isArray(genre?.lives) ? genre.lives : [])
+      : []
+
+    return live_rooms.map((room: any) => {
+      const room_id     = Number(room.room_id || 0)
+      const started_at  = normalize_showroom_timestamp(room.started_at || Date.now())
+      const member_name = member_name_map.get(room_id) || room.main_name || room.room_name || "Unknown"
+      const room_key    = room.room_url_key || ""
+      const image       = room.image || ""
+      const url         = room_key ? `https://www.showroom-live.com/r/${room_key}` : ""
+      const title       = room.telop || "Showroom Live"
+
       return {
         room_id     : room_id,
         member_name : member_name,
-        title       : room.title || room.room_title || "Showroom Live",
+        title       : title,
         started_at  : started_at,
-        viewers     : Number(room.viewers || room.view_count || room.viewer || 0),
+        viewers     : Number(room.view_num || 0),
         image       : image,
         url         : url,
       } as showroom_live_room
-    }).filter((room: showroom_live_room) => room.room_id)
+    }).filter((room: showroom_live_room) => room.room_id && member_room_ids.has(room.room_id))
   } catch (error) {
-    await log_error(client, error as Error, "showroom_fetch_live_rooms", {})
+    await log_error(client, error as Error, "showroom_fetch_live_rooms", {
+      endpoint : "https://www.showroom-live.com/api/live/onlives",
+    })
     return []
   }
 }
