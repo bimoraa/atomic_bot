@@ -1,3 +1,4 @@
+import axios              from "axios"
 import { Client }         from "discord.js"
 import { db, component }  from "../../../shared/utils"
 import { log_error }      from "../../../shared/utils/error_logger"
@@ -7,6 +8,7 @@ import * as showroom_live from "../../../infrastructure/api/showroom_live"
 const NOTIFICATION_COLLECTION = "idn_live_notifications"
 const LIVE_STATE_COLLECTION   = "idn_live_state"
 const LIVE_NOTIFICATION_CHANNEL_ID = "1468291039889588326"
+const HISTORY_API_BASE = process.env.JKT48_HISTORY_API_BASE || ""
 
 function normalize_idn_username(input: string): string {
   return input.toLowerCase().replace(/^@/, "").replace(/\s+/g, "")
@@ -217,6 +219,113 @@ function build_live_channel_message(options: {
       }),
     ],
   })
+}
+
+/**
+ * - BUILD HISTORY API URL - \\
+ * @param {string} path - Path
+ * @returns {string} Full URL
+ */
+function build_history_url(path: string): string {
+  const base = HISTORY_API_BASE.replace(/\/+$/, "")
+  if (!base) return ""
+  return `${base}${path.startsWith("/") ? "" : "/"}${path}`
+}
+
+/**
+ * - FETCH SHOWROOM HISTORY - \\
+ * @param {Client} client - Discord client
+ * @param {number} room_id - Showroom room ID
+ * @returns {Promise<Partial<live_history_record>>} History data
+ */
+async function fetch_showroom_history(client: Client, room_id: number): Promise<Partial<live_history_record>> {
+  if (!HISTORY_API_BASE || !room_id) {
+    return {}
+  }
+
+  try {
+    const recent_url = build_history_url("/recent")
+    const recent_response = await axios.get(recent_url, {
+      timeout : 15000,
+      params  : {
+        type    : "showroom",
+        room_id : room_id,
+        perpage : 1,
+        order   : -1,
+        sort    : "date",
+      },
+    })
+
+    const recents = recent_response.data?.recents || []
+    const recent = Array.isArray(recents) ? recents[0] : null
+    if (!recent?.data_id) {
+      return {}
+    }
+
+    const detail_url = build_history_url(`/recent/${recent.data_id}`)
+    const detail_response = await axios.get(detail_url, { timeout: 15000 })
+    const detail = detail_response.data || {}
+    const comments = detail?.live_info?.comments
+
+    return {
+      comments      : Number(comments?.num || 0),
+      comment_users : Number(comments?.users || 0),
+      total_gold    : Number(detail?.total_point || detail?.total_gifts || recent?.points || 0),
+      started_at    : detail?.live_info?.date?.start ? new Date(detail.live_info.date.start).getTime() : undefined,
+      ended_at      : detail?.live_info?.date?.end ? new Date(detail.live_info.date.end).getTime() : undefined,
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "showroom_history_fetch", {
+      room_id : room_id,
+    })
+    return {}
+  }
+}
+
+/**
+ * - FETCH IDN HISTORY - \\
+ * @param {Client} client - Discord client
+ * @param {string} slug - IDN live slug
+ * @returns {Promise<Partial<live_history_record>>} History data
+ */
+async function fetch_idn_history(client: Client, slug: string): Promise<Partial<live_history_record>> {
+  if (!slug) {
+    return {}
+  }
+
+  try {
+    const response = await axios.get(`https://api.idn.app/api/v4/livestream/${slug}`, {
+      timeout : 15000,
+      headers : {
+        "User-Agent" : "Android/14/SM-A528B/6.47.4",
+        "x-api-key"  : "123f4c4e-6ce1-404d-8786-d17e46d65b5c",
+      },
+    })
+
+    const detail = response.data?.data || response.data || {}
+    const creator = detail?.creator || {}
+    const comments = detail?.comments
+      || detail?.comment
+      || detail?.comment_count
+      || detail?.total_comment
+      || detail?.total_comments
+      || detail?.chat_count
+      || detail?.chat_room_count
+      || 0
+
+    return {
+      total_gold    : Number(creator?.total_gold || 0),
+      comments      : Number(comments || 0),
+      comment_users : Number(detail?.comment_users || 0),
+      started_at    : detail?.live_at ? Number(detail.live_at) * 1000 : undefined,
+      ended_at      : detail?.end_at ? Number(detail.end_at) * 1000 : undefined,
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "idn_history_fetch", {
+      slug : slug,
+    })
+    return {}
+  }
 }
 
 /**
@@ -729,10 +838,8 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
     if (normalize_live_platform(state.type || "idn") !== platform) continue
     if (!active_keys.includes(state.live_key)) {
       const ended_at = Date.now()
-      const started_at = state.started_at || ended_at
-      const duration_ms = Math.max(0, ended_at - started_at)
       const platform_label = platform === "showroom" ? "showroom" : "idn"
-      const history_record: live_history_record = {
+      const base_record: live_history_record = {
         platform      : platform_label,
         member_name   : state.member_name || state.username || "Unknown",
         title         : state.title || "",
@@ -742,8 +849,26 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
         comments      : 0,
         comment_users : 0,
         total_gold    : 0,
-        started_at    : started_at,
+        started_at    : state.started_at || ended_at,
         ended_at      : ended_at,
+        duration_ms   : 0,
+      }
+
+      const enrich = platform === "showroom"
+        ? await fetch_showroom_history(client, state.room_id || 0)
+        : await fetch_idn_history(client, state.slug || "")
+
+      const final_started_at = enrich.started_at || base_record.started_at
+      const final_ended_at = enrich.ended_at || base_record.ended_at
+      const duration_ms = Math.max(0, final_ended_at - final_started_at)
+
+      const history_record: live_history_record = {
+        ...base_record,
+        comments      : enrich.comments ?? base_record.comments,
+        comment_users : enrich.comment_users ?? base_record.comment_users,
+        total_gold    : enrich.total_gold ?? base_record.total_gold,
+        started_at    : final_started_at,
+        ended_at      : final_ended_at,
         duration_ms   : duration_ms,
       }
 
