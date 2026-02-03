@@ -5,14 +5,27 @@
 
 import axios           from "axios"
 import { Client }      from "discord.js"
+import * as file       from "../../shared/utils/file"
 import { log_error }   from "../../shared/utils/error_logger"
 
 const SHOWROOM_API_BASE = process.env.JKT48_SHOWROOM_API_BASE || "https://jkt48showroom-api.vercel.app/api"
+const SHOWROOM_CFG_PATH = process.env.JKT48_SHOWROOM_CFG_PATH || file.resolve("assets", "jkt48", "jkt48_showroom.cfg")
 
 export interface showroom_member {
   room_id : number
   name    : string
   image?  : string
+}
+
+export interface showroom_cfg_account {
+  room_id   : number
+  room_key  : string
+  room_name : string
+}
+
+export interface showroom_cfg_payload {
+  officials? : Record<string, showroom_cfg_account>
+  members?   : Record<string, showroom_cfg_account>
 }
 
 export interface showroom_live_room {
@@ -38,6 +51,47 @@ function normalize_showroom_timestamp(live_at: number | string): number {
 }
 
 /**
+ * - LOAD SHOWROOM CFG MEMBERS - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<showroom_member[]>} Member list
+ */
+async function load_showroom_cfg_members(client: Client): Promise<showroom_member[]> {
+  try {
+    if (!file.exists(SHOWROOM_CFG_PATH)) {
+      return []
+    }
+
+    const payload = file.read_json<showroom_cfg_payload>(SHOWROOM_CFG_PATH)
+    const records = [
+      payload?.officials || {},
+      payload?.members || {},
+    ]
+
+    const members: showroom_member[] = []
+
+    for (const record of records) {
+      for (const account of Object.values(record)) {
+        const room_id = Number(account?.room_id || 0)
+        if (!room_id) continue
+
+        members.push({
+          room_id : room_id,
+          name    : account.room_name || "Unknown",
+          image   : "",
+        })
+      }
+    }
+
+    return members
+  } catch (error) {
+    await log_error(client, error as Error, "showroom_load_cfg_members", {
+      path : SHOWROOM_CFG_PATH,
+    })
+    return []
+  }
+}
+
+/**
  * - FETCH SHOWROOM MEMBERS - \\
  * @param {Client} client - Discord client
  * @returns {Promise<showroom_member[]>} Member list
@@ -53,9 +107,11 @@ export async function fetch_showroom_members(client: Client): Promise<showroom_m
     })
 
     const data = response.data?.data || response.data || []
-    if (!Array.isArray(data)) return []
+    if (!Array.isArray(data)) {
+      return await load_showroom_cfg_members(client)
+    }
 
-    return data.map((member: any) => {
+    const members = data.map((member: any) => {
       const room_id = Number(member.room_id || member.roomId || member.showroom_id || member.id || 0)
       return {
         room_id : room_id,
@@ -63,9 +119,14 @@ export async function fetch_showroom_members(client: Client): Promise<showroom_m
         image   : member.image || member.img || member.profile_image || "",
       } as showroom_member
     }).filter((member: showroom_member) => member.room_id)
+    if (members.length > 0) {
+      return members
+    }
+
+    return await load_showroom_cfg_members(client)
   } catch (error) {
     await log_error(client, error as Error, "showroom_fetch_members", {})
-    return []
+    return await load_showroom_cfg_members(client)
   }
 }
 

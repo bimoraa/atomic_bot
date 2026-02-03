@@ -9,19 +9,19 @@ import * as db         from "../../shared/utils/database"
 import * as file       from "../../shared/utils/file"
 import { log_error }   from "../../shared/utils/error_logger"
 
-const IDN_LIVE_BASE        = "https://www.idn.app"
-const IDN_MOBILE_API       = "https://mobile-api.idntimes.com/v3/livestreams"
-const IDN_DETAIL_API       = "https://api.idn.app/api/v4/livestream"
-const IDN_GRAPHQL_API      = "https://api.idn.app/graphql"
-const IDN_ROSTER_API_BASE  = process.env.JKT48_SHOWROOM_API_BASE || "https://jkt48showroom-api.vercel.app"
-const IDN_UUID_LIST_PATH   = process.env.JKT48_IDN_UUID_LIST_PATH || file.resolve("assets", "jkt48", "jkt48_member-uuid.cfg")
+const IDN_LIVE_BASE         = "https://www.idn.app"
+const IDN_MOBILE_API        = "https://mobile-api.idntimes.com/v3/livestreams"
+const IDN_DETAIL_API        = "https://api.idn.app/api/v4/livestream"
+const IDN_GRAPHQL_API       = "https://api.idn.app/graphql"
+const IDN_ROSTER_API_BASE   = process.env.JKT48_SHOWROOM_API_BASE || "https://jkt48showroom-api.vercel.app"
+const IDN_CFG_PATH          = process.env.JKT48_IDN_CFG_PATH || file.resolve("assets", "jkt48", "jkt48_idn.cfg")
 const IDN_ROSTER_COLLECTION = "idn_roster_cache"
 const IDN_ROSTER_CACHE_KEY  = "default"
-const IDN_MOBILE_KEY       = "1ccc5bc4-8bb4-414c-b524-92d11a85a818"
-const IDN_DETAIL_KEY       = "123f4c4e-6ce1-404d-8786-d17e46d65b5c"
-const IDN_USER_AGENT       = "IDN/6.41.1 (com.idntimes.IDNTimes; build:745; iOS 17.2.1) Alamofire/5.1.0"
-const IDN_DETAIL_AGENT     = "Android/14/SM-A528B/6.47.4"
-const IDN_ROSTER_TTL_MS    = 1000 * 60 * 60 * 6
+const IDN_MOBILE_KEY        = "1ccc5bc4-8bb4-414c-b524-92d11a85a818"
+const IDN_DETAIL_KEY        = "123f4c4e-6ce1-404d-8786-d17e46d65b5c"
+const IDN_USER_AGENT        = "IDN/6.41.1 (com.idntimes.IDNTimes; build:745; iOS 17.2.1) Alamofire/5.1.0"
+const IDN_DETAIL_AGENT      = "Android/14/SM-A528B/6.47.4"
+const IDN_ROSTER_TTL_MS     = 1000 * 60 * 60 * 6
 
 const detail_cache      = new Map<string, string>()
 const roster_cache      = {
@@ -37,6 +37,18 @@ export interface idn_user {
 
 export interface idn_public_profile extends idn_user {
   uuid? : string
+}
+
+export interface idn_cfg_account {
+  username            : string
+  uuid                : string
+  name                : string
+  default_stream_url? : string | null
+}
+
+export interface idn_cfg_payload {
+  officials? : Record<string, idn_cfg_account>
+  members?   : Record<string, idn_cfg_account>
 }
 
 export interface idn_roster_cache {
@@ -151,23 +163,33 @@ async function save_idn_roster_cache(client: Client, members: jkt48_member[], so
  */
 async function fetch_idn_uuid_list(client: Client): Promise<string[]> {
   try {
-    if (file.exists(IDN_UUID_LIST_PATH)) {
-      const local_data = file.read_json<unknown>(IDN_UUID_LIST_PATH)
-      if (Array.isArray(local_data)) {
-        return local_data.filter((uuid) => typeof uuid === "string" && uuid.length > 0)
+    if (!file.exists(IDN_CFG_PATH)) {
+      return []
+    }
+
+    const payload = file.read_json<idn_cfg_payload>(IDN_CFG_PATH)
+    const records = [
+      payload?.officials || {},
+      payload?.members || {},
+    ]
+
+    const uuids = new Set<string>()
+
+    for (const record of records) {
+      for (const account of Object.values(record)) {
+        if (account?.uuid) {
+          uuids.add(account.uuid)
+        }
       }
     }
+
+    return Array.from(uuids)
   } catch (error) {
     await log_error(client, error as Error, "idn_live_fetch_uuid_list", {
-      path : IDN_UUID_LIST_PATH,
+      path : IDN_CFG_PATH,
     })
     return []
   }
-
-  await log_error(client, new Error("UUID list file not found or invalid"), "idn_live_fetch_uuid_list", {
-    path : IDN_UUID_LIST_PATH,
-  })
-  return []
 }
 
 /**
@@ -257,6 +279,49 @@ function is_jkt48_profile(profile: idn_public_profile): boolean {
   const name     = profile.name.toLowerCase()
   const username = profile.username.toLowerCase()
   return name.includes("jkt48") || username.includes("jkt48")
+}
+
+/**
+ * - LOAD IDN CFG MEMBERS - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<jkt48_member[]>} Member list
+ */
+async function load_idn_cfg_members(client: Client): Promise<jkt48_member[]> {
+  try {
+    if (!file.exists(IDN_CFG_PATH)) {
+      return []
+    }
+
+    const payload = file.read_json<idn_cfg_payload>(IDN_CFG_PATH)
+    const records = [
+      payload?.officials || {},
+      payload?.members || {},
+    ]
+
+    const members: jkt48_member[] = []
+
+    for (const record of records) {
+      for (const account of Object.values(record)) {
+        if (!account?.username || !account?.name) continue
+
+        members.push({
+          slug      : account.username,
+          name      : account.name,
+          username  : account.username,
+          url       : `${IDN_LIVE_BASE}/${account.username}`,
+          image     : "",
+          is_live   : false,
+        })
+      }
+    }
+
+    return members
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_load_cfg_members", {
+      path : IDN_CFG_PATH,
+    })
+    return []
+  }
 }
 
 /**
@@ -519,12 +584,21 @@ async function fetch_idn_roster(client: Client): Promise<jkt48_member[]> {
       })
     }
 
+    const cfg_members  = await load_idn_cfg_members(client)
     const uuid_members = await fetch_idn_roster_by_uuid(client)
-    if (uuid_members.length > 0) {
-      return uuid_members
+    const combined: jkt48_member[] = []
+
+    for (const member of cfg_members) {
+      combined.push(member)
     }
 
-    return []
+    for (const member of uuid_members) {
+      if (!combined.some((entry) => entry.username === member.username)) {
+        combined.push(member)
+      }
+    }
+
+    return combined
   } catch (error) {
     await log_error(client, error as Error, "idn_live_fetch_roster", {
       base_url : IDN_ROSTER_API_BASE,
@@ -552,12 +626,16 @@ async function fetch_idn_live_data(client: Client): Promise<idn_livestream[]> {
 
     const mapped = await Promise.all(
       filtered_streams.map(async (stream: any) => {
-        const stream_url = stream.playback_url || await fetch_live_detail(stream.slug, client)
+        const stream_url = await fetch_live_detail(stream.slug || stream.live_slug || "", client)
+          || stream.playback_url
+          || stream.stream_url
+          || ""
+
         return {
-          slug       : stream.slug,
+          slug       : stream.slug || stream.live_slug || "",
           title      : stream.title || "Untitled Stream",
-          image      : stream.image_url || "",
-          stream_url : stream_url || "",
+          image      : stream.image_url || stream.image || "",
+          stream_url : stream_url,
           view_count : stream.view_count || 0,
           live_at    : normalize_live_timestamp(stream.live_at),
           user       : {
