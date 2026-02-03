@@ -70,6 +70,8 @@ import * as reminder_cancel_select       from "./select_menus/reminder"
 import * as middleman_select             from "./select_menus/middleman"
 import * as middleman_buttons            from "./buttons/middleman"
 import * as bypass_support_type_select   from "./select_menus/bypass"
+import * as jkt48_history_live           from "./buttons/jkt48/history_live"
+import * as jkt48_check_on_live          from "./buttons/jkt48/check_on_live"
 
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
@@ -449,6 +451,14 @@ export async function handle_interaction(
       }
       if (interaction.customId.startsWith("quarantine_release:")) {
         await quarantine_release.handle_quarantine_release(interaction)
+        return
+      }
+      if (interaction.customId.startsWith("history_live_prev:") || interaction.customId.startsWith("history_live_next:")) {
+        await jkt48_history_live.handle_history_live_button(interaction)
+        return
+      }
+      if (interaction.customId.startsWith("check_on_live_prev:") || interaction.customId.startsWith("check_on_live_next:")) {
+        await jkt48_check_on_live.handle_check_on_live_button(interaction)
         return
       }
     } catch (err) {
