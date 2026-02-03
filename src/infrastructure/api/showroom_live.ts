@@ -51,6 +51,20 @@ function normalize_showroom_timestamp(live_at: number | string): number {
 }
 
 /**
+ * - NORMALIZE SHOWROOM SEARCH - \\
+ * @param {string} input - Raw input
+ * @returns {string} Normalized search text
+ */
+function normalize_showroom_search(input: string): string {
+  const cleaned = input.toLowerCase().trim().replace(/^@/, "")
+  const without_prefix = cleaned.replace(/jkt48/g, "")
+  return without_prefix
+    .replace(/[._-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+/**
  * - LOAD SHOWROOM CFG MEMBERS - \\
  * @param {Client} client - Discord client
  * @returns {Promise<showroom_member[]>} Member list
@@ -179,12 +193,15 @@ export async function fetch_showroom_live_rooms(client: Client): Promise<showroo
  */
 export async function get_showroom_member_by_name(name: string, client: Client): Promise<showroom_member | null> {
   const members = await fetch_showroom_members(client)
-  const normalized_search = name.toLowerCase().trim()
+  const normalized_search = normalize_showroom_search(name)
 
   const found_member = members.find((member) => {
     const member_name = member.name.toLowerCase()
+    const normalized_member = normalize_showroom_search(member.name)
     return member_name.includes(normalized_search)
       || normalized_search.includes(member_name)
+      || normalized_member.includes(normalized_search)
+      || normalized_search.includes(normalized_member)
   })
 
   return found_member || null

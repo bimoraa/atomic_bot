@@ -86,6 +86,8 @@ export async function add_notification(options: { user_id: string; member_name: 
   try {
     const platform          = normalize_live_platform(options.type || "idn")
     const fallback_username = normalize_idn_username(options.member_name)
+    const input_trimmed     = options.member_name.trim()
+    const parsed_room_id    = /^\d+$/.test(input_trimmed) ? Number(input_trimmed) : undefined
     let member_name         = format_member_display_name(options.member_name.trim())
     let username            = fallback_username
     let room_id             = undefined as number | undefined
@@ -101,17 +103,22 @@ export async function add_notification(options: { user_id: string; member_name: 
 
     if (platform === "showroom") {
       const member = await showroom_live.get_showroom_member_by_name(options.member_name, options.client)
-      const raw_member_name = member?.name || options.member_name.trim()
-      member_name = format_member_display_name(raw_member_name)
-      room_id     = member?.room_id
-      username    = member?.name || options.member_name.trim()
+      const raw_member_name = member?.name || input_trimmed
+      const resolved_room_id = member?.room_id || parsed_room_id
+      member_name = resolved_room_id && !member?.room_id
+        ? `Showroom Room ${resolved_room_id}`
+        : format_member_display_name(raw_member_name)
+      room_id  = resolved_room_id
+      username = member?.name || input_trimmed
       slug        = ""
     }
 
     if (!username || (platform === "showroom" && !room_id)) {
       return {
         success : false,
-        error   : "Please provide a valid member name or live username.",
+        error   : platform === "showroom"
+          ? "Please provide a valid Showroom member name or room ID."
+          : "Please provide a valid IDN member name or username.",
       }
     }
 
@@ -178,6 +185,8 @@ export async function remove_notification(options: { user_id: string; member_nam
   try {
     const platform          = normalize_live_platform(options.type || "idn")
     const fallback_username = normalize_idn_username(options.member_name)
+    const input_trimmed     = options.member_name.trim()
+    const parsed_room_id    = /^\d+$/.test(input_trimmed) ? Number(input_trimmed) : undefined
     let member_name         = format_member_display_name(options.member_name.trim())
     let username            = fallback_username
     let room_id             = undefined as number | undefined
@@ -191,10 +200,13 @@ export async function remove_notification(options: { user_id: string; member_nam
 
     if (platform === "showroom") {
       const member = await showroom_live.get_showroom_member_by_name(options.member_name, options.client)
-      const raw_member_name = member?.name || options.member_name.trim()
-      member_name = format_member_display_name(raw_member_name)
-      username    = member?.name || options.member_name.trim()
-      room_id     = member?.room_id
+      const raw_member_name = member?.name || input_trimmed
+      const resolved_room_id = member?.room_id || parsed_room_id
+      member_name = resolved_room_id && !member?.room_id
+        ? `Showroom Room ${resolved_room_id}`
+        : format_member_display_name(raw_member_name)
+      username = member?.name || input_trimmed
+      room_id  = resolved_room_id
     }
 
     const delete_query: Record<string, any> = {
