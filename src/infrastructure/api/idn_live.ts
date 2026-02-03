@@ -1,7 +1,7 @@
 /**
  * - IDN LIVE API CLIENT - \\
- * Direct IDN Live API integration for JKT48
- */
+ * Direct IDN Live API integration for JKT48 members
+ */ 
 
 import axios           from "axios"
 import { Client }      from "discord.js"
