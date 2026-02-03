@@ -247,9 +247,70 @@ function build_star_summary(record: rod_settings_record): string {
  * @param {rod_settings_record} record - Settings record
  * @returns {string} Title
  */
-function build_settings_title(record: rod_settings_record): string {
+export function build_settings_title(record: rod_settings_record): string {
   const skin = record.rod_skin ? record.rod_skin : "No Skin"
   return `${record.rod_name} - ${skin}`
+}
+
+/**
+ * - BUILD SETTINGS LABEL - \\
+ * @param {rod_settings_record} record - Settings record
+ * @returns {string} Label
+ */
+export function build_settings_label(record: rod_settings_record): string {
+  return `${build_settings_title(record)} (${record.settings_id})`
+}
+
+/**
+ * - BUILD LEADERBOARD MESSAGE - \\
+ * @param {rod_settings_record[]} records - Settings records
+ * @returns {message_payload} Message payload
+ */
+export function build_leaderboard_message(records: rod_settings_record[]): message_payload {
+  if (records.length === 0) {
+    return component.build_message({
+      components : [
+        component.container({
+          components : [
+            component.text("## Settings Leaderboard"),
+          ],
+        }),
+        component.container({
+          components : [
+            component.text("No settings found."),
+          ],
+        }),
+      ],
+    })
+  }
+
+  const sorted = [...records].sort((a, b) => {
+    const a_avg = a.star_count > 0 ? a.star_total / a.star_count : 0
+    const b_avg = b.star_count > 0 ? b.star_total / b.star_count : 0
+    if (b_avg !== a_avg) return b_avg - a_avg
+    if (b.star_count !== a.star_count) return b.star_count - a.star_count
+    return b.created_at - a.created_at
+  })
+
+  const lines = sorted.slice(0, 10).map((record, index) => {
+    const average = record.star_count > 0 ? (record.star_total / record.star_count) : 0
+    return `${index + 1}. ${build_settings_title(record)} - ${average.toFixed(1)} / 5 (${record.star_count} votes)`
+  })
+
+  return component.build_message({
+    components : [
+      component.container({
+        components : [
+          component.text("## Settings Leaderboard"),
+        ],
+      }),
+      component.container({
+        components : [
+          component.text(lines),
+        ],
+      }),
+    ],
+  })
 }
 
 /**
@@ -502,6 +563,44 @@ export async function list_settings_records(client: Client): Promise<rod_setting
   } catch (error) {
     await log_error(client, error as Error, "share_settings_list", {})
     return []
+  }
+}
+
+/**
+ * - LIST SETTINGS BY PUBLISHER - \\
+ * @param {Client} client - Discord client
+ * @param {string} publisher_id - Publisher ID
+ * @returns {Promise<rod_settings_record[]>} Records
+ */
+export async function list_settings_by_publisher(client: Client, publisher_id: string): Promise<rod_settings_record[]> {
+  try {
+    return await db.find_many<rod_settings_record>(SETTINGS_COLLECTION, { publisher_id: publisher_id })
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_list_by_publisher", {
+      publisher_id : publisher_id,
+    })
+    return []
+  }
+}
+
+/**
+ * - DELETE SETTINGS RECORD - \\
+ * @param {Client} client - Discord client
+ * @param {string} settings_id - Settings ID
+ * @returns {Promise<rod_settings_record | null>} Deleted record
+ */
+export async function delete_settings_record(client: Client, settings_id: string): Promise<rod_settings_record | null> {
+  try {
+    const record = await get_settings_record(client, settings_id)
+    if (!record) return null
+
+    await db.delete_one(SETTINGS_COLLECTION, { settings_id: settings_id })
+    return record
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_delete", {
+      settings_id : settings_id,
+    })
+    return null
   }
 }
 

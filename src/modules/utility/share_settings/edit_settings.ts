@@ -20,7 +20,7 @@ async function execute_edit_settings(interaction: ChatInputCommandInteraction): 
   }
 
   try {
-    const settings_id = interaction.options.getString("settings_id", true)
+    const settings_id = interaction.options.getString("target", true)
     const record = await share_settings.get_settings_record(interaction.client, settings_id)
 
     if (!record) {
@@ -99,6 +99,16 @@ async function autocomplete_edit_settings(interaction: AutocompleteInteraction):
   const focused = interaction.options.getFocused(true)
   const query = focused.value.toLowerCase()
 
+  if (focused.name === "target") {
+    const records = await share_settings.list_settings_by_publisher(interaction.client, interaction.user.id)
+    const matches = records
+      .filter((record) => share_settings.build_settings_label(record).toLowerCase().includes(query))
+      .slice(0, 25)
+      .map((record) => ({ name: share_settings.build_settings_label(record), value: record.settings_id }))
+    await interaction.respond(matches)
+    return
+  }
+
   if (focused.name === "rod_name") {
     const options = await share_settings.list_rod_options(interaction.client)
     const matches = options
@@ -126,7 +136,7 @@ export const command: Command = {
   data : new SlashCommandBuilder()
     .setName("edit-settings")
     .setDescription("Edit shared rod settings")
-    .addStringOption((option) => option.setName("settings_id").setDescription("Settings ID").setRequired(true))
+    .addStringOption((option) => option.setName("target").setDescription("Target settings").setAutocomplete(true).setRequired(true))
     .addStringOption((option) =>
       option
         .setName("mode")
