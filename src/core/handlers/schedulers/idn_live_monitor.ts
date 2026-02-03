@@ -10,13 +10,13 @@ const log = logger.create_logger("idn_live_monitor")
  * @returns {Promise<void>}
  */
 export async function start_idn_live_scheduler(client: Client): Promise<void> {
-  log.info("Starting JKT48 IDN Live monitoring scheduler")
+  log.info("Starting JKT48 IDN + Showroom live monitoring scheduler")
 
   try {
     start_live_monitoring(client, 60000)
 
-    log.info("IDN Live monitoring started successfully (checking every 60s)")
+    log.info("Live monitoring started successfully (checking every 60s)")
   } catch (error) {
-    log.error("Failed to start IDN Live monitoring:", error)
+    log.error("Failed to start live monitoring:", error)
   }
 }

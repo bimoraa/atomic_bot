@@ -24,6 +24,16 @@ export const command: Command = {
             .setAutocomplete(true)
             .setRequired(true)
         )
+        .addStringOption((option) =>
+          option
+            .setName("type")
+            .setDescription("Live platform")
+            .setRequired(true)
+            .addChoices(
+              { name: "IDN", value: "idn" },
+              { name: "Showroom", value: "showroom" }
+            )
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
@@ -35,6 +45,16 @@ export const command: Command = {
             .setDescription("Member name")
             .setAutocomplete(true)
             .setRequired(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName("type")
+            .setDescription("Live platform")
+            .setRequired(false)
+            .addChoices(
+              { name: "IDN", value: "idn" },
+              { name: "Showroom", value: "showroom" }
+            )
         )
     )
     .addSubcommand((subcommand) =>
@@ -51,11 +71,13 @@ export const command: Command = {
     try {
       if (subcommand === "add") {
         const member_name = interaction.options.getString("member", true)
+        const live_type   = interaction.options.getString("type", true)
 
         const result = await add_notification({
           user_id     : interaction.user.id,
           member_name : member_name,
           client      : interaction.client,
+          type        : live_type,
         })
 
         if (!result.success) {
@@ -88,11 +110,13 @@ export const command: Command = {
         await interaction.editReply(success_message)
       } else if (subcommand === "remove") {
         const member_name = interaction.options.getString("member", true)
+        const live_type   = interaction.options.getString("type") || "idn"
 
         const result = await remove_notification({
           user_id     : interaction.user.id,
           member_name : member_name,
           client      : interaction.client,
+          type        : live_type,
         })
 
         if (!result.success) {
@@ -130,7 +154,10 @@ export const command: Command = {
         }
 
         const member_list = subscriptions
-          .map((sub, index) => `${index + 1}. **${sub.member_name}**`)
+          .map((sub, index) => {
+            const platform = (sub.type || "idn").toUpperCase()
+            return `${index + 1}. **${sub.member_name}** (${platform})`
+          })
           .join("\n")
 
         const list_message = component.build_message({
@@ -174,6 +201,7 @@ export const command: Command = {
     const focused_value = interaction.options.getFocused()
     const subcommand    = interaction.options.getSubcommand()
     const include_live  = subcommand !== "remove"
+    const platform      = interaction.options.getString("type") || "idn"
 
     try {
       const suggestions = await get_member_suggestions({
@@ -181,6 +209,7 @@ export const command: Command = {
         user_id      : interaction.user.id,
         client       : interaction.client,
         include_live : include_live,
+        platform     : platform,
       })
 
       await interaction.respond(
