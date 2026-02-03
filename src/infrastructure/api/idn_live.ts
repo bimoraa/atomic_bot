@@ -5,13 +5,18 @@
 
 import axios           from "axios"
 import { Client }      from "discord.js"
+import * as db         from "../../shared/utils/database"
+import * as file       from "../../shared/utils/file"
 import { log_error }   from "../../shared/utils/error_logger"
 
 const IDN_LIVE_BASE        = "https://www.idn.app"
 const IDN_MOBILE_API       = "https://mobile-api.idntimes.com/v3/livestreams"
 const IDN_DETAIL_API       = "https://api.idn.app/api/v4/livestream"
 const IDN_GRAPHQL_API      = "https://api.idn.app/graphql"
-const IDN_ROSTER_API_BASE  = process.env.JKT48_SHOWROOM_API_BASE || "https://jkt48showroom-api.vercel.app/api"
+const IDN_ROSTER_API_BASE  = process.env.JKT48_SHOWROOM_API_BASE || "https://jkt48showroom-api.vercel.app"
+const IDN_UUID_LIST_PATH   = process.env.JKT48_IDN_UUID_LIST_PATH || file.resolve("assets", "jkt48", "jkt48_member-uuid.cfg")
+const IDN_ROSTER_COLLECTION = "idn_roster_cache"
+const IDN_ROSTER_CACHE_KEY  = "default"
 const IDN_MOBILE_KEY       = "1ccc5bc4-8bb4-414c-b524-92d11a85a818"
 const IDN_DETAIL_KEY       = "123f4c4e-6ce1-404d-8786-d17e46d65b5c"
 const IDN_USER_AGENT       = "IDN/6.41.1 (com.idntimes.IDNTimes; build:745; iOS 17.2.1) Alamofire/5.1.0"
@@ -32,6 +37,13 @@ export interface idn_user {
 
 export interface idn_public_profile extends idn_user {
   uuid? : string
+}
+
+export interface idn_roster_cache {
+  key        : string
+  members    : jkt48_member[]
+  updated_at : number
+  source?    : string
 }
 
 export interface idn_livestream {
@@ -79,6 +91,106 @@ function normalize_live_timestamp(live_at: number | string): string {
   const base_ms = Number.isFinite(numeric) ? numeric : Date.now()
   const ms      = base_ms < 1_000_000_000_000 ? base_ms * 1000 : base_ms
   return new Date(ms).toISOString()
+}
+
+/**
+ * - LOAD IDN ROSTER CACHE - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<idn_roster_cache | null>} Cached roster
+ */
+async function load_idn_roster_cache(client: Client): Promise<idn_roster_cache | null> {
+  if (!db.is_connected()) {
+    return null
+  }
+
+  try {
+    return await db.find_one<idn_roster_cache>(IDN_ROSTER_COLLECTION, {
+      key : IDN_ROSTER_CACHE_KEY,
+    })
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_load_roster_cache", {})
+    return null
+  }
+}
+
+/**
+ * - SAVE IDN ROSTER CACHE - \\
+ * @param {Client} client - Discord client
+ * @param {jkt48_member[]} members - Member list
+ * @param {string} source - Data source
+ * @returns {Promise<void>}
+ */
+async function save_idn_roster_cache(client: Client, members: jkt48_member[], source: string): Promise<void> {
+  if (!db.is_connected() || members.length === 0) {
+    return
+  }
+
+  try {
+    await db.update_one<idn_roster_cache>(
+      IDN_ROSTER_COLLECTION,
+      { key: IDN_ROSTER_CACHE_KEY },
+      {
+        key        : IDN_ROSTER_CACHE_KEY,
+        members    : members,
+        updated_at : Date.now(),
+        source     : source,
+      },
+      true
+    )
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_save_roster_cache", {
+      source : source,
+    })
+  }
+}
+
+/**
+ * - FETCH IDN UUID LIST - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<string[]>} UUID list
+ */
+async function fetch_idn_uuid_list(client: Client): Promise<string[]> {
+  try {
+    if (file.exists(IDN_UUID_LIST_PATH)) {
+      const local_data = file.read_json<unknown>(IDN_UUID_LIST_PATH)
+      if (Array.isArray(local_data)) {
+        return local_data.filter((uuid) => typeof uuid === "string" && uuid.length > 0)
+      }
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_fetch_uuid_list", {
+      path : IDN_UUID_LIST_PATH,
+    })
+    return []
+  }
+
+  await log_error(client, new Error("UUID list file not found or invalid"), "idn_live_fetch_uuid_list", {
+    path : IDN_UUID_LIST_PATH,
+  })
+  return []
+}
+
+/**
+ * - BUILD ROSTER ENDPOINTS - \\
+ * @param {string} base - Roster API base
+ * @returns {string[]} Endpoint list
+ */
+function build_roster_endpoints(base: string): string[] {
+  const normalized = base.replace(/\/+$/, "")
+  const endpoints  = new Set<string>()
+
+  endpoints.add(`${normalized}/api/member`)
+  endpoints.add(`${normalized}/member`)
+
+  if (normalized.endsWith("/api")) {
+    const without_api = normalized.replace(/\/api$/, "")
+    if (without_api && without_api !== normalized) {
+      endpoints.add(`${without_api}/api/member`)
+      endpoints.add(`${without_api}/member`)
+    }
+  }
+
+  return Array.from(endpoints)
 }
 
 /**
@@ -261,51 +373,158 @@ async function fetch_public_profile_by_username(username: string, client: Client
 }
 
 /**
+ * - FETCH PUBLIC PROFILE BY UUID - \\
+ * @param {string} uuid - IDN user UUID
+ * @param {Client} client - Discord client
+ * @returns {Promise<idn_public_profile | null>} Public profile data or null
+ */
+async function fetch_public_profile_by_uuid(uuid: string, client: Client): Promise<idn_public_profile | null> {
+  try {
+    const response = await axios.post(IDN_GRAPHQL_API, {
+      query     : "query GetPublicProfile($uuid: String!) { getPublicProfile(uuid: $uuid) { name username uuid avatar } }",
+      variables : { uuid },
+    }, {
+      timeout : 15000,
+      headers : {
+        "User-Agent"   : IDN_USER_AGENT,
+        "Content-Type" : "application/json",
+      },
+    })
+
+    const profile = response.data?.data?.getPublicProfile
+    if (!profile?.username) {
+      return null
+    }
+
+    return {
+      name     : profile.name || "Unknown",
+      username : profile.username,
+      avatar   : profile.avatar || "",
+      uuid     : profile.uuid,
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_fetch_public_profile_uuid", {
+      uuid : uuid,
+    })
+    return null
+  }
+}
+
+/**
+ * - FETCH IDN ROSTER BY UUID - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<jkt48_member[]>} Roster list
+ */
+async function fetch_idn_roster_by_uuid(client: Client): Promise<jkt48_member[]> {
+  const uuid_list = await fetch_idn_uuid_list(client)
+  if (uuid_list.length === 0) {
+    return []
+  }
+
+  const batch_size = 6
+  const members: jkt48_member[] = []
+
+  for (let index = 0; index < uuid_list.length; index += batch_size) {
+    const batch = uuid_list.slice(index, index + batch_size)
+    const results = await Promise.all(
+      batch.map((uuid) => fetch_public_profile_by_uuid(uuid, client))
+    )
+
+    for (const profile of results) {
+      if (!profile?.username) continue
+      members.push({
+        slug     : "",
+        name     : profile.name,
+        username : profile.username,
+        url      : `${IDN_LIVE_BASE}/${profile.username}`,
+        image    : profile.avatar || "",
+        is_live  : false,
+      })
+    }
+  }
+
+  return members
+}
+
+/**
  * - FETCH IDN ROSTER - \\
  * @param {Client} client - Discord client
  * @returns {Promise<jkt48_member[]>} Roster list
  */
 async function fetch_idn_roster(client: Client): Promise<jkt48_member[]> {
   try {
-    const response = await axios.get(`${IDN_ROSTER_API_BASE}/idn_user`, {
-      timeout : 15000,
-      headers : {
-        "User-Agent" : "JKT48-Discord-Bot/2.0",
-        "Accept"     : "application/json",
-      },
-    })
+    const endpoints = build_roster_endpoints(IDN_ROSTER_API_BASE)
+    const errors: Array<{ endpoint: string; status?: number; message?: string }> = []
 
-    const data = response.data?.data || response.data?.users || response.data || []
-    if (!Array.isArray(data)) return []
+    for (const endpoint of endpoints) {
+      try {
+        const response = await axios.get(endpoint, {
+          timeout : 15000,
+          params  : { group: "jkt48" },
+          headers : {
+            "User-Agent" : "JKT48-Discord-Bot/2.0",
+            "Accept"     : "application/json",
+          },
+        })
 
-    return data.map((member: any) => {
-      const username = member.username
-        || member.idn_username
-        || member.idn?.username
-        || member.user?.username
-        || member.idn
-        || ""
-      const name = member.name
-        || member.member_name
-        || member.nickname
-        || member.user?.name
-        || "Unknown"
-      const image = member.avatar
-        || member.image
-        || member.img
-        || member.profile_image
-        || member.user?.avatar
-        || ""
+        const data = response.data?.data || response.data?.members || response.data || []
+        if (!Array.isArray(data)) {
+          continue
+        }
 
-      return {
-        slug     : "",
-        name     : name,
-        username : username,
-        url      : username ? `${IDN_LIVE_BASE}/${username}` : "",
-        image    : image,
-        is_live  : false,
-      } as jkt48_member
-    }).filter((member: jkt48_member) => member.username)
+        const members = data.map((member: any) => {
+          const username = member.idn_username
+            || member.idn?.username
+            || member.username
+            || member.user?.username
+            || member.idn
+            || ""
+          const name = member.name
+            || member.member_name
+            || member.nickname
+            || member.user?.name
+            || "Unknown"
+          const image = member.avatar
+            || member.image
+            || member.img
+            || member.profile_image
+            || member.user?.avatar
+            || ""
+
+          return {
+            slug     : "",
+            name     : name,
+            username : username,
+            url      : username ? `${IDN_LIVE_BASE}/${username}` : "",
+            image    : image,
+            is_live  : false,
+          } as jkt48_member
+        }).filter((member: jkt48_member) => member.username)
+
+        if (members.length > 0) {
+          return members
+        }
+      } catch (error) {
+        const status  = (error as any)?.response?.status
+        const message = (error as any)?.response?.data?.message || (error as Error).message
+        errors.push({ endpoint, status, message })
+      }
+    }
+
+    if (errors.length > 0) {
+      await log_error(client, new Error("Failed to fetch IDN roster"), "idn_live_fetch_roster", {
+        base_url  : IDN_ROSTER_API_BASE,
+        endpoints : endpoints,
+        errors    : errors,
+      })
+    }
+
+    const uuid_members = await fetch_idn_roster_by_uuid(client)
+    if (uuid_members.length > 0) {
+      return uuid_members
+    }
+
+    return []
   } catch (error) {
     await log_error(client, error as Error, "idn_live_fetch_roster", {
       base_url : IDN_ROSTER_API_BASE,
@@ -403,6 +622,16 @@ export async function get_idn_roster_members(client: Client, options?: { max_wai
       return roster_cache.data
     }
 
+    const cached = await load_idn_roster_cache(client)
+    if (cached?.members?.length) {
+      roster_cache.data       = cached.members
+      roster_cache.fetched_at = cached.updated_at
+
+      if ((now - cached.updated_at) < IDN_ROSTER_TTL_MS) {
+        return cached.members
+      }
+    }
+
     const max_wait_ms = options?.max_wait_ms
     const allow_stale = options?.allow_stale ?? true
 
@@ -419,6 +648,7 @@ export async function get_idn_roster_members(client: Client, options?: { max_wai
       if (members.length > 0) {
         roster_cache.data       = members
         roster_cache.fetched_at = now
+        await save_idn_roster_cache(client, members, "remote_or_uuid")
       }
 
       return members
@@ -427,6 +657,7 @@ export async function get_idn_roster_members(client: Client, options?: { max_wai
     const members = await fetch_idn_roster(client)
     roster_cache.data       = members
     roster_cache.fetched_at = now
+    await save_idn_roster_cache(client, members, "remote_or_uuid")
     return members
   } catch (error) {
     await log_error(client, error as Error, "idn_live_get_roster_members", {})
