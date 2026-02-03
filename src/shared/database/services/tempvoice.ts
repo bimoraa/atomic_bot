@@ -8,33 +8,33 @@ import {
   CategoryChannel,
   OverwriteType,
   VideoQualityMode,
-}                         from "discord.js"
+} from "discord.js"
 import { logger, component, api, db } from "../../utils"
-import { load_config }    from "../../config/loader"
+import { load_config } from "../../config/loader"
 import * as voice_tracker from "../trackers/voice_time_tracker"
 
 interface tempvoice_config {
-  category_name         : string
-  generator_name        : string
-  generator_channel_id? : string
-  category_id?          : string
+  category_name: string
+  generator_name: string
+  generator_channel_id?: string
+  category_id?: string
 }
 
 interface saved_channel_settings {
-  name                    : string
-  user_limit              : number
-  is_private              : boolean
-  trusted_users           : string[]
-  blocked_users           : string[]
-  owner_permissions?      : string[]
+  name: string
+  user_limit: number
+  is_private: boolean
+  trusted_users: string[]
+  blocked_users: string[]
+  owner_permissions?: string[]
 }
 
-const __log    = logger.create_logger("tempvoice")
+const __log = logger.create_logger("tempvoice")
 const __config = load_config<tempvoice_config>("tempvoice")
 
-const __category_name       = __config.category_name  ?? "Temp Voice"
-const __generator_name      = __config.generator_name ?? "➕ Create Voice"
-const __thread_parent_id    = "1449863232071401534"
+const __category_name = __config.category_name ?? "Temp Voice"
+const __generator_name = __config.generator_name ?? "➕ Create Voice"
+const __thread_parent_id = "1449863232071401534"
 
 /**
  * - FETCH CHANNEL WITH FALLBACK - \\
@@ -58,37 +58,37 @@ async function fetch_voice_channel(guild: Guild, channel_id: string): Promise<Vo
 }
 
 const emoji = {
-  name         : { id: "1449851618295283763", name: "name"         },
-  limit        : { id: "1449851533033214063", name: "limit"        },
-  privacy      : { id: "1449851430637797616", name: "privacy"      },
-  waiting_room : { id: "1449851292896858132", name: "waiting_room" },
-  chat         : { id: "1449851153289576519", name: "chat"         },
-  trust        : { id: "1449851587152449746", name: "trust"        },
-  untrust      : { id: "1449851506550509730", name: "untrust"      },
-  invite       : { id: "1449851345405218997", name: "invite"       },
-  kick         : { id: "1449851225427148860", name: "kick"         },
-  region       : { id: "1449851128295456918", name: "region"       },
-  block        : { id: "1449851559591809104", name: "block"        },
-  unblock      : { id: "1449851467304534017", name: "unblock"      },
-  claim        : { id: "1449851319350333613", name: "claim"        },
-  transfer     : { id: "1449851186772578315", name: "transfer"     },
-  delete       : { id: "1449851060922355824", name: "delete"       },
-  leaderboard  : { id: "1457012485281546260", name: "leaderboard"  },
+  name: { id: "1449851618295283763", name: "name" },
+  limit: { id: "1449851533033214063", name: "limit" },
+  privacy: { id: "1449851430637797616", name: "privacy" },
+  waiting_room: { id: "1449851292896858132", name: "waiting_room" },
+  chat: { id: "1449851153289576519", name: "chat" },
+  trust: { id: "1449851587152449746", name: "trust" },
+  untrust: { id: "1449851506550509730", name: "untrust" },
+  invite: { id: "1449851345405218997", name: "invite" },
+  kick: { id: "1449851225427148860", name: "kick" },
+  region: { id: "1449851128295456918", name: "region" },
+  block: { id: "1449851559591809104", name: "block" },
+  unblock: { id: "1449851467304534017", name: "unblock" },
+  claim: { id: "1449851319350333613", name: "claim" },
+  transfer: { id: "1449851186772578315", name: "transfer" },
+  delete: { id: "1449851060922355824", name: "delete" },
+  leaderboard: { id: "1457012485281546260", name: "leaderboard" },
 }
 
-const __temp_channels: Map<string, string>              = new Map()
-const __channel_owners: Map<string, string>             = new Map()
-const __trusted_users: Map<string, Set<string>>         = new Map()
-const __blocked_users: Map<string, Set<string>>         = new Map()
-const __waiting_rooms: Map<string, boolean>             = new Map()
-const __threads: Map<string, string>                    = new Map()
-const __in_voice_interfaces: Map<string, string>        = new Map()
+const __temp_channels: Map<string, string> = new Map()
+const __channel_owners: Map<string, string> = new Map()
+const __trusted_users: Map<string, Set<string>> = new Map()
+const __blocked_users: Map<string, Set<string>> = new Map()
+const __waiting_rooms: Map<string, boolean> = new Map()
+const __threads: Map<string, string> = new Map()
+const __in_voice_interfaces: Map<string, string> = new Map()
 const __saved_settings: Map<string, saved_channel_settings> = new Map()
-const __deletion_timers: Map<string, NodeJS.Timeout>    = new Map()
+const __deletion_timers: Map<string, NodeJS.Timeout> = new Map()
 
-let __generator_channel_id : string | null = __config.generator_channel_id || null
-let __category_id          : string | null = __config.category_id || null
-let __interface_channel_id : string | null = null
+let __generator_channel_id: string | null = __config.generator_channel_id || null
+let __category_id: string | null = __config.category_id || null
+let __interface_channel_id: string | null = null
 
 function get_category_from_generator(guild: Guild): CategoryChannel | null {
   if (__category_id) {
@@ -117,8 +117,8 @@ function get_owner_id_from_overwrites(channel: VoiceChannel): string | null {
     const allow = overwrite.allow
     if (
       allow.has(PermissionFlagsBits.ManageChannels) ||
-      allow.has(PermissionFlagsBits.MoveMembers)   ||
-      allow.has(PermissionFlagsBits.MuteMembers)   ||
+      allow.has(PermissionFlagsBits.MoveMembers) ||
+      allow.has(PermissionFlagsBits.MuteMembers) ||
       allow.has(PermissionFlagsBits.DeafenMembers)
     ) {
       return overwrite.id
@@ -158,7 +158,7 @@ export async function reconcile_tempvoice_guild(guild: Guild): Promise<void> {
       }
 
       if (fresh_channel.members.size === 0) {
-        await fresh_channel.delete().catch(() => {})
+        await fresh_channel.delete().catch(() => { })
         cleanup_channel_data(fresh_channel.id)
         continue
       }
@@ -174,11 +174,11 @@ export async function reconcile_tempvoice_guild(guild: Guild): Promise<void> {
 }
 
 interface setup_result {
-  success             : boolean
-  error?              : string
-  category_name?      : string
-  generator_name?     : string
-  interface_channel_id? : string
+  success: boolean
+  error?: string
+  category_name?: string
+  generator_name?: string
+  interface_channel_id?: string
 }
 
 export async function setup_tempvoice(guild: Guild): Promise<setup_result> {
@@ -189,8 +189,8 @@ export async function setup_tempvoice(guild: Guild): Promise<setup_result> {
 
     if (!category) {
       category = await guild.channels.create({
-        name : __category_name,
-        type : ChannelType.GuildCategory,
+        name: __category_name,
+        type: ChannelType.GuildCategory,
       })
       __log.info(`Created category: ${category.name}`)
     }
@@ -199,19 +199,19 @@ export async function setup_tempvoice(guild: Guild): Promise<setup_result> {
 
     let interface_channel = guild.channels.cache.find(
       c => c.type === ChannelType.GuildText &&
-           c.parentId === category!.id &&
-           c.name === "🔊・voice-interface"
+        c.parentId === category!.id &&
+        c.name === "🔊・voice-interface"
     )
 
     if (!interface_channel) {
       interface_channel = await guild.channels.create({
-        name                 : "🔊・voice-interface",
-        type                 : ChannelType.GuildText,
-        parent               : category.id,
-        permissionOverwrites : [
+        name: "🔊・voice-interface",
+        type: ChannelType.GuildText,
+        parent: category.id,
+        permissionOverwrites: [
           {
-            id   : guild.roles.everyone.id,
-            deny : [PermissionFlagsBits.SendMessages],
+            id: guild.roles.everyone.id,
+            deny: [PermissionFlagsBits.SendMessages],
           },
         ],
       })
@@ -222,16 +222,16 @@ export async function setup_tempvoice(guild: Guild): Promise<setup_result> {
 
     let generator = guild.channels.cache.find(
       c => c.type === ChannelType.GuildVoice &&
-           c.parentId === category!.id &&
-           c.name === __generator_name
+        c.parentId === category!.id &&
+        c.name === __generator_name
     ) as VoiceChannel | undefined
 
     if (!generator) {
       generator = await guild.channels.create({
-        name    : __generator_name,
-        type    : ChannelType.GuildVoice,
-        parent  : category.id,
-        bitrate : 96000,
+        name: __generator_name,
+        type: ChannelType.GuildVoice,
+        parent: category.id,
+        bitrate: 96000,
       })
       __log.info(`Created generator channel: ${generator.name}`)
     }
@@ -239,16 +239,16 @@ export async function setup_tempvoice(guild: Guild): Promise<setup_result> {
     __generator_channel_id = generator.id
 
     return {
-      success              : true,
-      category_name        : category.name,
-      generator_name       : generator.name,
-      interface_channel_id : interface_channel.id,
+      success: true,
+      category_name: category.name,
+      generator_name: generator.name,
+      interface_channel_id: interface_channel.id,
     }
   } catch (error) {
     __log.error("Failed to setup TempVoice:", error)
     return {
-      success : false,
-      error   : String(error),
+      success: false,
+      error: String(error),
     }
   }
 }
@@ -286,7 +286,7 @@ export async function get_user_temp_channel(guild: Guild, user_id: string): Prom
     if (ch.parentId !== category.id) continue
     if (ch.id === __generator_channel_id) continue
 
-    const channel  = ch as VoiceChannel
+    const channel = ch as VoiceChannel
     const owner_id = get_owner_id_from_overwrites(channel)
     if (owner_id === user_id) {
       register_existing_channel(channel, user_id)
@@ -310,8 +310,8 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
     if (!category && __generator_channel_id) {
       const generator = guild.channels.cache.get(__generator_channel_id) as VoiceChannel
       if (generator && generator.parentId) {
-        category       = guild.channels.cache.get(generator.parentId) as CategoryChannel
-        __category_id  = generator.parentId
+        category = guild.channels.cache.get(generator.parentId) as CategoryChannel
+        __category_id = generator.parentId
       }
     }
 
@@ -334,16 +334,16 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
     const channel_name = `${member.displayName}'s Channel`
 
     const channel = await guild.channels.create({
-      name                 : channel_name,
-      type                 : ChannelType.GuildVoice,
-      parent               : category.id,
-      bitrate              : 96000,
-      videoQualityMode     : VideoQualityMode.Auto,
-      permissionOverwrites : [
+      name: channel_name,
+      type: ChannelType.GuildVoice,
+      parent: category.id,
+      bitrate: 96000,
+      videoQualityMode: VideoQualityMode.Auto,
+      permissionOverwrites: [
         {
-          id    : guild.roles.everyone.id,
-          type  : OverwriteType.Role,
-          allow : [
+          id: guild.roles.everyone.id,
+          type: OverwriteType.Role,
+          allow: [
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.Connect,
             PermissionFlagsBits.Speak,
@@ -351,9 +351,9 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
           ],
         },
         {
-          id    : member.id,
-          type  : OverwriteType.Member,
-          allow : [
+          id: member.id,
+          type: OverwriteType.Member,
+          allow: [
             PermissionFlagsBits.Connect,
             PermissionFlagsBits.Speak,
             PermissionFlagsBits.UseVAD,
@@ -406,7 +406,7 @@ export async function create_temp_channel(member: GuildMember): Promise<VoiceCha
 
 export async function delete_temp_channel(channel: VoiceChannel | string): Promise<boolean> {
   let channel_id: string | undefined
-  
+
   try {
     let voice_channel: VoiceChannel | undefined
     let guild: Guild | undefined
@@ -416,8 +416,8 @@ export async function delete_temp_channel(channel: VoiceChannel | string): Promi
       return false
     } else {
       voice_channel = channel
-      channel_id    = channel.id
-      guild         = channel.guild
+      channel_id = channel.id
+      guild = channel.guild
     }
 
     // - VERIFY CHANNEL STILL EXISTS - \\
@@ -448,7 +448,7 @@ export async function delete_temp_channel(channel: VoiceChannel | string): Promi
     }
 
     await voice_tracker.track_channel_deleted(channel_id)
-    
+
     if (voice_channel) {
       await voice_channel.delete()
     }
@@ -564,7 +564,7 @@ export function is_waiting_room_enabled(channel_id: string): boolean {
 export async function create_thread(channel: VoiceChannel, owner: GuildMember): Promise<string | null> {
   try {
     console.log(`[ - THREAD - ] Starting creation for voice channel ${channel.id}`)
-    
+
     if (__threads.has(channel.id)) {
       console.log(`[ - THREAD - ] Already exists, returning cached ID`)
       return __threads.get(channel.id) || null
@@ -577,19 +577,19 @@ export async function create_thread(channel: VoiceChannel, owner: GuildMember): 
     }
 
     console.log(`[ - THREAD - ] Creating private thread in parent ${__thread_parent_id}...`)
-    
+
     const thread = await parent_channel.threads.create({
-      name               : `${channel.name}`,
-      type               : ChannelType.PrivateThread,
+      name: `${channel.name}`,
+      type: ChannelType.PrivateThread,
       autoArchiveDuration: 60,
-      reason             : `Voice channel thread for ${owner.displayName}`,
+      reason: `Voice channel thread for ${owner.displayName}`,
     })
 
     console.log(`[ - THREAD - ] Created: ${thread.name} (${thread.id})`)
-    
+
     await thread.members.add(owner.id)
     console.log(`[ - THREAD - ] Added owner to thread`)
-    
+
     try {
       const starter_message = await thread.fetchStarterMessage()
       if (starter_message) {
@@ -599,7 +599,7 @@ export async function create_thread(channel: VoiceChannel, owner: GuildMember): 
     } catch (delete_error) {
       console.warn(`[ - THREAD - ] Failed to delete starter message:`, delete_error)
     }
-    
+
     __threads.set(channel.id, thread.id)
 
     console.log(`[ - THREAD - ] Now creating interface...`)
@@ -653,10 +653,10 @@ export async function trust_user(channel: VoiceChannel, user_id: string): Promis
     __trusted_users.set(channel.id, trusted)
 
     await channel.permissionOverwrites.edit(user_id, {
-      ViewChannel : true,
-      Connect     : true,
-      Speak       : true,
-      UseVAD      : true,
+      ViewChannel: true,
+      Connect: true,
+      Speak: true,
+      UseVAD: true,
     })
 
     const owner_id = get_channel_owner(channel.id)
@@ -679,12 +679,12 @@ export async function untrust_user(channel: VoiceChannel, user_id: string): Prom
     }
 
     await channel.permissionOverwrites.delete(user_id)
-    
+
     const owner_id = get_channel_owner(channel.id)
     if (owner_id) {
       save_channel_settings(channel, owner_id)
     }
-    
+
     return true
   } catch (error) {
     __log.error("Failed to untrust user:", error)
@@ -703,8 +703,8 @@ export async function block_user(channel: VoiceChannel, user_id: string): Promis
     __blocked_users.set(channel.id, blocked)
 
     await channel.permissionOverwrites.edit(user_id, {
-      Connect : false,
-      Speak   : false,
+      Connect: false,
+      Speak: false,
     })
 
     const member = channel.guild.members.cache.get(user_id)
@@ -732,12 +732,12 @@ export async function unblock_user(channel: VoiceChannel, user_id: string): Prom
     }
 
     await channel.permissionOverwrites.delete(user_id)
-    
+
     const owner_id = get_channel_owner(channel.id)
     if (owner_id) {
       save_channel_settings(channel, owner_id)
     }
-    
+
     return true
   } catch (error) {
     __log.error("Failed to unblock user:", error)
@@ -767,16 +767,16 @@ export async function kick_user(channel: VoiceChannel, user_id: string): Promise
 export async function invite_user(channel: VoiceChannel, user_id: string): Promise<boolean> {
   try {
     await channel.permissionOverwrites.edit(user_id, {
-      ViewChannel : true,
-      Connect     : true,
-      UseVAD      : true,
+      ViewChannel: true,
+      Connect: true,
+      UseVAD: true,
     })
 
     try {
       const user = await channel.guild.members.fetch(user_id)
       if (user) {
         const dm_channel = await user.createDM()
-        
+
         const invite_message = component.build_message({
           components: [
             component.container({
@@ -830,12 +830,12 @@ export async function claim_channel(channel: VoiceChannel, new_owner: GuildMembe
     __channel_owners.set(channel.id, new_owner.id)
 
     await channel.permissionOverwrites.edit(new_owner.id, {
-      Connect        : true,
-      Speak          : true,
-      ManageChannels : true,
-      MoveMembers    : true,
-      MuteMembers    : true,
-      DeafenMembers  : true,
+      Connect: true,
+      Speak: true,
+      ManageChannels: true,
+      MoveMembers: true,
+      MuteMembers: true,
+      DeafenMembers: true,
     })
 
     if (current_owner_id) {
@@ -861,12 +861,12 @@ export async function transfer_ownership(channel: VoiceChannel, current_owner: G
     __channel_owners.set(channel.id, new_owner_id)
 
     await channel.permissionOverwrites.edit(new_owner_id, {
-      Connect        : true,
-      Speak          : true,
-      ManageChannels : true,
-      MoveMembers    : true,
-      MuteMembers    : true,
-      DeafenMembers  : true,
+      Connect: true,
+      Speak: true,
+      ManageChannels: true,
+      MoveMembers: true,
+      MuteMembers: true,
+      DeafenMembers: true,
     })
 
     await channel.permissionOverwrites.delete(current_owner.id)
@@ -920,28 +920,28 @@ export async function handle_voice_state_update(old_state: VoiceState, new_state
   }
 
   if (old_state.channelId && is_temp_channel(old_state.channelId)) {
-    const guild      = old_state.guild
+    const guild = old_state.guild
     const channel_id = old_state.channelId
-    
+
     // - CLEAR EXISTING DELETION TIMER - \\
     const existing_timer = __deletion_timers.get(channel_id)
     if (existing_timer) {
       clearTimeout(existing_timer)
       __deletion_timers.delete(channel_id)
     }
-    
+
     // - DELAY DELETION TO AVOID RACE CONDITIONS - \\
     const deletion_timer = setTimeout(async () => {
       try {
         // - FETCH FRESH CHANNEL DATA TO AVOID CACHE ISSUES - \\
         const channel = await fetch_voice_channel(guild, channel_id)
-        
+
         if (!channel) {
           __log.warn(`Channel ${channel_id} not found, cleaning up data`)
           cleanup_channel_data(channel_id)
           return
         }
-        
+
         if (channel.members.size === 0) {
           __log.info(`Channel empty after delay, deleting: ${channel_id}`)
           await delete_temp_channel(channel)
@@ -954,7 +954,7 @@ export async function handle_voice_state_update(old_state: VoiceState, new_state
         __deletion_timers.delete(channel_id)
       }
     }, 2000)
-    
+
     __deletion_timers.set(channel_id, deletion_timer)
   }
 }
@@ -968,12 +968,12 @@ export function set_interface_channel_id(id: string): void {
 }
 
 export function init_from_database(
-  generator_id : string,
-  category_id  : string,
-  channels     : { channel_id: string; owner_id: string }[]
+  generator_id: string,
+  category_id: string,
+  channels: { channel_id: string; owner_id: string }[]
 ): void {
   __generator_channel_id = generator_id
-  __category_id          = category_id
+  __category_id = category_id
 
   for (const ch of channels) {
     __temp_channels.set(ch.channel_id, ch.owner_id)
@@ -993,7 +993,7 @@ export function init_from_database(
 export async function create_in_voice_interface(voice_channel: VoiceChannel, owner: GuildMember): Promise<string | null> {
   try {
     console.log(`[ - INTERFACE - ] Starting creation for voice channel ${voice_channel.id}`)
-    
+
     if (__in_voice_interfaces.has(voice_channel.id)) {
       console.log(`[ - INTERFACE - ] Already exists, returning cached ID`)
       return __in_voice_interfaces.get(voice_channel.id) || null
@@ -1001,7 +1001,7 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
 
     const thread_id = __threads.get(voice_channel.id)
     console.log(`[ - INTERFACE - ] Thread ID from map: ${thread_id}`)
-    
+
     if (!thread_id) {
       console.error(`[ - INTERFACE - ] No thread ID found for voice channel ${voice_channel.id}`)
       return null
@@ -1009,7 +1009,7 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
 
     let thread = voice_channel.guild.channels.cache.get(thread_id)
     console.log(`[ - INTERFACE - ] Thread from cache: ${thread ? 'FOUND' : 'NOT FOUND'}`)
-    
+
     if (!thread) {
       console.log(`[ - INTERFACE - ] Thread not in cache, fetching...`)
       try {
@@ -1042,25 +1042,25 @@ export async function create_in_voice_interface(voice_channel: VoiceChannel, own
             ]),
             component.divider(2),
             component.action_row(
-              component.secondary_button("", "tempvoice_name",        emoji.name),
-              component.secondary_button("", "tempvoice_limit",       emoji.limit),
-              component.secondary_button("", "tempvoice_privacy",     emoji.privacy),
+              component.secondary_button("", "tempvoice_name", emoji.name),
+              component.secondary_button("", "tempvoice_limit", emoji.limit),
+              component.secondary_button("", "tempvoice_privacy", emoji.privacy),
               component.secondary_button("", "tempvoice_waitingroom", emoji.waiting_room),
-              component.secondary_button("", "tempvoice_chat",        emoji.chat),
+              component.secondary_button("", "tempvoice_chat", emoji.chat),
             ),
             component.action_row(
-              component.secondary_button("", "tempvoice_trust",   emoji.trust),
+              component.secondary_button("", "tempvoice_trust", emoji.trust),
               component.secondary_button("", "tempvoice_untrust", emoji.untrust),
-              component.secondary_button("", "tempvoice_invite",  emoji.invite),
-              component.secondary_button("", "tempvoice_kick",    emoji.kick),
-              component.secondary_button("", "tempvoice_region",  emoji.region),
+              component.secondary_button("", "tempvoice_invite", emoji.invite),
+              component.secondary_button("", "tempvoice_kick", emoji.kick),
+              component.secondary_button("", "tempvoice_region", emoji.region),
             ),
             component.action_row(
-              component.secondary_button("", "tempvoice_block",       emoji.block),
-              component.secondary_button("", "tempvoice_unblock",     emoji.unblock),
-              component.secondary_button("", "tempvoice_claim",       emoji.claim),
-              component.secondary_button("", "tempvoice_transfer",    emoji.transfer),
-              component.danger_button("", "tempvoice_delete",         emoji.delete),
+              component.secondary_button("", "tempvoice_block", emoji.block),
+              component.secondary_button("", "tempvoice_unblock", emoji.unblock),
+              component.secondary_button("", "tempvoice_claim", emoji.claim),
+              component.secondary_button("", "tempvoice_transfer", emoji.transfer),
+              component.danger_button("", "tempvoice_delete", emoji.delete),
             ),
             component.action_row(
               component.secondary_button("", "tempvoice_leaderboard", emoji.leaderboard),
@@ -1143,25 +1143,25 @@ export async function update_in_voice_interface(voice_channel: VoiceChannel, own
             ]),
             component.divider(2),
             component.action_row(
-              component.secondary_button("", "tempvoice_name",        emoji.name),
-              component.secondary_button("", "tempvoice_limit",       emoji.limit),
-              component.secondary_button("", "tempvoice_privacy",     emoji.privacy),
+              component.secondary_button("", "tempvoice_name", emoji.name),
+              component.secondary_button("", "tempvoice_limit", emoji.limit),
+              component.secondary_button("", "tempvoice_privacy", emoji.privacy),
               component.secondary_button("", "tempvoice_waitingroom", emoji.waiting_room),
-              component.secondary_button("", "tempvoice_chat",        emoji.chat),
+              component.secondary_button("", "tempvoice_chat", emoji.chat),
             ),
             component.action_row(
-              component.secondary_button("", "tempvoice_trust",   emoji.trust),
+              component.secondary_button("", "tempvoice_trust", emoji.trust),
               component.secondary_button("", "tempvoice_untrust", emoji.untrust),
-              component.secondary_button("", "tempvoice_invite",  emoji.invite),
-              component.secondary_button("", "tempvoice_kick",    emoji.kick),
-              component.secondary_button("", "tempvoice_region",  emoji.region),
+              component.secondary_button("", "tempvoice_invite", emoji.invite),
+              component.secondary_button("", "tempvoice_kick", emoji.kick),
+              component.secondary_button("", "tempvoice_region", emoji.region),
             ),
             component.action_row(
-              component.secondary_button("", "tempvoice_block",    emoji.block),
-              component.secondary_button("", "tempvoice_unblock",  emoji.unblock),
-              component.secondary_button("", "tempvoice_claim",    emoji.claim),
+              component.secondary_button("", "tempvoice_block", emoji.block),
+              component.secondary_button("", "tempvoice_unblock", emoji.unblock),
+              component.secondary_button("", "tempvoice_claim", emoji.claim),
               component.secondary_button("", "tempvoice_transfer", emoji.transfer),
-              component.danger_button("", "tempvoice_delete",      emoji.delete),
+              component.danger_button("", "tempvoice_delete", emoji.delete),
             ),
           ],
         }),
@@ -1203,26 +1203,26 @@ async function save_channel_settings(channel: VoiceChannel, owner_id: string): P
     // - GET OWNER PERMISSIONS FROM CHANNEL OVERWRITES - \\
     const owner_overwrite = channel.permissionOverwrites.cache.get(owner_id)
     const owner_permissions: string[] = []
-    
+
     if (owner_overwrite) {
       const allow_perms = owner_overwrite.allow
-      if (allow_perms.has(PermissionFlagsBits.ViewChannel))     owner_permissions.push("ViewChannel")
-      if (allow_perms.has(PermissionFlagsBits.Connect))         owner_permissions.push("Connect")
-      if (allow_perms.has(PermissionFlagsBits.Speak))           owner_permissions.push("Speak")
-      if (allow_perms.has(PermissionFlagsBits.UseVAD))          owner_permissions.push("UseVAD")
-      if (allow_perms.has(PermissionFlagsBits.ManageChannels))  owner_permissions.push("ManageChannels")
-      if (allow_perms.has(PermissionFlagsBits.MoveMembers))     owner_permissions.push("MoveMembers")
-      if (allow_perms.has(PermissionFlagsBits.MuteMembers))     owner_permissions.push("MuteMembers")
-      if (allow_perms.has(PermissionFlagsBits.DeafenMembers))   owner_permissions.push("DeafenMembers")
+      if (allow_perms.has(PermissionFlagsBits.ViewChannel)) owner_permissions.push("ViewChannel")
+      if (allow_perms.has(PermissionFlagsBits.Connect)) owner_permissions.push("Connect")
+      if (allow_perms.has(PermissionFlagsBits.Speak)) owner_permissions.push("Speak")
+      if (allow_perms.has(PermissionFlagsBits.UseVAD)) owner_permissions.push("UseVAD")
+      if (allow_perms.has(PermissionFlagsBits.ManageChannels)) owner_permissions.push("ManageChannels")
+      if (allow_perms.has(PermissionFlagsBits.MoveMembers)) owner_permissions.push("MoveMembers")
+      if (allow_perms.has(PermissionFlagsBits.MuteMembers)) owner_permissions.push("MuteMembers")
+      if (allow_perms.has(PermissionFlagsBits.DeafenMembers)) owner_permissions.push("DeafenMembers")
     }
 
     const settings: saved_channel_settings = {
-      name              : channel.name,
-      user_limit        : channel.userLimit,
-      is_private        : is_private,
-      trusted_users     : Array.from(__trusted_users.get(channel.id) || []),
-      blocked_users     : Array.from(__blocked_users.get(channel.id) || []),
-      owner_permissions : owner_permissions,
+      name: channel.name,
+      user_limit: channel.userLimit,
+      is_private: is_private,
+      trusted_users: Array.from(__trusted_users.get(channel.id) || []),
+      blocked_users: Array.from(__blocked_users.get(channel.id) || []),
+      owner_permissions: owner_permissions,
     }
 
     __saved_settings.set(owner_id, settings)
@@ -1232,15 +1232,15 @@ async function save_channel_settings(channel: VoiceChannel, owner_id: string): P
         "tempvoice_saved_settings",
         { user_id: owner_id },
         {
-          user_id           : owner_id,
-          guild_id          : channel.guild.id,
-          name              : settings.name,
-          user_limit        : settings.user_limit,
-          is_private        : settings.is_private,
-          trusted_users     : settings.trusted_users,
-          blocked_users     : settings.blocked_users,
-          owner_permissions : settings.owner_permissions,
-          updated_at        : new Date(),
+          user_id: owner_id,
+          guild_id: channel.guild.id,
+          name: settings.name,
+          user_limit: settings.user_limit,
+          is_private: settings.is_private,
+          trusted_users: settings.trusted_users,
+          blocked_users: settings.blocked_users,
+          owner_permissions: settings.owner_permissions,
+          updated_at: new Date(),
         },
         true
       )
@@ -1271,18 +1271,18 @@ export async function restore_channel_settings(channel: VoiceChannel, owner: Gui
     // - RESTORE OWNER PERMISSIONS - \\
     if (settings.owner_permissions && settings.owner_permissions.length > 0) {
       const permissions_map: { [key: string]: any } = {}
-      
+
       for (const perm of settings.owner_permissions) {
-        if (perm === "ViewChannel")    permissions_map.ViewChannel    = true
-        if (perm === "Connect")        permissions_map.Connect        = true
-        if (perm === "Speak")          permissions_map.Speak          = true
-        if (perm === "UseVAD")         permissions_map.UseVAD         = true
+        if (perm === "ViewChannel") permissions_map.ViewChannel = true
+        if (perm === "Connect") permissions_map.Connect = true
+        if (perm === "Speak") permissions_map.Speak = true
+        if (perm === "UseVAD") permissions_map.UseVAD = true
         if (perm === "ManageChannels") permissions_map.ManageChannels = true
-        if (perm === "MoveMembers")    permissions_map.MoveMembers    = true
-        if (perm === "MuteMembers")    permissions_map.MuteMembers    = true
-        if (perm === "DeafenMembers")  permissions_map.DeafenMembers  = true
+        if (perm === "MoveMembers") permissions_map.MoveMembers = true
+        if (perm === "MuteMembers") permissions_map.MuteMembers = true
+        if (perm === "DeafenMembers") permissions_map.DeafenMembers = true
       }
-      
+
       await channel.permissionOverwrites.edit(owner.id, permissions_map)
       __log.info(`[ - PERMISSIONS RESTORED - ] Owner ${owner.id} got ${settings.owner_permissions.length} permissions`)
     }
@@ -1295,10 +1295,10 @@ export async function restore_channel_settings(channel: VoiceChannel, owner: Gui
 
     for (const user_id of settings.trusted_users) {
       await channel.permissionOverwrites.edit(user_id, {
-        ViewChannel : true,
-        Connect     : true,
-        Speak       : true,
-        UseVAD      : true,
+        ViewChannel: true,
+        Connect: true,
+        Speak: true,
+        UseVAD: true,
       })
       const trusted = __trusted_users.get(channel.id) || new Set()
       trusted.add(user_id)
@@ -1307,8 +1307,8 @@ export async function restore_channel_settings(channel: VoiceChannel, owner: Gui
 
     for (const user_id of settings.blocked_users) {
       await channel.permissionOverwrites.edit(user_id, {
-        Connect : false,
-        Speak   : false,
+        Connect: false,
+        Speak: false,
       })
       const blocked = __blocked_users.get(channel.id) || new Set()
       blocked.add(user_id)
@@ -1338,11 +1338,11 @@ export function get_saved_settings(user_id: string): saved_channel_settings | nu
  */
 export async function clear_saved_settings(user_id: string): Promise<void> {
   __saved_settings.delete(user_id)
-  
+
   if (db.is_connected()) {
     await db.delete_one("tempvoice_saved_settings", { user_id })
   }
-  
+
   __log.info(`[ - SETTINGS CLEARED - ] User ${user_id}`)
 }
 
@@ -1358,23 +1358,23 @@ export async function load_saved_settings_from_db(guild_id: string): Promise<voi
     }
 
     const records = await db.find_many<{
-      user_id           : string
-      name              : string
-      user_limit        : number
-      is_private        : boolean
-      trusted_users     : string[]
-      blocked_users     : string[]
+      user_id: string
+      name: string
+      user_limit: number
+      is_private: boolean
+      trusted_users: string[]
+      blocked_users: string[]
       owner_permissions?: string[]
     }>("tempvoice_saved_settings", { guild_id })
 
     for (const record of records) {
       const settings: saved_channel_settings = {
-        name              : record.name,
-        user_limit        : record.user_limit,
-        is_private        : record.is_private,
-        trusted_users     : record.trusted_users || [],
-        blocked_users     : record.blocked_users || [],
-        owner_permissions : record.owner_permissions || [],
+        name: record.name,
+        user_limit: record.user_limit,
+        is_private: record.is_private,
+        trusted_users: record.trusted_users || [],
+        blocked_users: record.blocked_users || [],
+        owner_permissions: record.owner_permissions || [],
       }
       __saved_settings.set(record.user_id, settings)
     }

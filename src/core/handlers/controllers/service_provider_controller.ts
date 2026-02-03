@@ -3,16 +3,16 @@ import { db, component } from "../../../shared/utils"
 import { log_error } from "../../../shared/utils/error_logger"
 import * as luarmor from "../../../infrastructure/api/luarmor"
 
-const RESET_COLLECTION          = "service_provider_resets"
-const USER_CACHE_COLLECTION     = "service_provider_user_cache"
-const HWID_RESET_TRACKER        = "hwid_reset_tracker"
-const HWID_RESET_CACHE          = "hwid_reset_cache"
-const CACHE_DURATION_MS         = 120 * 60 * 1000
-const RESET_CACHE_TTL_MS        = 30000
-const RESET_THRESHOLD           = 100
-const HWID_LESS_DURATION_MS     = 60 * 60 * 1000
-const PROJECT_ID                = "6958841b2d9e5e049a24a23e376e0d77"
-const NOTIFICATION_USER         = "1118453649727823974"
+const RESET_COLLECTION = "service_provider_resets"
+const USER_CACHE_COLLECTION = "service_provider_user_cache"
+const HWID_RESET_TRACKER = "hwid_reset_tracker"
+const HWID_RESET_CACHE = "hwid_reset_cache"
+const CACHE_DURATION_MS = 120 * 60 * 1000
+const RESET_CACHE_TTL_MS = 30000
+const RESET_THRESHOLD = 100
+const HWID_LESS_DURATION_MS = 60 * 60 * 1000
+const PROJECT_ID = "6958841b2d9e5e049a24a23e376e0d77"
+const NOTIFICATION_USER = "1118453649727823974"
 
 function is_rate_limited(error_message?: string): boolean {
   if (!error_message) return false
@@ -22,7 +22,7 @@ function is_rate_limited(error_message?: string): boolean {
 
 export function create_rate_limit_message(feature_name: string) {
   const retry_timestamp = Math.floor(Date.now() / 1000) + 60
-  
+
   return component.build_message({
     components: [
       component.container({
@@ -54,17 +54,17 @@ export function create_rate_limit_message(feature_name: string) {
 }
 
 interface reset_record {
-  _id?           : any
-  user_id        : string
-  last_reset_at  : number
+  _id?: any
+  user_id: string
+  last_reset_at: number
 }
 
 interface cached_user {
-  _id?           : any
-  user_id        : string
-  user_data      : luarmor.luarmor_user
-  cached_at      : number
-  last_updated   : number
+  _id?: any
+  user_id: string
+  user_data: luarmor.luarmor_user
+  cached_at: number
+  last_updated: number
 }
 
 async function get_cached_user(user_id: string): Promise<luarmor.luarmor_user | null> {
@@ -75,18 +75,18 @@ async function get_cached_user(user_id: string): Promise<luarmor.luarmor_user | 
     }
 
     const cached = await db.find_one<cached_user>(USER_CACHE_COLLECTION, { user_id })
-    
+
     if (!cached) {
       console.log(`[ - SERVICE PROVIDER CACHE - ] Cache miss for user_id: ${user_id}`)
       return null
     }
-    
+
     const now = Date.now()
     if (now - cached.cached_at > CACHE_DURATION_MS) {
       console.log(`[ - SERVICE PROVIDER CACHE - ] Cache expired for user_id: ${user_id} (age: ${Math.floor((now - cached.cached_at) / 1000)}s)`)
       return null
     }
-    
+
     console.log(`[ - SERVICE PROVIDER CACHE - ] Cache hit for user_id: ${user_id}`)
     return cached.user_data
   } catch (error) {
@@ -109,8 +109,8 @@ async function save_cached_user(user_id: string, user_data: luarmor.luarmor_user
       {
         user_id,
         user_data,
-        cached_at    : now,
-        last_updated : now,
+        cached_at: now,
+        last_updated: now,
       },
       true
     )
@@ -121,24 +121,24 @@ async function save_cached_user(user_id: string, user_data: luarmor.luarmor_user
 }
 
 interface hwid_reset_request {
-  _id?          : any
-  timestamp     : number
-  user_id       : string
+  _id?: any
+  timestamp: number
+  user_id: string
 }
 
 interface hwid_less_status {
-  _id?          : any
-  enabled       : boolean
-  enabled_at    : number
-  expires_at    : number
-  triggered_by  : string
-  reset_count   : number
+  _id?: any
+  enabled: boolean
+  enabled_at: number
+  expires_at: number
+  triggered_by: string
+  reset_count: number
 }
 
 interface hwid_reset_cache_entry {
-  _id?          : any
-  reset_count   : number
-  cached_at     : number
+  _id?: any
+  reset_count: number
+  cached_at: number
 }
 
 /**
@@ -147,14 +147,14 @@ interface hwid_reset_cache_entry {
 async function get_cached_reset_count(): Promise<number | null> {
   try {
     const cached = await db.find_one<hwid_reset_cache_entry>(HWID_RESET_CACHE, {})
-    
+
     if (!cached) return null
-    
+
     const now = Date.now()
     if (now - cached.cached_at > RESET_CACHE_TTL_MS) {
       return null
     }
-    
+
     return cached.reset_count
   } catch (error) {
     return null
@@ -167,7 +167,7 @@ async function get_cached_reset_count(): Promise<number | null> {
 async function save_reset_count_cache(reset_count: number): Promise<void> {
   try {
     await db.delete_many(HWID_RESET_CACHE, {})
-    
+
     await db.insert_one(HWID_RESET_CACHE, {
       reset_count,
       cached_at: Date.now(),
@@ -186,7 +186,7 @@ async function track_hwid_reset(user_id: string): Promise<void> {
       user_id,
       timestamp: Date.now(),
     })
-    
+
     await db.delete_many(HWID_RESET_CACHE, {})
   } catch (error) {
     console.error("[ - HWID RESET TRACKER - ] Failed to track reset:", error)
@@ -199,29 +199,29 @@ async function track_hwid_reset(user_id: string): Promise<void> {
 async function check_and_enable_hwid_less(client: Client): Promise<void> {
   try {
     const cached_count = await get_cached_reset_count()
-    
+
     let reset_count: number
-    
+
     if (cached_count !== null) {
       reset_count = cached_count
       console.log(`[ - HWID RESET TRACKER - ] Using cached reset count: ${reset_count}/${RESET_THRESHOLD}`)
     } else {
       const one_minute_ago = Date.now() - 60000
-      
+
       const recent_resets = await db.find_many<hwid_reset_request>(HWID_RESET_TRACKER, {
         timestamp: { $gte: one_minute_ago },
       })
 
       reset_count = recent_resets.length
-      
+
       await save_reset_count_cache(reset_count)
-      
+
       console.log(`[ - HWID RESET TRACKER - ] Resets in last minute: ${reset_count}/${RESET_THRESHOLD}`)
     }
 
     if (reset_count >= RESET_THRESHOLD) {
       const existing_status = await db.find_one<hwid_less_status>("hwid_less_status", {
-        enabled   : true,
+        enabled: true,
         expires_at: { $gt: Date.now() },
       })
 
@@ -233,22 +233,22 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
       const enable_result = await luarmor.update_project_settings(PROJECT_ID, true)
 
       if (enable_result.success) {
-        const now        = Date.now()
+        const now = Date.now()
         const expires_at = now + HWID_LESS_DURATION_MS
 
         await db.insert_one("hwid_less_status", {
-          enabled      : true,
-          enabled_at   : now,
-          expires_at   : expires_at,
-          triggered_by : "auto",
-          reset_count  : reset_count,
+          enabled: true,
+          enabled_at: now,
+          expires_at: expires_at,
+          triggered_by: "auto",
+          reset_count: reset_count,
         })
 
         console.log(`[ - HWID RESET TRACKER - ] Auto-enabled HWID less for 1 hour (${reset_count} requests)`)
 
         try {
           const notification_user = await client.users.fetch(NOTIFICATION_USER)
-          const message           = component.build_message({
+          const message = component.build_message({
             components: [
               component.container({
                 accent_color: 0xED4245,
@@ -283,10 +283,10 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
             const disable_result = await luarmor.update_project_settings(PROJECT_ID, false)
             if (disable_result.success) {
               console.log("[ - HWID RESET TRACKER - ] Auto-disabled HWID less after 1 hour")
-              
+
               try {
                 const notification_user = await client.users.fetch(NOTIFICATION_USER)
-                const message           = component.build_message({
+                const message = component.build_message({
                   components: [
                     component.container({
                       accent_color: 0x57F287,
@@ -331,31 +331,31 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
 
 async function get_user_with_cache(user_id: string, client: Client): Promise<{ success: boolean; data?: luarmor.luarmor_user; error?: string; from_cache?: boolean }> {
   const cached = await get_cached_user(user_id)
-  
+
   if (cached) {
     console.log(`[ - SERVICE PROVIDER CACHE - ] Returning cached data for user_id: ${user_id}`)
     return {
-      success    : true,
-      data       : cached,
-      from_cache : true,
+      success: true,
+      data: cached,
+      from_cache: true,
     }
   }
-  
+
   console.log(`[ - SERVICE PROVIDER CACHE - ] Fetching from Luarmor for user_id: ${user_id}`)
   const user_result = await luarmor.get_user_by_discord(user_id)
-  
+
   if (user_result.success && user_result.data) {
     await save_cached_user(user_id, user_result.data)
     return {
-      success    : true,
-      data       : user_result.data,
-      from_cache : false,
+      success: true,
+      data: user_result.data,
+      from_cache: false,
     }
   }
-  
+
   return {
-    success : false,
-    error   : user_result.error,
+    success: false,
+    error: user_result.error,
   }
 }
 
@@ -368,35 +368,35 @@ export async function get_user_script(options: { client: Client; user_id: string
       if (is_rate_limited(user_result.error)) {
         console.warn(`[ - GET SCRIPT - ] Rate limited for user ${options.user_id}`)
         return {
-          success : false,
-          message : create_rate_limit_message("Get Script"),
+          success: false,
+          message: create_rate_limit_message("Get Script"),
         }
       }
-      
+
       // - LOG ERROR WITH DETAILS - \\
       console.error(`[ - GET SCRIPT - ] Failed for user ${options.user_id}:`, user_result.error)
-      
+
       return {
-        success : false,
-        error   : user_result.error || "User not found",
+        success: false,
+        error: user_result.error || "User not found",
       }
     }
 
     const loader_script = luarmor.get_full_loader_script(user_result.data.user_key)
-    
+
     console.log(`[ - GET SCRIPT - ] Success for user ${options.user_id}`)
 
     return {
-      success : true,
-      script  : loader_script,
+      success: true,
+      script: loader_script,
     }
   } catch (error) {
     await log_error(options.client, error as Error, "get_user_script", {
       user_id: options.user_id,
     })
     return {
-      success : false,
-      error   : "Failed to get script",
+      success: false,
+      error: "Failed to get script",
     }
   }
 }
@@ -419,7 +419,7 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
 
     // - LOG ERROR - \\
     console.error(`[ - RESET HWID - ] Failed for user ${options.user_id}:`, reset_result.error)
-    
+
     return { success: false, error: reset_result.error || "Failed to reset HWID" }
   } catch (error) {
     console.error(`[ - RESET HWID - ] Exception for user ${options.user_id}:`, error)
@@ -434,13 +434,13 @@ export async function get_user_stats(options: { client: Client; user_id: string 
     if (!user_result.success || !user_result.data) {
       console.error(`[ - GET STATS - ] Failed for user ${options.user_id}:`, user_result.error)
       return {
-        success : false,
-        error   : user_result.error || "User not found",
+        success: false,
+        error: user_result.error || "User not found",
       }
     }
 
     const all_users_result = await luarmor.get_all_users()
-    let leaderboard_text   = "Unable to fetch leaderboard"
+    let leaderboard_text = "Unable to fetch leaderboard"
 
     if (all_users_result.success && all_users_result.data) {
       const rank_info = luarmor.get_execution_rank(all_users_result.data, options.user_id)
@@ -456,10 +456,10 @@ export async function get_user_stats(options: { client: Client; user_id: string 
     console.log(`[ - GET STATS - ] Success for user ${options.user_id}`)
 
     return {
-      success : true,
-      data    : {
-        user             : user_result.data,
-        leaderboard_text : leaderboard_text,
+      success: true,
+      data: {
+        user: user_result.data,
+        leaderboard_text: leaderboard_text,
       },
     }
   } catch (error) {
@@ -467,8 +467,8 @@ export async function get_user_stats(options: { client: Client; user_id: string 
       user_id: options.user_id,
     })
     return {
-      success : false,
-      error   : "Failed to get stats",
+      success: false,
+      error: "Failed to get stats",
     }
   }
 }
@@ -481,8 +481,8 @@ export async function redeem_user_key(options: { client: Client; user_id: string
     if (existing_user.success && existing_user.data) {
       console.warn(`[ - REDEEM KEY - ] User ${options.user_id} already has a key`)
       return {
-        success : false,
-        error   : "You already have a key linked to your Discord account",
+        success: false,
+        error: "You already have a key linked to your Discord account",
       }
     }
 
@@ -492,8 +492,8 @@ export async function redeem_user_key(options: { client: Client; user_id: string
     if (!verify_result.success || !verify_result.data) {
       console.error(`[ - REDEEM KEY - ] Invalid key for user ${options.user_id}`)
       return {
-        success : false,
-        error   : "Invalid key or key does not exist",
+        success: false,
+        error: "Invalid key or key does not exist",
       }
     }
 
@@ -501,8 +501,8 @@ export async function redeem_user_key(options: { client: Client; user_id: string
     if (verify_result.data.discord_id && verify_result.data.discord_id !== options.user_id) {
       console.warn(`[ - REDEEM KEY - ] Key ${options.user_key} already linked to another user`)
       return {
-        success : false,
-        error   : "This key is already linked to another Discord account",
+        success: false,
+        error: "This key is already linked to another Discord account",
       }
     }
 
@@ -511,32 +511,32 @@ export async function redeem_user_key(options: { client: Client; user_id: string
 
     if (link_result.success) {
       console.log(`[ - REDEEM KEY - ] Successfully linked key for user ${options.user_id}`)
-      
+
       if (verify_result.data) {
         await save_cached_user(options.user_id, verify_result.data)
       }
-      
+
       const loader_script = luarmor.get_full_loader_script(options.user_key)
       return {
-        success : true,
-        message : "Key linked successfully",
-        script  : loader_script,
+        success: true,
+        message: "Key linked successfully",
+        script: loader_script,
       }
     } else {
       console.error(`[ - REDEEM KEY - ] Failed to link key for user ${options.user_id}:`, link_result.error)
       return {
-        success : false,
-        error   : link_result.error || "Failed to link key",
+        success: false,
+        error: link_result.error || "Failed to link key",
       }
     }
   } catch (error) {
     await log_error(options.client, error as Error, "redeem_user_key", {
-      user_id  : options.user_id,
-      user_key : options.user_key,
+      user_id: options.user_id,
+      user_key: options.user_key,
     })
     return {
-      success : false,
-      error   : "Failed to redeem key",
+      success: false,
+      error: "Failed to redeem key",
     }
   }
 }
@@ -560,22 +560,22 @@ export async function get_execution_leaderboard(options: { client: Client }): Pr
 
     if (!all_users.success || !all_users.data) {
       return {
-        success : false,
-        error   : all_users.error || "Failed to fetch users",
+        success: false,
+        error: all_users.error || "Failed to fetch users",
       }
     }
 
     const sorted = all_users.data.sort((a: any, b: any) => b.total_executions - a.total_executions)
 
     return {
-      success : true,
-      data    : sorted,
+      success: true,
+      data: sorted,
     }
   } catch (error) {
     await log_error(options.client, error as Error, "get_execution_leaderboard", {})
     return {
-      success : false,
-      error   : "Failed to fetch leaderboard",
+      success: false,
+      error: "Failed to fetch leaderboard",
     }
   }
 }

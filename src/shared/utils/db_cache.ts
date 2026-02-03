@@ -1,6 +1,8 @@
 import * as db from "./database"
 import { db_cache } from "./cache"
 
+const collection_key_index: Map<string, Set<string>> = new Map()
+
 /**
  * - GENERATE CACHE KEY FOR DATABASE QUERIES - \\
  * @param {string} collection - Collection name
@@ -13,11 +15,36 @@ function generate_cache_key(collection: string, filter: object): string {
 }
 
 /**
+ * - REGISTER CACHE KEY FOR COLLECTION - \\
+ * @param {string} collection - Collection name
+ * @param {string} cache_key - Cache key to register
+ * @returns {void}
+ */
+function register_collection_key(collection: string, cache_key: string): void {
+    const existing_keys = collection_key_index.get(collection)
+    if (existing_keys) {
+        existing_keys.add(cache_key)
+        return
+    }
+
+    collection_key_index.set(collection, new Set([cache_key]))
+}
+
+/**
  * - INVALIDATE CACHE FOR COLLECTION - \\
  * @param {string} collection - Collection name
  * @returns {void}
  */
 export function invalidate_collection_cache(collection: string): void {
+    const indexed_keys = collection_key_index.get(collection)
+    if (indexed_keys && indexed_keys.size > 0) {
+        for (const key of indexed_keys) {
+            db_cache.delete(key)
+        }
+        indexed_keys.clear()
+        return
+    }
+
     const keys = db_cache.keys()
     for (const key of keys) {
         if (key.startsWith(`${collection}:`)) {
@@ -39,14 +66,17 @@ export async function cached_find_one<T extends object>(
     ttl_ms?: number
 ): Promise<T | null> {
     const cache_key = generate_cache_key(collection, filter)
-
-    return await db_cache.get_or_set_async(
+    const result = await db_cache.get_or_set_async(
         cache_key,
         async () => {
             return await db.find_one<T>(collection, filter)
         },
         ttl_ms
     )
+
+    register_collection_key(collection, cache_key)
+
+    return result
 }
 
 /**
@@ -62,14 +92,17 @@ export async function cached_find_many<T extends object>(
     ttl_ms?: number
 ): Promise<T[]> {
     const cache_key = generate_cache_key(collection, filter)
-
-    return await db_cache.get_or_set_async(
+    const result = await db_cache.get_or_set_async(
         cache_key,
         async () => {
             return await db.find_many<T>(collection, filter)
         },
         ttl_ms
     )
+
+    register_collection_key(collection, cache_key)
+
+    return result
 }
 
 /**
@@ -200,6 +233,7 @@ export async function warm_collection_cache<T extends object>(
     for (const item of data) {
         const cache_key = generate_cache_key(collection, item)
         db_cache.set(cache_key, item, ttl_ms)
+        register_collection_key(collection, cache_key)
     }
 
     console.log(`[ - DB CACHE - ] Warmed cache for ${collection}: ${data.length} items`)

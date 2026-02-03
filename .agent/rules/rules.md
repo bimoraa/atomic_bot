@@ -1,0 +1,88 @@
+---
+trigger: always_on
+---
+
+---
+applyTo: 'ALL'
+---
+## CODE RULES:
+- Code harus sneak case
+- Code harus rapih
+- = harus sejajar
+- : harus sejajar
+- from harus sejajar
+- kode harus terorganisir
+- jangan pake comment BERLEBIH, cukup kasih comment yang penting aja
+- mengikuti utility functions yang ada
+- jangan pake emoji
+- gunakan bahasa inggris untuk penamaan variable, function, class, file, dan folder
+- HINDARI ERROR COMPONENT V2
+Invalid Form Body
+components[0].components[0].accessory[BASE_TYPE_REQUIRED]: This field is required
+- PASTIKAN SEMUA ERROR LOG DENGAN DETAIL YANG CUKUP
+- PASTIKAN SEMUA SCRIPT TERHUBUNG KE "../utils/error_logger" UNTUK LOG ERROR
+- buat command yang penting connect ke database (biar kalo restart ga ilang kaya reminder, dan lain lai1)
+
+### PENTING:
+tolong buat function kayak
+
+function dalam shared/controller, kayak kalo command /reminder atau dari /reminder-cancel (yang berkaitan dengan fiturnya) dia ke -> /reminder_controller gitu
+
+
+---
+
+buat command sesuai fungsinya di folder yang sesuai, misal command reminder di /commands/tools/reminder/reminder.ts
+
+--- 
+
+sebelum end tolong double check apakah ada error kode merah
+
+--- 
+
+jangan ada emoji di component/embed (kecuali emoji discord kaya <:emoji_name:emoji_id>)
+
+---
+
+message wajib pake component v2 di utils/components
+
+--- 
+
+buat style console: [ - TITLE - ] message 
+
+### DESIGN:
+- dark mode, jangan ada warna gradasi berlebih, shadcn original color
+
+---
+
+buat command persistence di database, biar kalo bot restart ga ilang data penting kaya reminder, afk, ticket, dan lain lain
+
+---
+
+kasih comment dengan design:
+// - COMMENT - \\ (1 LINE SAJA)
+
+
+
+---
+
+kasih @param atau @return dll di setiap function jsdoc style
+
+--- 
+
+wajib build dan test sebelum PR
+
+---
+
+kode wajib rapi dan terorganisir
+
+--- 
+
+tolong ikuti struktur file/folder yang sudah ada di project
+
+--- 
+
+jangan buat dokumentasi.
+
+---
+
+jangan buat example files. kecuali di folder /guide
