@@ -221,8 +221,8 @@ export function select_menu(custom_id: string, placeholder: string, options: sel
 }
 
 export interface user_select_component {
-  type       : number
-  custom_id  : string
+  type: number
+  custom_id: string
   placeholder: string
   min_values?: number
   max_values?: number
@@ -240,7 +240,7 @@ export function user_select(custom_id: string, placeholder: string): action_row_
     type: component_type.action_row,
     components: [
       {
-        type        : component_type.user_select,
+        type: component_type.user_select,
         custom_id,
         placeholder,
       },
@@ -299,26 +299,31 @@ export function text(content: string | string[]): text_component {
  *   accessory: secondary_button("Click Me", "btn_id") 
  * })
  */
-export function section(options: { 
-  content: string | string[]; 
-  thumbnail?: string; 
+export function section(options: {
+  content: string | string[];
+  thumbnail?: string;
   media?: string;
   accessory?: thumbnail_component | button_component;
 }): section_component {
   const result: section_component = {
-    type       : component_type.section,
-    components : [text(options.content)],
+    type: component_type.section,
+    components: [text(options.content)],
   }
 
   // - HANDLE EXPLICIT ACCESSORY (BUTTON OR MEDIA) - \\
   if (options.accessory) {
-    result.accessory = options.accessory
-  } 
+    if (
+      (options.accessory.type === component_type.thumbnail && (options.accessory as any).media?.url) ||
+      (options.accessory.type === component_type.button)
+    ) {
+      result.accessory = options.accessory
+    }
+  }
   // - FALLBACK TO MEDIA/THUMBNAIL - \\
   else {
     const media_url = options.media || options.thumbnail
 
-    if (media_url && typeof media_url === "string" && media_url.trim().length > 0) {
+    if (media_url && typeof media_url === "string" && media_url.trim().length > 0 && media_url.startsWith("http")) {
       result.accessory = thumbnail(media_url)
     }
   }
@@ -381,10 +386,10 @@ export function container(options: {
   }
 
   return {
-    type        : component_type.container,
-    components  : options.components,
+    type: component_type.container,
+    components: options.components,
     accent_color: processed_color as number | null | undefined,
-    spoiler     : options.spoiler,
+    spoiler: options.spoiler,
   }
 }
 

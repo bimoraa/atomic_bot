@@ -22,12 +22,15 @@ export async function load_middleman_tickets_on_startup(client: Client): Promise
     }
 
     let loaded_count = 0
-    let error_count  = 0
+    let error_count = 0
 
     for (const ticket of active_tickets) {
       try {
         // - VERIFY THREAD STILL EXISTS - \\
-        const thread = await client.channels.fetch(ticket.thread_id).catch(() => null)
+        const thread = await client.channels.fetch(ticket.thread_id).catch((err) => {
+          if (err.code === 10003 || err.code === 50001 || err.code === 10008) return null // Unknown Channel / Missing Access / Unknown Message
+          throw err
+        })
 
         if (thread && thread.isThread() && !thread.locked && !thread.archived) {
           // - SET USER OPEN TICKET IN MEMORY - \\
