@@ -269,7 +269,10 @@ export async function get_member_suggestions(options: { query: string; user_id: 
 
     if (options.include_live !== false) {
       if (platform === "idn") {
-        const roster_members = await idn_live.get_idn_roster_members(options.client)
+        const roster_members = await idn_live.get_idn_roster_members(options.client, {
+          max_wait_ms : 2000,
+          allow_stale : true,
+        })
         for (const member of roster_members) {
           const key   = member.username.toLowerCase()
           const label = `${format_member_display_name(member.name)} (@${member.username})`

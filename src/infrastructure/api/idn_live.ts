@@ -393,13 +393,35 @@ export async function get_all_members(client: Client): Promise<jkt48_member[]> {
 /**
  * - GET IDN ROSTER MEMBERS - \\
  * @param {Client} client - Discord client
+ * @param {{ max_wait_ms?: number; allow_stale?: boolean }} options - Fetch options
  * @returns {Promise<jkt48_member[]>} IDN roster members
  */
-export async function get_idn_roster_members(client: Client): Promise<jkt48_member[]> {
+export async function get_idn_roster_members(client: Client, options?: { max_wait_ms?: number; allow_stale?: boolean }): Promise<jkt48_member[]> {
   try {
     const now = Date.now()
     if (roster_cache.data.length > 0 && (now - roster_cache.fetched_at) < IDN_ROSTER_TTL_MS) {
       return roster_cache.data
+    }
+
+    const max_wait_ms = options?.max_wait_ms
+    const allow_stale = options?.allow_stale ?? true
+
+    if (max_wait_ms && allow_stale && roster_cache.data.length > 0) {
+      const fallback = new Promise<jkt48_member[]>((resolve) => {
+        setTimeout(() => resolve(roster_cache.data), max_wait_ms)
+      })
+
+      const members = await Promise.race([
+        fetch_idn_roster(client),
+        fallback,
+      ])
+
+      if (members.length > 0) {
+        roster_cache.data       = members
+        roster_cache.fetched_at = now
+      }
+
+      return members
     }
 
     const members = await fetch_idn_roster(client)
