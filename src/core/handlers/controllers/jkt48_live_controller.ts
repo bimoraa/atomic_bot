@@ -132,7 +132,7 @@ export function build_history_message(options: {
 
   if (records.length === 0) {
     return component.build_message({
-      components: [
+      components : [
         component.container({
           accent_color : 0xFEE75C,
           components   : [
@@ -140,7 +140,7 @@ export function build_history_message(options: {
           ],
         }),
         component.container({
-          components: [
+          components : [
             component.text([
               `No live history available for ${platform_label === "showroom" ? "Showroom" : "IDN"}.`,
               "",
@@ -168,14 +168,14 @@ export function build_history_message(options: {
   })
 
   const history_component = component.container({
-    components: [
+    components : [
       component.section({
         content   : [`### ${record.member_name}`, description].filter(Boolean),
         accessory : component.link_button("Watch", record.url),
       }),
       component.divider(2),
       component.section({
-        content: [
+        content   : [
           `- **Viewers:** ${record.viewers.toLocaleString()}`,
           `- **Started:** <t:${started_timestamp}:F>`,
           `- **End Live:** <t:${ended_timestamp}:F>`,
@@ -196,7 +196,7 @@ export function build_history_message(options: {
   const next_disabled     = next_index >= records.length
 
   const footer_component = component.container({
-    components: [
+    components : [
       component.action_row(
         component.secondary_button(previous_member, `history_live_prev:${platform_label}:${clamped_index}`, undefined, previous_disabled),
         component.secondary_button(next_member, `history_live_next:${platform_label}:${clamped_index}`, undefined, next_disabled)
@@ -283,7 +283,7 @@ export function build_live_message(options: {
 
   if (rooms.length === 0) {
     return component.build_message({
-      components: [
+      components : [
         component.container({
           accent_color : 0xFEE75C,
           components   : [
@@ -291,7 +291,7 @@ export function build_live_message(options: {
           ],
         }),
         component.container({
-          components: [
+          components : [
             component.text([
               `No JKT48 members are currently live on ${platform_label === "showroom" ? "Showroom" : "IDN"}.`,
               "",
@@ -320,7 +320,7 @@ export function build_live_message(options: {
   })
 
   const live_component = component.container({
-    components: [
+    components : [
       component.section({
         content   : section_text,
         accessory : component.link_button("Watch", room.url),
@@ -345,7 +345,7 @@ export function build_live_message(options: {
   const next_disabled     = next_index >= rooms.length
 
   const footer_component = component.container({
-    components: [
+    components : [
       component.action_row(
         component.secondary_button(previous_member, `check_on_live_prev:${platform_label}:${clamped_index}`, undefined, previous_disabled),
         component.secondary_button(next_member, `check_on_live_next:${platform_label}:${clamped_index}`, undefined, next_disabled)
