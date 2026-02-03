@@ -1,5 +1,5 @@
 import { ButtonInteraction }                            from "discord.js"
-import { log_error }                                    from "../../../shared/utils/error_logger"
+import { log_error }                                    from "../../../../shared/utils/error_logger"
 import { build_live_message, get_live_rooms }           from "../../controllers/jkt48_live_controller"
 
 /**
