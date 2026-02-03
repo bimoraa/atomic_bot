@@ -6,6 +6,10 @@ import * as idn_live      from "../../../infrastructure/api/idn_live"
 const NOTIFICATION_COLLECTION = "idn_live_notifications"
 const LIVE_STATE_COLLECTION   = "idn_live_state"
 
+function normalize_idn_username(input: string): string {
+  return input.toLowerCase().replace(/^@/, "").replace(/\s+/g, "")
+}
+
 interface notification_subscription {
   _id?       : any
   user_id    : string
@@ -32,37 +36,41 @@ interface live_state_record {
 export async function add_notification(options: { user_id: string; member_name: string; client: Client }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const member = await idn_live.get_member_by_name(options.member_name)
+    const fallback_username = normalize_idn_username(options.member_name)
+    const member_name = member?.name || options.member_name.trim()
+    const username    = member?.username || fallback_username
+    const slug        = member?.slug || ""
 
-    if (!member) {
+    if (!username) {
       return {
         success : false,
-        error   : `Member "${options.member_name}" not found. Please check the spelling.`,
+        error   : "Please provide a valid member name or IDN username.",
       }
     }
 
     const existing = await db.find_one<notification_subscription>(NOTIFICATION_COLLECTION, {
       user_id     : options.user_id,
-      member_name : member.name,
+      username    : username,
     })
 
     if (existing) {
       return {
         success : false,
-        error   : `You are already subscribed to notifications for ${member.name}.`,
+        error   : `You are already subscribed to notifications for ${member_name}.`,
       }
     }
 
     await db.insert_one<notification_subscription>(NOTIFICATION_COLLECTION, {
       user_id     : options.user_id,
-      member_name : member.name,
-      username    : member.username,
-      slug        : member.slug,
+      member_name : member_name,
+      username    : username,
+      slug        : slug,
       created_at  : Date.now(),
     })
 
     return {
       success : true,
-      message : `Successfully subscribed to ${member.name} live notifications! You will receive a DM when they go live.`,
+      message : `Successfully subscribed to ${member_name} live notifications! You will receive a DM when they go live.`,
     }
   } catch (error) {
     await log_error(options.client, error as Error, "add_idn_notification", {
@@ -84,29 +92,25 @@ export async function add_notification(options: { user_id: string; member_name: 
 export async function remove_notification(options: { user_id: string; member_name: string; client: Client }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
     const member = await idn_live.get_member_by_name(options.member_name)
-
-    if (!member) {
-      return {
-        success : false,
-        error   : `Member "${options.member_name}" not found.`,
-      }
-    }
+    const fallback_username = normalize_idn_username(options.member_name)
+    const member_name = member?.name || options.member_name.trim()
+    const username    = member?.username || fallback_username
 
     const result = await db.delete_one(NOTIFICATION_COLLECTION, {
       user_id     : options.user_id,
-      member_name : member.name,
+      username    : username,
     })
 
     if (!result) {
       return {
         success : false,
-        error   : `You are not subscribed to ${member.name}.`,
+        error   : `You are not subscribed to ${member_name}.`,
       }
     }
 
     return {
       success : true,
-      message : `Successfully unsubscribed from ${member.name} live notifications.`,
+      message : `Successfully unsubscribed from ${member_name} live notifications.`,
     }
   } catch (error) {
     await log_error(options.client, error as Error, "remove_idn_notification", {
@@ -123,22 +127,24 @@ export async function remove_notification(options: { user_id: string; member_nam
 /**
  * - GET USER SUBSCRIPTIONS - \\
  * @param {string} user_id - Discord user ID
+ * @param {Client} client - Discord client
  * @returns {Promise<notification_subscription[]>} List of subscriptions
  */
-export async function get_user_subscriptions(user_id: string): Promise<notification_subscription[]> {
+export async function get_user_subscriptions(user_id: string, client: Client): Promise<notification_subscription[]> {
   try {
     return await db.find_many<notification_subscription>(NOTIFICATION_COLLECTION, { user_id })
   } catch (error) {
-    console.error("[ - IDN LIVE - ] Error fetching subscriptions:", error)
+    await log_error(client, error as Error, "idn_live_get_subscriptions", { user_id })
     return []
   }
 }
 
 /**
  * - GET CURRENTLY LIVE MEMBERS - \\
+ * @param {Client} client - Discord client
  * @returns {Promise<object>} Result with live rooms data
  */
-export async function get_currently_live(): Promise<{ success: boolean; data?: idn_live.live_room[]; error?: string }> {
+export async function get_currently_live(client: Client): Promise<{ success: boolean; data?: idn_live.live_room[]; error?: string }> {
   try {
     const live_rooms = await idn_live.get_live_rooms()
 
@@ -147,7 +153,7 @@ export async function get_currently_live(): Promise<{ success: boolean; data?: i
       data    : live_rooms,
     }
   } catch (error) {
-    console.error("[ - IDN LIVE - ] Error fetching live rooms:", error)
+    await log_error(client, error as Error, "idn_live_get_currently_live", {})
     return {
       success : false,
       error   : "Failed to fetch live rooms.",
@@ -207,7 +213,11 @@ export async function check_and_notify_live_changes(client: Client): Promise<voi
 
           console.log(`[ - IDN LIVE - ] Notified ${subscription.user_id} about ${room.member_name} live`)
         } catch (error) {
-          console.error(`[ - IDN LIVE - ] Failed to notify ${subscription.user_id}:`, error)
+          await log_error(client, error as Error, "idn_live_notify_user", {
+            user_id     : subscription.user_id,
+            member_name : room.member_name,
+            slug        : room.slug,
+          })
         }
       }
 
@@ -232,7 +242,7 @@ export async function check_and_notify_live_changes(client: Client): Promise<voi
       }
     }
   } catch (error) {
-    console.error("[ - IDN LIVE - ] Error checking live changes:", error)
+    await log_error(client, error as Error, "idn_live_check_and_notify", {})
   }
 }
 

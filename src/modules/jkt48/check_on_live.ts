@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "../../shared/types/command"
 import { component }                                        from "../../shared/utils"
+import { log_error }                                        from "../../shared/utils/error_logger"
 import { get_currently_live }                               from "../../core/handlers/controllers/idn_live_controller"
 import { format_live_component }                            from "../../infrastructure/api/idn_live"
 
@@ -13,7 +14,7 @@ export const command: Command = {
     await interaction.deferReply()
 
     try {
-      const result = await get_currently_live()
+      const result = await get_currently_live(interaction.client)
 
       if (!result.success || !result.data) {
         await interaction.editReply({
@@ -77,7 +78,7 @@ export const command: Command = {
 
       await interaction.editReply(live_message)
     } catch (error) {
-      console.error("[ - CHECK ON LIVE - ] Error:", error)
+      await log_error(interaction.client, error as Error, "check_on_live_command", {})
       await interaction.editReply({
         content : "An error occurred while checking live streams.",
       }).catch(() => {})

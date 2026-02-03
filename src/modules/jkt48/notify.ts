@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "../../shared/types/command"
 import { component }                                        from "../../shared/utils"
+import { log_error }                                        from "../../shared/utils/error_logger"
 import { add_notification, remove_notification, get_user_subscriptions } from "../../core/handlers/controllers/idn_live_controller"
 
 export const command: Command = {
@@ -112,7 +113,7 @@ export const command: Command = {
 
         await interaction.editReply(success_message)
       } else if (subcommand === "list") {
-        const subscriptions = await get_user_subscriptions(interaction.user.id)
+        const subscriptions = await get_user_subscriptions(interaction.user.id, interaction.client)
 
         if (subscriptions.length === 0) {
           await interaction.editReply({
@@ -150,7 +151,7 @@ export const command: Command = {
         await interaction.editReply(list_message)
       }
     } catch (error) {
-      console.error("[ - NOTIFY COMMAND - ] Error:", error)
+      await log_error(interaction.client, error as Error, "notify_command", { subcommand })
       await interaction.editReply({
         content : "An error occurred while processing your request.",
       }).catch(() => {})
