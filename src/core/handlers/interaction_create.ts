@@ -1,4 +1,4 @@
-import { Client, Collection, Interaction, ThreadChannel, GuildMember, ButtonInteraction } from "discord.js"
+import { Client, Collection, Interaction, ThreadChannel, GuildMember, ButtonInteraction, AutocompleteInteraction } from "discord.js"
 import { Command }                                                     from "../../shared/types/command"
 import { can_use_command }                                             from "../../shared/database/settings/command_permissions"
 import { log_error, handle_error_log_button }                          from "../../shared/utils/error_logger"
@@ -496,6 +496,23 @@ export async function handle_interaction(
         channel  : interaction.channel?.id,
       })
     }
+  }
+
+  if (interaction.isAutocomplete()) {
+    const autocomplete_interaction = interaction as AutocompleteInteraction
+    const command = client.commands.get(autocomplete_interaction.commandName)
+    if (!command?.autocomplete) return
+
+    try {
+      await command.autocomplete(autocomplete_interaction)
+    } catch (error) {
+      await log_error(client, error as Error, `Autocomplete: ${autocomplete_interaction.commandName}`, {
+        user    : autocomplete_interaction.user.tag,
+        guild   : autocomplete_interaction.guild?.name || "DM",
+        channel : autocomplete_interaction.channel?.id,
+      })
+    }
+    return
   }
 
   if (!interaction.isChatInputCommand()) return;

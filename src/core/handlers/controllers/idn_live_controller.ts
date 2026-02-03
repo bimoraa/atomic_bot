@@ -28,6 +28,11 @@ interface live_state_record {
   notified  : string[]
 }
 
+interface member_suggestion {
+  name  : string
+  value : string
+}
+
 /**
  * - ADD NOTIFICATION SUBSCRIPTION - \\
  * @param {object} options - Subscription options
@@ -135,6 +140,64 @@ export async function get_user_subscriptions(user_id: string, client: Client): P
     return await db.find_many<notification_subscription>(NOTIFICATION_COLLECTION, { user_id })
   } catch (error) {
     await log_error(client, error as Error, "idn_live_get_subscriptions", { user_id })
+    return []
+  }
+}
+
+/**
+ * - GET MEMBER SUGGESTIONS - \\
+ * @param {object} options - Suggestion options
+ * @returns {Promise<member_suggestion[]>} Suggestions for autocomplete
+ */
+export async function get_member_suggestions(options: { query: string; user_id: string; client: Client; include_live?: boolean }): Promise<member_suggestion[]> {
+  try {
+    const normalized_query = options.query.toLowerCase().trim()
+    const suggestions_map  = new Map<string, member_suggestion>()
+
+    if (options.include_live !== false) {
+      const live_members = await idn_live.get_all_members(options.client)
+      for (const member of live_members) {
+        const key   = member.username.toLowerCase()
+        const label = `${member.name} (@${member.username})`
+        if (!suggestions_map.has(key)) {
+          suggestions_map.set(key, { name: label, value: member.username })
+        }
+      }
+    }
+
+    const subscriptions = await get_user_subscriptions(options.user_id, options.client)
+    for (const subscription of subscriptions) {
+      const key   = subscription.username.toLowerCase()
+      const label = `${subscription.member_name} (@${subscription.username})`
+      if (!suggestions_map.has(key)) {
+        suggestions_map.set(key, { name: label, value: subscription.username })
+      }
+    }
+
+    const all_suggestions = Array.from(suggestions_map.values())
+    const filtered = normalized_query
+      ? all_suggestions.filter((suggestion) => {
+          const name_match  = suggestion.name.toLowerCase().includes(normalized_query)
+          const value_match = suggestion.value.toLowerCase().includes(normalized_query)
+          return name_match || value_match
+        })
+      : all_suggestions
+
+    const limited = filtered.slice(0, 24)
+    const has_exact = normalized_query
+      ? limited.some((suggestion) => suggestion.value.toLowerCase() === normalized_query)
+      : true
+
+    if (normalized_query && !has_exact && limited.length < 25) {
+      limited.unshift({ name: `Use: ${options.query}`, value: options.query })
+    }
+
+    return limited.slice(0, 25)
+  } catch (error) {
+    await log_error(options.client, error as Error, "idn_live_get_member_suggestions", {
+      query   : options.query,
+      user_id : options.user_id,
+    })
     return []
   }
 }

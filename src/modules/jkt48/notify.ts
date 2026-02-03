@@ -1,8 +1,13 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
-import { Command }                                          from "../../shared/types/command"
-import { component }                                        from "../../shared/utils"
-import { log_error }                                        from "../../shared/utils/error_logger"
-import { add_notification, remove_notification, get_user_subscriptions } from "../../core/handlers/controllers/idn_live_controller"
+import { AutocompleteInteraction, ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
+import { Command }                                                                  from "../../shared/types/command"
+import { component }                                                                from "../../shared/utils"
+import { log_error }                                                                from "../../shared/utils/error_logger"
+import {
+  add_notification,
+  remove_notification,
+  get_user_subscriptions,
+  get_member_suggestions,
+}                                                                                   from "../../core/handlers/controllers/idn_live_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -16,6 +21,7 @@ export const command: Command = {
           option
             .setName("member")
             .setDescription("Member name (e.g., Zee, Freya, Gita)")
+            .setAutocomplete(true)
             .setRequired(true)
         )
     )
@@ -27,6 +33,7 @@ export const command: Command = {
           option
             .setName("member")
             .setDescription("Member name")
+            .setAutocomplete(true)
             .setRequired(true)
         )
     )
@@ -155,6 +162,40 @@ export const command: Command = {
       await interaction.editReply({
         content : "An error occurred while processing your request.",
       }).catch(() => {})
+    }
+  },
+
+  /**
+   * - NOTIFY AUTOCOMPLETE - \\
+   * @param {AutocompleteInteraction} interaction - Autocomplete interaction
+   * @returns {Promise<void>}
+   */
+  async autocomplete(interaction: AutocompleteInteraction) {
+    const focused_value = interaction.options.getFocused()
+    const subcommand    = interaction.options.getSubcommand()
+    const include_live  = subcommand !== "remove"
+
+    try {
+      const suggestions = await get_member_suggestions({
+        query        : focused_value,
+        user_id      : interaction.user.id,
+        client       : interaction.client,
+        include_live : include_live,
+      })
+
+      await interaction.respond(
+        suggestions.map((suggestion) => ({
+          name  : suggestion.name,
+          value : suggestion.value,
+        }))
+      )
+    } catch (error) {
+      await log_error(interaction.client, error as Error, "notify_autocomplete", {
+        subcommand : subcommand,
+        user_id    : interaction.user.id,
+        query      : focused_value,
+      })
+      await interaction.respond([])
     }
   },
 }
