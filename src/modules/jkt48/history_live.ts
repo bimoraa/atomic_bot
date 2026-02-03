@@ -119,7 +119,7 @@ export const command: Command = {
         return
       }
 
-      const max_show = 5
+      const max_show = 2
       const shown = unique_history.slice(0, max_show)
 
       const header_component = component.container({
@@ -142,7 +142,6 @@ export const command: Command = {
               content   : [`### ${record.member_name}`, description].filter(Boolean),
               accessory : component.link_button("Watch", record.url),
             }),
-            component.divider(2),
             component.section({
               content: [
                 `- **Viewers:** ${record.viewers.toLocaleString()}`,
