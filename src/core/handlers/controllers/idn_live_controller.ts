@@ -35,7 +35,7 @@ interface live_state_record {
  */
 export async function add_notification(options: { user_id: string; member_name: string; client: Client }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    const member = await idn_live.get_member_by_name(options.member_name)
+    const member = await idn_live.get_member_by_name(options.member_name, options.client)
     const fallback_username = normalize_idn_username(options.member_name)
     const member_name = member?.name || options.member_name.trim()
     const username    = member?.username || fallback_username
@@ -91,7 +91,7 @@ export async function add_notification(options: { user_id: string; member_name: 
  */
 export async function remove_notification(options: { user_id: string; member_name: string; client: Client }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    const member = await idn_live.get_member_by_name(options.member_name)
+    const member = await idn_live.get_member_by_name(options.member_name, options.client)
     const fallback_username = normalize_idn_username(options.member_name)
     const member_name = member?.name || options.member_name.trim()
     const username    = member?.username || fallback_username
@@ -146,7 +146,7 @@ export async function get_user_subscriptions(user_id: string, client: Client): P
  */
 export async function get_currently_live(client: Client): Promise<{ success: boolean; data?: idn_live.live_room[]; error?: string }> {
   try {
-    const live_rooms = await idn_live.get_live_rooms()
+    const live_rooms = await idn_live.get_live_rooms(client)
 
     return {
       success : true,
@@ -168,7 +168,7 @@ export async function get_currently_live(client: Client): Promise<{ success: boo
  */
 export async function check_and_notify_live_changes(client: Client): Promise<void> {
   try {
-    const live_rooms = await idn_live.get_live_rooms()
+    const live_rooms = await idn_live.get_live_rooms(client)
     const now        = Date.now()
 
     for (const room of live_rooms) {

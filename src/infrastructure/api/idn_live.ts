@@ -3,10 +3,19 @@
  * Direct IDN Live API integration for JKT48
  */
 
-import axios from "axios"
+import axios           from "axios"
+import { Client }      from "discord.js"
+import { log_error }   from "../../shared/utils/error_logger"
 
-const IDN_API_BASE  = "https://idn-api-live-jkt48.vercel.app/api"
-const IDN_LIVE_BASE = "https://www.idn.app"
+const IDN_LIVE_BASE     = "https://www.idn.app"
+const IDN_MOBILE_API    = "https://mobile-api.idntimes.com/v3/livestreams"
+const IDN_DETAIL_API    = "https://api.idn.app/api/v4/livestream"
+const IDN_MOBILE_KEY    = "1ccc5bc4-8bb4-414c-b524-92d11a85a818"
+const IDN_DETAIL_KEY    = "123f4c4e-6ce1-404d-8786-d17e46d65b5c"
+const IDN_USER_AGENT    = "IDN/6.41.1 (com.idntimes.IDNTimes; build:745; iOS 17.2.1) Alamofire/5.1.0"
+const IDN_DETAIL_AGENT  = "Android/14/SM-A528B/6.47.4"
+
+const detail_cache      = new Map<string, string>()
 
 export interface idn_user {
   name     : string
@@ -50,45 +59,149 @@ export interface live_room {
 }
 
 /**
- * - FETCH IDN LIVE DATA - \\
- * @returns {Promise<idn_livestream[]>} IDN Live data
+ * - NORMALIZE IDN LIVE TIMESTAMP - \\
+ * @param {number | string} live_at - Live timestamp value
+ * @returns {string} ISO date string
  */
-async function fetch_idn_live_data(): Promise<idn_livestream[]> {
+function normalize_live_timestamp(live_at: number | string): string {
+  const numeric = typeof live_at === "string" ? Number(live_at) : live_at
+  const base_ms = Number.isFinite(numeric) ? numeric : Date.now()
+  const ms      = base_ms < 1_000_000_000_000 ? base_ms * 1000 : base_ms
+  return new Date(ms).toISOString()
+}
+
+/**
+ * - FETCH ALL IDN LIVES - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<any[]>} Raw IDN live list
+ */
+async function fetch_all_idn_lives(client: Client): Promise<any[]> {
+  const results: any[] = []
+  let page             = 1
+
+  while (page <= 50) {
+    try {
+      const response = await axios.get(IDN_MOBILE_API, {
+        timeout : 15000,
+        params  : {
+          category : "all",
+          page     : page,
+          _        : Date.now(),
+        },
+        headers : {
+          Host              : "mobile-api.idntimes.com",
+          "x-api-key"       : IDN_MOBILE_KEY,
+          "User-Agent"      : IDN_USER_AGENT,
+          "Connection"      : "keep-alive",
+          "Accept-Language" : "en-ID;q=1.0, id-ID;q=0.9",
+          "Accept"          : "*/*",
+        },
+      })
+
+      const data = response.data?.data
+      if (!Array.isArray(data) || data.length === 0) {
+        break
+      }
+
+      results.push(...data)
+      page += 1
+    } catch (error) {
+      await log_error(client, error as Error, "idn_live_fetch_mobile_api", { page })
+      break
+    }
+  }
+
+  return results
+}
+
+/**
+ * - FETCH IDN LIVE DETAIL - \\
+ * @param {string} slug - Live slug
+ * @param {Client} client - Discord client
+ * @returns {Promise<string | null>} Playback URL or null
+ */
+async function fetch_live_detail(slug: string, client: Client): Promise<string | null> {
+  if (detail_cache.has(slug)) {
+    return detail_cache.get(slug) || null
+  }
+
   try {
-    const response = await axios.get(`${IDN_API_BASE}/jkt48`, {
+    const response = await axios.get(`${IDN_DETAIL_API}/${slug}`, {
       timeout : 15000,
       headers : {
-        "User-Agent" : "JKT48-Discord-Bot/2.0",
-        "Accept"     : "application/json",
+        "User-Agent" : IDN_DETAIL_AGENT,
+        "x-api-key"  : IDN_DETAIL_KEY,
       },
     })
 
-    if (!response.data) {
+    const stream_url = response.data?.data?.playback_url || null
+    if (stream_url) {
+      detail_cache.set(slug, stream_url)
+    }
+    return stream_url
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_fetch_detail_api", { slug })
+    return null
+  }
+}
+
+/**
+ * - FETCH IDN LIVE DATA - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<idn_livestream[]>} IDN Live data
+ */
+async function fetch_idn_live_data(client: Client): Promise<idn_livestream[]> {
+  try {
+    const live_streams = await fetch_all_idn_lives(client)
+    if (!live_streams.length) {
       return []
     }
 
-    const data = Array.isArray(response.data) ? response.data : (response.data.data || [])
+    const filtered_streams = live_streams.filter((stream: any) => {
+      const username = stream?.creator?.username?.toLowerCase() || ""
+      return username.includes("jkt48")
+    })
 
-    return data.filter((stream: any) => stream && stream.slug && stream.user)
+    const mapped = await Promise.all(
+      filtered_streams.map(async (stream: any) => {
+        const stream_url = stream.playback_url || await fetch_live_detail(stream.slug, client)
+        return {
+          slug       : stream.slug,
+          title      : stream.title || "Untitled Stream",
+          image      : stream.image_url || "",
+          stream_url : stream_url || "",
+          view_count : stream.view_count || 0,
+          live_at    : normalize_live_timestamp(stream.live_at),
+          user       : {
+            name     : stream.creator?.name || "Unknown",
+            username : stream.creator?.username || "",
+            avatar   : stream.creator?.image_url || "",
+          },
+        } as idn_livestream
+      })
+    )
+
+    return mapped.filter((stream) => stream.slug && stream.user?.username)
   } catch (error) {
-    console.error("[ - IDN LIVE - ] Error fetching IDN data:", error)
+    await log_error(client, error as Error, "idn_live_fetch_data", {})
     return []
   }
 }
 
 /**
  * - GET ALL JKT48 MEMBERS - \\
+ * @param {Client} client - Discord client
  * @returns {Promise<jkt48_member[]>} List of all JKT48 members from IDN Live
  */
-export async function get_all_members(): Promise<jkt48_member[]> {
+export async function get_all_members(client: Client): Promise<jkt48_member[]> {
   try {
-    const live_streams = await fetch_idn_live_data()
+    const live_streams = await fetch_idn_live_data(client)
 
     const unique_members = new Map<string, jkt48_member>()
 
     for (const stream of live_streams) {
       const username = stream.user.username.toLowerCase()
-      
+
       if (!unique_members.has(username)) {
         unique_members.set(username, {
           slug     : stream.slug,
@@ -103,18 +216,19 @@ export async function get_all_members(): Promise<jkt48_member[]> {
 
     return Array.from(unique_members.values())
   } catch (error) {
-    console.error("[ - IDN LIVE - ] Error fetching members:", error)
+    await log_error(client, error as Error, "idn_live_get_members", {})
     return []
   }
 }
 
 /**
  * - GET LIVE ROOMS - \\
+ * @param {Client} client - Discord client
  * @returns {Promise<live_room[]>} List of currently live IDN streams
  */
-export async function get_live_rooms(): Promise<live_room[]> {
+export async function get_live_rooms(client: Client): Promise<live_room[]> {
   try {
-    const live_streams = await fetch_idn_live_data()
+    const live_streams = await fetch_idn_live_data(client)
 
     if (!live_streams || live_streams.length === 0) {
       return []
@@ -136,7 +250,7 @@ export async function get_live_rooms(): Promise<live_room[]> {
       }
     })
   } catch (error) {
-    console.error("[ - IDN LIVE - ] Error fetching live rooms:", error)
+    await log_error(client, error as Error, "idn_live_get_live_rooms", {})
     return []
   }
 }
@@ -144,21 +258,22 @@ export async function get_live_rooms(): Promise<live_room[]> {
 /**
  * - GET MEMBER BY NAME - \\
  * @param {string} name - Member name or username to search
+ * @param {Client} client - Discord client
  * @returns {Promise<jkt48_member | null>} Member data or null
  */
-export async function get_member_by_name(name: string): Promise<jkt48_member | null> {
+export async function get_member_by_name(name: string, client: Client): Promise<jkt48_member | null> {
   try {
-    const live_streams = await fetch_idn_live_data()
+    const live_streams      = await fetch_idn_live_data(client)
     const normalized_search = name.toLowerCase().trim()
 
     const found_stream = live_streams.find((stream) => {
       const member_name = stream.user.name.toLowerCase()
       const username    = stream.user.username.toLowerCase()
-      
-      return member_name.includes(normalized_search) || 
-             username.includes(normalized_search) ||
-             normalized_search.includes(member_name) ||
-             normalized_search.includes(username)
+
+      return member_name.includes(normalized_search)
+        || username.includes(normalized_search)
+        || normalized_search.includes(member_name)
+        || normalized_search.includes(username)
     })
 
     if (!found_stream) {
@@ -174,7 +289,9 @@ export async function get_member_by_name(name: string): Promise<jkt48_member | n
       is_live  : false,
     }
   } catch (error) {
-    console.error("[ - IDN LIVE - ] Error finding member:", error)
+    await log_error(client, error as Error, "idn_live_get_member_by_name", {
+      name : name,
+    })
     return null
   }
 }
@@ -182,14 +299,15 @@ export async function get_member_by_name(name: string): Promise<jkt48_member | n
 /**
  * - CHECK IF MEMBER IS LIVE - \\
  * @param {string} slug - Stream slug to check
+ * @param {Client} client - Discord client
  * @returns {Promise<live_room | null>} Live room data or null
  */
-export async function check_member_live(slug: string): Promise<live_room | null> {
+export async function check_member_live(slug: string, client: Client): Promise<live_room | null> {
   try {
-    const live_rooms = await get_live_rooms()
+    const live_rooms = await get_live_rooms(client)
     return live_rooms.find((room) => room.slug === slug || room.username.toLowerCase() === slug.toLowerCase()) || null
   } catch (error) {
-    console.error("[ - IDN LIVE - ] Error checking member live:", error)
+    await log_error(client, error as Error, "idn_live_check_member_live", { slug })
     return null
   }
 }
@@ -201,26 +319,31 @@ export async function check_member_live(slug: string): Promise<live_room | null>
  */
 export function format_live_component(room: live_room) {
   const started_timestamp = Math.floor(room.started_at / 1000)
+  const has_image          = Boolean(room.image)
+  const header_section : any = {
+    type       : 9,
+    components : [
+      {
+        type    : 10,
+        content : `## ${room.member_name} is LIVE on IDN!`,
+      },
+    ],
+  }
+
+  if (has_image) {
+    header_section.accessory = {
+      type  : 11,
+      media : {
+        url : room.image,
+      },
+    }
+  }
 
   return {
     type         : 17,
     accent_color : 0xFF69B4,
     components   : [
-      {
-        type       : 9,
-        components : [
-          {
-            type    : 10,
-            content : `## ${room.member_name} is LIVE on IDN!`,
-          },
-        ],
-        accessory : {
-          type  : 11,
-          media : {
-            url : room.image,
-          },
-        },
-      },
+      header_section,
       {
         type    : 10,
         content : `**${room.title}**`,
@@ -232,7 +355,7 @@ export function format_live_component(room: live_room) {
       {
         type    : 10,
         content : [
-          `**Viewers:** ${room.viewers.toLocaleString()} 👥`,
+          `**Viewers:** ${room.viewers.toLocaleString()}`,
           `**Started:** <t:${started_timestamp}:R>`,
           `**Channel:** @${room.username}`,
         ].join("\n"),
