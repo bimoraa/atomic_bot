@@ -19,6 +19,16 @@ interface cached_user_record {
 }
 
 /**
+ * - CHECK UNIQUE VIOLATION ERROR - \\
+ * @param {unknown} error - Error object
+ * @returns {boolean} True if unique constraint violation
+ */
+function is_unique_violation(error: unknown): boolean {
+  const err = error as { code?: string } | null
+  return err?.code === "23505"
+}
+
+/**
  * - GET USER FROM DATABASE CACHE - \\
  * @param discord_id Discord ID
  * @param allow_stale Allow stale data if fresh data unavailable
@@ -69,17 +79,35 @@ export async function save_user_to_db_cache(discord_id: string, user_data: luarm
     }
 
     const now = Date.now()
-    await db.update_one<cached_user_record>(
-      USER_CACHE_COLLECTION,
-      { user_id: discord_id },
-      {
-        user_id      : discord_id,
-        user_data    : user_data,
-        cached_at    : now,
-        last_updated : now,
-      },
-      true
-    )
+    try {
+      await db.update_one<cached_user_record>(
+        USER_CACHE_COLLECTION,
+        { user_id: discord_id },
+        {
+          user_id      : discord_id,
+          user_data    : user_data,
+          cached_at    : now,
+          last_updated : now,
+        },
+        true
+      )
+    } catch (error) {
+      if (is_unique_violation(error)) {
+        await db.update_one<cached_user_record>(
+          USER_CACHE_COLLECTION,
+          { user_id: discord_id },
+          {
+            user_data    : user_data,
+            cached_at    : now,
+            last_updated : now,
+          },
+          false
+        )
+        return
+      }
+
+      throw error
+    }
   } catch (error) {
     console.error("[ - DB CACHE - ] Error saving cache:", error)
   }
