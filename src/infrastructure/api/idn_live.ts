@@ -94,6 +94,28 @@ export interface live_room {
 }
 
 /**
+ * - BUILD IDN PROFILE URL - \\
+ * @param {string} username - IDN username
+ * @returns {string} Profile URL
+ */
+function build_idn_profile_url(username: string): string {
+  if (!username) return IDN_LIVE_BASE
+  return `${IDN_LIVE_BASE}/${username}`
+}
+
+/**
+ * - BUILD IDN LIVE URL - \\
+ * @param {string} username - IDN username
+ * @param {string} slug - Live slug
+ * @returns {string} Live URL
+ */
+function build_idn_live_url(username: string, slug: string): string {
+  if (!username) return IDN_LIVE_BASE
+  if (!slug) return `${IDN_LIVE_BASE}/${username}/live`
+  return `${IDN_LIVE_BASE}/${username}/live/${slug}`
+}
+
+/**
  * - NORMALIZE IDN LIVE TIMESTAMP - \\
  * @param {number | string} live_at - Live timestamp value
  * @returns {string} ISO date string
@@ -308,7 +330,7 @@ async function load_idn_cfg_members(client: Client): Promise<jkt48_member[]> {
           slug      : account.username,
           name      : account.name,
           username  : account.username,
-          url       : `${IDN_LIVE_BASE}/${account.username}`,
+          url       : build_idn_profile_url(account.username),
           image     : "",
           is_live   : false,
         })
@@ -501,7 +523,7 @@ async function fetch_idn_roster_by_uuid(client: Client): Promise<jkt48_member[]>
         slug     : "",
         name     : profile.name,
         username : profile.username,
-        url      : `${IDN_LIVE_BASE}/${profile.username}`,
+        url      : build_idn_profile_url(profile.username),
         image    : profile.avatar || "",
         is_live  : false,
       })
@@ -560,7 +582,7 @@ async function fetch_idn_roster(client: Client): Promise<jkt48_member[]> {
             slug     : "",
             name     : name,
             username : username,
-            url      : username ? `${IDN_LIVE_BASE}/${username}` : "",
+            url      : username ? build_idn_profile_url(username) : "",
             image    : image,
             is_live  : false,
           } as jkt48_member
@@ -673,7 +695,7 @@ export async function get_all_members(client: Client): Promise<jkt48_member[]> {
           slug     : stream.slug,
           name     : stream.user.name,
           username : stream.user.username,
-          url      : `${IDN_LIVE_BASE}/${stream.user.username}`,
+          url      : build_idn_profile_url(stream.user.username),
           image    : stream.user.avatar || stream.image,
           is_live  : false,
         })
@@ -768,7 +790,7 @@ export async function get_live_rooms(client: Client): Promise<live_room[]> {
         started_at  : isNaN(started_at) ? Date.now() : started_at,
         viewers     : stream.view_count || 0,
         image       : stream.image || stream.user.avatar || "",
-        url         : stream.stream_url || `${IDN_LIVE_BASE}/${stream.user.username}/live/${stream.slug}`,
+        url         : build_idn_live_url(stream.user.username, stream.slug),
       }
     })
   } catch (error) {
@@ -815,7 +837,7 @@ export async function get_member_by_name(name: string, client: Client): Promise<
           slug     : "",
           name     : profile.name,
           username : profile.username,
-          url      : `${IDN_LIVE_BASE}/${profile.username}`,
+          url      : build_idn_profile_url(profile.username),
           image    : profile.avatar || "",
           is_live  : false,
         }
@@ -828,7 +850,7 @@ export async function get_member_by_name(name: string, client: Client): Promise<
       slug     : found_stream.slug,
       name     : found_stream.user.name,
       username : found_stream.user.username,
-      url      : `${IDN_LIVE_BASE}/${found_stream.user.username}`,
+      url      : build_idn_profile_url(found_stream.user.username),
       image    : found_stream.user.avatar || found_stream.image,
       is_live  : false,
     }
