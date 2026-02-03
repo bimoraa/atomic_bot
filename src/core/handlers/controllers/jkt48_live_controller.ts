@@ -53,8 +53,6 @@ function build_history_key(record: live_history_record): string {
     record.platform,
     record.member_name,
     record.started_at,
-    record.ended_at,
-    record.url,
   ].join(":")
 }
 
@@ -99,7 +97,8 @@ export async function get_history_records(client: Client, platform: string): Pro
     const history_map = new Map<string, live_history_record>()
     for (const record of history) {
       const key = build_history_key(record)
-      if (!history_map.has(key)) {
+      const existing = history_map.get(key)
+      if (!existing || record.ended_at > existing.ended_at) {
         history_map.set(key, record)
       }
     }
