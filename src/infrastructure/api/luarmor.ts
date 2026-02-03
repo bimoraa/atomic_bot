@@ -4,32 +4,59 @@ import * as luarmor_db_cache from "./luarmor_db_cache"
 const __base_url = "https://api.luarmor.net/v3"
 const __log      = logger.create_logger("luarmor")
 
-// - CACHE CONFIGURATION - \\
+// - CACHE CONFIGURATION (EXTENDED TTL TO REDUCE API CALLS) - \\
 let __users_cache: luarmor_user[] | null              = null
 let __users_cache_timestamp                           = 0
-const __users_cache_duration                          = 15 * 60 * 1000
-const __users_cache_stale_while_revalidate            = 60 * 60 * 1000
+const __users_cache_duration                          = 30 * 60 * 1000
+const __users_cache_stale_while_revalidate            = 2 * 60 * 60 * 1000
 
 let __user_cache: Map<string, luarmor_user>           = new Map()
 let __user_cache_timestamp: Map<string, number>       = new Map()
-const __user_cache_duration                           = 15 * 60 * 1000
+const __user_cache_duration                           = 30 * 60 * 1000
+const __user_cache_stale_duration                     = 60 * 60 * 1000
 
 // - REQUEST DEDUPLICATION - \\
 const __pending_requests: Map<string, Promise<any>>   = new Map()
 
-// - RATE LIMIT TRACKING - \\
+// - RATE LIMIT TRACKING (ADAPTIVE) - \\
 const __rate_limit_cooldowns: Map<string, number>     = new Map()
-const __rate_limit_cooldown_duration                  = 60 * 1000
+const __rate_limit_cooldown_duration                  = 120 * 1000
+const __rate_limit_backoff_multiplier                 = 2
 
-// - CIRCUIT BREAKER - \\
+// - GLOBAL RATE LIMIT (PREVENTS BURST REQUESTS) - \\
+let __global_rate_limit_tokens                        = 10
+const __global_rate_limit_max_tokens                  = 10
+const __global_rate_limit_refill_rate                 = 1
+const __global_rate_limit_refill_interval             = 2000
+let __global_rate_limit_last_refill                   = Date.now()
+
+// - REQUEST QUEUE (PREVENTS CONCURRENT OVERLOAD) - \\
+const __request_queue: Array<{
+  resolve   : (value: any) => void
+  reject    : (error: any) => void
+  fn        : () => Promise<any>
+  priority  : number
+  timestamp : number
+}>                                                    = []
+let __request_queue_processing                        = false
+const __max_concurrent_requests                       = 3
+let __active_requests                                 = 0
+
+// - CIRCUIT BREAKER (EXTENDED TIMEOUT) - \\
 let __circuit_breaker_failures                        = 0
 let __circuit_breaker_last_failure                    = 0
-const __circuit_breaker_threshold                     = 5
-const __circuit_breaker_timeout                       = 30 * 1000
+const __circuit_breaker_threshold                     = 3
+const __circuit_breaker_timeout                       = 60 * 1000
+const __circuit_breaker_half_open_timeout             = 30 * 1000
+
+// - EXPONENTIAL BACKOFF CONFIGURATION - \\
+const __backoff_initial_delay                         = 1000
+const __backoff_max_delay                             = 30000
+const __backoff_max_retries                           = 3
 
 // - PERFORMANCE OPTIMIZATION - \\
-const __default_timeout                               = 5000
-const __fast_timeout                                  = 3000
+const __default_timeout                               = 10000
+const __fast_timeout                                  = 5000
 
 // - HTTP ERROR CLASSIFICATION - \\
 enum error_type {
@@ -94,8 +121,17 @@ function is_circuit_open(): boolean {
   }
   
   const elapsed = Date.now() - __circuit_breaker_last_failure
+  
+  // - FULL TIMEOUT: RESET CIRCUIT - \\
   if (elapsed > __circuit_breaker_timeout) {
+    __log.info("Circuit breaker reset after full timeout")
     __circuit_breaker_failures = 0
+    return false
+  }
+  
+  // - HALF-OPEN: ALLOW ONE REQUEST TO TEST - \\
+  if (elapsed > __circuit_breaker_half_open_timeout) {
+    __log.info("Circuit breaker half-open, allowing test request")
     return false
   }
   
@@ -135,12 +171,117 @@ function is_rate_limited(key: string): boolean {
 }
 
 /**
- * - SET RATE LIMIT COOLDOWN - \\
+ * - SET RATE LIMIT COOLDOWN WITH ADAPTIVE BACKOFF - \\
  * @param key Rate limit key
  * @param duration Cooldown duration in ms
+ * @param retry_count Number of retries (for exponential backoff)
  */
-function set_rate_limit_cooldown(key: string, duration: number = __rate_limit_cooldown_duration): void {
-  __rate_limit_cooldowns.set(key, Date.now() + duration)
+function set_rate_limit_cooldown(key: string, duration: number = __rate_limit_cooldown_duration, retry_count: number = 0): void {
+  const backoff_duration = duration * Math.pow(__rate_limit_backoff_multiplier, retry_count)
+  const final_duration   = Math.min(backoff_duration, 300000)
+  __rate_limit_cooldowns.set(key, Date.now() + final_duration)
+  __log.warn(`Rate limit cooldown set: ${key} for ${final_duration}ms`)
+}
+
+/**
+ * - REFILL GLOBAL RATE LIMIT TOKENS - \\
+ */
+function refill_global_tokens(): void {
+  const now     = Date.now()
+  const elapsed = now - __global_rate_limit_last_refill
+  const refills = Math.floor(elapsed / __global_rate_limit_refill_interval)
+  
+  if (refills > 0) {
+    __global_rate_limit_tokens     = Math.min(__global_rate_limit_max_tokens, __global_rate_limit_tokens + (refills * __global_rate_limit_refill_rate))
+    __global_rate_limit_last_refill = now - (elapsed % __global_rate_limit_refill_interval)
+  }
+}
+
+/**
+ * - CONSUME GLOBAL RATE LIMIT TOKEN - \\
+ * @returns true if token consumed, false if rate limited
+ */
+function consume_global_token(): boolean {
+  refill_global_tokens()
+  
+  if (__global_rate_limit_tokens <= 0) {
+    __log.warn("Global rate limit reached, queueing request")
+    return false
+  }
+  
+  __global_rate_limit_tokens--
+  return true
+}
+
+/**
+ * - PROCESS REQUEST QUEUE - \\
+ */
+async function process_request_queue(): Promise<void> {
+  if (__request_queue_processing) return
+  __request_queue_processing = true
+  
+  while (__request_queue.length > 0 && __active_requests < __max_concurrent_requests) {
+    if (!consume_global_token()) {
+      await sleep(__global_rate_limit_refill_interval)
+      continue
+    }
+    
+    __request_queue.sort((a, b) => b.priority - a.priority || a.timestamp - b.timestamp)
+    const item = __request_queue.shift()
+    
+    if (!item) continue
+    
+    __active_requests++
+    
+    item.fn()
+      .then(item.resolve)
+      .catch(item.reject)
+      .finally(() => {
+        __active_requests--
+        setImmediate(() => process_request_queue())
+      })
+  }
+  
+  __request_queue_processing = false
+}
+
+/**
+ * - QUEUE REQUEST WITH PRIORITY - \\
+ * @param fn Request function
+ * @param priority Request priority (higher = more important)
+ * @returns Promise with result
+ */
+function queue_request<T>(fn: () => Promise<T>, priority: number = 0): Promise<T> {
+  return new Promise((resolve, reject) => {
+    __request_queue.push({
+      resolve,
+      reject,
+      fn,
+      priority,
+      timestamp: Date.now(),
+    })
+    
+    process_request_queue()
+  })
+}
+
+/**
+ * - SLEEP UTILITY - \\
+ * @param ms Milliseconds to sleep
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * - EXPONENTIAL BACKOFF DELAY - \\
+ * @param retry_count Current retry count
+ * @returns Delay in milliseconds
+ */
+function get_backoff_delay(retry_count: number): number {
+  const delay = __backoff_initial_delay * Math.pow(2, retry_count)
+  const jitter = Math.random() * 0.3 * delay
+  return Math.min(delay + jitter, __backoff_max_delay)
 }
 
 /**
@@ -248,7 +389,7 @@ async function safe_json_parse(response: Response): Promise<any> {
 }
 
 /**
- * - CENTRAL HTTP REQUEST HANDLER - \\
+ * - CENTRAL HTTP REQUEST HANDLER WITH RETRY - \\
  * @param url Request URL
  * @param options Request options
  * @returns Response data
@@ -256,10 +397,39 @@ async function safe_json_parse(response: Response): Promise<any> {
 async function make_request<T>(
   url: string, 
   options: {
+    method    : "GET" | "POST" | "PATCH" | "DELETE"
+    body?     : any
+    timeout?  : number
+    priority? : number
+    retries?  : number
+  }
+): Promise<{ success: boolean; data?: T; error?: api_error }> {
+  
+  const priority    = options.priority ?? 0
+  const max_retries = options.retries ?? __backoff_max_retries
+  
+  return queue_request(async () => {
+    return make_request_internal<T>(url, options, 0, max_retries)
+  }, priority)
+}
+
+/**
+ * - INTERNAL REQUEST HANDLER WITH EXPONENTIAL BACKOFF - \\
+ * @param url Request URL
+ * @param options Request options
+ * @param retry_count Current retry count
+ * @param max_retries Maximum retries
+ * @returns Response data
+ */
+async function make_request_internal<T>(
+  url: string, 
+  options: {
     method   : "GET" | "POST" | "PATCH" | "DELETE"
     body?    : any
     timeout? : number
-  }
+  },
+  retry_count: number = 0,
+  max_retries: number = __backoff_max_retries
 ): Promise<{ success: boolean; data?: T; error?: api_error }> {
   
   // - CHECK CIRCUIT BREAKER - \\
@@ -269,7 +439,21 @@ async function make_request<T>(
       success : false,
       error   : {
         type    : error_type.server_error,
-        message : "Service temporarily unavailable",
+        message : "Service temporarily unavailable (circuit breaker open)",
+        retry   : false,
+      },
+    }
+  }
+  
+  // - CHECK ENDPOINT RATE LIMIT - \\
+  const endpoint_key = `${options.method}:${url.split("?")[0]}`
+  if (is_rate_limited(endpoint_key)) {
+    __log.warn(`Endpoint rate limited, skipping: ${endpoint_key}`)
+    return {
+      success : false,
+      error   : {
+        type    : error_type.rate_limit,
+        message : "Rate limit active, please try again later",
         retry   : false,
       },
     }
@@ -298,49 +482,52 @@ async function make_request<T>(
   }
   
   try {
-    __log.debug(`${options.method} ${url}`)
+    __log.debug(`${options.method} ${url} (attempt ${retry_count + 1}/${max_retries + 1})`)
     
     const response = await fetch(url, init)
     const status   = response.status
     
-    // - LOG HTTP STATUS - \\
     __log.debug(`Response: ${status} ${response.statusText}`)
     
-    // - PARSE JSON SAFELY - \\
     const data = await safe_json_parse(response)
     
-    // - CHECK HTTP STATUS - \\
     if (!response.ok) {
       const error = classify_error(new Error(`HTTP ${status}`), status, data)
       
-      // - LOG ERROR WITH DETAILS - \\
       __log.error(`Request failed: ${error.type} - ${error.message}`, {
         url    : url,
         status : status,
         data   : data,
       })
       
-      // - HANDLE RATE LIMIT - \\
+      // - HANDLE RATE LIMIT WITH EXTENDED COOLDOWN - \\
       if (error.type === error_type.rate_limit) {
-        const endpoint_key = `${options.method}:${url.split("?")[0]}`
-        set_rate_limit_cooldown(endpoint_key, 60000)
-        __log.warn(`Rate limit set for: ${endpoint_key}`)
+        const retry_after = data?.retry_after || 120
+        set_rate_limit_cooldown(endpoint_key, retry_after * 1000, retry_count)
+        set_rate_limit_cooldown("global", retry_after * 1000, retry_count)
+        __log.warn(`Rate limit set for: ${endpoint_key} (${retry_after}s)`)
+        record_failure()
       }
       
-      // - RECORD FAILURE FOR CIRCUIT BREAKER - \\
       if (status >= 500) {
         record_failure()
+      }
+      
+      // - RETRY WITH BACKOFF FOR RETRYABLE ERRORS - \\
+      if (error.retry && retry_count < max_retries) {
+        const delay = get_backoff_delay(retry_count)
+        __log.info(`Retrying request in ${delay}ms (attempt ${retry_count + 2}/${max_retries + 1})`)
+        await sleep(delay)
+        return make_request_internal<T>(url, options, retry_count + 1, max_retries)
       }
       
       return { success: false, error }
     }
     
-    // - SUCCESS: RESET CIRCUIT BREAKER - \\
     reset_circuit()
     
-    // - LOG SUCCESS - \\
     if (data) {
-      __log.debug("Request successful", { data })
+      __log.debug("Request successful")
     }
     
     return { success: true, data: data as T }
@@ -353,8 +540,16 @@ async function make_request<T>(
       error : error.message,
     })
     
-    if (classified.type === error_type.server_error) {
+    if (classified.type === error_type.server_error || classified.type === error_type.timeout_error) {
       record_failure()
+    }
+    
+    // - RETRY WITH BACKOFF FOR RETRYABLE ERRORS - \\
+    if (classified.retry && retry_count < max_retries) {
+      const delay = get_backoff_delay(retry_count)
+      __log.info(`Retrying request in ${delay}ms after exception`)
+      await sleep(delay)
+      return make_request_internal<T>(url, options, retry_count + 1, max_retries)
     }
     
     return { success: false, error: classified }
@@ -585,11 +780,13 @@ export async function delete_user_from_project(project_id: string, discord_id: s
  * - GET USER BY DISCORD ID - \\
  * @param discord_id Discord ID
  * @param project_id Optional project ID
+ * @param force_refresh Force refresh from API
  * @returns Response with user data
  */
 export async function get_user_by_discord(
   discord_id: string, 
-  project_id?: string
+  project_id?: string,
+  force_refresh: boolean = false
 ): Promise<luarmor_response<luarmor_user>> {
   
   if (!validate_discord_id(discord_id)) {
@@ -601,8 +798,19 @@ export async function get_user_by_discord(
   return deduplicate_request(cache_key, async () => {
     const now         = Date.now()
     
-    // - CHECK DATABASE CACHE FIRST - \\
-    if (!project_id) {
+    // - CHECK MEMORY CACHE FIRST (FASTEST) - \\
+    const cached_user = __user_cache.get(discord_id)
+    const cached_time = __user_cache_timestamp.get(discord_id) || 0
+    const cache_age   = now - cached_time
+    
+    // - RETURN FRESH CACHE IMMEDIATELY - \\
+    if (!force_refresh && cached_user && cache_age < __user_cache_duration && !project_id) {
+      __log.debug("Memory cache hit (fresh):", discord_id)
+      return { success: true, data: cached_user }
+    }
+    
+    // - CHECK DATABASE CACHE - \\
+    if (!force_refresh && !project_id) {
       const db_cached = await luarmor_db_cache.get_cached_user_from_db(discord_id)
       if (db_cached) {
         __log.debug("DB cache hit:", discord_id)
@@ -612,20 +820,19 @@ export async function get_user_by_discord(
       }
     }
     
-    // - CHECK MEMORY CACHE - \\
-    const cached_user = __user_cache.get(discord_id)
-    const cached_time = __user_cache_timestamp.get(discord_id) || 0
-    const cache_age   = now - cached_time
-    
-    if (cached_user && cache_age < __user_cache_duration && !project_id) {
-      __log.debug("Memory cache hit:", discord_id)
-      return { success: true, data: cached_user }
+    // - CHECK GLOBAL RATE LIMIT - \\
+    if (is_rate_limited("global")) {
+      if (cached_user && cache_age < __user_cache_stale_duration) {
+        __log.warn("Global rate limited, returning stale cache:", discord_id)
+        return { success: true, data: cached_user }
+      }
+      return { success: false, error: "Rate limit active, please try again later", is_error: true }
     }
     
-    // - CHECK RATE LIMIT - \\
+    // - CHECK USER RATE LIMIT - \\
     const rate_key = `get_user:${discord_id}`
     if (is_rate_limited(rate_key)) {
-      if (cached_user) {
+      if (cached_user && cache_age < __user_cache_stale_duration) {
         __log.warn("Rate limited, returning cached data:", discord_id)
         return { success: true, data: cached_user }
       }
@@ -636,23 +843,24 @@ export async function get_user_by_discord(
     const url = `${__base_url}/projects/${pid}/users?discord_id=${discord_id}`
     
     const result = await make_request<any>(url, {
-      method  : "GET",
-      timeout : __fast_timeout,
+      method   : "GET",
+      timeout  : __fast_timeout,
+      priority : 1,
     })
     
     if (!result.success) {
       // - HANDLE RATE LIMIT - \\
       if (result.error?.type === error_type.rate_limit) {
-        set_rate_limit_cooldown(rate_key, 60000)
+        set_rate_limit_cooldown(rate_key, 120000)
         
-        if (cached_user) {
+        if (cached_user && cache_age < __user_cache_stale_duration) {
           __log.warn("Rate limited, returning stale cache:", discord_id)
           return { success: true, data: cached_user }
         }
       }
       
-      // - RETURN STALE CACHE ON ERROR - \\
-      if (cached_user && cache_age < __users_cache_stale_while_revalidate) {
+      // - RETURN STALE CACHE ON ANY ERROR - \\
+      if (cached_user && cache_age < __user_cache_stale_duration) {
         __log.warn("Request failed, returning stale cache:", discord_id)
         return { success: true, data: cached_user }
       }
@@ -1140,4 +1348,51 @@ export function get_circuit_status(): {
     failures     : __circuit_breaker_failures,
     last_failure : __circuit_breaker_last_failure,
   }
+}
+/**
+ * - GET RATE LIMIT STATUS - \\
+ * @returns Rate limit information
+ */
+export function get_rate_limit_status(): {
+  global_tokens : number
+  max_tokens    : number
+  cooldowns     : number
+  queue_size    : number
+  active        : number
+} {
+  refill_global_tokens()
+  return {
+    global_tokens : __global_rate_limit_tokens,
+    max_tokens    : __global_rate_limit_max_tokens,
+    cooldowns     : __rate_limit_cooldowns.size,
+    queue_size    : __request_queue.length,
+    active        : __active_requests,
+  }
+}
+
+/**
+ * - GET CACHE STATS - \\
+ * @returns Cache statistics
+ */
+export function get_cache_stats(): {
+  user_cache_size  : number
+  users_cache_age  : number | null
+  pending_requests : number
+} {
+  const now = Date.now()
+  return {
+    user_cache_size  : __user_cache.size,
+    users_cache_age  : __users_cache_timestamp > 0 ? now - __users_cache_timestamp : null,
+    pending_requests : __pending_requests.size,
+  }
+}
+
+/**
+ * - FORCE RESET ALL RATE LIMITS - \\
+ */
+export function reset_all_rate_limits(): void {
+  __rate_limit_cooldowns.clear()
+  __global_rate_limit_tokens = __global_rate_limit_max_tokens
+  __circuit_breaker_failures = 0
+  __log.info("All rate limits and circuit breaker reset")
 }

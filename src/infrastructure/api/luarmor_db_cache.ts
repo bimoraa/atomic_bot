@@ -7,7 +7,8 @@ import { db } from "../../shared/utils"
 import type { luarmor_user } from "./luarmor"
 
 const USER_CACHE_COLLECTION = "service_provider_user_cache"
-const CACHE_DURATION_MS     = 120 * 60 * 1000
+const CACHE_DURATION_MS     = 4 * 60 * 60 * 1000
+const STALE_DURATION_MS     = 24 * 60 * 60 * 1000
 
 interface cached_user_record {
   _id?         : any
@@ -20,9 +21,10 @@ interface cached_user_record {
 /**
  * - GET USER FROM DATABASE CACHE - \\
  * @param discord_id Discord ID
+ * @param allow_stale Allow stale data if fresh data unavailable
  * @returns Cached user data or null
  */
-export async function get_cached_user_from_db(discord_id: string): Promise<luarmor_user | null> {
+export async function get_cached_user_from_db(discord_id: string, allow_stale: boolean = false): Promise<luarmor_user | null> {
   try {
     if (!db.is_connected()) {
       return null
@@ -37,11 +39,18 @@ export async function get_cached_user_from_db(discord_id: string): Promise<luarm
     const now       = Date.now()
     const cache_age = now - cached.cached_at
     
-    if (cache_age > CACHE_DURATION_MS) {
-      return null
+    // - RETURN FRESH CACHE - \\
+    if (cache_age <= CACHE_DURATION_MS) {
+      return cached.user_data
     }
     
-    return cached.user_data
+    // - RETURN STALE CACHE IF ALLOWED - \\
+    if (allow_stale && cache_age <= STALE_DURATION_MS) {
+      console.log("[ - DB CACHE - ] Returning stale cache for:", discord_id)
+      return cached.user_data
+    }
+    
+    return null
   } catch (error) {
     console.error("[ - DB CACHE - ] Error reading cache:", error)
     return null
