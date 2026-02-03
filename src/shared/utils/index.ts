@@ -17,8 +17,10 @@ import * as db from "./database"
 import * as version from "./version"
 import * as transcript from "./transcript"
 import * as guild_settings from "./guild_settings"
+import * as db_cache from "./db_cache"
+import * as cache_manager from "./cache_manager"
 
-export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http, db, version, transcript, guild_settings }
+export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http, db, version, transcript, guild_settings, db_cache, cache_manager }
 
 export type {
   button_component,
@@ -37,7 +39,7 @@ export type { api_response } from "./discord_api"
 
 export type { text_input_options } from "./modal"
 
-export type { CacheItem, Cache } from "./cache"
+export type { CacheItem, Cache, cache_stats } from "./cache"
 
 export type {
   method as http_method,

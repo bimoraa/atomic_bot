@@ -1,6 +1,26 @@
-import { db } from "."
+import { db, cache } from "."
 
-export type guild_setting_key = 
+const GUILD_SETTINGS_TTL = 5 * 60 * 1000 // - 5 minutes - \\
+
+/**
+ * - GENERATE CACHE KEY FOR GUILD SETTINGS - \\
+ * @param {string} guild_id - Guild ID
+ * @returns {string} Cache key
+ */
+function get_guild_cache_key(guild_id: string): string {
+  return `guild_settings:${guild_id}`
+}
+
+/**
+ * - INVALIDATE GUILD SETTINGS CACHE - \\
+ * @param {string} guild_id - Guild ID
+ * @returns {void}
+ */
+function invalidate_guild_cache(guild_id: string): void {
+  cache.remove(get_guild_cache_key(guild_id))
+}
+
+export type guild_setting_key =
   | "welcome_channel"
   | "welcome_message"
   | "ticket_category"
@@ -13,16 +33,16 @@ export type guild_setting_key =
   | "announcements_channel"
 
 export interface guild_settings_data {
-  welcome_channel?        : string
-  welcome_message?        : string
-  ticket_category?        : string
-  ticket_log_channel?     : string
-  mod_log_channel?        : string
-  member_log_channel?     : string
-  auto_role?              : string
-  verification_channel?   : string
-  rules_channel?          : string
-  announcements_channel?  : string
+  welcome_channel?: string
+  welcome_message?: string
+  ticket_category?: string
+  ticket_log_channel?: string
+  mod_log_channel?: string
+  member_log_channel?: string
+  auto_role?: string
+  verification_channel?: string
+  rules_channel?: string
+  announcements_channel?: string
 }
 
 /**
@@ -39,10 +59,21 @@ export async function get_guild_setting(
       throw new Error("Database not connected")
     }
 
+    const cache_key = get_guild_cache_key(guild_id)
+    const cached = cache.get<{ guild_id: string; settings: guild_settings_data }>(cache_key)
+
+    if (cached) {
+      return cached.settings[key] || null
+    }
+
     const result = await db.find_one<{ guild_id: string; settings: guild_settings_data }>(
       "guild_settings",
       { guild_id }
     )
+
+    if (result) {
+      cache.set(cache_key, result, GUILD_SETTINGS_TTL)
+    }
 
     if (!result || !result.settings) {
       return null
@@ -67,10 +98,21 @@ export async function get_all_guild_settings(
       throw new Error("Database not connected")
     }
 
+    const cache_key = get_guild_cache_key(guild_id)
+    const cached = cache.get<{ guild_id: string; settings: guild_settings_data }>(cache_key)
+
+    if (cached) {
+      return cached.settings
+    }
+
     const result = await db.find_one<{ guild_id: string; settings: guild_settings_data }>(
       "guild_settings",
       { guild_id }
     )
+
+    if (result) {
+      cache.set(cache_key, result, GUILD_SETTINGS_TTL)
+    }
 
     return result?.settings || null
   } catch (err) {
@@ -92,7 +134,7 @@ export async function set_guild_setting(
 ): Promise<boolean> {
   try {
     console.log(`[ - GUILD SETTINGS - ] Setting ${key} = ${value} for guild ${guild_id}`)
-    
+
     if (!db.is_connected()) {
       console.error("[ - GUILD SETTINGS ERROR - ] Database not connected")
       throw new Error("Database not connected")
@@ -127,6 +169,8 @@ export async function set_guild_setting(
         settings: updated_settings,
       })
     }
+
+    invalidate_guild_cache(guild_id)
 
     console.log(`[ - GUILD SETTINGS - ] Successfully set ${key} for guild ${guild_id}`)
     return true
@@ -170,6 +214,8 @@ export async function remove_guild_setting(
       { settings: updated_settings, updated_at: new Date() }
     )
 
+    invalidate_guild_cache(guild_id)
+
     console.log(`[ - GUILD SETTINGS - ] Removed ${key} for guild ${guild_id}`)
     return true
   } catch (err) {
@@ -189,7 +235,11 @@ export async function clear_all_guild_settings(guild_id: string): Promise<boolea
     }
 
     const deleted = await db.delete_one("guild_settings", { guild_id })
-    
+
+    if (deleted) {
+      invalidate_guild_cache(guild_id)
+    }
+
     console.log(`[ - GUILD SETTINGS - ] Cleared all settings for guild ${guild_id}`)
     return deleted
   } catch (err) {

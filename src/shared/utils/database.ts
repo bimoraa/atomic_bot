@@ -1,7 +1,7 @@
 import { Pool } from "pg"
 
 let pool: Pool | null = null
-let connected         = false
+let connected = false
 
 export async function connect(): Promise<Pool | null> {
   if (pool) return pool
@@ -15,28 +15,35 @@ export async function connect(): Promise<Pool | null> {
 
   try {
     pool = new Pool({
-      connectionString        : connection_string,
-      ssl                     : { rejectUnauthorized: false },
-      max                     : 10,
-      idleTimeoutMillis       : 30000,
-      connectionTimeoutMillis : 15000,
+      connectionString: connection_string,
+      ssl: { rejectUnauthorized: false },
+      max: 20,
+      min: 2,
+      idleTimeoutMillis: 20000,
+      connectionTimeoutMillis: 10000,
+      allowExitOnIdle: false,
     })
 
     pool.on('connect', async (client) => {
       await client.query("SET TIME ZONE 'Asia/Jakarta'")
     })
 
+    pool.on('error', (err) => {
+      console.error('[ - POSTGRESQL - ] Unexpected pool error:', err.message)
+    })
+
     const client = await pool.connect()
-    
+
     await client.query("SET TIME ZONE 'Asia/Jakarta'")
-    
+
     client.release()
     connected = true
 
     console.log("[ - POSTGRESQL - ] Connected to database (UTC+7)")
-    
+    console.log(`[ - POSTGRESQL - ] Connection pool: max=${pool.options.max}, min=${pool.options.min}`)
+
     await init_tables()
-    
+
     return pool
   } catch (err) {
     console.error("[ - POSTGRESQL - ] Connection failed:", (err as Error).message)
@@ -47,8 +54,7 @@ export async function connect(): Promise<Pool | null> {
 
 export function is_connected(): boolean {
   if (!pool || !connected) return false
-  
-  // - QUICK POOL CHECK - \\
+
   try {
     return pool.totalCount >= 0
   } catch {
@@ -56,10 +62,24 @@ export function is_connected(): boolean {
   }
 }
 
+/**
+ * - GET CONNECTION POOL STATS - \\
+ * @returns {object} Pool statistics
+ */
+export function get_pool_stats() {
+  if (!pool) return null
+
+  return {
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount,
+  }
+}
+
 export async function disconnect(): Promise<void> {
   if (pool) {
     await pool.end()
-    pool      = null
+    pool = null
     connected = false
     console.log("[ - POSTGRESQL - ] Disconnected")
   }
@@ -72,7 +92,7 @@ export function get_pool(): Pool {
 
 async function init_tables(): Promise<void> {
   const client = await get_pool().connect()
-  
+
   try {
     await client.query(`
       CREATE TABLE IF NOT EXISTS reputation_records (
@@ -451,72 +471,72 @@ async function migrate_tables(client: any): Promise<void> {
             ADD COLUMN added_at BIGINT;
         END;
       END $$;
-    `).catch(() => {})
+    `).catch(() => { })
 
     await client.query(`
       ALTER TABLE loa_requests 
       ALTER COLUMN start_date TYPE BIGINT USING EXTRACT(EPOCH FROM start_date)::BIGINT
-    `).catch(() => {})
+    `).catch(() => { })
 
     await client.query(`
       ALTER TABLE loa_requests 
       ALTER COLUMN end_date TYPE BIGINT USING EXTRACT(EPOCH FROM end_date)::BIGINT
-    `).catch(() => {})
+    `).catch(() => { })
 
     await client.query(`
       ALTER TABLE loa_requests 
       ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT
-    `).catch(() => {})
+    `).catch(() => { })
 
     await client.query(`
       ALTER TABLE hwid_less_schedule 
       ALTER COLUMN scheduled_time TYPE BIGINT USING EXTRACT(EPOCH FROM scheduled_time)::BIGINT
-    `).catch(() => {})
+    `).catch(() => { })
 
     await client.query(`
       ALTER TABLE hwid_less_schedule 
       ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT
-    `).catch(() => {})
+    `).catch(() => { })
 
-    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS guild_id`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS total_actions`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS weekly_actions`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS created_at`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS updated_at`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_work INTEGER DEFAULT 0`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_work_this_week INTEGER DEFAULT 0`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_salary BIGINT DEFAULT 0`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS salary_this_week BIGINT DEFAULT 0`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS week_number INTEGER`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS year INTEGER`).catch(() => {})
-    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS last_work BIGINT`).catch(() => {})
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS guild_id`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS total_actions`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS weekly_actions`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS created_at`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS updated_at`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_work INTEGER DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_work_this_week INTEGER DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_salary BIGINT DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS salary_this_week BIGINT DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS week_number INTEGER`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS year INTEGER`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS last_work BIGINT`).catch(() => { })
 
-    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS guild_id`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS action`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS details`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS work_id VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS type VARCHAR(50)`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS thread_link TEXT`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS proof_link TEXT`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS amount INTEGER DEFAULT 0`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS salary INTEGER DEFAULT 0`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS date VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT * 1000`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ALTER COLUMN week_number DROP NOT NULL`).catch(() => {})
-    await client.query(`ALTER TABLE work_logs ALTER COLUMN year DROP NOT NULL`).catch(() => {})
+    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS guild_id`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS action`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS details`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS work_id VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS type VARCHAR(50)`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS thread_link TEXT`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS proof_link TEXT`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS amount INTEGER DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS salary INTEGER DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS date VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT * 1000`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ALTER COLUMN week_number DROP NOT NULL`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ALTER COLUMN year DROP NOT NULL`).catch(() => { })
 
-    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS message_id VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS user_tag VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS channel_id VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS type VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS rejected_by VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS original_nickname VARCHAR(255)`).catch(() => {})
-    
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS message_id VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS user_tag VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS channel_id VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS type VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS rejected_by VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS original_nickname VARCHAR(255)`).catch(() => { })
+
     console.log('[ - DB MIGRATION - ] Fixing loa_requests timestamp columns...')
-    
+
     await client.query(`
       DO $$ 
       DECLARE
@@ -539,7 +559,7 @@ async function migrate_tables(client: any): Promise<void> {
           RAISE NOTICE 'Error with loa_requests.start_date: %', SQLERRM;
       END $$;
     `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.start_date migration error:', err.message))
-    
+
     await client.query(`
       DO $$ 
       DECLARE
@@ -562,7 +582,7 @@ async function migrate_tables(client: any): Promise<void> {
           RAISE NOTICE 'Error with loa_requests.end_date: %', SQLERRM;
       END $$;
     `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.end_date migration error:', err.message))
-    
+
     await client.query(`
       DO $$ 
       DECLARE
@@ -586,12 +606,12 @@ async function migrate_tables(client: any): Promise<void> {
       END $$;
     `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.created_at migration error:', err.message))
 
-    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS username VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS user_key VARCHAR(255)`).catch(() => {})
-    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS created_at BIGINT`).catch(() => {})
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS username VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS user_key VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS created_at BIGINT`).catch(() => { })
 
-    await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS whitelisted_at BIGINT`).catch(() => {})
-    await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS boost_count INTEGER DEFAULT 0`).catch(() => {})
+    await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS whitelisted_at BIGINT`).catch(() => { })
+    await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS boost_count INTEGER DEFAULT 0`).catch(() => { })
 
     console.log("[ - POSTGRESQL - ] Table migrations completed")
   } catch (err) {
@@ -601,54 +621,54 @@ async function migrate_tables(client: any): Promise<void> {
 
 function get_table_name(collection: string): string {
   const table_map: Record<string, string> = {
-    reputation_records           : "reputation_records",
-    reputation_logs              : "reputation_logs",
-    voice_channel_records        : "voice_channel_records",
-    server_tag_users             : "server_tag_users",
-    free_script_users            : "free_script_users",
-    hwid_less_schedule           : "hwid_less_schedule",
-    service_provider_user_cache  : "service_provider_user_cache",
-    hwid_reset_tracker           : "hwid_reset_tracker",
-    hwid_reset_cache             : "hwid_reset_cache",
-    booster_whitelist            : "booster_whitelist",
-    work_logs                    : "work_logs",
-    work_reports                 : "work_reports",
-    loa_requests                 : "loa_requests",
-    answer_stats                 : "answer_stats",
-    afk_users                    : "afk_users",
-    ghost_pings                  : "ghost_pings",
-    warnings                     : "warnings",
-    ticket_transcripts           : "ticket_transcripts",
-    guild_settings               : "guild_settings",
+    reputation_records: "reputation_records",
+    reputation_logs: "reputation_logs",
+    voice_channel_records: "voice_channel_records",
+    server_tag_users: "server_tag_users",
+    free_script_users: "free_script_users",
+    hwid_less_schedule: "hwid_less_schedule",
+    service_provider_user_cache: "service_provider_user_cache",
+    hwid_reset_tracker: "hwid_reset_tracker",
+    hwid_reset_cache: "hwid_reset_cache",
+    booster_whitelist: "booster_whitelist",
+    work_logs: "work_logs",
+    work_reports: "work_reports",
+    loa_requests: "loa_requests",
+    answer_stats: "answer_stats",
+    afk_users: "afk_users",
+    ghost_pings: "ghost_pings",
+    warnings: "warnings",
+    ticket_transcripts: "ticket_transcripts",
+    guild_settings: "guild_settings",
   }
-  
+
   return table_map[collection] || "generic_data"
 }
 
 function build_where_clause(filter: object, start_index: number = 1): { clause: string; values: any[] } {
-  const keys   = Object.keys(filter)
+  const keys = Object.keys(filter)
   const values = Object.values(filter)
-  
+
   if (keys.length === 0) {
     return { clause: "", values: [] }
   }
-  
+
   const conditions: string[] = []
-  const final_values: any[]  = []
-  let param_idx              = start_index
-  
+  const final_values: any[] = []
+  let param_idx = start_index
+
   for (let i = 0; i < keys.length; i++) {
-    const key   = keys[i]
+    const key = keys[i]
     const value = values[i]
-    
+
     if (value === null) {
       conditions.push(`${key} IS NULL`)
     } else if (typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
       const operators = Object.keys(value)
-      
+
       for (const op of operators) {
         const op_value = (value as any)[op]
-        
+
         switch (op) {
           case "$lte":
             conditions.push(`${key} <= $${param_idx}`)
@@ -701,10 +721,10 @@ function build_where_clause(filter: object, start_index: number = 1): { clause: 
       param_idx++
     }
   }
-  
+
   return {
-    clause : "WHERE " + conditions.join(" AND "),
-    values : final_values,
+    clause: "WHERE " + conditions.join(" AND "),
+    values: final_values,
   }
 }
 
@@ -713,24 +733,24 @@ export async function find_one<T extends object>(
   filter: object
 ): Promise<T | null> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const filter_entries    = Object.entries(filter)
+    const filter_entries = Object.entries(filter)
     const filter_conditions = filter_entries
       .map(([key], index) => `data->>'${key}' = $${index + 2}`)
       .join(" AND ")
-    
-    const query  = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
+
+    const query = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
     const result = await get_pool().query<{ data: T }>(query, [coll, ...filter_entries.map(([, v]) => String(v))])
-    
+
     if (result.rows.length === 0) return null
     return result.rows[0].data
   }
-  
+
   const { clause, values } = build_where_clause(filter)
-  const query              = `SELECT * FROM ${table} ${clause} LIMIT 1`
-  const result             = await get_pool().query(query, values)
-  
+  const query = `SELECT * FROM ${table} ${clause} LIMIT 1`
+  const result = await get_pool().query(query, values)
+
   if (result.rows.length === 0) return null
   return convert_row_to_object<T>(result.rows[0])
 }
@@ -740,23 +760,23 @@ export async function find_many<T extends object>(
   filter: object = {}
 ): Promise<T[]> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const filter_entries    = Object.entries(filter)
+    const filter_entries = Object.entries(filter)
     const filter_conditions = filter_entries
       .map(([key], index) => `data->>'${key}' = $${index + 2}`)
       .join(" AND ")
-    
-    const query  = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
+
+    const query = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
     const result = await get_pool().query<{ data: T }>(query, [coll, ...filter_entries.map(([, v]) => String(v))])
-    
+
     return result.rows.map((row: { data: T }) => row.data)
   }
-  
+
   const { clause, values } = build_where_clause(filter)
-  const query              = `SELECT * FROM ${table} ${clause}`
-  const result             = await get_pool().query(query, values)
-  
+  const query = `SELECT * FROM ${table} ${clause}`
+  const result = await get_pool().query(query, values)
+
   return result.rows.map((row: any) => convert_row_to_object<T>(row))
 }
 
@@ -765,14 +785,14 @@ export async function insert_one<T extends object>(
   doc: T
 ): Promise<string> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const query  = `INSERT INTO generic_data (collection, data) VALUES ($1, $2) RETURNING id`
+    const query = `INSERT INTO generic_data (collection, data) VALUES ($1, $2) RETURNING id`
     const result = await get_pool().query(query, [coll, JSON.stringify(doc)])
     return result.rows[0].id.toString()
   }
-  
-  const keys   = Object.keys(doc)
+
+  const keys = Object.keys(doc)
   const values = Object.keys(doc).map(key => {
     const value = (doc as any)[key]
     if (table === "guild_settings" && key === "settings" && typeof value === "object" && !Array.isArray(value)) {
@@ -784,11 +804,11 @@ export async function insert_one<T extends object>(
     return value
   })
   const placeholders = keys.map((_, index) => `$${index + 1}`).join(", ")
-  const columns      = keys.join(", ")
-  
-  const query  = `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING id`
+  const columns = keys.join(", ")
+
+  const query = `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING id`
   const result = await get_pool().query(query, values)
-  
+
   return result.rows[0].id.toString()
 }
 
@@ -799,18 +819,18 @@ export async function update_one<T extends object>(
   upsert: boolean = false
 ): Promise<boolean> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const filter_entries    = Object.entries(filter)
+    const filter_entries = Object.entries(filter)
     const filter_conditions = filter_entries
       .map(([key], index) => `data->>'${key}' = $${index + 2}`)
       .join(" AND ")
-    
-    const existing_query  = `SELECT id, data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
+
+    const existing_query = `SELECT id, data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
     const existing_result = await get_pool().query(existing_query, [coll, ...filter_entries.map(([, v]) => String(v))])
-    
+
     if (existing_result.rows.length > 0) {
-      const merged_data  = { ...existing_result.rows[0].data, ...update }
+      const merged_data = { ...existing_result.rows[0].data, ...update }
       const update_query = `UPDATE generic_data SET data = $1 WHERE id = $2`
       await get_pool().query(update_query, [JSON.stringify(merged_data), existing_result.rows[0].id])
       return true
@@ -821,14 +841,14 @@ export async function update_one<T extends object>(
     }
     return false
   }
-  
+
   const { clause: where_clause, values: where_values } = build_where_clause(filter)
-  
-  const existing_query  = `SELECT id FROM ${table} ${where_clause} LIMIT 1`
+
+  const existing_query = `SELECT id FROM ${table} ${where_clause} LIMIT 1`
   const existing_result = await get_pool().query(existing_query, where_values)
-  
+
   if (existing_result.rows.length > 0) {
-    const update_keys   = Object.keys(update)
+    const update_keys = Object.keys(update)
     const update_values = Object.keys(update).map(key => {
       const value = (update as any)[key]
       if (table === "guild_settings" && key === "settings" && typeof value === "object" && !Array.isArray(value)) {
@@ -839,10 +859,10 @@ export async function update_one<T extends object>(
       }
       return value
     })
-    const set_clause    = update_keys.map((key, index) => `${key} = $${index + 1}`).join(", ")
-    
+    const set_clause = update_keys.map((key, index) => `${key} = $${index + 1}`).join(", ")
+
     const adjusted_where = where_clause.replace(/\$(\d+)/g, (_, num) => `$${parseInt(num) + update_keys.length}`)
-    const update_query   = `UPDATE ${table} SET ${set_clause} ${adjusted_where}`
+    const update_query = `UPDATE ${table} SET ${set_clause} ${adjusted_where}`
     await get_pool().query(update_query, [...update_values, ...where_values])
     return true
   } else if (upsert) {
@@ -850,7 +870,7 @@ export async function update_one<T extends object>(
     await insert_one(coll, new_doc as T)
     return true
   }
-  
+
   return false
 }
 
@@ -859,22 +879,22 @@ export async function delete_one(
   filter: object
 ): Promise<boolean> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const filter_entries    = Object.entries(filter)
+    const filter_entries = Object.entries(filter)
     const filter_conditions = filter_entries
       .map(([key], index) => `data->>'${key}' = $${index + 2}`)
       .join(" AND ")
-    
-    const query  = `DELETE FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
+
+    const query = `DELETE FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
     const result = await get_pool().query(query, [coll, ...filter_entries.map(([, v]) => String(v))])
     return (result.rowCount ?? 0) > 0
   }
-  
+
   const { clause, values } = build_where_clause(filter)
-  const query              = `DELETE FROM ${table} ${clause}`
-  const result             = await get_pool().query(query, values)
-  
+  const query = `DELETE FROM ${table} ${clause}`
+  const result = await get_pool().query(query, values)
+
   return (result.rowCount ?? 0) > 0
 }
 
@@ -883,22 +903,22 @@ export async function delete_many(
   filter: object
 ): Promise<number> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const filter_entries    = Object.entries(filter)
+    const filter_entries = Object.entries(filter)
     const filter_conditions = filter_entries
       .map(([key], index) => `data->>'${key}' = $${index + 2}`)
       .join(" AND ")
-    
-    const query  = `DELETE FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
+
+    const query = `DELETE FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
     const result = await get_pool().query(query, [coll, ...filter_entries.map(([, v]) => String(v))])
     return result.rowCount ?? 0
   }
-  
+
   const { clause, values } = build_where_clause(filter)
-  const query              = `DELETE FROM ${table} ${clause}`
-  const result             = await get_pool().query(query, values)
-  
+  const query = `DELETE FROM ${table} ${clause}`
+  const result = await get_pool().query(query, values)
+
   return result.rowCount ?? 0
 }
 
@@ -909,19 +929,19 @@ export async function increment(
   amount: number = 1
 ): Promise<void> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const filter_entries    = Object.entries(filter)
+    const filter_entries = Object.entries(filter)
     const filter_conditions = filter_entries
       .map(([key], index) => `data->>'${key}' = $${index + 2}`)
       .join(" AND ")
-    
-    const existing_query  = `SELECT id, data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
+
+    const existing_query = `SELECT id, data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
     const existing_result = await get_pool().query(existing_query, [coll, ...filter_entries.map(([, v]) => String(v))])
-    
+
     if (existing_result.rows.length > 0) {
-      const data         = existing_result.rows[0].data
-      data[field]        = (data[field] || 0) + amount
+      const data = existing_result.rows[0].data
+      data[field] = (data[field] || 0) + amount
       const update_query = `UPDATE generic_data SET data = $1 WHERE id = $2`
       await get_pool().query(update_query, [JSON.stringify(data), existing_result.rows[0].id])
     } else {
@@ -930,15 +950,15 @@ export async function increment(
     }
     return
   }
-  
+
   const { clause: where_clause, values: where_values } = build_where_clause(filter)
-  
-  const existing_query  = `SELECT id FROM ${table} ${where_clause} LIMIT 1`
+
+  const existing_query = `SELECT id FROM ${table} ${where_clause} LIMIT 1`
   const existing_result = await get_pool().query(existing_query, where_values)
-  
+
   if (existing_result.rows.length > 0) {
     const adjusted_where = where_clause.replace(/\$(\d+)/g, (_, num) => `$${parseInt(num) + 1}`)
-    const update_query   = `UPDATE ${table} SET ${field} = COALESCE(${field}, 0) + $1 ${adjusted_where}`
+    const update_query = `UPDATE ${table} SET ${field} = COALESCE(${field}, 0) + $1 ${adjusted_where}`
     await get_pool().query(update_query, [amount, ...where_values])
   } else {
     const new_doc = { ...filter, [field]: amount }
@@ -951,22 +971,22 @@ export async function count(
   filter: object = {}
 ): Promise<number> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const filter_entries    = Object.entries(filter)
+    const filter_entries = Object.entries(filter)
     const filter_conditions = filter_entries
       .map(([key], index) => `data->>'${key}' = $${index + 2}`)
       .join(" AND ")
-    
-    const query  = `SELECT COUNT(*) as count FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
+
+    const query = `SELECT COUNT(*) as count FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
     const result = await get_pool().query(query, [coll, ...filter_entries.map(([, v]) => String(v))])
     return parseInt(result.rows[0].count)
   }
-  
+
   const { clause, values } = build_where_clause(filter)
-  const query              = `SELECT COUNT(*) as count FROM ${table} ${clause}`
-  const result             = await get_pool().query(query, values)
-  
+  const query = `SELECT COUNT(*) as count FROM ${table} ${clause}`
+  const result = await get_pool().query(query, values)
+
   return parseInt(result.rows[0].count)
 }
 
@@ -977,23 +997,23 @@ export async function find_many_sorted<T extends object>(
   sort_order: "ASC" | "DESC" = "ASC"
 ): Promise<T[]> {
   const table = get_table_name(coll)
-  
+
   if (table === "generic_data") {
-    const filter_entries    = Object.entries(filter)
+    const filter_entries = Object.entries(filter)
     const filter_conditions = filter_entries
       .map(([key], index) => `data->>'${key}' = $${index + 2}`)
       .join(" AND ")
-    
-    const query  = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} ORDER BY data->>'${sort_field}' ${sort_order}`
+
+    const query = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} ORDER BY data->>'${sort_field}' ${sort_order}`
     const result = await get_pool().query<{ data: T }>(query, [coll, ...filter_entries.map(([, v]) => String(v))])
-    
+
     return result.rows.map((row: { data: T }) => row.data)
   }
-  
+
   const { clause, values } = build_where_clause(filter)
-  const query              = `SELECT * FROM ${table} ${clause} ORDER BY ${sort_field} ${sort_order}`
-  const result             = await get_pool().query(query, values)
-  
+  const query = `SELECT * FROM ${table} ${clause} ORDER BY ${sort_field} ${sort_order}`
+  const result = await get_pool().query(query, values)
+
   return result.rows.map((row: any) => convert_row_to_object<T>(row))
 }
 
@@ -1005,26 +1025,26 @@ export async function update_jsonb_field(
   increment_value: number
 ): Promise<boolean> {
   const table = get_table_name(coll)
-  
+
   const { clause: where_clause, values: where_values } = build_where_clause(filter)
-  
-  const existing_query  = `SELECT id, ${jsonb_field} FROM ${table} ${where_clause} LIMIT 1`
+
+  const existing_query = `SELECT id, ${jsonb_field} FROM ${table} ${where_clause} LIMIT 1`
   const existing_result = await get_pool().query(existing_query, where_values)
-  
+
   if (existing_result.rows.length === 0) {
     const new_doc = { ...filter, [jsonb_field]: { [jsonb_key]: increment_value }, total: increment_value }
     await insert_one(coll, new_doc as any)
     return true
   }
-  
-  const current_jsonb       = existing_result.rows[0][jsonb_field] || {}
-  const current_value       = current_jsonb[jsonb_key] || 0
-  current_jsonb[jsonb_key]  = current_value + increment_value
-  
+
+  const current_jsonb = existing_result.rows[0][jsonb_field] || {}
+  const current_value = current_jsonb[jsonb_key] || 0
+  current_jsonb[jsonb_key] = current_value + increment_value
+
   const adjusted_where = where_clause.replace(/\$(\d+)/g, (_, num) => `$${parseInt(num) + 2}`)
-  const update_query   = `UPDATE ${table} SET ${jsonb_field} = $1, total = COALESCE(total, 0) + $2 ${adjusted_where}`
+  const update_query = `UPDATE ${table} SET ${jsonb_field} = $1, total = COALESCE(total, 0) + $2 ${adjusted_where}`
   await get_pool().query(update_query, [JSON.stringify(current_jsonb), increment_value, ...where_values])
-  
+
   return true
 }
 
@@ -1037,15 +1057,15 @@ export async function update_jsonb_field(
  * @returns {T} Converted object with proper types
  */
 function convert_row_to_object<T>(row: any): T {
-  const result: any         = {}
-  const legacy_date_fields  = [
-    "updated_at", "joined_at", "left_at", 
+  const result: any = {}
+  const legacy_date_fields = [
+    "updated_at", "joined_at", "left_at",
     "scheduled_time", "added_at", "last_tag_check"
   ]
   const unix_timestamp_fields = [
     "whitelisted_at", "start_date", "end_date", "created_at", "cached_at", "last_updated"
   ]
-  
+
   for (const [key, value] of Object.entries(row)) {
     if (legacy_date_fields.includes(key)) {
       result[key] = value ? new Date(value as string) : null
@@ -1055,7 +1075,7 @@ function convert_row_to_object<T>(row: any): T {
       result[key] = value
     }
   }
-  
+
   return result as T
 }
 
