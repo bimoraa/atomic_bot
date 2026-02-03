@@ -23,13 +23,6 @@ const __rate_limit_cooldowns: Map<string, number>     = new Map()
 const __rate_limit_cooldown_duration                  = 120 * 1000
 const __rate_limit_backoff_multiplier                 = 2
 
-// - GLOBAL RATE LIMIT (PREVENTS BURST REQUESTS) - \\
-let __global_rate_limit_tokens                        = 10
-const __global_rate_limit_max_tokens                  = 10
-const __global_rate_limit_refill_rate                 = 1
-const __global_rate_limit_refill_interval             = 2000
-let __global_rate_limit_last_refill                   = Date.now()
-
 // - REQUEST QUEUE (PREVENTS CONCURRENT OVERLOAD) - \\
 const __request_queue: Array<{
   resolve   : (value: any) => void
@@ -184,36 +177,6 @@ function set_rate_limit_cooldown(key: string, duration: number = __rate_limit_co
 }
 
 /**
- * - REFILL GLOBAL RATE LIMIT TOKENS - \\
- */
-function refill_global_tokens(): void {
-  const now     = Date.now()
-  const elapsed = now - __global_rate_limit_last_refill
-  const refills = Math.floor(elapsed / __global_rate_limit_refill_interval)
-  
-  if (refills > 0) {
-    __global_rate_limit_tokens     = Math.min(__global_rate_limit_max_tokens, __global_rate_limit_tokens + (refills * __global_rate_limit_refill_rate))
-    __global_rate_limit_last_refill = now - (elapsed % __global_rate_limit_refill_interval)
-  }
-}
-
-/**
- * - CONSUME GLOBAL RATE LIMIT TOKEN - \\
- * @returns true if token consumed, false if rate limited
- */
-function consume_global_token(): boolean {
-  refill_global_tokens()
-  
-  if (__global_rate_limit_tokens <= 0) {
-    __log.warn("Global rate limit reached, queueing request")
-    return false
-  }
-  
-  __global_rate_limit_tokens--
-  return true
-}
-
-/**
  * - PROCESS REQUEST QUEUE - \\
  */
 async function process_request_queue(): Promise<void> {
@@ -221,11 +184,6 @@ async function process_request_queue(): Promise<void> {
   __request_queue_processing = true
   
   while (__request_queue.length > 0 && __active_requests < __max_concurrent_requests) {
-    if (!consume_global_token()) {
-      await sleep(__global_rate_limit_refill_interval)
-      continue
-    }
-    
     __request_queue.sort((a, b) => b.priority - a.priority || a.timestamp - b.timestamp)
     const item = __request_queue.shift()
     
@@ -504,7 +462,6 @@ async function make_request_internal<T>(
       if (error.type === error_type.rate_limit) {
         const retry_after = data?.retry_after || 120
         set_rate_limit_cooldown(endpoint_key, retry_after * 1000, retry_count)
-        set_rate_limit_cooldown("global", retry_after * 1000, retry_count)
         __log.warn(`Rate limit set for: ${endpoint_key} (${retry_after}s)`)
         record_failure()
       }
@@ -811,22 +768,13 @@ export async function get_user_by_discord(
     
     // - CHECK DATABASE CACHE - \\
     if (!force_refresh && !project_id) {
-      const db_cached = await luarmor_db_cache.get_cached_user_from_db(discord_id)
+      const db_cached = await luarmor_db_cache.get_cached_user_from_db(discord_id, true)
       if (db_cached) {
         __log.debug("DB cache hit:", discord_id)
         __user_cache.set(discord_id, db_cached)
         __user_cache_timestamp.set(discord_id, now)
         return { success: true, data: db_cached }
       }
-    }
-    
-    // - CHECK GLOBAL RATE LIMIT - \\
-    if (is_rate_limited("global")) {
-      if (cached_user && cache_age < __user_cache_stale_duration) {
-        __log.warn("Global rate limited, returning stale cache:", discord_id)
-        return { success: true, data: cached_user }
-      }
-      return { success: false, error: "Rate limit active, please try again later", is_error: true }
     }
     
     // - CHECK USER RATE LIMIT - \\
@@ -1354,19 +1302,14 @@ export function get_circuit_status(): {
  * @returns Rate limit information
  */
 export function get_rate_limit_status(): {
-  global_tokens : number
-  max_tokens    : number
-  cooldowns     : number
-  queue_size    : number
-  active        : number
+  cooldowns  : number
+  queue_size : number
+  active     : number
 } {
-  refill_global_tokens()
   return {
-    global_tokens : __global_rate_limit_tokens,
-    max_tokens    : __global_rate_limit_max_tokens,
-    cooldowns     : __rate_limit_cooldowns.size,
-    queue_size    : __request_queue.length,
-    active        : __active_requests,
+    cooldowns  : __rate_limit_cooldowns.size,
+    queue_size : __request_queue.length,
+    active     : __active_requests,
   }
 }
 
@@ -1392,7 +1335,6 @@ export function get_cache_stats(): {
  */
 export function reset_all_rate_limits(): void {
   __rate_limit_cooldowns.clear()
-  __global_rate_limit_tokens = __global_rate_limit_max_tokens
   __circuit_breaker_failures = 0
   __log.info("All rate limits and circuit breaker reset")
 }
