@@ -1,27 +1,27 @@
 import { logger, env } from "../../shared/utils"
 import * as luarmor_db_cache from "./luarmor_db_cache"
 
-const __base_url = "https://api.luarmor.net/v3"
-const __log = logger.create_logger("luarmor")
+const __base_url                              = "https://api.luarmor.net/v3"
+const __log                                   = logger.create_logger("luarmor")
 
 // - CACHE CONFIGURATION (EXTENDED TTL TO REDUCE API CALLS) - \\
-let __users_cache: luarmor_user[] | null = null
-let __users_cache_timestamp = 0
-const __users_cache_duration = 30 * 60 * 1000
-const __users_cache_stale_while_revalidate = 2 * 60 * 60 * 1000
+let __users_cache: luarmor_user[] | null      = null
+let __users_cache_timestamp                   = 0
+const __users_cache_duration                  = 30 * 60 * 1000
+const __users_cache_stale_while_revalidate    = 2 * 60 * 60 * 1000
 
-let __user_cache: Map<string, luarmor_user> = new Map()
+let __user_cache: Map<string, luarmor_user>   = new Map()
 let __user_cache_timestamp: Map<string, number> = new Map()
-const __user_cache_duration = 30 * 60 * 1000
-const __user_cache_stale_duration = 60 * 60 * 1000
+const __user_cache_duration                   = 30 * 60 * 1000
+const __user_cache_stale_duration             = 60 * 60 * 1000
 
 // - REQUEST DEDUPLICATION - \\
 const __pending_requests: Map<string, Promise<any>> = new Map()
 
 // - RATE LIMIT TRACKING (ADAPTIVE) - \\
 const __rate_limit_cooldowns: Map<string, number> = new Map()
-const __rate_limit_cooldown_duration = 120 * 1000
-const __rate_limit_backoff_multiplier = 2
+const __rate_limit_cooldown_duration          = 120 * 1000
+const __rate_limit_backoff_multiplier         = 2
 
 // - REQUEST QUEUE (PREVENTS CONCURRENT OVERLOAD) - \\
 const __request_queue: Array<{
@@ -30,26 +30,26 @@ const __request_queue: Array<{
   fn: () => Promise<any>
   priority: number
   timestamp: number
-}> = []
-let __request_queue_processing = false
-const __max_concurrent_requests = 3
-let __active_requests = 0
+}>                                            = []
+let __request_queue_processing                = false
+const __max_concurrent_requests               = 3
+let __active_requests                         = 0
 
 // - CIRCUIT BREAKER (EXTENDED TIMEOUT) - \\
-let __circuit_breaker_failures = 0
-let __circuit_breaker_last_failure = 0
-const __circuit_breaker_threshold = 3
-const __circuit_breaker_timeout = 60 * 1000
-const __circuit_breaker_half_open_timeout = 30 * 1000
+let __circuit_breaker_failures                = 0
+let __circuit_breaker_last_failure            = 0
+const __circuit_breaker_threshold             = 3
+const __circuit_breaker_timeout               = 60 * 1000
+const __circuit_breaker_half_open_timeout     = 30 * 1000
 
 // - EXPONENTIAL BACKOFF CONFIGURATION - \\
-const __backoff_initial_delay = 1000
-const __backoff_max_delay = 30000
-const __backoff_max_retries = 3
+const __backoff_initial_delay                 = 1000
+const __backoff_max_delay                     = 30000
+const __backoff_max_retries                   = 3
 
 // - PERFORMANCE OPTIMIZATION - \\
-const __default_timeout = 10000
-const __fast_timeout = 5000
+const __default_timeout                       = 10000
+const __fast_timeout                          = 5000
 
 // - HTTP ERROR CLASSIFICATION - \\
 enum error_type {

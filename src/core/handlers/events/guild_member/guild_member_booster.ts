@@ -4,17 +4,21 @@ import { load_config }               from "../../../../shared/config/loader"
 import { send_booster_log }          from "../../controllers/booster_controller"
 import * as booster_manager          from "../../../../shared/database/managers/booster_manager"
 import { log_error }                 from "../../../../shared/utils/error_logger"
-import { format }                    from "../../../../shared/utils"
 
 interface booster_config {
   booster_log_channel_id: string
   booster_media_url     : string
 }
 
-const config = load_config<booster_config>("booster")
-
 client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuildMember, new_member: GuildMember) => {
   try {
+    const is_boost_start = new_member.premiumSince && !old_member.premiumSince
+    const is_boost_stop  = !new_member.premiumSince && old_member.premiumSince
+
+    if (!is_boost_start && !is_boost_stop) return
+
+    const config = load_config<booster_config>("booster")
+
     if (!config.booster_log_channel_id) {
       console.error("[ - BOOSTER LOG - ] Booster log channel id is missing")
       await log_error(
@@ -28,7 +32,7 @@ client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuil
       return
     }
 
-    if (new_member.premiumSince && !old_member.premiumSince) {
+    if (is_boost_start) {
       console.log(`[ - BOOSTER LOG - ] ${new_member.user.tag} started boosting the server`)
 
       let new_boost_count = 1
@@ -79,7 +83,7 @@ client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuil
       console.log(`[ - BOOSTER LOG - ] Logged boost for ${new_member.user.tag}, total boosts: ${new_boost_count}`)
     }
 
-    if (!new_member.premiumSince && old_member.premiumSince) {
+    if (is_boost_stop) {
       console.log(`[ - BOOSTER LOG - ] ${new_member.user.tag} stopped boosting the server`)
 
       try {

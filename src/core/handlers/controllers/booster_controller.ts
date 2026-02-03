@@ -52,7 +52,13 @@ export async function send_booster_log(
     ],
   })
 
-  let response = await api.send_components_v2(channel_id, api.get_token(), message)
+  let response: api.api_response = { error: true }
+
+  try {
+    response = await api.send_components_v2(channel_id, api.get_token(), message)
+  } catch (send_error) {
+    console.error("[ - BOOSTER LOG - ] First send attempt threw:", send_error)
+  }
 
   if (response.error) {
     const retry_after_value = typeof response.retry_after === "number"
@@ -64,7 +70,12 @@ export async function send_booster_log(
 
     // - RETRY ONCE AFTER COOLDOWN - \\
     await wait_ms(retry_after_ms)
-    response = await api.send_components_v2(channel_id, api.get_token(), message)
+
+    try {
+      response = await api.send_components_v2(channel_id, api.get_token(), message)
+    } catch (retry_error) {
+      console.error("[ - BOOSTER LOG - ] Retry attempt threw:", retry_error)
+    }
   }
 
   if (response.error) {
