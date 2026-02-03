@@ -249,6 +249,14 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_loa_requests_message_id ON loa_requests(message_id)
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_loa_requests_status_end_date ON loa_requests(status, end_date)
+    `)
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS answer_stats (
         id        SERIAL PRIMARY KEY,
         staff_id  VARCHAR(255) NOT NULL UNIQUE,

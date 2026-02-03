@@ -1,7 +1,8 @@
 import { Client } from "discord.js"
-import { component, time, db, api } from "../../../shared/utils"
-import { log_error }                from "../../../shared/utils/error_logger"
+import { component, time, db, api, logger } from "../../../shared/utils"
+import { log_error }                        from "../../../shared/utils/error_logger"
 
+const log           = logger.create_logger("loa_controller")
 const is_dev        = process.env.NODE_ENV === "development"
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN
 
@@ -197,22 +198,15 @@ export async function approve_loa(options: approve_loa_options) {
   const { message_id, approver_id, client, guild_id } = options
 
   try {
-    console.log(`[ - LOA APPROVE - ] Looking for LOA with message_id: ${message_id}`)
-
     const loa = await db.find_one<loa_data>("loa_requests", { message_id })
 
-    console.log(`[ - LOA APPROVE - ] Found LOA:`, loa)
-
     if (!loa) {
-      console.error(`[ - LOA APPROVE - ] LOA request not found for message_id: ${message_id}`)
+      log.warn(`LOA request not found: ${message_id}`)
       return {
         success: false,
         error  : "LOA request not found",
       }
     }
-
-    console.log(`[ - LOA APPROVE - ] Timestamp types - start_date: ${typeof loa.start_date}, end_date: ${typeof loa.end_date}`)
-    console.log(`[ - LOA APPROVE - ] Timestamp values - start_date: ${loa.start_date}, end_date: ${loa.end_date}`)
 
     if (loa.status !== "pending") {
       return {
@@ -230,16 +224,11 @@ export async function approve_loa(options: approve_loa_options) {
       const member = await guild.members.fetch(loa.user_id)
       original_nickname = member.nickname || member.user.displayName || member.user.username
 
-      console.log(`[LOA] Processing approval for ${loa.user_tag}`)
-      console.log(`[LOA] Original nickname: ${original_nickname}`)
-
-      await member.roles.add("1274580813912211477")
-      console.log(`[LOA] Role added`)
-
-      await member.setNickname(`[LOA] - ${original_nickname}`)
-      console.log(`[LOA] Nickname set to: [LOA] - ${original_nickname}`)
+      await Promise.all([
+        member.roles.add("1274580813912211477"),
+        member.setNickname(`[LOA] - ${original_nickname}`),
+      ])
     } catch (role_err) {
-      console.error("[LOA] Failed to set role/nickname:", role_err)
       await log_error(client, role_err as Error, "LOA Role/Nickname", {
         user_id : loa.user_id,
         user_tag: loa.user_tag,
@@ -312,14 +301,10 @@ export async function reject_loa(options: reject_loa_options) {
   const { message_id, rejector_id, client } = options
 
   try {
-    console.log(`[ - LOA REJECT - ] Looking for LOA with message_id: ${message_id}`)
-
     const loa = await db.find_one<loa_data>("loa_requests", { message_id })
 
-    console.log(`[ - LOA REJECT - ] Found LOA:`, loa)
-
     if (!loa) {
-      console.error(`[ - LOA REJECT - ] LOA request not found for message_id: ${message_id}`)
+      log.warn(`LOA request not found: ${message_id}`)
       return {
         success: false,
         error  : "LOA request not found",
@@ -397,14 +382,10 @@ export async function end_loa(options: end_loa_options) {
   const { message_id, ender_id, client, guild_id } = options
 
   try {
-    console.log(`[ - LOA END - ] Looking for LOA with message_id: ${message_id}`)
-
     const loa = await db.find_one<loa_data>("loa_requests", { message_id })
 
-    console.log(`[ - LOA END - ] Found LOA:`, loa)
-
     if (!loa) {
-      console.error(`[ - LOA END - ] LOA request not found for message_id: ${message_id}`)
+      log.warn(`LOA request not found: ${message_id}`)
       return {
         success: false,
         error  : "LOA request not found",
@@ -422,11 +403,11 @@ export async function end_loa(options: end_loa_options) {
     if (guild) {
       const member = await guild.members.fetch(loa.user_id).catch(() => null)
       if (member) {
-        await member.roles.remove("1274580813912211477").catch(() => {})
-
+        const role_ops: Promise<any>[] = [member.roles.remove("1274580813912211477").catch(() => {})]
         if (loa.original_nickname) {
-          await member.setNickname(loa.original_nickname).catch(() => {})
+          role_ops.push(member.setNickname(loa.original_nickname).catch(() => {}))
         }
+        await Promise.all(role_ops)
       }
     }
 

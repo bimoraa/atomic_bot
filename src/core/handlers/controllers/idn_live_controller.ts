@@ -2,6 +2,7 @@ import axios              from "axios"
 import { Client }         from "discord.js"
 import { db, component }  from "../../../shared/utils"
 import { log_error }      from "../../../shared/utils/error_logger"
+import { Cache }          from "../../../shared/utils/cache"
 import * as idn_live      from "../../../infrastructure/api/idn_live"
 import * as showroom_live from "../../../infrastructure/api/showroom_live"
 
@@ -92,6 +93,9 @@ interface member_suggestion {
 
 type live_platform = "idn" | "showroom"
 
+// - IN-MEMORY CACHE FOR LIVE STATE — AVOIDS DB ROUND-TRIP ON EVERY 60S POLL CYCLE - \\
+const live_state_cache = new Cache<live_state_record>(2 * 60 * 1000, 200, 60 * 1000, "live_state")
+
 /**
  * - SEND LIVE NOTIFICATION TO CHANNEL - \\
  * @param {Client} client - Discord client
@@ -102,7 +106,8 @@ type live_platform = "idn" | "showroom"
  */
 async function send_live_channel_notification(client: Client, message: object, platform: string, live_key: string): Promise<void> {
   try {
-    const channel = await client.channels.fetch(LIVE_NOTIFICATION_CHANNEL_ID)
+    const channel = client.channels.cache.get(LIVE_NOTIFICATION_CHANNEL_ID)
+      || await client.channels.fetch(LIVE_NOTIFICATION_CHANNEL_ID)
     if (!channel || !("send" in channel)) {
       throw new Error("Channel not found or not sendable")
     }
@@ -549,12 +554,20 @@ export async function get_member_suggestions(options: { query: string; user_id: 
     const platform         = normalize_live_platform(options.platform || "idn")
     const suggestions_map  = new Map<string, member_suggestion>()
 
+    // - START SUBSCRIPTION FETCH IMMEDIATELY SO IT RUNS IN PARALLEL - \\
+    const subscriptions_promise = get_user_subscriptions(options.user_id, options.client)
+
     if (options.include_live !== false) {
       if (platform === "idn") {
-        const roster_members = await idn_live.get_idn_roster_members(options.client, {
-          max_wait_ms : 2000,
-          allow_stale : true,
-        })
+        // - ROSTER + LIVE FETCHES ARE INDEPENDENT — RUN IN PARALLEL - \\
+        const [roster_members, live_members] = await Promise.all([
+          idn_live.get_idn_roster_members(options.client, {
+            max_wait_ms : 2000,
+            allow_stale : true,
+          }),
+          idn_live.get_all_members(options.client),
+        ])
+
         for (const member of roster_members) {
           const key   = member.username.toLowerCase()
           const label = `${format_member_display_name(member.name)} (@${member.username})`
@@ -563,7 +576,6 @@ export async function get_member_suggestions(options: { query: string; user_id: 
           }
         }
 
-        const live_members = await idn_live.get_all_members(options.client)
         for (const member of live_members) {
           const key   = member.username.toLowerCase()
           const label = `${format_member_display_name(member.name)} (@${member.username})`
@@ -585,7 +597,7 @@ export async function get_member_suggestions(options: { query: string; user_id: 
       }
     }
 
-    const subscriptions = await get_user_subscriptions(options.user_id, options.client)
+    const subscriptions = await subscriptions_promise
     for (const subscription of subscriptions) {
       if (normalize_live_platform(subscription.type || "idn") !== platform) continue
       const key   = subscription.username.toLowerCase()
@@ -656,14 +668,20 @@ export async function get_currently_live(client: Client): Promise<{ success: boo
  */
 export async function check_and_notify_live_changes(client: Client): Promise<void> {
   try {
-    const idn_live_rooms      = await idn_live.get_live_rooms(client)
-    const showroom_live_rooms = await showroom_live.fetch_showroom_live_rooms(client)
+    const [idn_live_rooms, showroom_live_rooms] = await Promise.all([
+      idn_live.get_live_rooms(client),
+      showroom_live.fetch_showroom_live_rooms(client),
+    ])
 
-    await handle_notify_for_idn(client, idn_live_rooms)
-    await handle_notify_for_showroom(client, showroom_live_rooms)
+    await Promise.all([
+      handle_notify_for_idn(client, idn_live_rooms),
+      handle_notify_for_showroom(client, showroom_live_rooms),
+    ])
 
-    await cleanup_live_state(client, "idn", idn_live_rooms.map((room) => `idn:${room.slug || room.username}`))
-    await cleanup_live_state(client, "showroom", showroom_live_rooms.map((room) => `showroom:${room.room_id}`))
+    await Promise.all([
+      cleanup_live_state(client, "idn", idn_live_rooms.map((room) => `idn:${room.slug || room.username}`)),
+      cleanup_live_state(client, "showroom", showroom_live_rooms.map((room) => `showroom:${room.room_id}`)),
+    ])
   } catch (error) {
     await log_error(client, error as Error, "idn_live_check_and_notify", {})
   }
@@ -678,23 +696,34 @@ export async function check_and_notify_live_changes(client: Client): Promise<voi
 async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_room[]): Promise<void> {
   for (const room of live_rooms) {
     const live_key = `idn:${room.slug || room.username}`
+
+    // - CHECK IN-MEMORY CACHE FIRST — AVOIDS DB ON EVERY POLL CYCLE - \\
+    if (live_state_cache.get(live_key)) continue
+
     const existing_state = await db.find_one<live_state_record>(LIVE_STATE_COLLECTION, {
       live_key : live_key,
       is_live  : true,
     })
+    if (existing_state) {
+      live_state_cache.set(live_key, existing_state)
+      continue
+    }
+
     const legacy_state = await db.find_one<live_state_record>(LIVE_STATE_COLLECTION, {
       slug    : room.slug,
       is_live : true,
     })
-
-    if (existing_state || legacy_state) continue
+    if (legacy_state) {
+      live_state_cache.set(live_key, legacy_state)
+      continue
+    }
 
     const subscriptions = await db.find_many<notification_subscription>(NOTIFICATION_COLLECTION, {
       username : room.username,
     })
 
-    const filtered_subscriptions = subscriptions.filter((subscription) => {
-      return normalize_live_platform(subscription.type || "idn") === "idn"
+    const filtered_subscriptions = subscriptions.filter((sub) => {
+      return normalize_live_platform(sub.type || "idn") === "idn"
     })
 
     const channel_message = build_live_channel_message({
@@ -708,35 +737,35 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
 
     await send_live_channel_notification(client, channel_message, "idn", live_key)
 
-    const notified_users: string[] = []
+    // - BUILD DM ONCE, SEND TO ALL SUBSCRIBERS IN PARALLEL - \\
+    const dm_message = build_live_dm_message({
+      member_name : room.member_name,
+      viewers     : room.viewers,
+      started_at  : room.started_at,
+      url         : room.url,
+      image       : room.image,
+      platform    : "IDN Live",
+    })
 
-    for (const subscription of filtered_subscriptions) {
-      try {
-        const user = await client.users.fetch(subscription.user_id)
+    const notified_users = (await Promise.all(
+      filtered_subscriptions.map(async (sub) => {
+        try {
+          const user = await client.users.fetch(sub.user_id)
+          await user.send(dm_message)
+          console.log(`[ - IDN LIVE - ] Notified ${sub.user_id} about ${room.member_name} live`)
+          return sub.user_id
+        } catch (error) {
+          await log_error(client, error as Error, "idn_live_notify_user", {
+            user_id     : sub.user_id,
+            member_name : room.member_name,
+            slug        : room.slug,
+          })
+          return null
+        }
+      })
+    )).filter((id): id is string => id !== null)
 
-        const message = build_live_dm_message({
-          member_name : room.member_name,
-          viewers     : room.viewers,
-          started_at  : room.started_at,
-          url         : room.url,
-          image       : room.image,
-          platform    : "IDN Live",
-        })
-
-        await user.send(message)
-        notified_users.push(subscription.user_id)
-
-        console.log(`[ - IDN LIVE - ] Notified ${subscription.user_id} about ${room.member_name} live`)
-      } catch (error) {
-        await log_error(client, error as Error, "idn_live_notify_user", {
-          user_id     : subscription.user_id,
-          member_name : room.member_name,
-          slug        : room.slug,
-        })
-      }
-    }
-
-    await db.insert_one<live_state_record>(LIVE_STATE_COLLECTION, {
+    const state: live_state_record = {
       slug       : room.slug,
       username   : room.username,
       member_name: room.member_name,
@@ -749,7 +778,10 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
       notified   : notified_users,
       type       : "idn",
       live_key   : live_key,
-    })
+    }
+
+    await db.insert_one<live_state_record>(LIVE_STATE_COLLECTION, state)
+    live_state_cache.set(live_key, state)
   }
 }
 
@@ -762,12 +794,17 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
 async function handle_notify_for_showroom(client: Client, live_rooms: showroom_live.showroom_live_room[]): Promise<void> {
   for (const room of live_rooms) {
     const live_key = `showroom:${room.room_id}`
+
+    if (live_state_cache.get(live_key)) continue
+
     const existing_state = await db.find_one<live_state_record>(LIVE_STATE_COLLECTION, {
       live_key : live_key,
       is_live  : true,
     })
-
-    if (existing_state) continue
+    if (existing_state) {
+      live_state_cache.set(live_key, existing_state)
+      continue
+    }
 
     const subscriptions = await db.find_many<notification_subscription>(NOTIFICATION_COLLECTION, {
       type    : "showroom",
@@ -785,35 +822,34 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
 
     await send_live_channel_notification(client, channel_message, "showroom", live_key)
 
-    const notified_users: string[] = []
+    const dm_message = build_live_dm_message({
+      member_name : room.member_name,
+      viewers     : room.viewers,
+      started_at  : room.started_at,
+      url         : room.url,
+      image       : room.image,
+      platform    : "Showroom",
+    })
 
-    for (const subscription of subscriptions) {
-      try {
-        const user = await client.users.fetch(subscription.user_id)
+    const notified_users = (await Promise.all(
+      subscriptions.map(async (sub) => {
+        try {
+          const user = await client.users.fetch(sub.user_id)
+          await user.send(dm_message)
+          console.log(`[ - SHOWROOM LIVE - ] Notified ${sub.user_id} about ${room.member_name} live`)
+          return sub.user_id
+        } catch (error) {
+          await log_error(client, error as Error, "showroom_live_notify_user", {
+            user_id     : sub.user_id,
+            member_name : room.member_name,
+            room_id     : room.room_id,
+          })
+          return null
+        }
+      })
+    )).filter((id): id is string => id !== null)
 
-        const message = build_live_dm_message({
-          member_name : room.member_name,
-          viewers     : room.viewers,
-          started_at  : room.started_at,
-          url         : room.url,
-          image       : room.image,
-          platform    : "Showroom",
-        })
-
-        await user.send(message)
-        notified_users.push(subscription.user_id)
-
-        console.log(`[ - SHOWROOM LIVE - ] Notified ${subscription.user_id} about ${room.member_name} live`)
-      } catch (error) {
-        await log_error(client, error as Error, "showroom_live_notify_user", {
-          user_id     : subscription.user_id,
-          member_name : room.member_name,
-          room_id     : room.room_id,
-        })
-      }
-    }
-
-    await db.insert_one<live_state_record>(LIVE_STATE_COLLECTION, {
+    const state: live_state_record = {
       slug       : "",
       room_id    : room.room_id,
       username   : room.member_name,
@@ -827,7 +863,10 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
       notified   : notified_users,
       type       : "showroom",
       live_key   : live_key,
-    })
+    }
+
+    await db.insert_one<live_state_record>(LIVE_STATE_COLLECTION, state)
+    live_state_cache.set(live_key, state)
   }
 }
 
@@ -839,62 +878,71 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
  * @returns {Promise<void>}
  */
 async function cleanup_live_state(client: Client, platform: live_platform, active_keys: string[]): Promise<void> {
+  const active_key_set = new Set(active_keys)
+
+  // - FILTER BY PLATFORM AT DB LEVEL — ELIMINATES REDUNDANT FULL-TABLE SCAN - \\
   const active_states = await db.find_many<live_state_record>(LIVE_STATE_COLLECTION, {
     is_live : true,
+    type    : platform,
   })
 
-  for (const state of active_states) {
-    if (normalize_live_platform(state.type || "idn") !== platform) continue
-    if (!active_keys.includes(state.live_key)) {
-      const ended_at = Date.now()
-      const platform_label = platform === "showroom" ? "showroom" : "idn"
-      const history_key = state.live_key || `${platform_label}:${state.slug || state.username || state.room_id || "unknown"}`
-      const base_record: live_history_record = {
-        platform      : platform_label,
-        member_name   : state.member_name || state.username || "Unknown",
-        title         : state.title || "",
-        url           : state.url || "",
-        image         : state.image || "",
-        viewers       : state.viewers || 0,
-        comments      : 0,
-        comment_users : 0,
-        total_gold    : 0,
-        started_at    : state.started_at || ended_at,
-        ended_at      : ended_at,
-        duration_ms   : 0,
-        live_key      : history_key,
-      }
+  const ended_states = active_states.filter((state) => !active_key_set.has(state.live_key))
 
-      const enrich = platform === "showroom"
-        ? await fetch_showroom_history(client, state.room_id || 0)
-        : await fetch_idn_history(client, state.slug || "")
-
-      const final_started_at = enrich.started_at || base_record.started_at
-      const final_ended_at = enrich.ended_at || base_record.ended_at
-      const duration_ms = Math.max(0, final_ended_at - final_started_at)
-
-      const history_record: live_history_record = {
-        ...base_record,
-        comments      : enrich.comments ?? base_record.comments,
-        comment_users : enrich.comment_users ?? base_record.comment_users,
-        total_gold    : enrich.total_gold ?? base_record.total_gold,
-        viewers       : enrich.viewers ?? base_record.viewers,
-        started_at    : final_started_at,
-        ended_at      : final_ended_at,
-        duration_ms   : duration_ms,
-      }
-
-      const existing_history = await db.find_one<live_history_record>("live_history", {
-        live_key : history_key,
-      })
-
-      if (!existing_history) {
-        await db.insert_one<live_history_record>("live_history", history_record)
-      }
-      await db.delete_one(LIVE_STATE_COLLECTION, { _id: state._id })
-      console.log(`[ - ${platform.toUpperCase()} LIVE - ] Stream ended for ${state.username}`)
+  // - PROCESS ALL ENDED STREAMS IN PARALLEL (HISTORY FETCH + DB OPS) - \\
+  await Promise.all(ended_states.map(async (state) => {
+    const ended_at       = Date.now()
+    const history_key    = state.live_key || `${platform}:${state.slug || state.username || state.room_id || "unknown"}`
+    const base_record: live_history_record = {
+      platform      : platform,
+      member_name   : state.member_name || state.username || "Unknown",
+      title         : state.title || "",
+      url           : state.url || "",
+      image         : state.image || "",
+      viewers       : state.viewers || 0,
+      comments      : 0,
+      comment_users : 0,
+      total_gold    : 0,
+      started_at    : state.started_at || ended_at,
+      ended_at      : ended_at,
+      duration_ms   : 0,
+      live_key      : history_key,
     }
-  }
+
+    const enrich = platform === "showroom"
+      ? await fetch_showroom_history(client, state.room_id || 0)
+      : await fetch_idn_history(client, state.slug || "")
+
+    const final_started_at = enrich.started_at || base_record.started_at
+    const final_ended_at   = enrich.ended_at   || base_record.ended_at
+
+    const history_record: live_history_record = {
+      ...base_record,
+      comments      : enrich.comments      ?? base_record.comments,
+      comment_users : enrich.comment_users ?? base_record.comment_users,
+      total_gold    : enrich.total_gold    ?? base_record.total_gold,
+      viewers       : enrich.viewers       ?? base_record.viewers,
+      started_at    : final_started_at,
+      ended_at      : final_ended_at,
+      duration_ms   : Math.max(0, final_ended_at - final_started_at),
+    }
+
+    const existing_history = await db.find_one<live_history_record>("live_history", {
+      live_key : history_key,
+    })
+
+    if (!existing_history) {
+      await db.insert_one<live_history_record>("live_history", history_record)
+    }
+
+    // - USE live_key FOR DELETE — _id IS NEVER STORED IN generic_data JSONB - \\
+    const delete_filter = state.live_key
+      ? { live_key: state.live_key }
+      : { slug: state.slug, is_live: true, type: state.type }
+
+    live_state_cache.delete(state.live_key)
+    await db.delete_one(LIVE_STATE_COLLECTION, delete_filter)
+    console.log(`[ - ${platform.toUpperCase()} LIVE - ] Stream ended for ${state.username}`)
+  }))
 }
 
 /**

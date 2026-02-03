@@ -28,6 +28,11 @@ const roster_cache      = {
   data       : [] as jkt48_member[],
   fetched_at : 0,
 }
+const live_data_cache   = {
+  data       : [] as idn_livestream[],
+  fetched_at : 0,
+}
+const LIVE_DATA_CACHE_TTL = 30 * 1000
 
 export interface idn_user {
   name     : string
@@ -635,6 +640,11 @@ async function fetch_idn_roster(client: Client): Promise<jkt48_member[]> {
  * @returns {Promise<idn_livestream[]>} IDN Live data
  */
 async function fetch_idn_live_data(client: Client): Promise<idn_livestream[]> {
+  const now = Date.now()
+  if (live_data_cache.fetched_at > 0 && (now - live_data_cache.fetched_at) < LIVE_DATA_CACHE_TTL) {
+    return live_data_cache.data
+  }
+
   try {
     const live_streams = await fetch_all_idn_lives(client)
     if (!live_streams.length) {
@@ -676,7 +686,10 @@ async function fetch_idn_live_data(client: Client): Promise<idn_livestream[]> {
       })
     )
 
-    return mapped.filter((stream) => stream.slug && stream.user?.username)
+    const result = mapped.filter((stream) => stream.slug && stream.user?.username)
+    live_data_cache.data       = result
+    live_data_cache.fetched_at = Date.now()
+    return result
   } catch (error) {
     await log_error(client, error as Error, "idn_live_fetch_data", {})
     return []

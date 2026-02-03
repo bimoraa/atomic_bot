@@ -1,6 +1,7 @@
 import { Client } from "discord.js"
-import { db, api, component } from "../../utils"
+import { db, api, component, logger } from "../../utils"
 
+const log           = logger.create_logger("loa_checker")
 const is_dev        = process.env.NODE_ENV === "development"
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN
 
@@ -31,21 +32,22 @@ export async function check_expired_loa(client: Client): Promise<void> {
       end_date: { $lte: now },
     } as any)
 
-    for (const loa of expired_loas) {
+    await Promise.all(expired_loas.map(async (loa) => {
       try {
-        if (!loa.guild_id || !discord_token) continue
+        if (!loa.guild_id || !discord_token) return
 
         const guild  = client.guilds.cache.get(loa.guild_id)
-        if (!guild) continue
+        if (!guild) return
 
         const member = await guild.members.fetch(loa.user_id).catch(() => null)
-        if (!member) continue
+        if (!member) return
 
-        await member.roles.remove("1274580813912211477").catch(() => {})
-        
+        // - ROLE REMOVE + NICKNAME RESTORE IN PARALLEL - \\
+        const role_ops: Promise<any>[] = [member.roles.remove("1274580813912211477").catch(() => {})]
         if (loa.original_nickname) {
-          await member.setNickname(loa.original_nickname).catch(() => {})
+          role_ops.push(member.setNickname(loa.original_nickname).catch(() => {}))
         }
+        await Promise.all(role_ops)
 
         const dm_message = component.build_message({
           components: [
@@ -73,15 +75,15 @@ export async function check_expired_loa(client: Client): Promise<void> {
 
         await db.update_one("loa_requests", { id: loa.id }, { status: "ended" })
       } catch (err) {
-        console.error(`[LOA] Failed to end LOA for ${loa.user_tag}:`, err)
+        log.error(`Failed to end LOA for ${loa.user_tag}: ${(err as Error).message}`)
       }
-    }
+    }))
 
     if (expired_loas.length > 0) {
-      console.log(`[LOA] Ended ${expired_loas.length} expired LOA(s)`)
+      log.info(`Ended ${expired_loas.length} expired LOA(s)`)
     }
   } catch (err) {
-    console.error("[LOA] Failed to check expired LOAs:", err)
+    log.error(`Failed to check expired LOAs: ${(err as Error).message}`)
   }
 }
 
@@ -92,5 +94,5 @@ export function start_loa_checker(client: Client): void {
     check_expired_loa(client)
   }, 60 * 60 * 1000)
 
-  console.log("[LOA] Checker started (runs every hour)")
+  log.info("Checker started (runs every hour)")
 }
