@@ -6,6 +6,7 @@ import * as showroom_live from "../../../infrastructure/api/showroom_live"
 
 const NOTIFICATION_COLLECTION = "idn_live_notifications"
 const LIVE_STATE_COLLECTION   = "idn_live_state"
+const LIVE_NOTIFICATION_CHANNEL_ID = "1468291039889588326"
 
 function normalize_idn_username(input: string): string {
   return input.toLowerCase().replace(/^@/, "").replace(/\s+/g, "")
@@ -53,11 +54,32 @@ interface live_state_record {
   slug      : string
   room_id?  : number
   username  : string
+  member_name?: string
   is_live   : boolean
   started_at: number
+  title?    : string
+  url?      : string
+  image?    : string
+  viewers?  : number
   notified  : string[]
   type      : string
   live_key  : string
+}
+
+interface live_history_record {
+  _id?         : any
+  platform     : string
+  member_name  : string
+  title        : string
+  url          : string
+  image        : string
+  viewers      : number
+  comments     : number
+  comment_users: number
+  total_gold   : number
+  started_at   : number
+  ended_at     : number
+  duration_ms  : number
 }
 
 interface member_suggestion {
@@ -66,6 +88,136 @@ interface member_suggestion {
 }
 
 type live_platform = "idn" | "showroom"
+
+/**
+ * - SEND LIVE NOTIFICATION TO CHANNEL - \\
+ * @param {Client} client - Discord client
+ * @param {object} message - Message payload
+ * @param {string} platform - Platform name
+ * @param {string} live_key - Live key
+ * @returns {Promise<void>}
+ */
+async function send_live_channel_notification(client: Client, message: object, platform: string, live_key: string): Promise<void> {
+  try {
+    const channel = await client.channels.fetch(LIVE_NOTIFICATION_CHANNEL_ID)
+    if (!channel || !("send" in channel)) {
+      throw new Error("Channel not found or not sendable")
+    }
+
+    await (channel as any).send(message)
+    console.log(`[ - ${platform.toUpperCase()} LIVE - ] Sent channel notification for ${live_key}`)
+  } catch (error) {
+    await log_error(client, error as Error, "live_channel_notify", {
+      platform : platform,
+      live_key : live_key,
+      channel_id: LIVE_NOTIFICATION_CHANNEL_ID,
+    })
+  }
+}
+
+/**
+ * - BUILD LIVE DM MESSAGE - \\
+ * @param {object} options - Message options
+ * @param {string} options.member_name - Member name
+ * @param {number} options.viewers - Viewer count
+ * @param {number} options.started_at - Started timestamp
+ * @param {string} options.url - Stream URL
+ * @param {string} options.image - Thumbnail image
+ * @param {string} options.platform - Platform label
+ * @returns {object} Message payload
+ */
+function build_live_dm_message(options: {
+  member_name : string
+  viewers     : number
+  started_at  : number
+  url         : string
+  image       : string
+  platform    : string
+}): object {
+  const started_timestamp = Math.floor(options.started_at / 1000)
+
+  return component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.section({
+            content   : `## Oshi Kamu ${options.member_name} Lagi Live nih!`,
+            accessory : component.link_button("Watch", options.url),
+          }),
+          component.divider(2),
+          component.section({
+            content: [
+              `- **Viewers:** ${options.viewers.toLocaleString()}`,
+              `- **Started:** <t:${started_timestamp}:R>`,
+              `- **Watch URL:** ${options.url}`,
+              `- **Platform**: ${options.platform}`,
+            ],
+            accessory : options.image ? component.thumbnail(options.image) : undefined,
+          }),
+        ],
+      }),
+      component.container({
+        components: [
+          component.action_row(
+            component.link_button("Tonton Live", options.url)
+          ),
+        ],
+      }),
+    ],
+  })
+}
+
+/**
+ * - BUILD LIVE CHANNEL MESSAGE - \\
+ * @param {object} options - Message options
+ * @param {string} options.member_name - Member name
+ * @param {number} options.viewers - Viewer count
+ * @param {number} options.started_at - Started timestamp
+ * @param {string} options.url - Stream URL
+ * @param {string} options.image - Thumbnail image
+ * @param {string} options.platform - Platform label
+ * @returns {object} Message payload
+ */
+function build_live_channel_message(options: {
+  member_name : string
+  viewers     : number
+  started_at  : number
+  url         : string
+  image       : string
+  platform    : string
+}): object {
+  const started_timestamp = Math.floor(options.started_at / 1000)
+
+  return component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.section({
+            content   : `## ${options.member_name} Lagi Live nih!`,
+            accessory : component.link_button("Watch", options.url),
+          }),
+          component.divider(2),
+          component.section({
+            content: [
+              `- **Viewers:** ${options.viewers.toLocaleString()}`,
+              `- **Started:** <t:${started_timestamp}:R>`,
+              `- **Watch URL:** ${options.url}`,
+              `- **Platform**: ${options.platform}`,
+            ],
+            accessory : options.image ? component.thumbnail(options.image) : undefined,
+          }),
+        ],
+      }),
+      component.container({
+        components: [
+          component.action_row(
+            component.link_button("Tonton Live", options.url)
+          ),
+        ],
+      }),
+    ],
+  })
+}
 
 /**
  * - NORMALIZE LIVE PLATFORM - \\
@@ -427,7 +579,16 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
       return normalize_live_platform(subscription.type || "idn") === "idn"
     })
 
-    if (filtered_subscriptions.length === 0) continue
+    const channel_message = build_live_channel_message({
+      member_name : room.member_name,
+      viewers     : room.viewers,
+      started_at  : room.started_at,
+      url         : room.url,
+      image       : room.image,
+      platform    : "IDN Live",
+    })
+
+    await send_live_channel_notification(client, channel_message, "idn", live_key)
 
     const notified_users: string[] = []
 
@@ -435,17 +596,13 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
       try {
         const user = await client.users.fetch(subscription.user_id)
 
-        const message = component.build_message({
-          components: [
-            idn_live.format_live_component(room),
-            component.container({
-              components: [
-                component.action_row(
-                  component.link_button("Watch Stream", room.url)
-                ),
-              ],
-            }),
-          ],
+        const message = build_live_dm_message({
+          member_name : room.member_name,
+          viewers     : room.viewers,
+          started_at  : room.started_at,
+          url         : room.url,
+          image       : room.image,
+          platform    : "IDN Live",
         })
 
         await user.send(message)
@@ -464,6 +621,11 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
     await db.insert_one<live_state_record>(LIVE_STATE_COLLECTION, {
       slug       : room.slug,
       username   : room.username,
+      member_name: room.member_name,
+      title      : room.title,
+      url        : room.url,
+      image      : room.image,
+      viewers    : room.viewers,
       is_live    : true,
       started_at : room.started_at,
       notified   : notified_users,
@@ -494,7 +656,16 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
       room_id : room.room_id,
     })
 
-    if (subscriptions.length === 0) continue
+    const channel_message = build_live_channel_message({
+      member_name : room.member_name,
+      viewers     : room.viewers,
+      started_at  : room.started_at,
+      url         : room.url,
+      image       : room.image,
+      platform    : "Showroom",
+    })
+
+    await send_live_channel_notification(client, channel_message, "showroom", live_key)
 
     const notified_users: string[] = []
 
@@ -502,17 +673,13 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
       try {
         const user = await client.users.fetch(subscription.user_id)
 
-        const message = component.build_message({
-          components: [
-            showroom_live.format_showroom_live_component(room),
-            component.container({
-              components: [
-                component.action_row(
-                  component.link_button("Watch Stream", room.url)
-                ),
-              ],
-            }),
-          ],
+        const message = build_live_dm_message({
+          member_name : room.member_name,
+          viewers     : room.viewers,
+          started_at  : room.started_at,
+          url         : room.url,
+          image       : room.image,
+          platform    : "Showroom",
         })
 
         await user.send(message)
@@ -532,6 +699,11 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
       slug       : "",
       room_id    : room.room_id,
       username   : room.member_name,
+      member_name: room.member_name,
+      title      : room.title,
+      url        : room.url,
+      image      : room.image,
+      viewers    : room.viewers,
       is_live    : true,
       started_at : room.started_at,
       notified   : notified_users,
@@ -556,6 +728,26 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
   for (const state of active_states) {
     if (normalize_live_platform(state.type || "idn") !== platform) continue
     if (!active_keys.includes(state.live_key)) {
+      const ended_at = Date.now()
+      const started_at = state.started_at || ended_at
+      const duration_ms = Math.max(0, ended_at - started_at)
+      const platform_label = platform === "showroom" ? "showroom" : "idn"
+      const history_record: live_history_record = {
+        platform      : platform_label,
+        member_name   : state.member_name || state.username || "Unknown",
+        title         : state.title || "",
+        url           : state.url || "",
+        image         : state.image || "",
+        viewers       : state.viewers || 0,
+        comments      : 0,
+        comment_users : 0,
+        total_gold    : 0,
+        started_at    : started_at,
+        ended_at      : ended_at,
+        duration_ms   : duration_ms,
+      }
+
+      await db.insert_one<live_history_record>("live_history", history_record)
       await db.delete_one(LIVE_STATE_COLLECTION, { _id: state._id })
       console.log(`[ - ${platform.toUpperCase()} LIVE - ] Stream ended for ${state.username}`)
     }
