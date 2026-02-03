@@ -7,16 +7,22 @@ import axios           from "axios"
 import { Client }      from "discord.js"
 import { log_error }   from "../../shared/utils/error_logger"
 
-const IDN_LIVE_BASE     = "https://www.idn.app"
-const IDN_MOBILE_API    = "https://mobile-api.idntimes.com/v3/livestreams"
-const IDN_DETAIL_API    = "https://api.idn.app/api/v4/livestream"
-const IDN_GRAPHQL_API   = "https://api.idn.app/graphql"
-const IDN_MOBILE_KEY    = "1ccc5bc4-8bb4-414c-b524-92d11a85a818"
-const IDN_DETAIL_KEY    = "123f4c4e-6ce1-404d-8786-d17e46d65b5c"
-const IDN_USER_AGENT    = "IDN/6.41.1 (com.idntimes.IDNTimes; build:745; iOS 17.2.1) Alamofire/5.1.0"
-const IDN_DETAIL_AGENT  = "Android/14/SM-A528B/6.47.4"
+const IDN_LIVE_BASE        = "https://www.idn.app"
+const IDN_MOBILE_API       = "https://mobile-api.idntimes.com/v3/livestreams"
+const IDN_DETAIL_API       = "https://api.idn.app/api/v4/livestream"
+const IDN_GRAPHQL_API      = "https://api.idn.app/graphql"
+const IDN_ROSTER_API_BASE  = process.env.JKT48_SHOWROOM_API_BASE || "https://jkt48showroom-api.vercel.app/api"
+const IDN_MOBILE_KEY       = "1ccc5bc4-8bb4-414c-b524-92d11a85a818"
+const IDN_DETAIL_KEY       = "123f4c4e-6ce1-404d-8786-d17e46d65b5c"
+const IDN_USER_AGENT       = "IDN/6.41.1 (com.idntimes.IDNTimes; build:745; iOS 17.2.1) Alamofire/5.1.0"
+const IDN_DETAIL_AGENT     = "Android/14/SM-A528B/6.47.4"
+const IDN_ROSTER_TTL_MS    = 1000 * 60 * 60 * 6
 
 const detail_cache      = new Map<string, string>()
+const roster_cache      = {
+  data       : [] as jkt48_member[],
+  fetched_at : 0,
+}
 
 export interface idn_user {
   name     : string
@@ -73,6 +79,26 @@ function normalize_live_timestamp(live_at: number | string): string {
   const base_ms = Number.isFinite(numeric) ? numeric : Date.now()
   const ms      = base_ms < 1_000_000_000_000 ? base_ms * 1000 : base_ms
   return new Date(ms).toISOString()
+}
+
+/**
+ * - MATCH MEMBER SEARCH - \\
+ * @param {jkt48_member[]} members - Member list
+ * @param {string} search - Search keyword
+ * @returns {jkt48_member | null} Matched member
+ */
+function match_member_search(members: jkt48_member[], search: string): jkt48_member | null {
+  const normalized_search = search.toLowerCase().trim()
+
+  return members.find((member) => {
+    const member_name = member.name.toLowerCase()
+    const username    = member.username.toLowerCase()
+
+    return member_name.includes(normalized_search)
+      || username.includes(normalized_search)
+      || normalized_search.includes(member_name)
+      || normalized_search.includes(username)
+  }) || null
 }
 
 /**
@@ -235,6 +261,60 @@ async function fetch_public_profile_by_username(username: string, client: Client
 }
 
 /**
+ * - FETCH IDN ROSTER - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<jkt48_member[]>} Roster list
+ */
+async function fetch_idn_roster(client: Client): Promise<jkt48_member[]> {
+  try {
+    const response = await axios.get(`${IDN_ROSTER_API_BASE}/idn_user`, {
+      timeout : 15000,
+      headers : {
+        "User-Agent" : "JKT48-Discord-Bot/2.0",
+        "Accept"     : "application/json",
+      },
+    })
+
+    const data = response.data?.data || response.data?.users || response.data || []
+    if (!Array.isArray(data)) return []
+
+    return data.map((member: any) => {
+      const username = member.username
+        || member.idn_username
+        || member.idn?.username
+        || member.user?.username
+        || member.idn
+        || ""
+      const name = member.name
+        || member.member_name
+        || member.nickname
+        || member.user?.name
+        || "Unknown"
+      const image = member.avatar
+        || member.image
+        || member.img
+        || member.profile_image
+        || member.user?.avatar
+        || ""
+
+      return {
+        slug     : "",
+        name     : name,
+        username : username,
+        url      : username ? `${IDN_LIVE_BASE}/${username}` : "",
+        image    : image,
+        is_live  : false,
+      } as jkt48_member
+    }).filter((member: jkt48_member) => member.username)
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_fetch_roster", {
+      base_url : IDN_ROSTER_API_BASE,
+    })
+    return []
+  }
+}
+
+/**
  * - FETCH IDN LIVE DATA - \\
  * @param {Client} client - Discord client
  * @returns {Promise<idn_livestream[]>} IDN Live data
@@ -311,6 +391,28 @@ export async function get_all_members(client: Client): Promise<jkt48_member[]> {
 }
 
 /**
+ * - GET IDN ROSTER MEMBERS - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<jkt48_member[]>} IDN roster members
+ */
+export async function get_idn_roster_members(client: Client): Promise<jkt48_member[]> {
+  try {
+    const now = Date.now()
+    if (roster_cache.data.length > 0 && (now - roster_cache.fetched_at) < IDN_ROSTER_TTL_MS) {
+      return roster_cache.data
+    }
+
+    const members = await fetch_idn_roster(client)
+    roster_cache.data       = members
+    roster_cache.fetched_at = now
+    return members
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_get_roster_members", {})
+    return roster_cache.data
+  }
+}
+
+/**
  * - GET LIVE ROOMS - \\
  * @param {Client} client - Discord client
  * @returns {Promise<live_room[]>} List of currently live IDN streams
@@ -353,19 +455,24 @@ export async function get_live_rooms(client: Client): Promise<live_room[]> {
 export async function get_member_by_name(name: string, client: Client): Promise<jkt48_member | null> {
   try {
     const live_streams      = await fetch_idn_live_data(client)
-    const normalized_search = name.toLowerCase().trim()
-
     const found_stream = live_streams.find((stream) => {
       const member_name = stream.user.name.toLowerCase()
       const username    = stream.user.username.toLowerCase()
+      const search      = name.toLowerCase().trim()
 
-      return member_name.includes(normalized_search)
-        || username.includes(normalized_search)
-        || normalized_search.includes(member_name)
-        || normalized_search.includes(username)
+      return member_name.includes(search)
+        || username.includes(search)
+        || search.includes(member_name)
+        || search.includes(username)
     })
 
     if (!found_stream) {
+      const roster_members = await get_idn_roster_members(client)
+      const roster_match   = match_member_search(roster_members, name)
+      if (roster_match) {
+        return roster_match
+      }
+
       const candidates = build_username_candidates(name)
       for (const candidate of candidates) {
         const profile = await fetch_public_profile_by_username(candidate, client)

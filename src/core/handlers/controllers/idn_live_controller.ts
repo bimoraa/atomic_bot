@@ -269,6 +269,15 @@ export async function get_member_suggestions(options: { query: string; user_id: 
 
     if (options.include_live !== false) {
       if (platform === "idn") {
+        const roster_members = await idn_live.get_idn_roster_members(options.client)
+        for (const member of roster_members) {
+          const key   = member.username.toLowerCase()
+          const label = `${format_member_display_name(member.name)} (@${member.username})`
+          if (!suggestions_map.has(key)) {
+            suggestions_map.set(key, { name: label, value: member.username })
+          }
+        }
+
         const live_members = await idn_live.get_all_members(options.client)
         for (const member of live_members) {
           const key   = member.username.toLowerCase()
