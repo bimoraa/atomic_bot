@@ -653,7 +653,7 @@ export async function check_and_notify_live_changes(client: Client): Promise<voi
     await handle_notify_for_idn(client, idn_live_rooms)
     await handle_notify_for_showroom(client, showroom_live_rooms)
 
-    await cleanup_live_state(client, "idn", idn_live_rooms.map((room) => `idn:${room.slug}`))
+    await cleanup_live_state(client, "idn", idn_live_rooms.map((room) => `idn:${room.slug || room.username}`))
     await cleanup_live_state(client, "showroom", showroom_live_rooms.map((room) => `showroom:${room.room_id}`))
   } catch (error) {
     await log_error(client, error as Error, "idn_live_check_and_notify", {})
@@ -668,7 +668,7 @@ export async function check_and_notify_live_changes(client: Client): Promise<voi
  */
 async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_room[]): Promise<void> {
   for (const room of live_rooms) {
-    const live_key = `idn:${room.slug}`
+    const live_key = `idn:${room.slug || room.username}`
     const existing_state = await db.find_one<live_state_record>(LIVE_STATE_COLLECTION, {
       live_key : live_key,
       is_live  : true,

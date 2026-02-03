@@ -641,9 +641,16 @@ async function fetch_idn_live_data(client: Client): Promise<idn_livestream[]> {
       return []
     }
 
+    const cfg_members = await load_idn_cfg_members(client)
+    const cfg_usernames = new Set(
+      cfg_members
+        .map((member) => member.username.toLowerCase())
+        .filter(Boolean)
+    )
+
     const filtered_streams = live_streams.filter((stream: any) => {
       const username = stream?.creator?.username?.toLowerCase() || ""
-      return username.includes("jkt48")
+      return username.includes("jkt48") || cfg_usernames.has(username)
     })
 
     const mapped = await Promise.all(
