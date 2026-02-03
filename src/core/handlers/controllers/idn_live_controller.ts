@@ -82,6 +82,7 @@ interface live_history_record {
   started_at   : number
   ended_at     : number
   duration_ms  : number
+  live_key?    : string
 }
 
 interface member_suggestion {
@@ -266,11 +267,13 @@ async function fetch_showroom_history(client: Client, room_id: number): Promise<
     const detail_response = await axios.get(detail_url, { timeout: 15000 })
     const detail = detail_response.data || {}
     const comments = detail?.live_info?.comments
+    const viewers = detail?.live_info?.viewers
 
     return {
       comments      : Number(comments?.num || 0),
       comment_users : Number(comments?.users || 0),
       total_gold    : Number(detail?.total_point || detail?.total_gifts || recent?.points || 0),
+      viewers       : Number(viewers?.num || viewers?.peak || viewers?.active || 0),
       started_at    : detail?.live_info?.date?.start ? new Date(detail.live_info.date.start).getTime() : undefined,
       ended_at      : detail?.live_info?.date?.end ? new Date(detail.live_info.date.end).getTime() : undefined,
     }
@@ -312,11 +315,17 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
       || detail?.chat_count
       || detail?.chat_room_count
       || 0
+    const viewers = detail?.view_count
+      || detail?.viewer_count
+      || detail?.viewers
+      || detail?.views
+      || 0
 
     return {
       total_gold    : Number(creator?.total_gold || 0),
       comments      : Number(comments || 0),
       comment_users : Number(detail?.comment_users || 0),
+      viewers       : Number(viewers || 0),
       started_at    : detail?.live_at ? Number(detail.live_at) * 1000 : undefined,
       ended_at      : detail?.end_at ? Number(detail.end_at) * 1000 : undefined,
     }
@@ -839,6 +848,7 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
     if (!active_keys.includes(state.live_key)) {
       const ended_at = Date.now()
       const platform_label = platform === "showroom" ? "showroom" : "idn"
+      const history_key = state.live_key || `${platform_label}:${state.slug || state.username || state.room_id || "unknown"}`
       const base_record: live_history_record = {
         platform      : platform_label,
         member_name   : state.member_name || state.username || "Unknown",
@@ -852,6 +862,7 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
         started_at    : state.started_at || ended_at,
         ended_at      : ended_at,
         duration_ms   : 0,
+        live_key      : history_key,
       }
 
       const enrich = platform === "showroom"
@@ -867,12 +878,19 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
         comments      : enrich.comments ?? base_record.comments,
         comment_users : enrich.comment_users ?? base_record.comment_users,
         total_gold    : enrich.total_gold ?? base_record.total_gold,
+        viewers       : enrich.viewers ?? base_record.viewers,
         started_at    : final_started_at,
         ended_at      : final_ended_at,
         duration_ms   : duration_ms,
       }
 
-      await db.insert_one<live_history_record>("live_history", history_record)
+      const existing_history = await db.find_one<live_history_record>("live_history", {
+        live_key : history_key,
+      })
+
+      if (!existing_history) {
+        await db.insert_one<live_history_record>("live_history", history_record)
+      }
       await db.delete_one(LIVE_STATE_COLLECTION, { _id: state._id })
       console.log(`[ - ${platform.toUpperCase()} LIVE - ] Stream ended for ${state.username}`)
     }

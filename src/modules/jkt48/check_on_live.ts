@@ -44,8 +44,17 @@ export const command: Command = {
             url         : room.url,
             image       : room.image,
           }))
-      const live_rooms = all_rooms
-        .filter((room) => room.url)
+
+      const room_map = new Map<string, typeof all_rooms[number]>()
+      for (const room of all_rooms) {
+        if (!room.url) continue
+        const key = [room.platform, room.member_name, room.url].join(":")
+        if (!room_map.has(key)) {
+          room_map.set(key, room)
+        }
+      }
+
+      const live_rooms = Array.from(room_map.values())
         .sort((a, b) => b.started_at - a.started_at)
 
       if (live_rooms.length === 0) {

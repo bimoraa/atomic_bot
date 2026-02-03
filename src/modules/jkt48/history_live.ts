@@ -16,6 +16,23 @@ interface live_history_record {
   started_at    : number
   ended_at      : number
   duration_ms   : number
+  live_key?     : string
+}
+
+/**
+ * - BUILD HISTORY KEY - \\
+ * @param {live_history_record} record - History record
+ * @returns {string} Unique key
+ */
+function build_history_key(record: live_history_record): string {
+  if (record.live_key) return record.live_key
+  return [
+    record.platform,
+    record.member_name,
+    record.started_at,
+    record.ended_at,
+    record.url,
+  ].join(":")
 }
 
 /**
@@ -67,7 +84,17 @@ export const command: Command = {
         "DESC"
       )
 
-      if (!history || history.length === 0) {
+      const history_map = new Map<string, live_history_record>()
+      for (const record of history) {
+        const key = build_history_key(record)
+        if (!history_map.has(key)) {
+          history_map.set(key, record)
+        }
+      }
+
+      const unique_history = Array.from(history_map.values())
+
+      if (!unique_history || unique_history.length === 0) {
         const empty_message = component.build_message({
           components: [
             component.container({
@@ -93,12 +120,12 @@ export const command: Command = {
       }
 
       const max_show = 5
-      const shown = history.slice(0, max_show)
+      const shown = unique_history.slice(0, max_show)
 
       const header_component = component.container({
         accent_color : null,
         components   : [
-          component.text(`## Live History ( ${history.length} )`),
+          component.text(`## Live History ( ${unique_history.length} )`),
         ],
       })
 
@@ -131,14 +158,14 @@ export const command: Command = {
         })
       })
 
-      const previous_member = history.length > 1
-        ? history[history.length - 1]?.member_name
+      const previous_member = unique_history.length > 1
+        ? unique_history[unique_history.length - 1]?.member_name
         : "None"
-      const next_member = history.length > 1
-        ? history[1]?.member_name
+      const next_member = unique_history.length > 1
+        ? unique_history[1]?.member_name
         : "None"
-      const previous_disabled = history.length <= 1
-      const next_disabled = history.length <= 1
+      const previous_disabled = unique_history.length <= 1
+      const next_disabled = unique_history.length <= 1
 
       const footer_component = component.container({
         components: [
