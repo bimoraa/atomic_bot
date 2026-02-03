@@ -76,7 +76,7 @@ export async function add_notification(options: { user_id: string; member_name: 
     if (!username) {
       return {
         success : false,
-        error   : "Please provide a valid member name or IDN username.",
+        error   : "Please provide a valid member name or IDN Live username.",
       }
     }
 
