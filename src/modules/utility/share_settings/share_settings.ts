@@ -111,9 +111,9 @@ export const command: Command = {
     .addStringOption((option) => option.setName("location").setDescription("Location").setRequired(true))
     .addStringOption((option) => option.setName("total_notification").setDescription("Total notification").setRequired(true))
     .addStringOption((option) => option.setName("rod_name").setDescription("Rod name").setAutocomplete(true).setRequired(true))
-    .addStringOption((option) => option.setName("rod_skin").setDescription("Rod skin").setAutocomplete(true).setRequired(false))
     .addStringOption((option) => option.setName("cancel_delay").setDescription("Cancel delay").setRequired(true))
-    .addStringOption((option) => option.setName("complete_delay").setDescription("Complete delay").setRequired(true)) as SlashCommandBuilder,
+    .addStringOption((option) => option.setName("complete_delay").setDescription("Complete delay").setRequired(true))
+    .addStringOption((option) => option.setName("rod_skin").setDescription("Rod skin").setAutocomplete(true).setRequired(false)) as SlashCommandBuilder,
 
   execute      : execute_share_settings,
   autocomplete : autocomplete_share_settings,
