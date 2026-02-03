@@ -21,6 +21,7 @@ import { handle_tempvoice_modal }        from "./modals/voice"
 import { handle_review_modal }           from "./modals/community"
 import { handle_music_modal }            from "./modals/music"
 import { handle_middleman_close_reason_modal } from "./modals/ticket"
+import { handle_share_settings_modal }   from "./modals/share_settings"
 import * as review_submit                from "./buttons/review/submit"
 import * as ask_staff_button             from "./buttons/ask/ask_staff"
 import * as ask_answer                   from "./buttons/ask/answer"
@@ -72,6 +73,9 @@ import * as middleman_buttons            from "./buttons/middleman"
 import * as bypass_support_type_select   from "./select_menus/bypass"
 import * as jkt48_history_live           from "./buttons/jkt48/history_live"
 import * as jkt48_check_on_live          from "./buttons/jkt48/check_on_live"
+import * as share_settings_select        from "./select_menus/share_settings/select"
+import * as share_settings_star          from "./buttons/share_settings/give_star"
+import * as share_settings_pagination    from "./buttons/share_settings/pagination"
 
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
@@ -201,6 +205,10 @@ export async function handle_interaction(
         await bypass_support_type_select.handle_bypass_support_type_select(interaction)
         return
       }
+      if (interaction.customId.startsWith("share_settings_select:")) {
+        await share_settings_select.handle_share_settings_select(interaction)
+        return
+      }
       if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return
       if (await handle_ticket_select_menu(interaction)) return
     } catch (err) {
@@ -311,6 +319,14 @@ export async function handle_interaction(
       }
       if (interaction.customId.startsWith("bypass_mobile_copy:")) {
         await bypass_mobile_copy.handle_bypass_mobile_copy(interaction)
+        return
+      }
+      if (interaction.customId.startsWith("share_settings_star:")) {
+        await share_settings_star.handle_give_star(interaction)
+        return
+      }
+      if (interaction.customId.startsWith("share_settings_prev:") || interaction.customId.startsWith("share_settings_next:")) {
+        await share_settings_pagination.handle_share_settings_pagination(interaction)
         return
       }
       if (interaction.customId === "free_get_script") {
@@ -497,6 +513,7 @@ export async function handle_interaction(
         await handle_music_modal(interaction)
         return
       }
+      if (await handle_share_settings_modal(interaction)) return
     } catch (err) {
       console.log("[modal] Error:", err)
       await log_error(client, err as Error, "ModalSubmit", {
