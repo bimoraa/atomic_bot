@@ -43,9 +43,9 @@ export function normalize_live_platform(value: string): live_platform {
 }
 
 /**
- * - BUILD HISTORY KEY - \\
+ * - BUILD HISTORY KEY FOR DEDUPLICATION - \\
  * @param {live_history_record} record - History record
- * @returns {string} Unique key
+ * @returns {string} Unique key for deduplication
  */
 function build_history_key(record: live_history_record): string {
   if (record.live_key) return record.live_key
@@ -106,7 +106,7 @@ export async function get_history_records(client: Client, platform: string): Pro
     return Array.from(history_map.values())
   } catch (error) {
     await log_error(client, error as Error, "live_history_get_records", {
-      platform : platform,
+      platform: platform,
     })
     return []
   }
@@ -257,7 +257,7 @@ export async function get_live_rooms(client: Client, platform: string): Promise<
       .sort((a, b) => b.started_at - a.started_at)
   } catch (error) {
     await log_error(client, error as Error, "live_rooms_get", {
-      platform : platform,
+      platform: platform,
     })
     return []
   }
@@ -356,7 +356,7 @@ export function build_live_message(options: {
   })
 
   return component.build_message({
-    components : [
+    components: [
       header_component,
       live_component,
       footer_component,
