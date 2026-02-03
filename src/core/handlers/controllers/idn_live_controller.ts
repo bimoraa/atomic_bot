@@ -6,10 +6,110 @@ import { Cache }          from "../../../shared/utils/cache"
 import * as idn_live      from "../../../infrastructure/api/idn_live"
 import * as showroom_live from "../../../infrastructure/api/showroom_live"
 
-const NOTIFICATION_COLLECTION = "idn_live_notifications"
-const LIVE_STATE_COLLECTION   = "idn_live_state"
-const LIVE_NOTIFICATION_CHANNEL_ID = "1468291039889588326"
-const HISTORY_API_BASE = process.env.JKT48_HISTORY_API_BASE || ""
+const NOTIFICATION_COLLECTION        = "idn_live_notifications"
+const LIVE_STATE_COLLECTION          = "idn_live_state"
+const LIVE_NOTIFICATION_CHANNEL_ID   = "1468291039889588326"
+const HISTORY_API_BASE               = process.env.JKT48_HISTORY_API_BASE || ""
+let __history_base_warned            = false
+
+/**
+ * - PICK FIRST VALID NUMBER - \\
+ * @param {Array<any>} candidates - Number candidates
+ * @returns {number | undefined} Parsed number
+ */
+function pick_number(candidates: Array<any>): number | undefined {
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) continue
+    const value = typeof candidate === "number" ? candidate : Number(candidate)
+    if (!Number.isNaN(value) && Number.isFinite(value)) {
+      return value
+    }
+  }
+  return undefined
+}
+
+/**
+ * - BUILD HISTORY DEBUG PAYLOAD - \\
+ * @param {object} payload - Raw payload
+ * @returns {object} Sanitized payload
+ */
+function build_history_debug_payload(payload: {
+  recent?: any
+  detail?: any
+  source?: string
+  extra?: Record<string, any>
+}): Record<string, any> {
+  const detail = payload.detail || {}
+  const recent = payload.recent || {}
+
+  return {
+    source : payload.source,
+    recent : {
+      data_id   : recent?.data_id,
+      points    : recent?.points || recent?.point,
+      viewers   : recent?.viewers || recent?.view_count,
+      comments  : recent?.comment_count || recent?.comments,
+      timestamp : recent?.date || recent?.time || recent?.created_at,
+    },
+    detail : {
+      live_info : detail?.live_info,
+      stats     : detail?.stats,
+      summary   : detail?.summary,
+      total     : {
+        total_gold    : detail?.total_gold || detail?.total_point || detail?.total_points || detail?.total_gifts,
+        comment_count : detail?.comment_count || detail?.comments_count || detail?.total_comment || detail?.total_comments,
+        viewer_count  : detail?.viewer_count || detail?.view_count || detail?.viewers,
+      },
+    },
+    extra  : payload.extra || {},
+  }
+}
+
+/**
+ * - FETCH IDN HISTORY STATS FALLBACK - \\
+ * @param {Client} client - Discord client
+ * @param {string} slug - IDN live slug
+ * @returns {Promise<Record<string, any>>} Stats payload
+ */
+async function fetch_idn_stats_fallback(client: Client, slug: string): Promise<Record<string, any>> {
+  const endpoints = [
+    `https://api.idn.app/api/v4/livestream/${slug}/stats`,
+    `https://api.idn.app/api/v4/livestream/${slug}/statistics`,
+    `https://api.idn.app/api/v4/livestream/${slug}/summary`,
+  ]
+
+  const errors: Array<{ endpoint: string; status?: number; message: string }> = []
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await axios.get(endpoint, {
+        timeout : 15000,
+        headers : {
+          "User-Agent" : "Android/14/SM-A528B/6.47.4",
+          "x-api-key"  : "123f4c4e-6ce1-404d-8786-d17e46d65b5c",
+        },
+      })
+
+      const payload = response.data?.data || response.data || {}
+      if (payload && Object.keys(payload).length > 0) {
+        return payload
+      }
+    } catch (error) {
+      const status = (error as any)?.response?.status
+      const message = (error as any)?.response?.data?.message || (error as Error).message
+      errors.push({ endpoint: endpoint, status: status, message: message })
+    }
+  }
+
+  if (errors.length > 0) {
+    await log_error(client, new Error("IDN history stats fallback failed"), "idn_history_stats_fetch", {
+      slug   : slug,
+      errors : errors,
+    })
+  }
+
+  return {}
+}
 
 function normalize_idn_username(input: string): string {
   return input.toLowerCase().replace(/^@/, "").replace(/\s+/g, "")
@@ -245,8 +345,27 @@ function build_history_url(path: string): string {
  * @returns {Promise<Partial<live_history_record>>} History data
  */
 async function fetch_showroom_history(client: Client, room_id: number): Promise<Partial<live_history_record>> {
-  if (!HISTORY_API_BASE || !room_id) {
+  if (!room_id) {
     return {}
+  }
+
+  if (!HISTORY_API_BASE) {
+    if (!__history_base_warned) {
+      __history_base_warned = true
+      await log_error(client, new Error("History API base not configured"), "showroom_history_config", {
+        env_key : "JKT48_HISTORY_API_BASE",
+      })
+    }
+
+    const fallback_metrics = await showroom_live.fetch_showroom_history_metrics(client, room_id)
+    return {
+      comments      : fallback_metrics.comments ?? 0,
+      comment_users : fallback_metrics.comment_users ?? 0,
+      total_gold    : fallback_metrics.total_gold ?? 0,
+      viewers       : fallback_metrics.viewers ?? 0,
+      started_at    : fallback_metrics.started_at,
+      ended_at      : fallback_metrics.ended_at,
+    }
   }
 
   try {
@@ -274,11 +393,76 @@ async function fetch_showroom_history(client: Client, room_id: number): Promise<
     const comments = detail?.live_info?.comments
     const viewers = detail?.live_info?.viewers
 
+    const comments_value = pick_number([
+      comments?.num,
+      comments?.count,
+      detail?.comment_count,
+      detail?.comments_count,
+      detail?.total_comment,
+      detail?.total_comments,
+      detail?.chat_count,
+      detail?.chat_room_count,
+      recent?.comment_count,
+      recent?.comments,
+    ])
+
+    const comment_users_value = pick_number([
+      comments?.users,
+      comments?.user,
+      detail?.comment_users,
+      detail?.unique_commenters,
+      detail?.unique_commenter,
+      detail?.unique_users,
+      recent?.comment_users,
+    ])
+
+    const total_gold_value = pick_number([
+      detail?.total_point,
+      detail?.total_points,
+      detail?.total_gifts,
+      detail?.total_gold,
+      detail?.point,
+      recent?.points,
+      recent?.point,
+      recent?.total_point,
+    ])
+
+    const viewers_value = pick_number([
+      viewers?.num,
+      viewers?.peak,
+      viewers?.active,
+      detail?.viewers,
+      detail?.viewer_count,
+      detail?.view_count,
+      recent?.viewers,
+    ])
+
+    if (!comments_value && !comment_users_value && !total_gold_value && !viewers_value) {
+      await log_error(client, new Error("Showroom history metrics empty"), "showroom_history_metrics_empty", build_history_debug_payload({
+        recent : recent,
+        detail : detail,
+        source : "history_api",
+        extra  : { room_id: room_id },
+      }))
+    }
+
+    if (!comments_value && !comment_users_value && !total_gold_value && !viewers_value) {
+      const fallback_metrics = await showroom_live.fetch_showroom_history_metrics(client, room_id)
+      return {
+        comments      : fallback_metrics.comments ?? 0,
+        comment_users : fallback_metrics.comment_users ?? 0,
+        total_gold    : fallback_metrics.total_gold ?? 0,
+        viewers       : fallback_metrics.viewers ?? 0,
+        started_at    : fallback_metrics.started_at ?? (detail?.live_info?.date?.start ? new Date(detail.live_info.date.start).getTime() : undefined),
+        ended_at      : fallback_metrics.ended_at ?? (detail?.live_info?.date?.end ? new Date(detail.live_info.date.end).getTime() : undefined),
+      }
+    }
+
     return {
-      comments      : Number(comments?.num || 0),
-      comment_users : Number(comments?.users || 0),
-      total_gold    : Number(detail?.total_point || detail?.total_gifts || recent?.points || 0),
-      viewers       : Number(viewers?.num || viewers?.peak || viewers?.active || 0),
+      comments      : comments_value ?? 0,
+      comment_users : comment_users_value ?? 0,
+      total_gold    : total_gold_value ?? 0,
+      viewers       : viewers_value ?? 0,
       started_at    : detail?.live_info?.date?.start ? new Date(detail.live_info.date.start).getTime() : undefined,
       ended_at      : detail?.live_info?.date?.end ? new Date(detail.live_info.date.end).getTime() : undefined,
     }
@@ -312,25 +496,111 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
 
     const detail = response.data?.data || response.data || {}
     const creator = detail?.creator || {}
-    const comments = detail?.comments
-      || detail?.comment
-      || detail?.comment_count
-      || detail?.total_comment
-      || detail?.total_comments
-      || detail?.chat_count
-      || detail?.chat_room_count
-      || 0
-    const viewers = detail?.view_count
-      || detail?.viewer_count
-      || detail?.viewers
-      || detail?.views
-      || 0
+    const stats = detail?.stats || detail?.live_stats || detail?.statistics
+
+    const comments_value = pick_number([
+      detail?.comments,
+      detail?.comment,
+      detail?.comment_count,
+      detail?.total_comment,
+      detail?.total_comments,
+      detail?.chat_count,
+      detail?.chat_room_count,
+      stats?.comment_count,
+      stats?.comments,
+      stats?.total_comment,
+      stats?.total_comments,
+    ])
+
+    const comment_users_value = pick_number([
+      detail?.comment_users,
+      detail?.unique_commenters,
+      detail?.unique_commenter,
+      detail?.unique_users,
+      stats?.comment_users,
+      stats?.unique_commenters,
+    ])
+
+    const viewers_value = pick_number([
+      detail?.view_count,
+      detail?.viewer_count,
+      detail?.viewers,
+      detail?.views,
+      stats?.view_count,
+      stats?.viewer_count,
+      stats?.viewers,
+    ])
+
+    const total_gold_value = pick_number([
+      creator?.total_gold,
+      detail?.total_gold,
+      detail?.total_point,
+      detail?.total_points,
+      detail?.total_gifts,
+      stats?.total_gold,
+      stats?.total_point,
+      stats?.total_points,
+      stats?.total_gifts,
+    ])
+
+    let fallback_payload: Record<string, any> | null = null
+
+    if (!comments_value && !comment_users_value && !viewers_value && !total_gold_value) {
+      fallback_payload = await fetch_idn_stats_fallback(client, slug)
+    }
+
+    const fallback_stats = fallback_payload?.stats || fallback_payload?.statistics || fallback_payload
+
+    const fallback_comments = pick_number([
+      fallback_stats?.comment_count,
+      fallback_stats?.comments,
+      fallback_stats?.total_comment,
+      fallback_stats?.total_comments,
+      fallback_payload?.comment_count,
+      fallback_payload?.comments,
+    ])
+
+    const fallback_comment_users = pick_number([
+      fallback_stats?.comment_users,
+      fallback_stats?.unique_commenters,
+      fallback_stats?.unique_users,
+      fallback_payload?.comment_users,
+      fallback_payload?.unique_commenters,
+    ])
+
+    const fallback_viewers = pick_number([
+      fallback_stats?.view_count,
+      fallback_stats?.viewer_count,
+      fallback_stats?.viewers,
+      fallback_payload?.view_count,
+      fallback_payload?.viewer_count,
+      fallback_payload?.viewers,
+    ])
+
+    const fallback_total_gold = pick_number([
+      fallback_stats?.total_gold,
+      fallback_stats?.total_point,
+      fallback_stats?.total_points,
+      fallback_stats?.total_gifts,
+      fallback_payload?.total_gold,
+      fallback_payload?.total_point,
+      fallback_payload?.total_points,
+      fallback_payload?.total_gifts,
+    ])
+
+    if (!comments_value && !comment_users_value && !viewers_value && !total_gold_value && !fallback_payload) {
+      await log_error(client, new Error("IDN history metrics empty"), "idn_history_metrics_empty", build_history_debug_payload({
+        detail : detail,
+        source : "idn_v4",
+        extra  : { slug: slug },
+      }))
+    }
 
     return {
-      total_gold    : Number(creator?.total_gold || 0),
-      comments      : Number(comments || 0),
-      comment_users : Number(detail?.comment_users || 0),
-      viewers       : Number(viewers || 0),
+      total_gold    : total_gold_value ?? fallback_total_gold ?? 0,
+      comments      : comments_value ?? fallback_comments ?? 0,
+      comment_users : comment_users_value ?? fallback_comment_users ?? 0,
+      viewers       : viewers_value ?? fallback_viewers ?? 0,
       started_at    : detail?.live_at ? Number(detail.live_at) * 1000 : undefined,
       ended_at      : detail?.end_at ? Number(detail.end_at) * 1000 : undefined,
     }

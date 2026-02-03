@@ -40,6 +40,57 @@ export interface showroom_live_room {
   url         : string
 }
 
+export interface showroom_history_metrics {
+  comments?      : number
+  comment_users? : number
+  total_gold?    : number
+  viewers?       : number
+  started_at?    : number
+  ended_at?      : number
+}
+
+/**
+ * - PICK FIRST VALID NUMBER - \\
+ * @param {Array<any>} candidates - Number candidates
+ * @returns {number | undefined} Parsed number
+ */
+function pick_number(candidates: Array<any>): number | undefined {
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) continue
+    const value = typeof candidate === "number" ? candidate : Number(candidate)
+    if (!Number.isNaN(value) && Number.isFinite(value)) {
+      return value
+    }
+  }
+  return undefined
+}
+
+/**
+ * - ENSURE SHOWROOM SESSION - \\
+ * @returns {Promise<void>} Void
+ */
+async function ensure_showroom_session(): Promise<void> {
+  if (!showroom_sr_id) {
+    await refresh_showroom_session()
+  }
+}
+
+/**
+ * - SHOWROOM GET WITH SESSION RETRY - \\
+ * @param {string} path - API path
+ * @param {object} params - Query params
+ * @returns {Promise<any>} Response data
+ */
+async function showroom_get_with_session(path: string, params: Record<string, any> = {}): Promise<any> {
+  try {
+    await ensure_showroom_session()
+    return await showroom_get(path, params)
+  } catch (error) {
+    await refresh_showroom_session().catch(() => {})
+    return await showroom_get(path, params)
+  }
+}
+
 /**
  * - EXTRACT SHOWROOM SR ID - \\
  * @param {string[] | string | undefined} set_cookie - Set-Cookie header value
@@ -256,6 +307,148 @@ export async function get_showroom_member_by_name(name: string, client: Client):
   })
 
   return found_member || null
+}
+
+/**
+ * - FETCH SHOWROOM HISTORY METRICS - \\
+ * @param {Client} client - Discord client
+ * @param {number} room_id - Showroom room ID
+ * @returns {Promise<showroom_history_metrics>} Metrics
+ */
+export async function fetch_showroom_history_metrics(client: Client, room_id: number): Promise<showroom_history_metrics> {
+  if (!room_id) return {}
+
+  try {
+    const live_data = await showroom_get_with_session("/room/get_live_data", { room_id: room_id })
+    const live_res = live_data?.live_res || live_data?.live || live_data?.live_data || {}
+
+    const comments_value = pick_number([
+      live_res?.comment_num,
+      live_res?.comment_count,
+      live_data?.comment_num,
+      live_data?.comment_count,
+    ])
+
+    const comment_users_value = pick_number([
+      live_res?.comment_users,
+      live_res?.comment_user,
+      live_res?.unique_commenters,
+      live_data?.comment_users,
+      live_data?.unique_commenters,
+    ])
+
+    const viewers_value = pick_number([
+      live_res?.view_uu,
+      live_res?.viewer_count,
+      live_res?.view_num,
+      live_data?.view_num,
+      live_data?.viewers,
+    ])
+
+    const started_at_raw = pick_number([
+      live_res?.started_at,
+      live_res?.live_started_at,
+      live_data?.started_at,
+    ])
+
+    const ended_at_raw = pick_number([
+      live_res?.ended_at,
+      live_res?.end_at,
+      live_data?.ended_at,
+      live_data?.end_at,
+    ])
+
+    let total_gold_value = pick_number([
+      live_res?.total_point,
+      live_res?.total_points,
+      live_res?.total_gifts,
+      live_res?.total_gold,
+      live_data?.total_point,
+      live_data?.total_points,
+      live_data?.total_gifts,
+    ])
+
+    if (total_gold_value === undefined) {
+      const summary = await showroom_get_with_session("/api/live/summary_ranking", { room_id: room_id })
+      const rankings = Array.isArray(summary?.ranking) ? summary.ranking : []
+
+      if (rankings.length > 0) {
+        total_gold_value = rankings.reduce((total: number, entry: any) => {
+          const points = pick_number([
+            entry?.point,
+            entry?.points,
+            entry?.total_point,
+            entry?.total_points,
+          ]) || 0
+          return total + points
+        }, 0)
+      }
+    }
+
+    if (total_gold_value === undefined) {
+      const gifts = await showroom_get_with_session("/api/live/gift_log", { room_id: room_id })
+      const gift_log = Array.isArray(gifts?.gift_log) ? gifts.gift_log : []
+
+      if (gift_log.length > 0) {
+        total_gold_value = gift_log.reduce((total: number, entry: any) => {
+          const unit_value = pick_number([
+            entry?.point,
+            entry?.gift_point,
+            entry?.price,
+            entry?.value,
+            entry?.total_point,
+            entry?.total_points,
+          ]) || 0
+          const count = pick_number([
+            entry?.gift_num,
+            entry?.num,
+            entry?.count,
+          ]) || 1
+          return total + (unit_value * count)
+        }, 0)
+      }
+    }
+
+    let comments_total = comments_value
+    let comment_users_total = comment_users_value
+
+    if (comments_total === undefined || comment_users_total === undefined) {
+      const comment_log = await showroom_get_with_session("/api/live/comment_log", { room_id: room_id })
+      const entries = Array.isArray(comment_log?.comment_log) ? comment_log.comment_log : []
+
+      if (comments_total === undefined) {
+        comments_total = entries.length
+      }
+
+      if (comment_users_total === undefined) {
+        const unique_users = new Set<string>()
+        for (const entry of entries) {
+          const user_id = entry?.user_id || entry?.user?.user_id || entry?.user?.id
+          if (user_id !== undefined && user_id !== null) {
+            unique_users.add(String(user_id))
+          }
+        }
+        comment_users_total = unique_users.size
+      }
+    }
+
+    const started_at = started_at_raw ? normalize_showroom_timestamp(started_at_raw) : undefined
+    const ended_at = ended_at_raw ? normalize_showroom_timestamp(ended_at_raw) : undefined
+
+    return {
+      comments      : comments_total,
+      comment_users : comment_users_total,
+      total_gold    : total_gold_value,
+      viewers       : viewers_value,
+      started_at    : started_at,
+      ended_at      : ended_at,
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "showroom_fetch_history_metrics", {
+      room_id : room_id,
+    })
+    return {}
+  }
 }
 
 /**
