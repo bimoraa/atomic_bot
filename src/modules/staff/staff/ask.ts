@@ -3,6 +3,7 @@ import {
   SlashCommandBuilder,
   TextChannel,
   ChannelType,
+  MessageType,
 } from "discord.js"
 import { Command }                      from "../../../shared/types/command"
 import { component, api }               from "../../../shared/utils"
@@ -91,6 +92,15 @@ export async function create_thread_for_message(
       await thread.send({
         content: `<@${user_id}> Staff will answer your question here.`,
       })
+
+      // - DELETE "STARTED A THREAD" SYSTEM MESSAGE - \\
+      try {
+        const recent = await channel.messages.fetch({ limit: 5 })
+        const system_msg = recent.find(
+          (msg) => msg.type === MessageType.ThreadCreated && msg.thread?.id === thread.id
+        )
+        if (system_msg) await system_msg.delete()
+      } catch {}
 
       return thread.id
     } catch (err) {
