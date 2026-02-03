@@ -10,6 +10,32 @@ function normalize_idn_username(input: string): string {
   return input.toLowerCase().replace(/^@/, "").replace(/\s+/g, "")
 }
 
+/**
+ * - FORMAT MEMBER DISPLAY NAME - \\
+ * @param {string} name - Member name
+ * @returns {string} Display name with JKT48 prefix
+ */
+function format_member_display_name(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return "JKT48"
+  if (trimmed.toLowerCase().startsWith("jkt48")) return trimmed
+  return `JKT48 ${trimmed}`
+}
+
+/**
+ * - TITLE CASE - \\
+ * @param {string} input - Text input
+ * @returns {string} Title-cased text
+ */
+function to_title_case(input: string): string {
+  return input
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ")
+}
+
 interface notification_subscription {
   _id?       : any
   user_id    : string
@@ -40,11 +66,12 @@ interface member_suggestion {
  */
 export async function add_notification(options: { user_id: string; member_name: string; client: Client }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    const member = await idn_live.get_member_by_name(options.member_name, options.client)
+    const member            = await idn_live.get_member_by_name(options.member_name, options.client)
     const fallback_username = normalize_idn_username(options.member_name)
-    const member_name = member?.name || options.member_name.trim()
-    const username    = member?.username || fallback_username
-    const slug        = member?.slug || ""
+    const raw_member_name   = member?.name || options.member_name.trim()
+    const member_name       = format_member_display_name(raw_member_name)
+    const username          = member?.username || fallback_username
+    const slug              = member?.slug || ""
 
     if (!username) {
       return {
@@ -96,10 +123,11 @@ export async function add_notification(options: { user_id: string; member_name: 
  */
 export async function remove_notification(options: { user_id: string; member_name: string; client: Client }): Promise<{ success: boolean; message?: string; error?: string }> {
   try {
-    const member = await idn_live.get_member_by_name(options.member_name, options.client)
+    const member            = await idn_live.get_member_by_name(options.member_name, options.client)
     const fallback_username = normalize_idn_username(options.member_name)
-    const member_name = member?.name || options.member_name.trim()
-    const username    = member?.username || fallback_username
+    const raw_member_name   = member?.name || options.member_name.trim()
+    const member_name       = format_member_display_name(raw_member_name)
+    const username          = member?.username || fallback_username
 
     const result = await db.delete_one(NOTIFICATION_COLLECTION, {
       user_id     : options.user_id,
@@ -158,7 +186,7 @@ export async function get_member_suggestions(options: { query: string; user_id: 
       const live_members = await idn_live.get_all_members(options.client)
       for (const member of live_members) {
         const key   = member.username.toLowerCase()
-        const label = `${member.name} (@${member.username})`
+        const label = `${format_member_display_name(member.name)} (@${member.username})`
         if (!suggestions_map.has(key)) {
           suggestions_map.set(key, { name: label, value: member.username })
         }
@@ -168,7 +196,7 @@ export async function get_member_suggestions(options: { query: string; user_id: 
     const subscriptions = await get_user_subscriptions(options.user_id, options.client)
     for (const subscription of subscriptions) {
       const key   = subscription.username.toLowerCase()
-      const label = `${subscription.member_name} (@${subscription.username})`
+      const label = `${format_member_display_name(subscription.member_name)} (@${subscription.username})`
       if (!suggestions_map.has(key)) {
         suggestions_map.set(key, { name: label, value: subscription.username })
       }
@@ -189,7 +217,8 @@ export async function get_member_suggestions(options: { query: string; user_id: 
       : true
 
     if (normalized_query && !has_exact && limited.length < 25) {
-      limited.unshift({ name: `Use: ${options.query}`, value: options.query })
+      const display_name = format_member_display_name(to_title_case(options.query))
+      limited.unshift({ name: display_name, value: options.query })
     }
 
     return limited.slice(0, 25)
