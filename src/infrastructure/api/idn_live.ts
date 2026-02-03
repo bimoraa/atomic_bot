@@ -10,6 +10,7 @@ import { log_error }   from "../../shared/utils/error_logger"
 const IDN_LIVE_BASE     = "https://www.idn.app"
 const IDN_MOBILE_API    = "https://mobile-api.idntimes.com/v3/livestreams"
 const IDN_DETAIL_API    = "https://api.idn.app/api/v4/livestream"
+const IDN_GRAPHQL_API   = "https://api.idn.app/graphql"
 const IDN_MOBILE_KEY    = "1ccc5bc4-8bb4-414c-b524-92d11a85a818"
 const IDN_DETAIL_KEY    = "123f4c4e-6ce1-404d-8786-d17e46d65b5c"
 const IDN_USER_AGENT    = "IDN/6.41.1 (com.idntimes.IDNTimes; build:745; iOS 17.2.1) Alamofire/5.1.0"
@@ -21,6 +22,10 @@ export interface idn_user {
   name     : string
   username : string
   avatar?  : string
+}
+
+export interface idn_public_profile extends idn_user {
+  uuid? : string
 }
 
 export interface idn_livestream {
@@ -68,6 +73,52 @@ function normalize_live_timestamp(live_at: number | string): string {
   const base_ms = Number.isFinite(numeric) ? numeric : Date.now()
   const ms      = base_ms < 1_000_000_000_000 ? base_ms * 1000 : base_ms
   return new Date(ms).toISOString()
+}
+
+/**
+ * - BUILD USERNAME CANDIDATES - \\
+ * @param {string} input - Raw user input
+ * @returns {string[]} Candidate usernames
+ */
+function build_username_candidates(input: string): string[] {
+  const normalized  = input.toLowerCase().trim().replace(/^@/, "")
+  const compact     = normalized.replace(/\s+/g, "")
+  const cleaned     = compact.replace(/[^a-z0-9_.]/g, "")
+  const without_jkt = cleaned.replace(/jkt48/g, "")
+  const candidates  = new Set<string>()
+
+  if (cleaned) {
+    candidates.add(cleaned)
+  }
+
+  if (without_jkt && without_jkt !== cleaned) {
+    candidates.add(`jkt48_${without_jkt}`)
+  }
+
+  if (!cleaned.startsWith("jkt48") && cleaned) {
+    candidates.add(`jkt48_${cleaned}`)
+    candidates.add(`jkt48${cleaned}`)
+  }
+
+  if (cleaned.startsWith("jkt48") && !cleaned.startsWith("jkt48_")) {
+    const suffix = cleaned.replace(/^jkt48/, "")
+    if (suffix) {
+      candidates.add(`jkt48_${suffix}`)
+    }
+  }
+
+  return Array.from(candidates).filter(Boolean)
+}
+
+/**
+ * - CHECK JKT48 PROFILE - \\
+ * @param {idn_public_profile} profile - Public profile
+ * @returns {boolean} True when profile is JKT48
+ */
+function is_jkt48_profile(profile: idn_public_profile): boolean {
+  const name     = profile.name.toLowerCase()
+  const username = profile.username.toLowerCase()
+  return name.includes("jkt48") || username.includes("jkt48")
 }
 
 /**
@@ -141,6 +192,44 @@ async function fetch_live_detail(slug: string, client: Client): Promise<string |
     return stream_url
   } catch (error) {
     await log_error(client, error as Error, "idn_live_fetch_detail_api", { slug })
+    return null
+  }
+}
+
+/**
+ * - FETCH PUBLIC PROFILE - \\
+ * @param {string} username - IDN username
+ * @param {Client} client - Discord client
+ * @returns {Promise<idn_public_profile | null>} Public profile data or null
+ */
+async function fetch_public_profile_by_username(username: string, client: Client): Promise<idn_public_profile | null> {
+  try {
+    const response = await axios.post(IDN_GRAPHQL_API, {
+      query     : "query GetProfileByUsername($username: String!) { getPublicProfileByUsername(username: $username) { name username uuid avatar } }",
+      variables : { username },
+    }, {
+      timeout : 15000,
+      headers : {
+        "User-Agent"   : IDN_USER_AGENT,
+        "Content-Type" : "application/json",
+      },
+    })
+
+    const profile = response.data?.data?.getPublicProfileByUsername
+    if (!profile?.username) {
+      return null
+    }
+
+    return {
+      name     : profile.name || "Unknown",
+      username : profile.username,
+      avatar   : profile.avatar || "",
+      uuid     : profile.uuid,
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "idn_live_fetch_public_profile", {
+      username : username,
+    })
     return null
   }
 }
@@ -277,6 +366,23 @@ export async function get_member_by_name(name: string, client: Client): Promise<
     })
 
     if (!found_stream) {
+      const candidates = build_username_candidates(name)
+      for (const candidate of candidates) {
+        const profile = await fetch_public_profile_by_username(candidate, client)
+        if (!profile || !is_jkt48_profile(profile)) {
+          continue
+        }
+
+        return {
+          slug     : "",
+          name     : profile.name,
+          username : profile.username,
+          url      : `${IDN_LIVE_BASE}/${profile.username}`,
+          image    : profile.avatar || "",
+          is_live  : false,
+        }
+      }
+
       return null
     }
 
