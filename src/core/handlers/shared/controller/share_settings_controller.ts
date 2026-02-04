@@ -424,7 +424,7 @@ function build_forum_sticky_message(record: rod_settings_record, settings_link: 
  * @param {rod_settings_record} record - Settings record
  * @returns {Promise<void>} Void
  */
-async function update_forum_sticky_message(client: Client, record: rod_settings_record): Promise<void> {
+export async function update_forum_sticky_message(client: Client, record: rod_settings_record): Promise<void> {
   const settings_link = await build_settings_message_link(client, record)
   if (!settings_link) return
 
@@ -465,7 +465,7 @@ async function update_forum_sticky_message(client: Client, record: rod_settings_
  * @param {string} message_id - Message ID
  * @returns {Promise<void>} Void
  */
-async function pin_forum_message(client: Client, thread_id: string, message_id: string): Promise<void> {
+export async function pin_forum_message(client: Client, thread_id: string, message_id: string): Promise<void> {
   try {
     const channel = await client.channels.fetch(thread_id).catch(() => null)
     if (!channel || !channel.isThread()) return
@@ -481,6 +481,29 @@ async function pin_forum_message(client: Client, thread_id: string, message_id: 
       thread_id  : thread_id,
       message_id : message_id,
     })
+  }
+}
+
+/**
+ * - BACKFILL FORUM EXTRAS - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<void>} Void
+ */
+export async function backfill_forum_extras(client: Client): Promise<void> {
+  try {
+    const records = await list_settings_records(client)
+    const forum_records = records.filter((record) => record.forum_thread_id && record.forum_message_id)
+
+    for (const record of forum_records) {
+      await pin_forum_message(client, record.forum_thread_id as string, record.forum_message_id as string)
+    }
+
+    const latest = forum_records.sort((a, b) => b.created_at - a.created_at)[0]
+    if (latest) {
+      await update_forum_sticky_message(client, latest)
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_forum_backfill", {})
   }
 }
 
@@ -716,6 +739,8 @@ export async function update_forum_message(client: Client, record: rod_settings_
       if (channel.name !== expected_name) {
         await channel.setName(expected_name).catch(() => {})
       }
+
+      await pin_forum_message(client, record.forum_thread_id, record.forum_message_id)
 
       const forum = await client.channels.fetch(FORUM_CHANNEL_ID).catch(() => null)
       if (forum && forum.type === ChannelType.GuildForum) {
