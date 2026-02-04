@@ -11,19 +11,35 @@ const config = load_config<invite_logger_config>("invite_logger")
 
 const INVITE_LEADERBOARD_COLLECTION = "invite_leaderboard"
 
-const invite_cache: Map<string, Map<string, number>> = new Map()
+interface invite_snapshot {
+  code        : string
+  uses        : number
+  inviter_id? : string
+  inviter_tag?: string
+  channel_id? : string
+  source?     : string
+}
+
+const invite_cache: Map<string, Map<string, invite_snapshot>> = new Map()
 
 /**
  * - FETCH INVITES - \\
  * @param {Guild} guild - Guild
- * @returns {Promise<Map<string, number>>} Invite uses map
+ * @returns {Promise<Map<string, invite_snapshot>>} Invite map
  */
-async function fetch_invites(guild: Guild): Promise<Map<string, number>> {
+async function fetch_invites(guild: Guild): Promise<Map<string, invite_snapshot>> {
   const invites = await guild.invites.fetch()
-  const map = new Map<string, number>()
+  const map = new Map<string, invite_snapshot>()
 
   for (const invite of invites.values()) {
-    map.set(invite.code, invite.uses || 0)
+    map.set(invite.code, {
+      code        : invite.code,
+      uses        : invite.uses || 0,
+      inviter_id  : invite.inviter?.id,
+      inviter_tag : invite.inviter?.tag,
+      channel_id  : invite.channel?.id,
+      source      : "invite",
+    })
   }
 
   return map
@@ -32,9 +48,9 @@ async function fetch_invites(guild: Guild): Promise<Map<string, number>> {
 /**
  * - UPDATE INVITE CACHE - \\
  * @param {Guild} guild - Guild
- * @returns {Promise<Map<string, number>>} Invite uses map
+ * @returns {Promise<Map<string, invite_snapshot>>} Invite map
  */
-async function update_invite_cache(guild: Guild): Promise<Map<string, number>> {
+async function update_invite_cache(guild: Guild): Promise<Map<string, invite_snapshot>> {
   const map = await fetch_invites(guild)
   invite_cache.set(guild.id, map)
   return map
@@ -42,24 +58,24 @@ async function update_invite_cache(guild: Guild): Promise<Map<string, number>> {
 
 /**
  * - GET USED INVITE - \\
- * @param {Map<string, number> | undefined} previous - Previous map
- * @param {Map<string, number>} current - Current map
- * @param {Invite[]} invites - Invite list
- * @returns {Invite | null} Used invite
+ * @param {Map<string, invite_snapshot> | undefined} previous - Previous map
+ * @param {Map<string, invite_snapshot>} current - Current map
+ * @param {invite_snapshot[]} invites - Invite list
+ * @returns {invite_snapshot | null} Used invite
  */
 function get_used_invite(
-  previous: Map<string, number> | undefined,
-  current: Map<string, number>,
-  invites: Invite[]
-): Invite | null {
+  previous: Map<string, invite_snapshot> | undefined,
+  current: Map<string, invite_snapshot>,
+  invites: invite_snapshot[]
+): invite_snapshot | null {
   if (!previous) return null
 
-  let used_invite: Invite | null = null
+  let used_invite: invite_snapshot | null = null
   let diff_max = 0
 
   for (const invite of invites) {
-    const before = previous.get(invite.code) || 0
-    const after = current.get(invite.code) || 0
+    const before = previous.get(invite.code)?.uses || 0
+    const after = current.get(invite.code)?.uses || 0
     const diff = after - before
     if (diff > diff_max) {
       diff_max = diff
@@ -76,7 +92,7 @@ function get_used_invite(
  * @param {object} options - Log options
  * @param {string} options.member_id - Member ID
  * @param {string} options.member_tag - Member tag
- * @param {Invite | null} options.invite - Invite
+ * @param {invite_snapshot | null} options.invite - Invite
  * @returns {Promise<void>} Void
  */
 async function send_invite_log(
@@ -84,19 +100,25 @@ async function send_invite_log(
   options: {
     member_id: string
     member_tag: string
-    invite: Invite | null
+    invite: invite_snapshot | null
   }
 ): Promise<void> {
   const channel_id = config.invite_log_channel_id
   if (!channel_id) return
 
   const invite = options.invite
+  const inviter_text = invite?.inviter_id
+    ? `<@${invite.inviter_id}>`
+    : (invite?.source === "vanity" ? "Vanity URL" : "Unknown")
+  const channel_text = invite?.channel_id
+    ? `<#${invite.channel_id}>`
+    : (invite?.source === "vanity" ? "N/A" : "Unknown")
   const lines = [
     "### Invite Used",
     `- Member: <@${options.member_id}> (${options.member_tag})`,
     `- Code: ${invite?.code || "Unknown"}`,
-    `- Inviter: ${invite?.inviter?.id ? `<@${invite.inviter.id}>` : "Unknown"}`,
-    `- Channel: ${invite?.channel?.id ? `<#${invite.channel.id}>` : "Unknown"}`,
+    `- Inviter: ${inviter_text}`,
+    `- Channel: ${channel_text}`,
     `- Uses: ${typeof invite?.uses === "number" ? invite.uses : "Unknown"}`,
   ]
 
@@ -123,15 +145,15 @@ async function send_invite_log(
  * - INCREMENT INVITE LEADERBOARD - \\
  * @param {Client} client - Discord client
  * @param {Guild} guild - Guild
- * @param {Invite | null} invite - Invite
+ * @param {invite_snapshot | null} invite - Invite
  * @returns {Promise<void>} Void
  */
-async function increment_invite_leaderboard(client: Client, guild: Guild, invite: Invite | null): Promise<void> {
-  if (!invite?.inviter?.id) return
+async function increment_invite_leaderboard(client: Client, guild: Guild, invite: invite_snapshot | null): Promise<void> {
+  if (!invite?.inviter_id) return
 
   try {
-    const inviter_id  = invite.inviter.id
-    const inviter_tag = invite.inviter.tag || "Unknown"
+    const inviter_id  = invite.inviter_id
+    const inviter_tag = invite.inviter_tag || "Unknown"
 
     const existing = await db.find_one<{ guild_id: string; inviter_id: string; inviter_tag: string; total_invite: number }>(
       INVITE_LEADERBOARD_COLLECTION,
@@ -148,7 +170,7 @@ async function increment_invite_leaderboard(client: Client, guild: Guild, invite
   } catch (error) {
     await log_error(client, error as Error, "invite_logger_leaderboard", {
       guild_id   : guild.id,
-      inviter_id : invite?.inviter?.id,
+      inviter_id : invite?.inviter_id,
       invite_code: invite?.code,
     })
   }
@@ -203,16 +225,33 @@ export async function start_invite_logger(client: Client): Promise<void> {
       const guild = member.guild
       const previous = invite_cache.get(guild.id)
       const invites_collection = await guild.invites.fetch()
-      const current = new Map<string, number>()
-      const invites: Invite[] = []
+      const current = new Map<string, invite_snapshot>()
+      const invites: invite_snapshot[] = []
 
       for (const invite of invites_collection.values()) {
-        current.set(invite.code, invite.uses || 0)
-        invites.push(invite)
+        const snapshot: invite_snapshot = {
+          code        : invite.code,
+          uses        : invite.uses || 0,
+          inviter_id  : invite.inviter?.id,
+          inviter_tag : invite.inviter?.tag,
+          channel_id  : invite.channel?.id,
+          source      : "invite",
+        }
+        current.set(invite.code, snapshot)
+        invites.push(snapshot)
       }
 
-      const used_invite = get_used_invite(previous, current, invites)
+      let used_invite = get_used_invite(previous, current, invites)
       invite_cache.set(guild.id, current)
+
+      if (!used_invite && guild.vanityURLCode) {
+        const vanity = await guild.fetchVanityData().catch(() => null)
+        used_invite = {
+          code   : vanity?.code || guild.vanityURLCode,
+          uses   : vanity?.uses || 0,
+          source : "vanity",
+        }
+      }
 
       await send_invite_log(client, {
         member_id  : member.id,
