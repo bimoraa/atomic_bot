@@ -748,7 +748,7 @@ function build_settings_component(record: rod_settings_record, token?: string): 
       component.divider(2),
       component.section({
         content   : [star_line],
-        accessory : component.secondary_button("Give the Publisher Star", token ? `share_settings_star:${record.settings_id}:${token}` : `share_settings_star:${record.settings_id}`),
+        accessory : component.secondary_button("Give the Publisher Like", token ? `share_settings_star:${record.settings_id}:${token}` : `share_settings_star:${record.settings_id}`),
       }),
     ],
   })
