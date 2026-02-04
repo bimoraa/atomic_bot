@@ -22,6 +22,7 @@ import { log_error }                                                     from ".
 import { check_spam }                                                    from "./infrastructure/cache/anti_spam"
 import { load_reminders_from_db }                                        from "./modules/reminder/reminder"
 import { start_loa_checker }                                             from "./shared/database/services/loa_checker"
+import { start_invite_logger }                                           from "./shared/database/services/invite_logger"
 import { start_webhook_server, set_bot_ready }                           from "./core/client/server"
 import { start_scheduler }                                               from "./modules/staff/staff/schedule_hwid_less"
 import { start_weekly_reset_scheduler }                                  from "./core/handlers/schedulers/weekly_work_reset"
@@ -241,6 +242,7 @@ client.once("ready", async () => {
       await tempvoice.load_saved_settings_from_db(guild.id)
     }
     register_audit_logs(client)
+    await start_invite_logger(client)
   } catch (error) {
     console.error("[Services] Initialization error:", error)
   }
