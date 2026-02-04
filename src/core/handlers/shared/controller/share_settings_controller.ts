@@ -20,6 +20,8 @@ const THREAD_PARENT_ID       = "1468393418869968936"
 const SHARE_SETTINGS_ROLE_ID = "1398313779380617459"
 const ROD_LIST_COLLECTION    = "rod_settings_rods"
 const SKIN_LIST_COLLECTION   = "rod_settings_skins"
+const FORUM_TAG_POPULAR       = "Most Popular"
+const MOST_POPULAR_MIN_LIKES  = 10
 
 export interface rod_settings_record {
   settings_id        : string
@@ -270,13 +272,8 @@ function normalize_text(value: string): string {
  * @returns {string} Star summary
  */
 function build_star_summary(record: rod_settings_record): string {
-  const total        = record.star_total || 0
-  const count        = record.star_count || 0
-  const average      = count > 0 ? total / count : 0
-  const average_text = average.toFixed(1)
-  const voter_text   = count === 1 ? "voter" : "voters"
-
-  return `Star: ${average_text} / 5 - ${count} ${voter_text}`
+  const count = record.star_count || 0
+  return `Total Like: ${count}`
 }
 
 /**
@@ -287,6 +284,77 @@ function build_star_summary(record: rod_settings_record): string {
 function build_forum_thread_name(record: rod_settings_record): string {
   const skin_text = record.rod_skin ? record.rod_skin : "No Skin"
   return `${record.rod_name} - ${skin_text} by ${record.publisher_name}`
+}
+
+/**
+ * - BUILD TAG NAMES - \\
+ * @param {rod_settings_record} record - Settings record
+ * @returns {string[]} Tag names
+ */
+function build_tag_names(record: rod_settings_record): string[] {
+  const skin_text = record.rod_skin ? record.rod_skin : "No Skin"
+  return [record.rod_name, skin_text]
+}
+
+/**
+ * - CHECK MOST POPULAR - \\
+ * @param {rod_settings_record} record - Settings record
+ * @returns {boolean} True when popular
+ */
+function is_most_popular(record: rod_settings_record): boolean {
+  const average = record.star_count > 0 ? record.star_total / record.star_count : 0
+  return record.star_count >= MOST_POPULAR_MIN_LIKES && average >= 4.5
+}
+
+/**
+ * - ENSURE FORUM TAGS - \\
+ * @param {Client} client - Discord client
+ * @param {ForumChannel} forum - Forum channel
+ * @returns {Promise<Map<string, string>>} Tag map
+ */
+async function ensure_forum_tags(client: Client, forum: ForumChannel, required: string[]): Promise<Map<string, string>> {
+  const existing = forum.availableTags || []
+  const existing_map = new Map(existing.map((tag) => [tag.name, tag.id]))
+
+  const missing = required.filter((name) => !existing_map.has(name))
+  if (missing.length > 0) {
+    const updated_tags = [
+      ...existing,
+      ...missing.map((name) => ({ name: name, moderated: false })),
+    ]
+
+    try {
+      const updated_forum = await forum.setAvailableTags(updated_tags)
+      const updated_map = new Map(updated_forum.availableTags.map((tag) => [tag.name, tag.id]))
+      return updated_map
+    } catch (error) {
+      await log_error(client, error as Error, "share_settings_forum_tags", {
+        channel_id : forum.id,
+        missing    : missing,
+      })
+    }
+  }
+
+  return existing_map
+}
+
+/**
+ * - BUILD APPLIED TAGS - \\
+ * @param {rod_settings_record} record - Settings record
+ * @param {Map<string, string>} tag_map - Tag map
+ * @returns {string[]} Applied tag ids
+ */
+function build_applied_tags(record: rod_settings_record, tag_map: Map<string, string>): string[] {
+  const tag_ids: string[] = []
+  const rod_id  = tag_map.get(record.rod_name)
+  const skin_id = tag_map.get(record.rod_skin ? record.rod_skin : "No Skin")
+  const pop_id  = tag_map.get(FORUM_TAG_POPULAR)
+
+  if (rod_id) tag_ids.push(rod_id)
+  if (skin_id) tag_ids.push(skin_id)
+  if (pop_id && is_most_popular(record)) tag_ids.push(pop_id)
+
+  return Array.from(new Set(tag_ids))
 }
 
 /**
@@ -461,9 +529,13 @@ export async function ensure_forum_post(
     }
 
     const forum = channel as ForumChannel
+    const required_tags = [...build_tag_names(record), FORUM_TAG_POPULAR]
+    const tag_map = await ensure_forum_tags(client, forum, required_tags)
+    const applied_tags = build_applied_tags(record, tag_map)
     const thread = await forum.threads.create({
       name               : build_forum_thread_name(record),
       autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+      appliedTags        : applied_tags,
       message            : {
         content : `Rod settings by <@${record.publisher_id}>`,
       },
@@ -513,6 +585,16 @@ export async function update_forum_message(client: Client, record: rod_settings_
       const expected_name = build_forum_thread_name(record)
       if (channel.name !== expected_name) {
         await channel.setName(expected_name).catch(() => {})
+      }
+
+      const forum = await client.channels.fetch(FORUM_CHANNEL_ID).catch(() => null)
+      if (forum && forum.type === ChannelType.GuildForum) {
+        const required_tags = [...build_tag_names(record), FORUM_TAG_POPULAR]
+        const tag_map = await ensure_forum_tags(client, forum as ForumChannel, required_tags)
+        const applied_tags = build_applied_tags(record, tag_map)
+        if ("setAppliedTags" in channel) {
+          await channel.setAppliedTags(applied_tags).catch(() => {})
+        }
       }
     }
 
@@ -603,11 +685,8 @@ export function build_leaderboard_message(records: rod_settings_record[]): messa
   })
 
   const lines = sorted.slice(0, 10).map((record, index) => {
-    const average      = record.star_count > 0 ? (record.star_total / record.star_count) : 0
-    const average_text = average.toFixed(1)
-    const voter_text   = record.star_count === 1 ? "voter" : "voters"
-    const skin_text    = record.rod_skin ? record.rod_skin : "No Skin"
-    return `${index + 1}. <@${record.publisher_id}> - ${record.rod_name} (${skin_text}) - ${average_text} / 5 - ${record.star_count} ${voter_text}`
+    const skin_text = record.rod_skin ? record.rod_skin : "No Skin"
+    return `${index + 1}. <@${record.publisher_id}> - ${record.rod_name} (${skin_text}) - Total Like: ${record.star_count}`
   })
 
   return component.build_message({
