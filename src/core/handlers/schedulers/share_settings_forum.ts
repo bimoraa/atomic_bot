@@ -40,6 +40,7 @@ async function update_forum_posts(client: Client): Promise<void> {
 export async function start_share_settings_forum_scheduler(client: Client): Promise<void> {
   log.info("Starting share settings forum updater (15s)")
 
+  setTimeout(() => share_settings.cleanup_forum_sticky_thread(client), 2000)
   setTimeout(() => share_settings.backfill_forum_extras(client), 3000)
   setInterval(() => update_forum_posts(client), FORUM_UPDATE_INTERVAL_MS)
   setTimeout(() => update_forum_posts(client), 5000)

@@ -571,6 +571,27 @@ export async function update_forum_sticky_message(client: Client, record: rod_se
 }
 
 /**
+ * - CLEANUP FORUM STICKY THREAD - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<void>} Void
+ */
+export async function cleanup_forum_sticky_thread(client: Client): Promise<void> {
+  try {
+    const previous = await db.find_one<{ key: string; thread_id?: string }>(FORUM_STICKY_COLLECTION, { key: "latest" })
+    if (!previous?.thread_id) return
+
+    const old_thread = await client.channels.fetch(previous.thread_id).catch(() => null)
+    if (old_thread && old_thread.isThread()) {
+      await old_thread.delete().catch(() => {})
+    }
+
+    await db.delete_one(FORUM_STICKY_COLLECTION, { key: "latest" })
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_forum_sticky_cleanup", {})
+  }
+}
+
+/**
  * - PIN FORUM MESSAGE - \\
  * @param {Client} client - Discord client
  * @param {string} thread_id - Thread ID
@@ -612,12 +633,6 @@ export async function backfill_forum_extras(client: Client): Promise<void> {
       }
     }
 
-    const latest = updated_records
-      .filter((record) => record.forum_thread_id && record.forum_message_id)
-      .sort((a, b) => b.created_at - a.created_at)[0]
-    if (latest) {
-      await update_forum_sticky_message(client, latest)
-    }
   } catch (error) {
     await log_error(client, error as Error, "share_settings_forum_backfill", {})
   }
@@ -822,7 +837,6 @@ export async function ensure_forum_post(
     }
 
     await pin_forum_message(client, thread.id, String(result.id))
-    await update_forum_sticky_message(client, record)
 
     return {
       forum_thread_id  : thread.id,
@@ -855,8 +869,6 @@ export async function update_forum_message(client: Client, record: rod_settings_
       if (channel.name !== expected_name) {
         await channel.setName(expected_name).catch(() => {})
       }
-
-      await pin_forum_message(client, record.forum_thread_id, record.forum_message_id)
 
       const forum = await client.channels.fetch(FORUM_CHANNEL_ID).catch(() => null)
       if (forum && forum.type === ChannelType.GuildForum) {
