@@ -53,6 +53,24 @@ async function execute_delete_settings(interaction: ChatInputCommandInteraction)
       await api.delete_message(deleted.channel_id, deleted.message_id, api.get_token())
     }
 
+    if (deleted.forum_thread_id && deleted.forum_message_id) {
+      await api.delete_message(deleted.forum_thread_id, deleted.forum_message_id, api.get_token())
+    }
+
+    if (deleted.thread_id) {
+      const thread = await interaction.client.channels.fetch(deleted.thread_id).catch(() => null)
+      if (thread && thread.isThread()) {
+        await thread.setArchived(true).catch(() => {})
+      }
+    }
+
+    if (deleted.forum_thread_id) {
+      const forum_thread = await interaction.client.channels.fetch(deleted.forum_thread_id).catch(() => null)
+      if (forum_thread && forum_thread.isThread()) {
+        await forum_thread.setArchived(true).catch(() => {})
+      }
+    }
+
     await api.edit_deferred_reply(interaction, component.build_message({
       components : [
         component.container({

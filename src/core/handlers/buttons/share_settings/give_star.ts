@@ -43,6 +43,10 @@ export async function handle_give_star(interaction: ButtonInteraction): Promise<
       await api.edit_components_v2(result.record.channel_id, result.record.message_id, api.get_token(), payload)
     }
 
+    if (result.record?.forum_thread_id && result.record?.forum_message_id) {
+      await share_settings.update_forum_message(interaction.client, result.record)
+    }
+
     await interaction.reply({ content: "Star submitted", ephemeral: true })
   } catch (error) {
     await log_error(interaction.client, error as Error, "share_settings_star", {

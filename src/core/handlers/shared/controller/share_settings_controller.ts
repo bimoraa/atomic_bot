@@ -1,12 +1,22 @@
-import { Client, GuildMember } from "discord.js"
-import { component, db }       from "../../../../shared/utils"
+import {
+  ChannelType,
+  Client,
+  ForumChannel,
+  GuildMember,
+  TextChannel,
+  ThreadAutoArchiveDuration,
+  ThreadChannel,
+}                               from "discord.js"
+import { api, component, db }    from "../../../../shared/utils"
 import type { container_component, message_payload } from "../../../../shared/utils"
-import { log_error }           from "../../../../shared/utils/error_logger"
-import { Cache }               from "../../../../shared/utils/cache"
-import * as random             from "../../../../shared/utils/random"
+import { log_error }            from "../../../../shared/utils/error_logger"
+import { Cache }                from "../../../../shared/utils/cache"
+import * as random              from "../../../../shared/utils/random"
 
 const SETTINGS_COLLECTION    = "rod_settings"
 const SETTINGS_CHANNEL_ID    = "1444073420030476309"
+const FORUM_CHANNEL_ID       = "1444080629162578001"
+const THREAD_PARENT_ID       = "1468393418869968936"
 const SHARE_SETTINGS_ROLE_ID = "1398313779380617459"
 const ROD_LIST_COLLECTION    = "rod_settings_rods"
 const SKIN_LIST_COLLECTION   = "rod_settings_skins"
@@ -29,6 +39,11 @@ export interface rod_settings_record {
   star_count         : number
   star_voters        : string[]
   use_count          : number
+  thread_id?         : string
+  thread_link?       : string
+  forum_thread_id?   : string
+  forum_message_id?  : string
+  forum_channel_id?  : string
   message_id?        : string
   channel_id?        : string
   created_at         : number
@@ -139,6 +154,28 @@ export function remove_pending_entry(token: string): void {
 }
 
 /**
+ * - UPDATE PENDING PAYLOAD - \\
+ * @param {string} token - Token
+ * @param {Partial<share_settings_input>} payload - Payload update
+ * @returns {pending_settings_entry | null} Entry
+ */
+export function update_pending_payload(token: string, payload: Partial<share_settings_input>): pending_settings_entry | null {
+  const entry = pending_cache.get(token)
+  if (!entry) return null
+
+  const updated: pending_settings_entry = {
+    ...entry,
+    payload : {
+      ...entry.payload,
+      ...payload,
+    },
+  }
+
+  pending_cache.set(token, updated)
+  return updated
+}
+
+/**
  * - LIST ROD OPTIONS - \\
  * @param {Client} client - Discord client
  * @returns {Promise<string[]>} Rod list
@@ -237,9 +274,264 @@ function build_star_summary(record: rod_settings_record): string {
   const count        = record.star_count || 0
   const average      = count > 0 ? total / count : 0
   const average_text = average.toFixed(1)
-  const voter_text   = count === 1 ? "Voter" : "Voters"
+  const voter_text   = count === 1 ? "voter" : "voters"
 
   return `Star: ${average_text} / 5 - ${count} ${voter_text}`
+}
+
+/**
+ * - BUILD SHARE SETTINGS PICKER MESSAGE - \\
+ * @param {object} options - Picker options
+ * @param {string} options.token - Pending token
+ * @param {string[]} options.rod_options - Rod options
+ * @param {string[]} options.skin_options - Skin options
+ * @param {string | null} options.selected_rod - Selected rod
+ * @param {string | null} options.selected_skin - Selected skin
+ * @returns {message_payload} Message payload
+ */
+export function build_share_settings_picker_message(options: {
+  token         : string
+  rod_options   : string[]
+  skin_options  : string[]
+  selected_rod? : string | null
+  selected_skin?: string | null
+}): message_payload {
+  const selected_rod  = options.selected_rod || null
+  const selected_skin = options.selected_skin || null
+
+  const rod_choices = options.rod_options
+    .slice(0, 25)
+    .map((value) => ({
+      label   : value,
+      value   : value,
+      default : selected_rod === value,
+    }))
+
+  const skin_choices = [
+    { label: "No Skin", value: "no_skin", default: selected_skin === null },
+    ...options.skin_options
+      .slice(0, 24)
+      .map((value) => ({
+        label   : value,
+        value   : value,
+        default : selected_skin === value,
+      })),
+  ]
+
+  const disabled_continue = !selected_rod
+
+  return component.build_message({
+    components : [
+      component.container({
+        components : [
+          component.text([
+            "## Share Settings - Select Rod",
+            `- Rod Name: ${selected_rod || "-"}`,
+            `- Rod Skin: ${selected_skin || "No Skin"}`,
+          ]),
+        ],
+      }),
+      component.container({
+        components : [
+          component.select_menu(`share_settings_pick_rod:${options.token}`, "Select Rod Name", rod_choices),
+          component.divider(2),
+          component.select_menu(`share_settings_pick_skin:${options.token}`, "Select Rod Skin", skin_choices),
+          component.divider(2),
+          component.action_row(
+            component.primary_button("Continue", `share_settings_continue:${options.token}`, undefined, disabled_continue)
+          ),
+        ],
+      }),
+    ],
+  })
+}
+
+/**
+ * - ENSURE PUBLISHER THREAD - \\
+ * @param {Client} client - Discord client
+ * @param {rod_settings_record} record - Settings record
+ * @returns {Promise<{ thread_id?: string; thread_link?: string }>} Thread data
+ */
+export async function ensure_publisher_thread(
+  client: Client,
+  record: rod_settings_record
+): Promise<{ thread_id?: string; thread_link?: string }> {
+  if (record.thread_id && record.thread_link) {
+    const existing = await client.channels.fetch(record.thread_id).catch(() => null)
+    if (existing && existing.isThread()) {
+      const thread = existing as ThreadChannel
+      if (thread.archived) {
+        await thread.setArchived(false).catch(() => {})
+      }
+    }
+    return { thread_id: record.thread_id, thread_link: record.thread_link }
+  }
+
+  try {
+    const channel = await client.channels.fetch(THREAD_PARENT_ID).catch(() => null)
+    if (!channel) {
+      await log_error(client, new Error("Publisher thread parent not found"), "share_settings_thread_parent", {
+        parent_id : THREAD_PARENT_ID,
+      })
+      return {}
+    }
+
+    const thread_name = `Publisher - ${record.publisher_name}`
+
+    if (channel.type === ChannelType.GuildForum) {
+      const forum = channel as ForumChannel
+      const thread = await forum.threads.create({
+        name               : thread_name,
+        autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+        message            : {
+          content : `Thread for <@${record.publisher_id}>`,
+        },
+      })
+      return {
+        thread_id   : thread.id,
+        thread_link : `https://discord.com/channels/${thread.guildId}/${thread.id}`,
+      }
+    }
+
+    if (channel.isTextBased() && "threads" in channel) {
+      const text = channel as TextChannel
+      const start_message = await text.send({ content: `Thread for <@${record.publisher_id}>` })
+      const thread = await text.threads.create({
+        name               : thread_name,
+        autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+        type               : ChannelType.PublicThread,
+        startMessage       : start_message.id,
+      })
+
+      return {
+        thread_id   : thread.id,
+        thread_link : `https://discord.com/channels/${thread.guildId}/${thread.id}`,
+      }
+    }
+
+    await log_error(client, new Error("Unsupported thread parent channel"), "share_settings_thread_parent", {
+      parent_id : THREAD_PARENT_ID,
+      type      : channel.type,
+    })
+    return {}
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_thread_create", {
+      parent_id    : THREAD_PARENT_ID,
+      publisher_id : record.publisher_id,
+    })
+    return {}
+  }
+}
+
+/**
+ * - ENSURE FORUM POST - \\
+ * @param {Client} client - Discord client
+ * @param {rod_settings_record} record - Settings record
+ * @returns {Promise<{ forum_thread_id?: string; forum_message_id?: string; forum_channel_id?: string }>} Forum data
+ */
+export async function ensure_forum_post(
+  client: Client,
+  record: rod_settings_record
+): Promise<{ forum_thread_id?: string; forum_message_id?: string; forum_channel_id?: string }> {
+  if (record.forum_thread_id && record.forum_message_id && record.forum_channel_id) {
+    return {
+      forum_thread_id  : record.forum_thread_id,
+      forum_message_id : record.forum_message_id,
+      forum_channel_id : record.forum_channel_id,
+    }
+  }
+
+  try {
+    const channel = await client.channels.fetch(FORUM_CHANNEL_ID).catch(() => null)
+    if (!channel || channel.type !== ChannelType.GuildForum) {
+      await log_error(client, new Error("Forum channel not found"), "share_settings_forum_parent", {
+        channel_id : FORUM_CHANNEL_ID,
+      })
+      return {}
+    }
+
+    const forum = channel as ForumChannel
+    const thread = await forum.threads.create({
+      name               : `${record.rod_name} - ${record.publisher_name}`,
+      autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+      message            : {
+        content : `Rod settings by <@${record.publisher_id}>`,
+      },
+    })
+
+    const message_payload = build_forum_message(record)
+    const result = await api.send_components_v2(thread.id, api.get_token(), message_payload)
+
+    if (result.error || !result.id) {
+      await log_error(client, new Error("Failed to send forum message"), "share_settings_forum_post", {
+        thread_id : thread.id,
+        response  : result,
+      })
+      return {
+        forum_thread_id  : thread.id,
+        forum_channel_id : FORUM_CHANNEL_ID,
+      }
+    }
+
+    return {
+      forum_thread_id  : thread.id,
+      forum_message_id : String(result.id),
+      forum_channel_id : FORUM_CHANNEL_ID,
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_forum_create", {
+      channel_id   : FORUM_CHANNEL_ID,
+      settings_id  : record.settings_id,
+      publisher_id : record.publisher_id,
+    })
+    return {}
+  }
+}
+
+/**
+ * - UPDATE FORUM MESSAGE - \\
+ * @param {Client} client - Discord client
+ * @param {rod_settings_record} record - Settings record
+ * @returns {Promise<boolean>} Result
+ */
+export async function update_forum_message(client: Client, record: rod_settings_record): Promise<boolean> {
+  if (!record.forum_thread_id || !record.forum_message_id) return false
+
+  try {
+    const payload = build_forum_message(record)
+    const response = await api.edit_components_v2(record.forum_thread_id, record.forum_message_id, api.get_token(), payload)
+    if (response?.error) {
+      await log_error(client, new Error("Failed to update forum message"), "share_settings_forum_update", {
+        thread_id  : record.forum_thread_id,
+        message_id : record.forum_message_id,
+        response   : response,
+      })
+      return false
+    }
+    return true
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_forum_update", {
+      thread_id  : record.forum_thread_id,
+      message_id : record.forum_message_id,
+    })
+    return false
+  }
+}
+
+/**
+ * - ENSURE THREAD ACTIVE - \\
+ * @param {Client} client - Discord client
+ * @param {string} thread_id - Thread ID
+ * @returns {Promise<void>} Void
+ */
+export async function ensure_thread_active(client: Client, thread_id: string): Promise<void> {
+  const channel = await client.channels.fetch(thread_id).catch(() => null)
+  if (!channel || !channel.isThread()) return
+
+  const thread = channel as ThreadChannel
+  if (thread.archived) {
+    await thread.setArchived(false).catch(() => {})
+  }
 }
 
 /**
@@ -293,8 +585,11 @@ export function build_leaderboard_message(records: rod_settings_record[]): messa
   })
 
   const lines = sorted.slice(0, 10).map((record, index) => {
-    const average = record.star_count > 0 ? (record.star_total / record.star_count) : 0
-    return `${index + 1}. ${build_settings_title(record)} - ${average.toFixed(1)} / 5 (${record.star_count} votes)`
+    const average      = record.star_count > 0 ? (record.star_total / record.star_count) : 0
+    const average_text = average.toFixed(1)
+    const voter_text   = record.star_count === 1 ? "voter" : "voters"
+    const skin_text    = record.rod_skin ? record.rod_skin : "No Skin"
+    return `${index + 1}. <@${record.publisher_id}> - ${record.rod_name} (${skin_text}) - ${average_text} / 5 - ${record.star_count} ${voter_text}`
   })
 
   return component.build_message({
@@ -321,6 +616,7 @@ export function build_leaderboard_message(records: rod_settings_record[]): messa
  */
 function build_settings_component(record: rod_settings_record, token?: string): container_component {
   const star_summary   = build_star_summary(record)
+  const star_line      = `- ${star_summary}`
   const settings_lines = [
     `### Settings by <@${record.publisher_id}>`,
     `- Mode: ${record.mode}`,
@@ -354,9 +650,27 @@ function build_settings_component(record: rod_settings_record, token?: string): 
       ]),
       component.divider(2),
       component.section({
-        content   : [star_summary],
+        content   : [star_line],
         accessory : component.secondary_button("Give the Publisher Star", token ? `share_settings_star:${record.settings_id}:${token}` : `share_settings_star:${record.settings_id}`),
       }),
+    ],
+  })
+}
+
+/**
+ * - BUILD FORUM MESSAGE - \\
+ * @param {rod_settings_record} record - Settings record
+ * @returns {message_payload} Message payload
+ */
+export function build_forum_message(record: rod_settings_record): message_payload {
+  return component.build_message({
+    components : [
+      component.container({
+        components : [
+          component.text("## Community - Rod Settings"),
+        ],
+      }),
+      build_settings_component(record),
     ],
   })
 }
@@ -402,6 +716,13 @@ export function build_settings_message(
     )
   }
 
+  if (record.thread_link) {
+    footer_components.push(component.divider(2))
+    footer_components.push(component.action_row(
+      component.link_button("Publisher Thread ( Bincang )", record.thread_link as string)
+    ))
+  }
+
   return component.build_message({
     components : [
       header_component,
@@ -440,15 +761,26 @@ export function build_search_message(options: {
   const previous_disabled = clamped_index <= 0
   const next_disabled     = clamped_index >= options.records.length - 1
 
-  const footer_component = component.container({
-    components : [
+  const footer_components = [
+    component.action_row(
+      component.secondary_button("Previous", `share_settings_prev:${options.token}:${clamped_index}`, undefined, previous_disabled),
+      component.secondary_button("Next", `share_settings_next:${options.token}:${clamped_index}`, undefined, next_disabled)
+    ),
+    component.divider(2),
+    component.select_menu(`share_settings_select:${options.token}`, "Search Rod Setings", select_options),
+  ]
+
+  if (record.thread_link) {
+    footer_components.push(component.divider(2))
+    footer_components.push(
       component.action_row(
-        component.secondary_button("Previous", `share_settings_prev:${options.token}:${clamped_index}`, undefined, previous_disabled),
-        component.secondary_button("Next", `share_settings_next:${options.token}:${clamped_index}`, undefined, next_disabled)
-      ),
-      component.divider(2),
-      component.select_menu(`share_settings_select:${options.token}`, "Search Rod Settings", select_options),
-    ],
+        component.link_button("Publisher Thread ( Bincang )", record.thread_link)
+      )
+    )
+  }
+
+  const footer_component = component.container({
+    components : footer_components,
   })
 
   return component.build_message({

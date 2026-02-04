@@ -39,7 +39,8 @@ export async function handle_share_settings_modal(interaction: ModalSubmitIntera
     const note_value = interaction.fields.getTextInputValue("note")
     const payload = {
       ...entry.payload,
-      note : note_value,
+      rod_skin : entry.payload.rod_skin ?? null,
+      note     : note_value,
     }
 
     if (entry.action === "create") {
@@ -59,10 +60,27 @@ export async function handle_share_settings_modal(interaction: ModalSubmitIntera
         return true
       }
 
-      const search_token = share_settings.create_search_token([record], {}, record.settings_id)
+      let final_record = record
+      const forum_data = await share_settings.ensure_forum_post(interaction.client, final_record)
+      if (forum_data.forum_thread_id) {
+        const updated = await share_settings.update_settings_record(interaction.client, final_record.settings_id, {
+          forum_thread_id  : forum_data.forum_thread_id,
+          forum_message_id : forum_data.forum_message_id,
+          forum_channel_id : forum_data.forum_channel_id,
+          thread_id        : forum_data.forum_thread_id,
+          thread_link      : forum_data.forum_thread_id
+            ? `https://discord.com/channels/${interaction.guildId}/${forum_data.forum_thread_id}`
+            : final_record.thread_link,
+        })
+        if (updated) {
+          final_record = updated
+        }
+      }
+
+      const search_token = share_settings.create_search_token([final_record], {}, final_record.settings_id)
       const message_payload = share_settings.build_search_message({
         token   : search_token,
-        records : [record],
+        records : [final_record],
         index   : 0,
       })
 
@@ -119,6 +137,10 @@ export async function handle_share_settings_modal(interaction: ModalSubmitIntera
           index   : 0,
         })
         await api.edit_components_v2(updated.channel_id, updated.message_id, api.get_token(), message_payload)
+      }
+
+      if (updated.forum_thread_id && updated.forum_message_id) {
+        await share_settings.update_forum_message(interaction.client, updated)
       }
 
       await api.edit_deferred_reply(interaction, component.build_message({

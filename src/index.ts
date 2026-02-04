@@ -28,6 +28,7 @@ import { start_weekly_reset_scheduler }                                  from ".
 import { start_quarantine_scheduler }                                    from "./core/handlers/schedulers/quarantine_release"
 import { load_middleman_tickets_on_startup }                             from "./core/handlers/schedulers/load_middleman_tickets"
 import { start_idn_live_scheduler }                                      from "./core/handlers/schedulers/idn_live_monitor"
+import { start_share_settings_forum_scheduler }                          from "./core/handlers/schedulers/share_settings_forum"
 
 config()
 
@@ -205,6 +206,7 @@ client.once("ready", async () => {
       start_free_script_checker(client)
       start_service_provider_cache(client)
       start_idn_live_scheduler(client)
+      start_share_settings_forum_scheduler(client)
       
       // - CLEANUP BYPASS CACHE EVERY 10 MINUTES - \\
       setInterval(() => db.cleanup_expired_bypass_cache(), 10 * 60 * 1000)

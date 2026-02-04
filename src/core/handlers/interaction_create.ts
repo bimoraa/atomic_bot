@@ -74,7 +74,9 @@ import * as bypass_support_type_select   from "./select_menus/bypass"
 import * as jkt48_history_live           from "./buttons/jkt48/history_live"
 import * as jkt48_check_on_live          from "./buttons/jkt48/check_on_live"
 import * as share_settings_select        from "./select_menus/share_settings/select"
+import * as share_settings_picker        from "./select_menus/share_settings/picker"
 import * as share_settings_star          from "./buttons/share_settings/give_star"
+import * as share_settings_continue      from "./buttons/share_settings/continue"
 import * as share_settings_pagination    from "./buttons/share_settings/pagination"
 
 
@@ -209,6 +211,10 @@ export async function handle_interaction(
         await share_settings_select.handle_share_settings_select(interaction)
         return
       }
+      if (interaction.customId.startsWith("share_settings_pick_rod:") || interaction.customId.startsWith("share_settings_pick_skin:")) {
+        await share_settings_picker.handle_share_settings_picker(interaction)
+        return
+      }
       if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return
       if (await handle_ticket_select_menu(interaction)) return
     } catch (err) {
@@ -251,6 +257,10 @@ export async function handle_interaction(
       if (await middleman_buttons.handle_middleman_close_reason(interaction)) return
       if (await middleman_buttons.handle_middleman_add_member(interaction)) return
       if (await middleman_buttons.handle_middleman_complete(interaction)) return
+      if (interaction.customId.startsWith("share_settings_continue:")) {
+        await share_settings_continue.handle_share_settings_continue(interaction)
+        return
+      }
       if (interaction.customId === "review_submit") {
         await review_submit.handle_review_submit(interaction);
         return;

@@ -1,10 +1,5 @@
-import {
-  AutocompleteInteraction,
-  ChatInputCommandInteraction,
-  SlashCommandBuilder,
-}                         from "discord.js"
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }         from "../../../shared/types/command"
-import { modal }           from "../../../shared/utils"
 import { log_error }       from "../../../shared/utils/error_logger"
 import * as share_settings from "../../../core/handlers/shared/controller/share_settings_controller"
 
@@ -32,65 +27,27 @@ async function execute_share_settings(interaction: ChatInputCommandInteraction):
         version            : interaction.options.getString("version", true),
         location           : interaction.options.getString("location", true),
         total_notification : interaction.options.getString("total_notification", true),
-        rod_name           : interaction.options.getString("rod_name", true),
-        rod_skin           : interaction.options.getString("rod_skin", false),
         cancel_delay       : interaction.options.getString("cancel_delay", true),
         complete_delay     : interaction.options.getString("complete_delay", true),
       },
     })
 
-    const note_input = modal.create_text_input({
-      custom_id  : "note",
-      label      : "Note from Publisher",
-      style      : "paragraph",
-      required   : true,
-      min_length : 1,
-      max_length : 400,
+    const rod_options = await share_settings.list_rod_options(interaction.client)
+    const skin_options = await share_settings.list_skin_options(interaction.client)
+    const message_payload = share_settings.build_share_settings_picker_message({
+      token        : pending_token,
+      rod_options  : rod_options,
+      skin_options : skin_options,
     })
 
-    const note_modal = modal.create_modal(`share_settings_modal:${pending_token}`, "Share Settings", note_input)
-    await interaction.showModal(note_modal)
+    await interaction.reply({
+      ...message_payload,
+      ephemeral: true,
+    })
   } catch (error) {
     await log_error(interaction.client, error as Error, "share_settings_command", {})
-    await interaction.reply({ content: "Failed to open settings modal", ephemeral: true }).catch(() => {})
+    await interaction.reply({ content: "Failed to open settings picker", ephemeral: true }).catch(() => {})
   }
-}
-
-/**
- * - AUTOCOMPLETE SHARE SETTINGS - \\
- * @param {AutocompleteInteraction} interaction - Autocomplete interaction
- * @returns {Promise<void>}
- */
-async function autocomplete_share_settings(interaction: AutocompleteInteraction): Promise<void> {
-  if (!share_settings.can_use_share_settings(interaction.member as any)) {
-    await interaction.respond([])
-    return
-  }
-
-  const focused = interaction.options.getFocused(true)
-  const query = focused.value.toLowerCase()
-
-  if (focused.name === "rod_name") {
-    const options = await share_settings.list_rod_options(interaction.client)
-    const matches = options
-      .filter((value) => value.toLowerCase().includes(query))
-      .slice(0, 25)
-      .map((value) => ({ name: value, value: value }))
-    await interaction.respond(matches)
-    return
-  }
-
-  if (focused.name === "rod_skin") {
-    const options = await share_settings.list_skin_options(interaction.client)
-    const matches = options
-      .filter((value) => value.toLowerCase().includes(query))
-      .slice(0, 25)
-      .map((value) => ({ name: value, value: value }))
-    await interaction.respond(matches)
-    return
-  }
-
-  await interaction.respond([])
 }
 
 export const command: Command = {
@@ -110,11 +67,8 @@ export const command: Command = {
     .addStringOption((option) => option.setName("version").setDescription("Version").setRequired(true))
     .addStringOption((option) => option.setName("location").setDescription("Location").setRequired(true))
     .addStringOption((option) => option.setName("total_notification").setDescription("Total notification").setRequired(true))
-    .addStringOption((option) => option.setName("rod_name").setDescription("Rod name").setAutocomplete(true).setRequired(true))
     .addStringOption((option) => option.setName("cancel_delay").setDescription("Cancel delay").setRequired(true))
-    .addStringOption((option) => option.setName("complete_delay").setDescription("Complete delay").setRequired(true))
-    .addStringOption((option) => option.setName("rod_skin").setDescription("Rod skin").setAutocomplete(true).setRequired(false)) as SlashCommandBuilder,
+    .addStringOption((option) => option.setName("complete_delay").setDescription("Complete delay").setRequired(true)) as SlashCommandBuilder,
 
   execute      : execute_share_settings,
-  autocomplete : autocomplete_share_settings,
 }
