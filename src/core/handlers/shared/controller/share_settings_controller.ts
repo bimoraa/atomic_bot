@@ -429,24 +429,46 @@ export async function update_forum_sticky_message(client: Client, record: rod_se
   if (!settings_link) return
 
   try {
-    const previous = await db.find_one<{ key: string; message_id: string; channel_id: string }>(FORUM_STICKY_COLLECTION, { key: "latest" })
-    if (previous?.message_id && previous.channel_id) {
-      await api.delete_message(previous.channel_id, previous.message_id, api.get_token())
-    }
-
-    const payload = build_forum_sticky_message(record, settings_link)
-    const result = await api.send_components_v2(FORUM_CHANNEL_ID, api.get_token(), payload)
-
-    if (result.error || !result.id) {
-      await log_error(client, new Error("Failed to send forum sticky"), "share_settings_forum_sticky", {
+    const forum_channel = await client.channels.fetch(FORUM_CHANNEL_ID).catch(() => null)
+    if (!forum_channel || forum_channel.type !== ChannelType.GuildForum) {
+      await log_error(client, new Error("Forum channel not found"), "share_settings_forum_sticky", {
         channel_id : FORUM_CHANNEL_ID,
-        response   : result,
       })
       return
     }
 
+    const previous = await db.find_one<{ key: string; thread_id?: string }>(FORUM_STICKY_COLLECTION, { key: "latest" })
+    if (previous?.thread_id) {
+      const old_thread = await client.channels.fetch(previous.thread_id).catch(() => null)
+      if (old_thread && old_thread.isThread()) {
+        await old_thread.delete().catch(() => {})
+      }
+    }
+
+    const forum = forum_channel as ForumChannel
+    const thread = await forum.threads.create({
+      name               : "Latest Rod Settings",
+      autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+      message            : {
+        content : "Latest Rod Settings",
+      },
+    })
+
+    const payload = build_forum_sticky_message(record, settings_link)
+    const result = await api.send_components_v2(thread.id, api.get_token(), payload)
+
+    if (result.error || !result.id) {
+      await log_error(client, new Error("Failed to send forum sticky"), "share_settings_forum_sticky", {
+        thread_id : thread.id,
+        response  : result,
+      })
+      return
+    }
+
+    await pin_forum_message(client, thread.id, String(result.id))
     await db.update_one(FORUM_STICKY_COLLECTION, { key: "latest" }, {
       key        : "latest",
+      thread_id  : thread.id,
       message_id : String(result.id),
       channel_id : FORUM_CHANNEL_ID,
       created_at : Date.now(),
