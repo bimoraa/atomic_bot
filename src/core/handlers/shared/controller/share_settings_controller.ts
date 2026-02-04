@@ -490,10 +490,6 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
       return
     }
 
-    const thread_message = await thread_channel.messages.fetch(String(result.id)).catch(() => null)
-    if (thread_message && !thread_message.pinned) {
-      await thread_message.pin().catch(() => {})
-    }
     await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
       key        : thread_id,
       message_id : String(result.id),
