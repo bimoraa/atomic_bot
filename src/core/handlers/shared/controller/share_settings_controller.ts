@@ -474,14 +474,24 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
 
     if (!settings_link) return
 
-    const previous = await db.find_one<{ key: string; message_id: string }>(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id })
-    if (previous?.message_id) {
-      await api.delete_message(thread_id, previous.message_id, api.get_token())
-    }
+    const previous = await db.find_one<{ key: string; message_id?: string; last_sent?: number }>(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id })
+    const now = Date.now()
+    if (previous?.last_sent && now - previous.last_sent < 30000) return
 
     const payload = build_forum_thread_sticky_message(record, settings_link)
-    const result = await api.send_components_v2(thread_id, api.get_token(), payload)
+    if (previous?.message_id) {
+      const edited = await api.edit_components_v2(thread_id, previous.message_id, api.get_token(), payload)
+      if (!edited?.error) {
+        await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
+          key        : thread_id,
+          message_id : previous.message_id,
+          last_sent  : now,
+        }, true)
+        return
+      }
+    }
 
+    const result = await api.send_components_v2(thread_id, api.get_token(), payload)
     if (result.error || !result.id) {
       await log_error(client, new Error("Failed to send thread sticky"), "share_settings_thread_sticky", {
         thread_id : thread_id,
@@ -494,7 +504,7 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
     await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
       key        : thread_id,
       message_id : String(result.id),
-      created_at : Date.now(),
+      last_sent  : now,
     }, true)
   } catch (error) {
     await log_error(client, error as Error, "share_settings_thread_sticky", {
@@ -599,33 +609,7 @@ export async function pin_forum_message(client: Client, thread_id: string, messa
 export async function backfill_forum_extras(client: Client): Promise<void> {
   try {
     const records = await list_settings_records(client)
-    const updated_records: rod_settings_record[] = []
-
-    for (const record of records) {
-      if (!record.forum_thread_id || !record.forum_message_id) {
-        const forum_data = await ensure_forum_post(client, record)
-        if (forum_data.forum_thread_id) {
-          const thread_channel = await client.channels.fetch(forum_data.forum_thread_id).catch(() => null)
-          const thread_link = thread_channel && "guildId" in thread_channel && thread_channel.guildId
-            ? `https://discord.com/channels/${thread_channel.guildId}/${forum_data.forum_thread_id}`
-            : record.thread_link
-
-          const updated = await update_settings_record(client, record.settings_id, {
-            forum_thread_id  : forum_data.forum_thread_id,
-            forum_message_id : forum_data.forum_message_id,
-            forum_channel_id : forum_data.forum_channel_id,
-            thread_id        : forum_data.forum_thread_id,
-            thread_link      : thread_link,
-          })
-          if (updated) {
-            updated_records.push(updated)
-          }
-        }
-        continue
-      }
-
-      updated_records.push(record)
-    }
+    const updated_records = records.filter((record) => record.forum_thread_id && record.forum_message_id)
 
     for (const record of updated_records) {
       if (record.forum_thread_id && record.forum_message_id) {
