@@ -280,6 +280,16 @@ function build_star_summary(record: rod_settings_record): string {
 }
 
 /**
+ * - BUILD FORUM THREAD NAME - \\
+ * @param {rod_settings_record} record - Settings record
+ * @returns {string} Thread name
+ */
+function build_forum_thread_name(record: rod_settings_record): string {
+  const skin_text = record.rod_skin ? record.rod_skin : "No Skin"
+  return `${record.rod_name} - ${skin_text} by ${record.publisher_name}`
+}
+
+/**
  * - BUILD SHARE SETTINGS PICKER MESSAGE - \\
  * @param {object} options - Picker options
  * @param {string} options.token - Pending token
@@ -452,7 +462,7 @@ export async function ensure_forum_post(
 
     const forum = channel as ForumChannel
     const thread = await forum.threads.create({
-      name               : `${record.rod_name} - ${record.publisher_name}`,
+      name               : build_forum_thread_name(record),
       autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
       message            : {
         content : `Rod settings by <@${record.publisher_id}>`,
@@ -498,6 +508,14 @@ export async function update_forum_message(client: Client, record: rod_settings_
   if (!record.forum_thread_id || !record.forum_message_id) return false
 
   try {
+    const channel = await client.channels.fetch(record.forum_thread_id).catch(() => null)
+    if (channel && channel.isThread()) {
+      const expected_name = build_forum_thread_name(record)
+      if (channel.name !== expected_name) {
+        await channel.setName(expected_name).catch(() => {})
+      }
+    }
+
     const payload = build_forum_message(record)
     const response = await api.edit_components_v2(record.forum_thread_id, record.forum_message_id, api.get_token(), payload)
     if (response?.error) {
