@@ -22,6 +22,7 @@ const ROD_LIST_COLLECTION    = "rod_settings_rods"
 const SKIN_LIST_COLLECTION   = "rod_settings_skins"
 const FORUM_TAG_POPULAR       = "Most Popular"
 const MOST_POPULAR_MIN_LIKES  = 10
+const FORUM_STICKY_COLLECTION = "rod_settings_forum_sticky"
 
 export interface rod_settings_record {
   settings_id        : string
@@ -287,6 +288,37 @@ function build_forum_thread_name(record: rod_settings_record): string {
 }
 
 /**
+ * - BUILD SETTINGS MESSAGE LINK - \\
+ * @param {Client} client - Discord client
+ * @param {rod_settings_record} record - Settings record
+ * @returns {Promise<string | null>} Link
+ */
+async function build_settings_message_link(client: Client, record: rod_settings_record): Promise<string | null> {
+  if (record.channel_id && record.message_id) {
+    const channel = await client.channels.fetch(record.channel_id).catch(() => null)
+    if (channel && "guildId" in channel && channel.guildId) {
+      return `https://discord.com/channels/${channel.guildId}/${record.channel_id}/${record.message_id}`
+    }
+  }
+
+  if (record.forum_thread_id && record.forum_message_id) {
+    const thread = await client.channels.fetch(record.forum_thread_id).catch(() => null)
+    if (thread && "guildId" in thread && thread.guildId) {
+      return `https://discord.com/channels/${thread.guildId}/${record.forum_thread_id}/${record.forum_message_id}`
+    }
+  }
+
+  if (record.forum_thread_id) {
+    const thread = await client.channels.fetch(record.forum_thread_id).catch(() => null)
+    if (thread && "guildId" in thread && thread.guildId) {
+      return `https://discord.com/channels/${thread.guildId}/${record.forum_thread_id}`
+    }
+  }
+
+  return null
+}
+
+/**
  * - BUILD TAG NAMES - \\
  * @param {rod_settings_record} record - Settings record
  * @returns {string[]} Tag names
@@ -355,6 +387,101 @@ function build_applied_tags(record: rod_settings_record, tag_map: Map<string, st
   if (pop_id && is_most_popular(record)) tag_ids.push(pop_id)
 
   return Array.from(new Set(tag_ids))
+}
+
+/**
+ * - BUILD FORUM STICKY MESSAGE - \\
+ * @param {rod_settings_record} record - Settings record
+ * @param {string} settings_link - Settings link
+ * @returns {message_payload} Message payload
+ */
+function build_forum_sticky_message(record: rod_settings_record, settings_link: string): message_payload {
+  return component.build_message({
+    components : [
+      component.container({
+        components : [
+          component.text([
+            "## Latest Rod Settings",
+            `${record.rod_name} - ${record.rod_skin || "No Skin"} by ${record.publisher_name}`,
+            `Total Like: ${record.star_count}`,
+          ]),
+        ],
+      }),
+      component.container({
+        components : [
+          component.action_row(
+            component.link_button("Open Settings", settings_link)
+          ),
+        ],
+      }),
+    ],
+  })
+}
+
+/**
+ * - UPDATE FORUM STICKY MESSAGE - \\
+ * @param {Client} client - Discord client
+ * @param {rod_settings_record} record - Settings record
+ * @returns {Promise<void>} Void
+ */
+async function update_forum_sticky_message(client: Client, record: rod_settings_record): Promise<void> {
+  const settings_link = await build_settings_message_link(client, record)
+  if (!settings_link) return
+
+  try {
+    const previous = await db.find_one<{ key: string; message_id: string; channel_id: string }>(FORUM_STICKY_COLLECTION, { key: "latest" })
+    if (previous?.message_id && previous.channel_id) {
+      await api.delete_message(previous.channel_id, previous.message_id, api.get_token())
+    }
+
+    const payload = build_forum_sticky_message(record, settings_link)
+    const result = await api.send_components_v2(FORUM_CHANNEL_ID, api.get_token(), payload)
+
+    if (result.error || !result.id) {
+      await log_error(client, new Error("Failed to send forum sticky"), "share_settings_forum_sticky", {
+        channel_id : FORUM_CHANNEL_ID,
+        response   : result,
+      })
+      return
+    }
+
+    await db.update_one(FORUM_STICKY_COLLECTION, { key: "latest" }, {
+      key        : "latest",
+      message_id : String(result.id),
+      channel_id : FORUM_CHANNEL_ID,
+      created_at : Date.now(),
+    }, true)
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_forum_sticky", {
+      channel_id : FORUM_CHANNEL_ID,
+    })
+  }
+}
+
+/**
+ * - PIN FORUM MESSAGE - \\
+ * @param {Client} client - Discord client
+ * @param {string} thread_id - Thread ID
+ * @param {string} message_id - Message ID
+ * @returns {Promise<void>} Void
+ */
+async function pin_forum_message(client: Client, thread_id: string, message_id: string): Promise<void> {
+  try {
+    const channel = await client.channels.fetch(thread_id).catch(() => null)
+    if (!channel || !channel.isThread()) return
+
+    const message = await channel.messages.fetch(message_id).catch(() => null)
+    if (!message) return
+
+    if (!message.pinned) {
+      await message.pin().catch(() => {})
+    }
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_forum_pin", {
+      thread_id  : thread_id,
+      message_id : message_id,
+    })
+  }
 }
 
 /**
@@ -554,6 +681,9 @@ export async function ensure_forum_post(
         forum_channel_id : FORUM_CHANNEL_ID,
       }
     }
+
+    await pin_forum_message(client, thread.id, String(result.id))
+    await update_forum_sticky_message(client, record)
 
     return {
       forum_thread_id  : thread.id,
