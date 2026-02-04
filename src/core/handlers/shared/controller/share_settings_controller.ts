@@ -24,6 +24,7 @@ const FORUM_TAG_POPULAR       = "Most Popular"
 const MOST_POPULAR_MIN_LIKES  = 10
 const FORUM_STICKY_COLLECTION = "rod_settings_forum_sticky"
 const FORUM_THREAD_STICKY_COLLECTION = "rod_settings_forum_thread_sticky"
+const sticky_lock             = new Set<string>()
 
 export interface rod_settings_record {
   settings_id        : string
@@ -447,17 +448,9 @@ function build_forum_thread_sticky_message(record: rod_settings_record, settings
     components : [
       component.container({
         components : [
-          component.text([
-            "## Settings Shortcut",
-            `${record.rod_name} - ${record.rod_skin || "No Skin"} by ${record.publisher_name}`,
-            `Total Like: ${record.star_count}`,
-          ]),
-        ],
-      }),
-      component.container({
-        components : [
           component.action_row(
-            component.link_button("Open Settings", settings_link)
+            component.link_button("Jump to Settings", settings_link),
+            component.secondary_button("Like", `share_settings_star:${record.settings_id}`)
           ),
         ],
       }),
@@ -473,6 +466,9 @@ function build_forum_thread_sticky_message(record: rod_settings_record, settings
  * @returns {Promise<void>} Void
  */
 export async function update_forum_thread_sticky(client: Client, thread_id: string, record: rod_settings_record): Promise<void> {
+  if (sticky_lock.has(thread_id)) return
+  sticky_lock.add(thread_id)
+
   try {
     const thread_channel = await client.channels.fetch(thread_id).catch(() => null)
     if (!thread_channel || !thread_channel.isThread()) return
@@ -507,6 +503,8 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
     await log_error(client, error as Error, "share_settings_thread_sticky", {
       thread_id : thread_id,
     })
+  } finally {
+    sticky_lock.delete(thread_id)
   }
 }
 
