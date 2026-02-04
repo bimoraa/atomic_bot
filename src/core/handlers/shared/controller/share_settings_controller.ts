@@ -474,9 +474,7 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
 
     if (!settings_link) return
 
-    const previous = await db.find_one<{ key: string; message_id?: string; last_sent?: number }>(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id })
-    const now = Date.now()
-    if (previous?.last_sent && now - previous.last_sent < 30000) return
+    const previous = await db.find_one<{ key: string; message_id?: string }>(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id })
 
     const payload = build_forum_thread_sticky_message(record, settings_link)
     if (previous?.message_id) {
@@ -485,7 +483,6 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
         await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
           key        : thread_id,
           message_id : previous.message_id,
-          last_sent  : now,
         }, true)
         return
       }
@@ -504,7 +501,6 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
     await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
       key        : thread_id,
       message_id : String(result.id),
-      last_sent  : now,
     }, true)
   } catch (error) {
     await log_error(client, error as Error, "share_settings_thread_sticky", {
