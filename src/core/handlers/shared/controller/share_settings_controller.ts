@@ -355,18 +355,27 @@ function is_most_popular(record: rod_settings_record): boolean {
  */
 async function ensure_forum_tags(client: Client, forum: ForumChannel, required: string[]): Promise<Map<string, string>> {
   const existing = forum.availableTags || []
-  const existing_map = new Map(existing.map((tag) => [tag.name, tag.id]))
+  const existing_map = new Map(existing.map((tag) => [tag.name.toLowerCase(), tag.id]))
 
-  const missing = required.filter((name) => !existing_map.has(name))
+  const unique_required = Array.from(new Set(required.map((name) => name.trim()).filter(Boolean)))
+  const missing = unique_required.filter((name) => !existing_map.has(name.toLowerCase()))
   if (missing.length > 0) {
-    const updated_tags = [
-      ...existing,
+    const merged = [
+      ...existing.map((tag) => ({ name: tag.name, moderated: tag.moderated })),
       ...missing.map((name) => ({ name: name, moderated: false })),
     ]
 
+    const seen = new Set<string>()
+    const updated_tags = merged.filter((tag) => {
+      const key = tag.name.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+
     try {
       const updated_forum = await forum.setAvailableTags(updated_tags)
-      const updated_map = new Map(updated_forum.availableTags.map((tag) => [tag.name, tag.id]))
+      const updated_map = new Map(updated_forum.availableTags.map((tag) => [tag.name.toLowerCase(), tag.id]))
       return updated_map
     } catch (error) {
       await log_error(client, error as Error, "share_settings_forum_tags", {
@@ -387,9 +396,9 @@ async function ensure_forum_tags(client: Client, forum: ForumChannel, required: 
  */
 function build_applied_tags(record: rod_settings_record, tag_map: Map<string, string>): string[] {
   const tag_ids: string[] = []
-  const rod_id  = tag_map.get(record.rod_name)
-  const skin_id = tag_map.get(record.rod_skin ? record.rod_skin : "No Skin")
-  const pop_id  = tag_map.get(FORUM_TAG_POPULAR)
+  const rod_id  = tag_map.get(record.rod_name.toLowerCase())
+  const skin_id = tag_map.get((record.rod_skin ? record.rod_skin : "No Skin").toLowerCase())
+  const pop_id  = tag_map.get(FORUM_TAG_POPULAR.toLowerCase())
 
   if (rod_id) tag_ids.push(rod_id)
   if (skin_id) tag_ids.push(skin_id)
