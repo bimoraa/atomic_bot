@@ -478,14 +478,7 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
 
     const payload = build_forum_thread_sticky_message(record, settings_link)
     if (previous?.message_id) {
-      const edited = await api.edit_components_v2(thread_id, previous.message_id, api.get_token(), payload)
-      if (!edited?.error) {
-        await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
-          key        : thread_id,
-          message_id : previous.message_id,
-        }, true)
-        return
-      }
+      await api.delete_message(thread_id, previous.message_id, api.get_token())
     }
 
     const result = await api.send_components_v2(thread_id, api.get_token(), payload)
@@ -497,7 +490,10 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
       return
     }
 
-    await pin_forum_message(client, thread_id, String(result.id))
+    const thread_message = await thread_channel.messages.fetch(String(result.id)).catch(() => null)
+    if (thread_message && !thread_message.pinned) {
+      await thread_message.pin().catch(() => {})
+    }
     await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
       key        : thread_id,
       message_id : String(result.id),
