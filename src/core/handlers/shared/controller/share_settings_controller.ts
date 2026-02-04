@@ -261,6 +261,75 @@ export function get_settings_channel_id(): string {
 }
 
 /**
+ * - SEND SETTINGS MESSAGE - \\
+ * @param {Client} client - Discord client
+ * @param {rod_settings_record} record - Settings record
+ * @param {message_payload} payload - Message payload
+ * @returns {Promise<{ channel_id: string; message_id: string } | null>} Result
+ */
+export async function send_settings_message(
+  client: Client,
+  record: rod_settings_record,
+  payload: message_payload
+): Promise<{ channel_id: string; message_id: string } | null> {
+  try {
+    const channel = await client.channels.fetch(SETTINGS_CHANNEL_ID).catch(() => null)
+    if (!channel) {
+      await log_error(client, new Error("Settings channel not found"), "share_settings_channel_missing", {
+        channel_id : SETTINGS_CHANNEL_ID,
+      })
+      return null
+    }
+
+    if (channel.type === ChannelType.GuildForum) {
+      const forum = channel as ForumChannel
+      const thread = await forum.threads.create({
+        name               : build_forum_thread_name(record),
+        autoArchiveDuration: ThreadAutoArchiveDuration.OneWeek,
+        message            : {
+          content : `Rod settings by <@${record.publisher_id}>`,
+        },
+      })
+
+      const result = await api.send_components_v2(thread.id, api.get_token(), payload)
+      if (result.error || !result.id) {
+        await log_error(client, new Error("Failed to post settings"), "share_settings_post", {
+          channel_id : thread.id,
+          response   : result,
+        })
+        return null
+      }
+
+      return { channel_id: thread.id, message_id: String(result.id) }
+    }
+
+    if (channel.isTextBased()) {
+      const result = await api.send_components_v2(channel.id, api.get_token(), payload)
+      if (result.error || !result.id) {
+        await log_error(client, new Error("Failed to post settings"), "share_settings_post", {
+          channel_id : channel.id,
+          response   : result,
+        })
+        return null
+      }
+
+      return { channel_id: channel.id, message_id: String(result.id) }
+    }
+
+    await log_error(client, new Error("Settings channel not text based"), "share_settings_post", {
+      channel_id : SETTINGS_CHANNEL_ID,
+      type       : channel.type,
+    })
+    return null
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_post", {
+      channel_id : SETTINGS_CHANNEL_ID,
+    })
+    return null
+  }
+}
+
+/**
  * - GET FORUM CHANNEL ID - \\
  * @returns {string} Channel ID
  */

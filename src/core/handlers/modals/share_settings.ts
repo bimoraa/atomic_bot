@@ -84,18 +84,11 @@ export async function handle_share_settings_modal(interaction: ModalSubmitIntera
         index   : 0,
       })
 
-      const channel_id = share_settings.get_settings_channel_id()
-      const result = await api.send_components_v2(channel_id, api.get_token(), message_payload)
-
-      if (result.error || !result.id) {
-        await log_error(interaction.client, new Error("Failed to post settings"), "share_settings_post", {
-          channel_id : channel_id,
-          response   : result,
-        })
-      } else {
+      const posted = await share_settings.send_settings_message(interaction.client, final_record, message_payload)
+      if (posted) {
         await share_settings.update_settings_record(interaction.client, record.settings_id, {
-          message_id : String(result.id),
-          channel_id : channel_id,
+          message_id : posted.message_id,
+          channel_id : posted.channel_id,
         })
       }
 
