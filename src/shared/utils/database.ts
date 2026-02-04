@@ -482,28 +482,56 @@ async function migrate_tables(client: any): Promise<void> {
     `).catch(() => { })
 
     await client.query(`
-      ALTER TABLE loa_requests 
-      ALTER COLUMN start_date TYPE BIGINT USING EXTRACT(EPOCH FROM start_date)::BIGINT
+      DO $$
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns
+        WHERE table_name = 'hwid_less_schedule' AND column_name = 'scheduled_time';
+
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE hwid_less_schedule 
+          ALTER COLUMN scheduled_time TYPE BIGINT
+          USING CASE
+            WHEN pg_typeof(scheduled_time) IN ('timestamp without time zone'::regtype, 'timestamp with time zone'::regtype)
+              THEN EXTRACT(EPOCH FROM scheduled_time)::BIGINT
+            ELSE scheduled_time::BIGINT
+          END;
+        ELSIF col_type IS NULL THEN
+          ALTER TABLE hwid_less_schedule ADD COLUMN scheduled_time BIGINT;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with hwid_less_schedule.scheduled_time: %', SQLERRM;
+      END $$;
     `).catch(() => { })
 
     await client.query(`
-      ALTER TABLE loa_requests 
-      ALTER COLUMN end_date TYPE BIGINT USING EXTRACT(EPOCH FROM end_date)::BIGINT
-    `).catch(() => { })
+      DO $$
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns
+        WHERE table_name = 'hwid_less_schedule' AND column_name = 'created_at';
 
-    await client.query(`
-      ALTER TABLE loa_requests 
-      ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT
-    `).catch(() => { })
-
-    await client.query(`
-      ALTER TABLE hwid_less_schedule 
-      ALTER COLUMN scheduled_time TYPE BIGINT USING EXTRACT(EPOCH FROM scheduled_time)::BIGINT
-    `).catch(() => { })
-
-    await client.query(`
-      ALTER TABLE hwid_less_schedule 
-      ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE hwid_less_schedule ALTER COLUMN created_at DROP DEFAULT;
+          ALTER TABLE hwid_less_schedule 
+          ALTER COLUMN created_at TYPE BIGINT
+          USING CASE
+            WHEN pg_typeof(created_at) IN ('timestamp without time zone'::regtype, 'timestamp with time zone'::regtype)
+              THEN EXTRACT(EPOCH FROM created_at)::BIGINT
+            ELSE created_at::BIGINT
+          END;
+        ELSIF col_type IS NULL THEN
+          ALTER TABLE hwid_less_schedule ADD COLUMN created_at BIGINT;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with hwid_less_schedule.created_at: %', SQLERRM;
+      END $$;
     `).catch(() => { })
 
     await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS guild_id`).catch(() => { })
@@ -531,7 +559,30 @@ async function migrate_tables(client: any): Promise<void> {
     await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS amount INTEGER DEFAULT 0`).catch(() => { })
     await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS salary INTEGER DEFAULT 0`).catch(() => { })
     await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS date VARCHAR(255)`).catch(() => { })
-    await client.query(`ALTER TABLE work_logs ALTER COLUMN created_at TYPE BIGINT USING EXTRACT(EPOCH FROM created_at)::BIGINT * 1000`).catch(() => { })
+    await client.query(`
+      DO $$
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns
+        WHERE table_name = 'work_logs' AND column_name = 'created_at';
+
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE work_logs ALTER COLUMN created_at DROP DEFAULT;
+          ALTER TABLE work_logs
+          ALTER COLUMN created_at TYPE BIGINT
+          USING CASE
+            WHEN pg_typeof(created_at) IN ('timestamp without time zone'::regtype, 'timestamp with time zone'::regtype)
+              THEN (EXTRACT(EPOCH FROM created_at)::BIGINT * 1000)
+            ELSE created_at::BIGINT
+          END;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with work_logs.created_at: %', SQLERRM;
+      END $$;
+    `).catch(() => { })
     await client.query(`ALTER TABLE work_logs ALTER COLUMN week_number DROP NOT NULL`).catch(() => { })
     await client.query(`ALTER TABLE work_logs ALTER COLUMN year DROP NOT NULL`).catch(() => { })
 

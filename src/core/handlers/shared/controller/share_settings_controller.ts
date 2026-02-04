@@ -23,6 +23,7 @@ const SKIN_LIST_COLLECTION   = "rod_settings_skins"
 const FORUM_TAG_POPULAR       = "Most Popular"
 const MOST_POPULAR_MIN_LIKES  = 10
 const FORUM_STICKY_COLLECTION = "rod_settings_forum_sticky"
+const FORUM_THREAD_STICKY_COLLECTION = "rod_settings_forum_thread_sticky"
 
 export interface rod_settings_record {
   settings_id        : string
@@ -259,6 +260,14 @@ export function get_settings_channel_id(): string {
 }
 
 /**
+ * - GET FORUM CHANNEL ID - \\
+ * @returns {string} Channel ID
+ */
+export function get_forum_channel_id(): string {
+  return FORUM_CHANNEL_ID
+}
+
+/**
  * - NORMALIZE TEXT - \\
  * @param {string} value - Input text
  * @returns {string} Normalized text
@@ -419,6 +428,82 @@ function build_forum_sticky_message(record: rod_settings_record, settings_link: 
 }
 
 /**
+ * - BUILD FORUM THREAD STICKY MESSAGE - \\
+ * @param {rod_settings_record} record - Settings record
+ * @param {string} settings_link - Settings link
+ * @returns {message_payload} Message payload
+ */
+function build_forum_thread_sticky_message(record: rod_settings_record, settings_link: string): message_payload {
+  return component.build_message({
+    components : [
+      component.container({
+        components : [
+          component.text([
+            "## Settings Shortcut",
+            `${record.rod_name} - ${record.rod_skin || "No Skin"} by ${record.publisher_name}`,
+            `Total Like: ${record.star_count}`,
+          ]),
+        ],
+      }),
+      component.container({
+        components : [
+          component.action_row(
+            component.link_button("Open Settings", settings_link)
+          ),
+        ],
+      }),
+    ],
+  })
+}
+
+/**
+ * - UPDATE FORUM THREAD STICKY - \\
+ * @param {Client} client - Discord client
+ * @param {string} thread_id - Thread ID
+ * @param {rod_settings_record} record - Settings record
+ * @returns {Promise<void>} Void
+ */
+export async function update_forum_thread_sticky(client: Client, thread_id: string, record: rod_settings_record): Promise<void> {
+  try {
+    const thread_channel = await client.channels.fetch(thread_id).catch(() => null)
+    if (!thread_channel || !thread_channel.isThread()) return
+
+    const settings_link = record.forum_thread_id && record.forum_message_id && "guildId" in thread_channel && thread_channel.guildId
+      ? `https://discord.com/channels/${thread_channel.guildId}/${record.forum_thread_id}/${record.forum_message_id}`
+      : await build_settings_message_link(client, record)
+
+    if (!settings_link) return
+
+    const previous = await db.find_one<{ key: string; message_id: string }>(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id })
+    if (previous?.message_id) {
+      await api.delete_message(thread_id, previous.message_id, api.get_token())
+    }
+
+    const payload = build_forum_thread_sticky_message(record, settings_link)
+    const result = await api.send_components_v2(thread_id, api.get_token(), payload)
+
+    if (result.error || !result.id) {
+      await log_error(client, new Error("Failed to send thread sticky"), "share_settings_thread_sticky", {
+        thread_id : thread_id,
+        response  : result,
+      })
+      return
+    }
+
+    await pin_forum_message(client, thread_id, String(result.id))
+    await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
+      key        : thread_id,
+      message_id : String(result.id),
+      created_at : Date.now(),
+    }, true)
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_thread_sticky", {
+      thread_id : thread_id,
+    })
+  }
+}
+
+/**
  * - UPDATE FORUM STICKY MESSAGE - \\
  * @param {Client} client - Discord client
  * @param {rod_settings_record} record - Settings record
@@ -514,13 +599,43 @@ export async function pin_forum_message(client: Client, thread_id: string, messa
 export async function backfill_forum_extras(client: Client): Promise<void> {
   try {
     const records = await list_settings_records(client)
-    const forum_records = records.filter((record) => record.forum_thread_id && record.forum_message_id)
+    const updated_records: rod_settings_record[] = []
 
-    for (const record of forum_records) {
-      await pin_forum_message(client, record.forum_thread_id as string, record.forum_message_id as string)
+    for (const record of records) {
+      if (!record.forum_thread_id || !record.forum_message_id) {
+        const forum_data = await ensure_forum_post(client, record)
+        if (forum_data.forum_thread_id) {
+          const thread_channel = await client.channels.fetch(forum_data.forum_thread_id).catch(() => null)
+          const thread_link = thread_channel && "guildId" in thread_channel && thread_channel.guildId
+            ? `https://discord.com/channels/${thread_channel.guildId}/${forum_data.forum_thread_id}`
+            : record.thread_link
+
+          const updated = await update_settings_record(client, record.settings_id, {
+            forum_thread_id  : forum_data.forum_thread_id,
+            forum_message_id : forum_data.forum_message_id,
+            forum_channel_id : forum_data.forum_channel_id,
+            thread_id        : forum_data.forum_thread_id,
+            thread_link      : thread_link,
+          })
+          if (updated) {
+            updated_records.push(updated)
+          }
+        }
+        continue
+      }
+
+      updated_records.push(record)
     }
 
-    const latest = forum_records.sort((a, b) => b.created_at - a.created_at)[0]
+    for (const record of updated_records) {
+      if (record.forum_thread_id && record.forum_message_id) {
+        await pin_forum_message(client, record.forum_thread_id, record.forum_message_id)
+      }
+    }
+
+    const latest = updated_records
+      .filter((record) => record.forum_thread_id && record.forum_message_id)
+      .sort((a, b) => b.created_at - a.created_at)[0]
     if (latest) {
       await update_forum_sticky_message(client, latest)
     }
@@ -1169,6 +1284,23 @@ export async function list_settings_records(client: Client): Promise<rod_setting
   } catch (error) {
     await log_error(client, error as Error, "share_settings_list", {})
     return []
+  }
+}
+
+/**
+ * - GET SETTINGS BY FORUM THREAD - \\
+ * @param {Client} client - Discord client
+ * @param {string} thread_id - Thread ID
+ * @returns {Promise<rod_settings_record | null>} Record
+ */
+export async function get_settings_by_forum_thread_id(client: Client, thread_id: string): Promise<rod_settings_record | null> {
+  try {
+    return await db.find_one<rod_settings_record>(SETTINGS_COLLECTION, { forum_thread_id: thread_id })
+  } catch (error) {
+    await log_error(client, error as Error, "share_settings_get_by_forum_thread", {
+      thread_id : thread_id,
+    })
+    return null
   }
 }
 

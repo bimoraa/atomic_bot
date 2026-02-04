@@ -29,6 +29,7 @@ import { start_quarantine_scheduler }                                    from ".
 import { load_middleman_tickets_on_startup }                             from "./core/handlers/schedulers/load_middleman_tickets"
 import { start_idn_live_scheduler }                                      from "./core/handlers/schedulers/idn_live_monitor"
 import { start_share_settings_forum_scheduler }                          from "./core/handlers/schedulers/share_settings_forum"
+import * as share_settings                                               from "./core/handlers/shared/controller/share_settings_controller"
 
 config()
 
@@ -253,6 +254,13 @@ client.on("userUpdate", async (old_user, new_user) => {
 
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
+
+  if (message.channel.isThread() && message.channel.parentId === share_settings.get_forum_channel_id()) {
+    const record = await share_settings.get_settings_by_forum_thread_id(client, message.channel.id)
+    if (record) {
+      await share_settings.update_forum_thread_sticky(client, message.channel.id, record)
+    }
+  }
 
   await handle_afk_return(message)
   await handle_afk_mentions(message)
