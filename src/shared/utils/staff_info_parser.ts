@@ -59,7 +59,6 @@ function markdown_to_discord(markdown: string): string {
     .replace(/^### /gm, "### ")
     .replace(/^## /gm, "## ")
     .replace(/^# /gm, "# ")
-    .replace(/---/g, "")
     .trim()
 }
 
