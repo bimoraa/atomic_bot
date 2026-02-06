@@ -78,6 +78,9 @@ import * as share_settings_picker        from "./select_menus/share_settings/pic
 import * as share_settings_star          from "./buttons/share_settings/give_star"
 import * as share_settings_continue      from "./buttons/share_settings/continue"
 import * as share_settings_pagination    from "./buttons/share_settings/pagination"
+import * as staff_info_handlers          from "./buttons/staff_info/handlers"
+import * as staff_info_lang_select       from "./select_menus/staff_info/lang_select"
+import { handle_edit_staff_info_modal }  from "./modals/staff_info"
 
 
 async function handle_anti_spam_button(interaction: ButtonInteraction, client: Client): Promise<void> {
@@ -213,6 +216,10 @@ export async function handle_interaction(
       }
       if (interaction.customId.startsWith("share_settings_pick_rod:") || interaction.customId.startsWith("share_settings_pick_skin:")) {
         await share_settings_picker.handle_share_settings_picker(interaction)
+        return
+      }
+      if (interaction.customId === "staff_info_lang_select") {
+        await staff_info_lang_select.handle_staff_info_lang_select(interaction)
         return
       }
       if (await tempvoice_region_select.handle_tempvoice_region_select(interaction)) return
@@ -491,6 +498,10 @@ export async function handle_interaction(
         await jkt48_check_on_live.handle_check_on_live_button(interaction)
         return
       }
+      if (interaction.customId.startsWith("staff_info_")) {
+        await staff_info_handlers.handle_staff_info_button(interaction)
+        return
+      }
     } catch (err) {
       console.log("[button] Error:", err)
       await log_error(client, err as Error, "Button", {
@@ -528,6 +539,7 @@ export async function handle_interaction(
         return
       }
       if (await handle_share_settings_modal(interaction)) return
+      if (await handle_edit_staff_info_modal(interaction)) return
     } catch (err) {
       console.log("[modal] Error:", err)
       await log_error(client, err as Error, "ModalSubmit", {
