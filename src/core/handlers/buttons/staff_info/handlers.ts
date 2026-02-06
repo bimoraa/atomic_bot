@@ -2,7 +2,6 @@ import { ButtonInteraction }          from "discord.js"
 import { log_error }                  from "../../../../shared/utils/error_logger"
 import { get_staff_info_document, custom_id_to_file_name } from "../../../../shared/utils/staff_info_parser"
 import {
-  build_message,
   container,
   text,
   separator,
@@ -39,7 +38,12 @@ export function build_staff_info_message(options: {
     components_list.pop()
   }
 
-  const message_payload = build_message({
+  if (components_list.length === 0) {
+    components_list.push(text("No content available."))
+  }
+
+  return {
+    flags: 32768 | 64,
     components: [
       container({
         components: components_list,
@@ -81,11 +85,7 @@ export function build_staff_info_message(options: {
         ],
       }),
     ],
-  })
-
-  message_payload.flags = (message_payload.flags ?? 0) | 64
-
-  return message_payload
+  }
 }
 
 /**
