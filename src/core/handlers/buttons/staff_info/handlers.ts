@@ -18,8 +18,9 @@ import {
 export function build_staff_info_message(options: {
   doc: NonNullable<Awaited<ReturnType<typeof get_staff_info_document>>>
   selected_lang: string
+  include_flags?: boolean
 }) {
-  const { doc, selected_lang } = options
+  const { doc, selected_lang, include_flags = true } = options
   const components_list: any[] = []
 
   // - SPLIT CONTENT BY --- SEPARATORS - \\
@@ -42,8 +43,7 @@ export function build_staff_info_message(options: {
     components_list.push(text("No content available."))
   }
 
-  return {
-    flags: 32768 | 64,
+  const message_payload: any = {
     components: [
       container({
         components: components_list,
@@ -86,6 +86,12 @@ export function build_staff_info_message(options: {
       }),
     ],
   }
+
+  if (include_flags) {
+    message_payload.flags = 32768
+  }
+
+  return message_payload
 }
 
 /**
@@ -96,15 +102,16 @@ export function build_staff_info_message(options: {
  */
 export async function handle_staff_info_button(interaction: ButtonInteraction): Promise<void> {
   try {
+    await interaction.deferReply({ ephemeral: true })
+
     const file_name = custom_id_to_file_name(interaction.customId)
     const language  = "id"
     
     const doc = await get_staff_info_document(file_name, language)
 
     if (!doc) {
-      await interaction.reply({
+      await interaction.editReply({
         content: "Staff information not found.",
-        ephemeral: true,
       })
       return
     }
@@ -112,9 +119,10 @@ export async function handle_staff_info_button(interaction: ButtonInteraction): 
     const message_payload = build_staff_info_message({
       doc,
       selected_lang: language,
+      include_flags: true,
     })
 
-    await interaction.reply(message_payload)
+    await interaction.editReply(message_payload)
   } catch (err) {
     console.log("[ - STAFF INFO BUTTON - ] Error:", err)
     await log_error(interaction.client, err as Error, "Staff Info Button", {

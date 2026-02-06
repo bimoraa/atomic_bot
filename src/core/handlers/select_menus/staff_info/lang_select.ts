@@ -36,6 +36,7 @@ export async function handle_staff_info_lang_select(interaction: StringSelectMen
     const message_payload = build_staff_info_message({
       doc,
       selected_lang,
+      include_flags: false,
     })
 
     await interaction.update(message_payload)
