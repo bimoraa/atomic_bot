@@ -1,4 +1,4 @@
-import { ButtonInteraction }          from "discord.js"
+import { ButtonInteraction, MessageFlags } from "discord.js"
 import { log_error }                  from "../../../../shared/utils/error_logger"
 import { get_staff_info_document, custom_id_to_file_name } from "../../../../shared/utils/staff_info_parser"
 import {
@@ -18,9 +18,8 @@ import {
 export function build_staff_info_message(options: {
   doc: NonNullable<Awaited<ReturnType<typeof get_staff_info_document>>>
   selected_lang: string
-  include_flags?: boolean
 }) {
-  const { doc, selected_lang, include_flags = true } = options
+  const { doc, selected_lang } = options
   const components_list: any[] = []
 
   // - SPLIT CONTENT BY --- SEPARATORS - \\
@@ -87,9 +86,8 @@ export function build_staff_info_message(options: {
     ],
   }
 
-  if (include_flags) {
-    message_payload.flags = 32768
-  }
+  // Set the container flag (32768)
+  message_payload.flags = 32768
 
   return message_payload
 }
@@ -119,8 +117,10 @@ export async function handle_staff_info_button(interaction: ButtonInteraction): 
     const message_payload = build_staff_info_message({
       doc,
       selected_lang: language,
-      include_flags: true,
     })
+
+    // Combine with Ephemeral flag since deferReply was ephemeral
+    message_payload.flags |= MessageFlags.Ephemeral
 
     await interaction.editReply(message_payload)
   } catch (err) {

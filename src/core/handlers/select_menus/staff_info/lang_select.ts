@@ -1,4 +1,4 @@
-import { StringSelectMenuInteraction } from "discord.js"
+import { StringSelectMenuInteraction, MessageFlags } from "discord.js"
 import { log_error }                   from "../../../../shared/utils/error_logger"
 import { get_staff_info_document } from "../../../../shared/utils/staff_info_parser"
 import { build_staff_info_message }    from "../../buttons/staff_info/handlers"
@@ -36,8 +36,11 @@ export async function handle_staff_info_lang_select(interaction: StringSelectMen
     const message_payload = build_staff_info_message({
       doc,
       selected_lang,
-      include_flags: false,
     })
+
+    // Ensure Ephemeral bit is preserved if we are updating an ephemeral message
+    // and passing flags for V2 components (32768)
+    message_payload.flags |= MessageFlags.Ephemeral
 
     await interaction.update(message_payload)
   } catch (err) {
