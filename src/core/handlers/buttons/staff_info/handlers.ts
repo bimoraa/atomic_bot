@@ -2,6 +2,7 @@ import { ButtonInteraction }          from "discord.js"
 import { log_error }                  from "../../../../shared/utils/error_logger"
 import { get_staff_info_document, custom_id_to_file_name } from "../../../../shared/utils/staff_info_parser"
 import {
+  build_message,
   container,
   text,
   divider,
@@ -46,11 +47,10 @@ export async function handle_staff_info_button(interaction: ButtonInteraction): 
       components_list.pop()
     }
 
-    const message_payload = {
-      flags: 64,
+    const message_payload = build_message({
       components: [
         container({
-          components: components_list
+          components: components_list,
         }),
         container({
           components: [
@@ -82,16 +82,18 @@ export async function handle_staff_info_button(interaction: ButtonInteraction): 
                     default: false,
                   },
                 ],
-              }]
+              }],
             },
             divider(2),
-            text(`*Last Update: <t:${doc.metadata.last_update || Math.floor(Date.now() / 1000)}:F> - Updated by ${doc.metadata.updated_by?.map(id => `<@${id}>`).join(", ") || "System"}*`)
-          ]
+            text(`*Last Update: <t:${doc.metadata.last_update || Math.floor(Date.now() / 1000)}:F> - Updated by ${doc.metadata.updated_by?.map(id => `<@${id}>`).join(", ") || "System"}*`),
+          ],
         }),
       ],
-    }
+    })
 
-    await interaction.reply(message_payload as any)
+    message_payload.flags = (message_payload.flags ?? 0) | 64
+
+    await interaction.reply(message_payload)
   } catch (err) {
     console.log("[ - STAFF INFO BUTTON - ] Error:", err)
     await log_error(interaction.client, err as Error, "Staff Info Button", {
