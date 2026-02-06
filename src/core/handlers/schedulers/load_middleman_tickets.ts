@@ -1,6 +1,7 @@
 import { Client } from "discord.js"
 import { logger } from "../../../shared/utils"
 import { load_active_tickets } from "../../../shared/database/managers/middleman_manager"
+import { load_all_middleman_service_statuses } from "../../../shared/database/managers/middleman_service_manager"
 import { set_user_open_ticket } from "../../../shared/database/unified_ticket"
 
 const log = logger.create_logger("load_middleman_tickets")
@@ -12,6 +13,9 @@ const log = logger.create_logger("load_middleman_tickets")
  */
 export async function load_middleman_tickets_on_startup(client: Client): Promise<void> {
   try {
+    // - LOAD MIDDLEMAN SERVICE STATUSES - \\
+    await load_all_middleman_service_statuses()
+
     log.info("Loading active middleman tickets from database")
 
     const active_tickets = await load_active_tickets()

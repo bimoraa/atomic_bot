@@ -1,5 +1,6 @@
 import { StringSelectMenuInteraction } from "discord.js"
 import { component } from "../../../../shared/utils"
+import { is_middleman_service_open } from "../../../../shared/database/managers/middleman_service_manager"
 
 interface TransactionRange {
   id           : string
@@ -22,6 +23,33 @@ const TRANSACTION_RANGES: Record<string, TransactionRange> = {
  */
 export async function handle_middleman_transaction_range_select(interaction: StringSelectMenuInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true })
+
+  // - CHECK IF MIDDLEMAN SERVICE IS OPEN - \\
+  const is_open = await is_middleman_service_open(interaction.guildId || "")
+  if (!is_open) {
+    const closed_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text("## Middleman Service is Closed"),
+          ],
+          accent_color: 15277667,
+        }),
+        component.container({
+          components: [
+            component.text(
+              "Layanan Midman sedang ditutup sementara.\n\n" +
+              "Mohon tunggu pengumuman resmi mengenai pembukaan kembali layanan.\n" +
+              "Segala bentuk transaksi yang mengatasnamakan midman di luar tanggung jawab kami."
+            ),
+          ],
+        }),
+      ],
+    })
+
+    await interaction.editReply(closed_message)
+    return
+  }
 
   const selected_value = interaction.values[0]
   const range_data     = TRANSACTION_RANGES[selected_value]

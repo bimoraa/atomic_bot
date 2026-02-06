@@ -450,6 +450,21 @@ async function init_tables(): Promise<void> {
       )
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS middleman_service_status (
+        id         SERIAL PRIMARY KEY,
+        guild_id   VARCHAR(255) NOT NULL UNIQUE,
+        is_open    BOOLEAN NOT NULL DEFAULT TRUE,
+        updated_at BIGINT NOT NULL,
+        updated_by VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_middleman_service_status_guild ON middleman_service_status(guild_id)
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")
@@ -699,6 +714,7 @@ function get_table_name(collection: string): string {
     warnings: "warnings",
     ticket_transcripts: "ticket_transcripts",
     guild_settings: "guild_settings",
+    middleman_service_status: "middleman_service_status",
   }
 
   return table_map[collection] || "generic_data"

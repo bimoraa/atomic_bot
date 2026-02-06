@@ -1,5 +1,7 @@
 import { UserSelectMenuInteraction } from "discord.js"
 import { open_middleman_ticket } from "../../controllers/middleman_controller"
+import { is_middleman_service_open } from "../../../../shared/database/managers/middleman_service_manager"
+import { component } from "../../../../shared/utils"
 
 /**
  * @description Handles partner selection for middleman service and opens ticket
@@ -10,6 +12,33 @@ export async function handle_middleman_partner_select(interaction: UserSelectMen
   if (!interaction.customId.startsWith("middleman_partner_select:")) return false
 
   await interaction.deferReply({ ephemeral: true })
+
+  // - CHECK IF MIDDLEMAN SERVICE IS OPEN - \\
+  const is_open = await is_middleman_service_open(interaction.guildId || "")
+  if (!is_open) {
+    const closed_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text("## Middleman Service is Closed"),
+          ],
+          accent_color: 15277667,
+        }),
+        component.container({
+          components: [
+            component.text(
+              "Layanan Midman sedang ditutup sementara.\n\n" +
+              "Mohon tunggu pengumuman resmi mengenai pembukaan kembali layanan.\n" +
+              "Segala bentuk transaksi yang mengatasnamakan midman di luar tanggung jawab kami."
+            ),
+          ],
+        }),
+      ],
+    })
+
+    await interaction.editReply(closed_message)
+    return true
+  }
 
   const range_id   = interaction.customId.split(":")[1]
   const partner_id = interaction.values[0]
