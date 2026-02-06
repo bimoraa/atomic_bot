@@ -257,6 +257,10 @@ export async function handle_interaction(
       if (await middleman_buttons.handle_middleman_close_reason(interaction)) return
       if (await middleman_buttons.handle_middleman_add_member(interaction)) return
       if (await middleman_buttons.handle_middleman_complete(interaction)) return
+      if (interaction.customId === "midman_service_close_info") {
+        await middleman_buttons.handle_middleman_service_close_info(interaction)
+        return
+      }
       if (interaction.customId.startsWith("share_settings_continue:")) {
         await share_settings_continue.handle_share_settings_continue(interaction)
         return

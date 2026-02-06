@@ -63,7 +63,7 @@ export const command: Command = {
             components: [
               component.section({
                 content: "Midman tidak tersedia untuk sementara waktu.\nMohon jangan melakukan transaksi sampai ada pengumuman resmi.",
-                accessory: component.link_button("Info Selengkapnya", "https://discord.com/channels/" + interaction.guildId + "/" + channel.id),
+                accessory: component.primary_button("Info Selengkapnya", "midman_service_close_info"),
               }),
             ],
           }),
@@ -71,28 +71,6 @@ export const command: Command = {
       })
 
       await api.send_components_v2(channel.id, token, announcement_message)
-
-      // - SEND INFO MESSAGE IN THREAD (OPTIONAL) - \\
-      const info_message = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.text(
-                "\nUntuk saat ini, layanan Midman sedang ditutup sementara.\n" +
-                "Penutupan ini bersifat sementara dan dilakukan demi keamanan serta kelancaran transaksi ke depannya.\n\n" +
-                "**Selama status ini berlaku:**\n" +
-                "- Midman tidak menerima transaksi apa pun\n" +
-                "- Segala bentuk transaksi yang mengatasnamakan midman di luar tanggung jawab kami\n" +
-                "- Mohon menunggu pengumuman resmi untuk info pembukaan kembali\n\n" +
-                "Update selanjutnya akan disampaikan melalui channel ini.\n" +
-                "Terima kasih atas perhatian dan pengertiannya 🙏"
-              ),
-            ],
-          }),
-        ],
-      })
-
-      await api.send_components_v2(channel.id, token, info_message)
 
       await interaction.editReply({
         content: `✅ Middleman service has been **CLOSED**. Announcement sent to <#${channel.id}>.`,
