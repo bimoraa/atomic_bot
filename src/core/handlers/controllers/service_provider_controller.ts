@@ -3,16 +3,22 @@ import { db, component }         from "../../../shared/utils"
 import { log_error }             from "../../../shared/utils/error_logger"
 import * as luarmor              from "../../../infrastructure/api/luarmor"
 
-const RESET_COLLECTION       = "service_provider_resets"
-const USER_CACHE_COLLECTION  = "service_provider_user_cache"
-const HWID_RESET_TRACKER     = "hwid_reset_tracker"
-const HWID_RESET_CACHE       = "hwid_reset_cache"
-const CACHE_DURATION_MS      = 120 * 60 * 1000
-const RESET_CACHE_TTL_MS     = 30000
-const RESET_THRESHOLD        = 100
-const HWID_LESS_DURATION_MS  = 60 * 60 * 1000
-const PROJECT_ID             = "6958841b2d9e5e049a24a23e376e0d77"
-const NOTIFICATION_USER      = "1118453649727823974"
+const RESET_COLLECTION            = "service_provider_resets"
+const USER_CACHE_COLLECTION       = "service_provider_user_cache"
+const HWID_RESET_TRACKER          = "hwid_reset_tracker"
+const HWID_RESET_CACHE            = "hwid_reset_cache"
+const HWID_LESS_STATUS_COLLECTION = "hwid_less_status"
+const HWID_LESS_STATUS_KEY        = "auto_hwid_less"
+const CACHE_DURATION_MS           = 120 * 60 * 1000
+const RESET_CACHE_TTL_MS          = 30000
+const RESET_THRESHOLD             = 100
+const HWID_LESS_DURATION_MS       = 60 * 60 * 1000
+const PROJECT_ID                  = "6958841b2d9e5e049a24a23e376e0d77"
+const NOTIFICATION_USER           = "1118453649727823974"
+
+let __auto_hwid_less_lock          = false
+let __auto_disable_timer           : NodeJS.Timeout | null = null
+let __auto_disable_expires_at      : number | null         = null
 
 /**
  * - CHECK IF ERROR IS RATE LIMITED - \\
@@ -148,12 +154,15 @@ interface hwid_reset_request {
 }
 
 interface hwid_less_status {
-  _id?         : any
-  enabled      : boolean
-  enabled_at   : number
-  expires_at   : number
-  triggered_by : string
-  reset_count  : number
+  _id?                  : any
+  status_key            : string
+  enabled               : boolean
+  enabled_at            : number
+  expires_at            : number
+  triggered_by          : string
+  reset_count           : number
+  disabled_at           : number | null
+  disable_notified_at   : number | null
 }
 
 interface hwid_reset_cache_entry {
@@ -248,86 +257,76 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
     }
 
     if (reset_count >= RESET_THRESHOLD) {
-      const existing_status = await db.find_one<hwid_less_status>("hwid_less_status", {
-        enabled: true,
-        expires_at: { $gt: Date.now() },
-      })
-
-      if (existing_status) {
-        console.log("[ - HWID RESET TRACKER - ] HWID less already enabled")
-        return
-      }
-
-      const enable_result = await luarmor.update_project_settings(PROJECT_ID, true)
-
-      if (enable_result.success) {
-        const now = Date.now()
-        const expires_at = now + HWID_LESS_DURATION_MS
-
-        await db.insert_one("hwid_less_status", {
-          enabled      : true,
-          enabled_at   : now,
-          expires_at   : expires_at,
-          triggered_by : "auto",
-          reset_count  : reset_count,
-        })
-
-        console.log(`[ - HWID RESET TRACKER - ] Auto-enabled HWID less for 1 hour (${reset_count} requests)`)
+      if (__auto_hwid_less_lock) {
+        console.log("[ - HWID RESET TRACKER - ] Auto HWID less already processing")
+      } else {
+        __auto_hwid_less_lock = true
 
         try {
-          const notification_user = await client.users.fetch(NOTIFICATION_USER)
-          const message = component.build_message({
-            components: [
-              component.container({
-                accent_color: 0xED4245,
-                components: [
-                  component.text("## Auto HWID-Less Enabled!"),
-                ],
-              }),
-              component.container({
-                components: [
-                  component.text([
-                    "## Details:",
-                    `- Trigger: **Auto (High Reset Requests)**`,
-                    `- Reset Count: **${reset_count} requests in 1 minute**`,
-                    `- Threshold: **${RESET_THRESHOLD} requests/minute**`,
-                    `- Duration: **1 hour**`,
-                    `- Expires: <t:${Math.floor(expires_at / 1000)}:R>`,
-                    ``,
-                    `HWID-less mode has been automatically enabled due to high reset request volume.`,
-                  ]),
-                ],
-              }),
-            ],
-          })
+          const existing_status = await db.find_one<hwid_less_status>(
+            HWID_LESS_STATUS_COLLECTION,
+            {
+              status_key : HWID_LESS_STATUS_KEY,
+              enabled    : true,
+              expires_at : { $gt: Date.now() },
+            }
+          )
 
-          await notification_user.send(message)
-        } catch (dm_error) {
-          console.error("[ - HWID RESET TRACKER - ] Failed to send notification:", dm_error)
-        }
+          if (existing_status) {
+            console.log("[ - HWID RESET TRACKER - ] HWID less already enabled")
 
-        setTimeout(async () => {
-          try {
-            const disable_result = await luarmor.update_project_settings(PROJECT_ID, false)
-            if (disable_result.success) {
-              console.log("[ - HWID RESET TRACKER - ] Auto-disabled HWID less after 1 hour")
+            if (
+              !__auto_disable_timer ||
+              __auto_disable_expires_at !== existing_status.expires_at
+            ) {
+              schedule_auto_disable(client, existing_status.expires_at)
+            }
+          } else {
+            const enable_result = await luarmor.update_project_settings(PROJECT_ID, true)
+
+            if (enable_result.success) {
+              const now = Date.now()
+              const expires_at = now + HWID_LESS_DURATION_MS
+
+              await db.update_one<hwid_less_status>(
+                HWID_LESS_STATUS_COLLECTION,
+                { status_key: HWID_LESS_STATUS_KEY },
+                {
+                  status_key          : HWID_LESS_STATUS_KEY,
+                  enabled             : true,
+                  enabled_at          : now,
+                  expires_at          : expires_at,
+                  triggered_by        : "auto",
+                  reset_count         : reset_count,
+                  disabled_at         : null,
+                  disable_notified_at : null,
+                },
+                true
+              )
+
+              console.log(`[ - HWID RESET TRACKER - ] Auto-enabled HWID less for 1 hour (${reset_count} requests)`)
 
               try {
                 const notification_user = await client.users.fetch(NOTIFICATION_USER)
                 const message = component.build_message({
                   components: [
                     component.container({
-                      accent_color: 0x57F287,
+                      accent_color: 0xED4245,
                       components: [
-                        component.text("## Auto HWID-Less Disabled!"),
+                        component.text("## Auto HWID-Less Enabled!"),
                       ],
                     }),
                     component.container({
                       components: [
                         component.text([
-                          "HWID-less mode has been automatically disabled after 1 hour.",
-                          "",
-                          "Normal HWID protection is now re-enabled.",
+                          "## Details:",
+                          `- Trigger: **Auto (High Reset Requests)**`,
+                          `- Reset Count: **${reset_count} requests in 1 minute**`,
+                          `- Threshold: **${RESET_THRESHOLD} requests/minute**`,
+                          `- Duration: **1 hour**`,
+                          `- Expires: <t:${Math.floor(expires_at / 1000)}:R>`,
+                          ``,
+                          `HWID-less mode has been automatically enabled due to high reset request volume.`,
                         ]),
                       ],
                     }),
@@ -336,15 +335,17 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
 
                 await notification_user.send(message)
               } catch (dm_error) {
-                console.error("[ - HWID RESET TRACKER - ] Failed to send disable notification:", dm_error)
+                console.error("[ - HWID RESET TRACKER - ] Failed to send notification:", dm_error)
               }
+
+              schedule_auto_disable(client, expires_at)
+            } else {
+              console.error("[ - HWID RESET TRACKER - ] Failed to enable HWID less:", enable_result.error)
             }
-          } catch (error) {
-            console.error("[ - HWID RESET TRACKER - ] Failed to auto-disable HWID less:", error)
           }
-        }, HWID_LESS_DURATION_MS)
-      } else {
-        console.error("[ - HWID RESET TRACKER - ] Failed to enable HWID less:", enable_result.error)
+        } finally {
+          __auto_hwid_less_lock = false
+        }
       }
     }
 
@@ -354,6 +355,115 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
     })
   } catch (error) {
     console.error("[ - HWID RESET TRACKER - ] Error checking reset count:", error)
+  }
+}
+
+/**
+ * - SCHEDULE AUTO DISABLE HWID LESS - \\
+ * @param {Client} client - Discord client
+ * @param {number} expires_at - Expiration timestamp (ms)
+ * @returns {void}
+ */
+function schedule_auto_disable(client: Client, expires_at: number): void {
+  if (__auto_disable_timer) {
+    clearTimeout(__auto_disable_timer)
+    __auto_disable_timer = null
+  }
+
+  __auto_disable_expires_at = expires_at
+
+  const delay_ms = Math.max(expires_at - Date.now(), 0)
+
+  __auto_disable_timer = setTimeout(() => {
+    void run_auto_disable(client, expires_at)
+  }, delay_ms)
+}
+
+/**
+ * - RUN AUTO DISABLE HWID LESS - \\
+ * @param {Client} client - Discord client
+ * @param {number} expected_expires_at - Expected expiration timestamp (ms)
+ * @returns {Promise<void>}
+ */
+async function run_auto_disable(client: Client, expected_expires_at: number): Promise<void> {
+  try {
+    const status = await db.find_one<hwid_less_status>(
+      HWID_LESS_STATUS_COLLECTION,
+      { status_key: HWID_LESS_STATUS_KEY }
+    )
+
+    if (!status || !status.enabled) {
+      return
+    }
+
+    if (status.expires_at !== expected_expires_at) {
+      return
+    }
+
+    if (status.expires_at > Date.now()) {
+      return
+    }
+
+    const disable_result = await luarmor.update_project_settings(PROJECT_ID, false)
+    if (!disable_result.success) {
+      console.error("[ - HWID RESET TRACKER - ] Failed to auto-disable HWID less:", disable_result.error)
+      return
+    }
+
+    const now = Date.now()
+    const updated = await db.update_one<hwid_less_status>(
+      HWID_LESS_STATUS_COLLECTION,
+      {
+        status_key : HWID_LESS_STATUS_KEY,
+        enabled    : true,
+        expires_at : expected_expires_at,
+      },
+      {
+        enabled             : false,
+        disabled_at         : now,
+        disable_notified_at : now,
+      }
+    )
+
+    if (!updated) {
+      return
+    }
+
+    console.log("[ - HWID RESET TRACKER - ] Auto-disabled HWID less after 1 hour")
+
+    try {
+      const notification_user = await client.users.fetch(NOTIFICATION_USER)
+      const message = component.build_message({
+        components: [
+          component.container({
+            accent_color: 0x57F287,
+            components: [
+              component.text("## Auto HWID-Less Disabled!"),
+            ],
+          }),
+          component.container({
+            components: [
+              component.text([
+                "HWID-less mode has been automatically disabled after 1 hour.",
+                "",
+                "Normal HWID protection is now re-enabled.",
+              ]),
+            ],
+          }),
+        ],
+      })
+
+      await notification_user.send(message)
+    } catch (dm_error) {
+      console.error("[ - HWID RESET TRACKER - ] Failed to send disable notification:", dm_error)
+    }
+  } catch (error) {
+    console.error("[ - HWID RESET TRACKER - ] Failed to auto-disable HWID less:", error)
+  } finally {
+    if (__auto_disable_expires_at === expected_expires_at) {
+      __auto_disable_expires_at = null
+      __auto_disable_timer = null
+    }
   }
 }
 

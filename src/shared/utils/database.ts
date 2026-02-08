@@ -174,6 +174,20 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS hwid_less_status (
+        id                   SERIAL PRIMARY KEY,
+        status_key           VARCHAR(255) NOT NULL UNIQUE,
+        enabled              BOOLEAN NOT NULL,
+        enabled_at           BIGINT,
+        expires_at           BIGINT,
+        triggered_by         VARCHAR(255),
+        reset_count          INTEGER,
+        disabled_at          BIGINT,
+        disable_notified_at  BIGINT
+      )
+    `)
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS booster_whitelist (
         id            SERIAL PRIMARY KEY,
         user_id       VARCHAR(255) NOT NULL,
@@ -701,6 +715,7 @@ function get_table_name(collection: string): string {
     server_tag_users: "server_tag_users",
     free_script_users: "free_script_users",
     hwid_less_schedule: "hwid_less_schedule",
+    hwid_less_status: "hwid_less_status",
     service_provider_user_cache: "service_provider_user_cache",
     hwid_reset_tracker: "hwid_reset_tracker",
     hwid_reset_cache: "hwid_reset_cache",
@@ -1138,7 +1153,8 @@ function convert_row_to_object<T>(row: any): T {
     "scheduled_time", "added_at", "last_tag_check"
   ]
   const unix_timestamp_fields = [
-    "whitelisted_at", "start_date", "end_date", "created_at", "cached_at", "last_updated"
+    "whitelisted_at", "start_date", "end_date", "created_at", "cached_at", "last_updated",
+    "enabled_at", "expires_at", "disabled_at", "disable_notified_at"
   ]
 
   for (const [key, value] of Object.entries(row)) {
