@@ -7,10 +7,10 @@ import {
 import { Command }  from "../../../shared/types/command"
 import { is_admin } from "../../../shared/database/settings/permissions"
 import { log_error } from "../../../shared/utils/error_logger"
-import { get_all_staff_info_documents, file_name_to_custom_id } from "../../../shared/utils/staff_info_parser"
 import {
   container,
   text,
+  action_row,
   secondary_button,
 } from "../../../shared/utils/components"
 
@@ -49,81 +49,46 @@ export const command: Command = {
 
       await interaction.deferReply({ ephemeral: true })
 
-      // - GET ALL STAFF INFO DOCUMENTS - \\
-      const documents = await get_all_staff_info_documents("id")
-
-      if (documents.length === 0) {
-        await interaction.editReply({
-          content: "No staff information documents found.",
-        })
-        return
-      }
-
-      // - GROUP DOCUMENTS BY SECTION - \\
-      const sections: Record<string, typeof documents> = {}
-      documents.forEach(doc => {
-        if (!sections[doc.metadata.section]) {
-          sections[doc.metadata.section] = []
-        }
-        sections[doc.metadata.section].push(doc)
-      })
-
-      // - BUILD COMPONENTS - \\
-      const main_components: any[] = [
-        container({
-          components: [
-            text("## INFORMASI STAFF\n\nPusat informasi resmi untuk seluruh Staff.\nGunakan menu di bawah ini untuk mengakses aturan, panduan, dan prosedur penting.")
-          ]
-        })
-      ]
-
-      // - SECTION 1 - RULES - \\
-      if (sections.rules && sections.rules.length > 0) {
-        const rule_buttons = sections.rules.map(doc => 
-          secondary_button(doc.metadata.title, file_name_to_custom_id(doc.file_name))
-        )
-        
-        main_components.push(
+      const message_payload = {
+        flags: 32768,
+        components: [
+          container({
+            components: [
+              text("## INFORMASI STAFF\n\nPusat informasi resmi untuk seluruh Staff.\nGunakan menu di bawah ini untuk mengakses aturan, panduan, dan prosedur penting.")
+            ]
+          }),
           container({
             components: [
               text("### SECTION 1 - Rules ( - Peraturan - )"),
               {
                 type: 1,
-                components: rule_buttons.slice(0, 5)
+                components: [
+                  secondary_button("Communication Rules", "staff_info_communication_rules"),
+                  secondary_button("Staff Rules", "staff_info_staff_rules")
+                ]
               }
             ]
-          })
-        )
-      }
-
-      // - SECTION 2 - GUIDE - \\
-      if (sections.guide && sections.guide.length > 0) {
-        const guide_buttons = sections.guide.map(doc => 
-          secondary_button(doc.metadata.title, file_name_to_custom_id(doc.file_name))
-        )
-        
-        main_components.push(
+          }),
           container({
             components: [
               text("### SECTION 2 - Guide ( - Arahan - )"),
               {
                 type: 1,
-                components: guide_buttons.slice(0, 5)
+                components: [
+                  secondary_button("Purchase Ticket Guide", "staff_info_purchase_ticket"),
+                  secondary_button("Priority Support Guide", "staff_info_priority_support"),
+                  secondary_button("Ask Staff Guide (Handling Questions)", "staff_info_ask_staff")
+                ]
               }
             ]
-          })
-        )
-      }
-
-      const message_payload = {
-        flags: 32768,
-        components: main_components,
+          }),
+        ],
       }
 
       await channel.send(message_payload as any)
 
       await interaction.editReply({
-        content: `Staff information panel sent to ${channel} with ${documents.length} documents.`,
+        content: `Staff information panel sent to ${channel}`,
       })
     } catch (err) {
       console.log("[ - SETUP STAFF INFO - ] Error:", err)

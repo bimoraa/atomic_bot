@@ -78,7 +78,7 @@ import * as share_settings_picker        from "./select_menus/share_settings/pic
 import * as share_settings_star          from "./buttons/share_settings/give_star"
 import * as share_settings_continue      from "./buttons/share_settings/continue"
 import * as share_settings_pagination    from "./buttons/share_settings/pagination"
-import * as staff_info_handlers          from "./buttons/staff_info/handlers"
+import { handle_staff_info_button }      from "./buttons/staff_info/handlers"
 import * as staff_info_lang_select       from "./select_menus/staff_info/lang_select"
 import { handle_edit_staff_info_modal }  from "./modals/staff_info"
 
@@ -499,7 +499,7 @@ export async function handle_interaction(
         return
       }
       if (interaction.customId.startsWith("staff_info_")) {
-        await staff_info_handlers.handle_staff_info_button(interaction)
+        await handle_staff_info_button(interaction)
         return
       }
     } catch (err) {

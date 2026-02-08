@@ -1,10 +1,15 @@
-import * as fs   from "fs/promises"
+import * as fs from "fs/promises"
 import * as path from "path"
+
+interface parsed_frontmatter {
+  metadata: Record<string, string>
+  content: string
+}
 
 export interface staff_info_metadata {
   title: string
   button_title?: string
-  section: "rules" | "guide"
+  section: string
   updated_by?: string[]
   last_update?: number
 }
@@ -16,29 +21,24 @@ export interface staff_info_document {
   language: string
 }
 
-/**
- * - PARSE FRONTMATTER FROM MARKDOWN - \\
- * 
- * @param {string} markdown_content - Raw markdown content
- * @returns {object} Parsed metadata and content
- */
-function parse_frontmatter(markdown_content: string): { metadata: Record<string, any>; content: string } {
+function parse_frontmatter(markdown_content: string): parsed_frontmatter {
   const frontmatter_regex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/
-  const match             = markdown_content.match(frontmatter_regex)
+  const match = markdown_content.match(frontmatter_regex)
 
   if (!match) {
     return {
       metadata: {},
-      content : markdown_content,
+      content: markdown_content,
     }
   }
 
   const frontmatter_text = match[1]
-  const content          = match[2]
-  const metadata: Record<string, any> = {}
+  const content = match[2]
+  const metadata: Record<string, string> = {}
 
   frontmatter_text.split("\n").forEach((line) => {
     const [key, ...value_parts] = line.split(":")
+
     if (key && value_parts.length > 0) {
       const value = value_parts.join(":").trim()
       metadata[key.trim()] = value
@@ -48,49 +48,33 @@ function parse_frontmatter(markdown_content: string): { metadata: Record<string,
   return { metadata, content }
 }
 
-/**
- * - CONVERT MARKDOWN CONTENT TO DISCORD TEXT - \\
- * 
- * @param {string} markdown - Markdown content
- * @returns {string} Discord-formatted text
- */
 function markdown_to_discord(markdown: string): string {
   return markdown
     .replace(/^### /gm, "### ")
     .replace(/^## /gm, "## ")
     .replace(/^# /gm, "# ")
+    .replace(/---/g, "")
     .trim()
 }
 
-/**
- * - GET STAFF INFO DOCUMENT - \\
- * 
- * @param {string} file_name - File name (e.g., "COMMUNICATION-RULES")
- * @param {string} language - Language code (e.g., "id", "en")
- * @returns {Promise<staff_info_document | null>} Parsed document or null
- */
-export async function get_staff_info_document(
-  file_name: string,
-  language: string = "id"
-): Promise<staff_info_document | null> {
+export async function get_staff_info_document(file_name: string, language = "id"): Promise<staff_info_document | null> {
   try {
     const base_path = path.join(process.cwd(), "staff-information", language)
     const file_path = path.join(base_path, `${file_name}.md`)
-
     const content = await fs.readFile(file_path, "utf-8")
-    const parsed  = parse_frontmatter(content)
+    const parsed = parse_frontmatter(content)
 
     return {
       metadata: {
-        title       : parsed.metadata.title || "Untitled",
+        title: parsed.metadata.title || "Untitled",
         button_title: parsed.metadata["button-title"],
-        section     : parsed.metadata.section || "guide",
-        updated_by  : parsed.metadata["updated-by"]?.split(",").map((id: string) => id.trim()),
-        last_update : parsed.metadata["last-update"] ? parseInt(parsed.metadata["last-update"]) : undefined,
+        section: parsed.metadata.section || "guide",
+        updated_by: parsed.metadata["updated-by"]?.split(",").map((id) => id.trim()),
+        last_update: parsed.metadata["last-update"] ? parseInt(parsed.metadata["last-update"], 10) : undefined,
       },
-      content  : markdown_to_discord(parsed.content),
-      file_name: file_name,
-      language : language,
+      content: markdown_to_discord(parsed.content),
+      file_name,
+      language,
     }
   } catch (err) {
     console.log(`[ - GET STAFF INFO - ] Error reading ${file_name} (${language}):`, err)
@@ -98,26 +82,17 @@ export async function get_staff_info_document(
   }
 }
 
-/**
- * - GET ALL STAFF INFO DOCUMENTS - \\
- * 
- * @param {string} language - Language code
- * @returns {Promise<staff_info_document[]>} Array of documents
- */
-export async function get_all_staff_info_documents(language: string = "id"): Promise<staff_info_document[]> {
+export async function get_all_staff_info_documents(language = "id"): Promise<staff_info_document[]> {
   try {
     const base_path = path.join(process.cwd(), "staff-information", language)
-    const files     = await fs.readdir(base_path)
-    const md_files  = files.filter((f) => f.endsWith(".md"))
-
+    const files = await fs.readdir(base_path)
+    const md_files = files.filter((file) => file.endsWith(".md"))
     const documents: staff_info_document[] = []
 
     for (const file of md_files) {
       const file_name = file.replace(".md", "")
-      const doc       = await get_staff_info_document(file_name, language)
-      if (doc) {
-        documents.push(doc)
-      }
+      const doc = await get_staff_info_document(file_name, language)
+      if (doc) documents.push(doc)
     }
 
     return documents
@@ -127,38 +102,21 @@ export async function get_all_staff_info_documents(language: string = "id"): Pro
   }
 }
 
-/**
- * - GET AVAILABLE LANGUAGES - \\
- * 
- * @returns {Promise<string[]>} Array of language codes
- */
 export async function get_available_languages(): Promise<string[]> {
   try {
     const base_path = path.join(process.cwd(), "staff-information")
-    const entries   = await fs.readdir(base_path, { withFileTypes: true })
-    return entries.filter((e) => e.isDirectory()).map((e) => e.name)
+    const entries = await fs.readdir(base_path, { withFileTypes: true })
+    return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name)
   } catch (err) {
     console.log("[ - GET LANGUAGES - ] Error:", err)
     return ["id"]
   }
 }
 
-/**
- * - MAP FILE NAME TO CUSTOM ID - \\
- * 
- * @param {string} file_name - File name
- * @returns {string} Custom ID for button
- */
 export function file_name_to_custom_id(file_name: string): string {
   return `staff_info_${file_name.toLowerCase().replace(/-/g, "_")}`
 }
 
-/**
- * - MAP CUSTOM ID TO FILE NAME - \\
- * 
- * @param {string} custom_id - Button custom ID
- * @returns {string} File name
- */
 export function custom_id_to_file_name(custom_id: string): string {
   return custom_id
     .replace("staff_info_", "")
