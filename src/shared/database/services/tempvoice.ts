@@ -57,6 +57,27 @@ async function fetch_voice_channel(guild: Guild, channel_id: string): Promise<Vo
   }
 }
 
+/**
+ * - GET ACTIVE VOICE MEMBER COUNT - \\
+ *
+ * @param {Guild} guild - Target guild
+ * @param {string} channel_id - Voice channel ID
+ * @param {VoiceChannel | null} fallback_channel - Optional channel fallback
+ * @returns {number} Active member count
+ */
+function get_active_voice_member_count(guild: Guild, channel_id: string, fallback_channel?: VoiceChannel | null): number {
+  const voice_states = guild.voiceStates?.cache
+  if (voice_states && voice_states.size > 0) {
+    return voice_states.filter(state => state.channelId === channel_id).size
+  }
+
+  if (fallback_channel) {
+    return fallback_channel.members.size
+  }
+
+  return 0
+}
+
 const emoji = {
   name: { id: "1449851618295283763", name: "name" },
   limit: { id: "1449851533033214063", name: "limit" },
@@ -157,7 +178,9 @@ export async function reconcile_tempvoice_guild(guild: Guild): Promise<void> {
         continue
       }
 
-      if (fresh_channel.members.size === 0) {
+      const member_count = get_active_voice_member_count(guild, fresh_channel.id, fresh_channel)
+
+      if (member_count === 0) {
         await fresh_channel.delete().catch(() => { })
         cleanup_channel_data(fresh_channel.id)
         continue
@@ -942,11 +965,13 @@ export async function handle_voice_state_update(old_state: VoiceState, new_state
           return
         }
 
-        if (channel.members.size === 0) {
+        const member_count = get_active_voice_member_count(guild, channel_id, channel)
+
+        if (member_count === 0) {
           __log.info(`Channel empty after delay, deleting: ${channel_id}`)
           await delete_temp_channel(channel)
         } else {
-          __log.info(`Channel ${channel_id} has ${channel.members.size} members, keeping alive`)
+          __log.info(`Channel ${channel_id} has ${member_count} active members, keeping alive`)
         }
       } catch (error) {
         __log.error(`Error in delayed deletion for ${channel_id}:`, error)
