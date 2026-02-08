@@ -1,11 +1,14 @@
 import { Buffer }            from "buffer"
 import { Client, ButtonInteraction } from "discord.js"
 import { component, format }         from "./index"
+import { Cache }                     from "./cache"
 
 const error_log_channel_id = "1452322637609963530"
 
-const error_payload_store = new Map<string, string>()
-const error_context_count = new Map<string, number>()
+// - ERROR PAYLOAD CACHE WITH 24-HOUR PERSISTENCE - \\
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
+const error_payload_store  = new Cache<string>(TWENTY_FOUR_HOURS_MS, 10000, 5 * 60 * 1000, 'error_payloads')
+const error_context_count  = new Cache<number>(TWENTY_FOUR_HOURS_MS, 1000, 5 * 60 * 1000, 'error_counts')
 
 function build_error_payload(
   error_id: string,
@@ -33,10 +36,10 @@ export async function log_error(
   try {
     const error_id      = `err_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     const current_count = (error_context_count.get(context) || 0) + 1
-    error_context_count.set(context, current_count)
+    error_context_count.set(context, current_count, TWENTY_FOUR_HOURS_MS)
 
     const payload_json = build_error_payload(error_id, context, error, additional_info)
-    error_payload_store.set(error_id, payload_json)
+    error_payload_store.set(error_id, payload_json, TWENTY_FOUR_HOURS_MS)
 
     const channel = await client.channels.fetch(error_log_channel_id)
     if (!channel?.isTextBased() || !("send" in channel)) return
@@ -127,7 +130,7 @@ export async function handle_error_log_button(interaction: ButtonInteraction, cl
 
     const payload = error_payload_store.get(error_id)
     if (!payload) {
-      await interaction.reply({ content: "Error payload expired", ephemeral: true })
+      await interaction.reply({ content: "Error payload expired or not found (24h limit)", ephemeral: true })
       return true
     }
 
