@@ -531,8 +531,7 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
       stats?.viewers,
     ])
 
-    const total_gold_value = pick_number([
-      creator?.total_gold,
+    const stream_total_gold_value = pick_number([
       detail?.total_gold,
       detail?.total_point,
       detail?.total_points,
@@ -542,10 +541,20 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
       stats?.total_points,
       stats?.total_gifts,
     ])
+    const creator_total_gold_value = pick_number([
+      creator?.total_gold,
+    ])
 
     let fallback_payload: Record<string, any> | null = null
 
-    if (!comments_value && !comment_users_value && !viewers_value && !total_gold_value) {
+    const should_fetch_fallback = stream_total_gold_value === undefined
+      || stream_total_gold_value === null
+      || stream_total_gold_value === 0
+      || comments_value === undefined
+      || comment_users_value === undefined
+      || viewers_value === undefined
+
+    if (should_fetch_fallback) {
       fallback_payload = await fetch_idn_stats_fallback(client, slug)
     }
 
@@ -588,7 +597,19 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
       fallback_payload?.total_gifts,
     ])
 
-    if (!comments_value && !comment_users_value && !viewers_value && !total_gold_value && !fallback_payload) {
+    const has_any_metric = [
+      comments_value,
+      comment_users_value,
+      viewers_value,
+      stream_total_gold_value,
+      creator_total_gold_value,
+      fallback_comments,
+      fallback_comment_users,
+      fallback_viewers,
+      fallback_total_gold,
+    ].some((value) => value !== undefined && value !== null)
+
+    if (!has_any_metric) {
       await log_error(client, new Error("IDN history metrics empty"), "idn_history_metrics_empty", build_history_debug_payload({
         detail : detail,
         source : "idn_v4",
@@ -597,7 +618,7 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
     }
 
     return {
-      total_gold    : total_gold_value ?? fallback_total_gold ?? 0,
+      total_gold    : stream_total_gold_value ?? fallback_total_gold ?? creator_total_gold_value ?? 0,
       comments      : comments_value ?? fallback_comments ?? 0,
       comment_users : comment_users_value ?? fallback_comment_users ?? 0,
       viewers       : viewers_value ?? fallback_viewers ?? 0,
