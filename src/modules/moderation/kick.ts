@@ -3,40 +3,31 @@ import {
   SlashCommandBuilder,
   GuildMember,
   PermissionFlagsBits,
-}                        from "discord.js"
-import { Command }        from "../../../shared/types/command"
-import { timeout_member } from "../../../core/handlers/controllers/moderation_controller"
+}                      from "discord.js"
+import { Command }      from "../../shared/types/command"
+import { kick_member }  from "../../core/handlers/controllers/moderation_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
-    .setName("timeout")
-    .setDescription("Timeout a member")
+    .setName("kick")
+    .setDescription("Kick a member from the server")
     .addUserOption((option) =>
       option
         .setName("member")
-        .setDescription("The member to timeout")
+        .setDescription("The member to kick")
         .setRequired(true)
-    )
-    .addIntegerOption((option) =>
-      option
-        .setName("duration")
-        .setDescription("Duration in minutes")
-        .setRequired(true)
-        .setMinValue(1)
-        .setMaxValue(40320)
     )
     .addStringOption((option) =>
       option
         .setName("reason")
-        .setDescription("Reason for timeout")
+        .setDescription("Reason for kicking")
         .setRequired(false)
     )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers) as SlashCommandBuilder,
+    .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
     const executor = interaction.member as GuildMember
     const target   = interaction.options.getMember("member") as GuildMember
-    const duration = interaction.options.getInteger("duration") as number
     const reason   = interaction.options.getString("reason") || "No reason provided"
     const guild    = interaction.guild
 
@@ -56,12 +47,11 @@ export const command: Command = {
       return
     }
 
-    const result = await timeout_member({
+    const result = await kick_member({
       client   : interaction.client,
       guild,
       executor,
       target,
-      duration,
       reason,
     })
 
@@ -72,7 +62,7 @@ export const command: Command = {
       })
     } else {
       await interaction.reply({
-        content   : result.error || "Failed to timeout member",
+        content   : result.error || "Failed to kick member",
         ephemeral : true,
       })
     }

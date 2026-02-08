@@ -4,8 +4,8 @@ import {
   GuildMember,
   PermissionFlagsBits,
 }                        from "discord.js"
-import { Command }      from "../../../shared/types/command"
-import { warn_member }  from "../../../core/handlers/controllers/moderation_controller"
+import { Command }      from "../../shared/types/command"
+import { warn_member }  from "../../core/handlers/controllers/moderation_controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

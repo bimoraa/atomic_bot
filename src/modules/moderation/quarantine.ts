@@ -4,8 +4,8 @@ import {
   GuildMember,
   PermissionFlagsBits,
 }                            from "discord.js"
-import { Command }            from "../../../shared/types/command"
-import { quarantine_member }  from "../../../core/handlers/controllers/quarantine_controller"
+import { Command }            from "../../shared/types/command"
+import { quarantine_member }  from "../../core/handlers/controllers/quarantine_controller"
 
 /**
  * @description Quarantine member command - restricts member from viewing all channels

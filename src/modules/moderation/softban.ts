@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from "discord.js"
-import { Command }  from "../../../shared/types/command"
-import { component } from "../../../shared/utils"
+import { Command }  from "../../shared/types/command"
+import { component } from "../../shared/utils"
 
 const softban: Command = {
   data: new SlashCommandBuilder()
