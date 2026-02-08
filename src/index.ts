@@ -13,7 +13,7 @@ import * as tempvoice                                                    from ".
 import { register_audit_logs }                                           from "./shared/database/services/audit_log"
 import { handle_afk_return, handle_afk_mentions }                        from "./core/handlers/shared/controller/afk_controller"
 import { handle_auto_bypass }                                            from "./core/handlers/events/message"
-import { load_afk_from_db }                                              from "./infrastructure/cache/afk"
+import { load_afk_from_db, load_afk_ignored_channels_from_db }           from "./infrastructure/cache/afk"
 import { check_server_tag_change }                                       from "./shared/database/settings/server_tag"
 import { start_free_script_checker }                                     from "./shared/database/managers/free_script_manager"
 import { start_service_provider_cache, stop_service_provider_cache }     from "./infrastructure/api/service_provider_cache"
@@ -206,6 +206,7 @@ client.once("ready", async () => {
       await load_middleman_tickets_on_startup(client)
       await load_reminders_from_db(client)
       await load_afk_from_db()
+      await load_afk_ignored_channels_from_db()
       start_loa_checker(client)
       start_scheduler(client)
       start_weekly_reset_scheduler()

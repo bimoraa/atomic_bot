@@ -291,6 +291,18 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS afk_ignored_channels (
+        id          SERIAL PRIMARY KEY,
+        guild_id    VARCHAR(255) NOT NULL,
+        channel_id  VARCHAR(255) NOT NULL,
+        added_by    VARCHAR(255),
+        added_at    BIGINT NOT NULL,
+        created_at  TIMESTAMP DEFAULT NOW(),
+        UNIQUE (guild_id, channel_id)
+      )
+    `)
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS ghost_pings (
         id         SERIAL PRIMARY KEY,
         message_id VARCHAR(255) NOT NULL UNIQUE,
@@ -725,6 +737,7 @@ function get_table_name(collection: string): string {
     loa_requests: "loa_requests",
     answer_stats: "answer_stats",
     afk_users: "afk_users",
+    afk_ignored_channels: "afk_ignored_channels",
     ghost_pings: "ghost_pings",
     warnings: "warnings",
     ticket_transcripts: "ticket_transcripts",
