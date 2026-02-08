@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, GuildMember, SlashCommandSubcommandBuilder } from "discord.js"
 import { set_afk }                                                                  from "../../../infrastructure/cache/afk"
-import { build_simple_message }                                                     from "./afk_utils"
+import { build_simple_message, sanitize_afk_reason }                                from "./afk_utils"
 
 /**
  * - BUILD AFK SET SUBCOMMAND - \\
@@ -25,8 +25,9 @@ export function build_afk_set_subcommand(subcommand: SlashCommandSubcommandBuild
  * @returns {Promise<void>}
  */
 export async function handle_afk_set(interaction: ChatInputCommandInteraction): Promise<void> {
-  const reason = interaction.options.getString("reason") || "AFK"
-  const member = interaction.guild?.members.cache.get(interaction.user.id) as GuildMember | undefined
+  const raw_reason = interaction.options.getString("reason") || "AFK"
+  const reason     = sanitize_afk_reason(raw_reason)
+  const member     = interaction.guild?.members.cache.get(interaction.user.id) as GuildMember | undefined
 
   if (member) {
     const original_nickname = member.nickname
