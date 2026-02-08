@@ -32,6 +32,17 @@ function is_rate_limited(error_message?: string): boolean {
 }
 
 /**
+ * - CHECK IF USER NOT FOUND - \\
+ * @param {string | undefined} error_message - Error message to check
+ * @returns {boolean} True if user is not found
+ */
+function is_user_not_found(error_message?: string): boolean {
+  if (!error_message) return false
+  const msg = error_message.toLowerCase()
+  return msg.includes("user not found")
+}
+
+/**
  * - CREATE RATE LIMIT MESSAGE - \\
  * @param {string} feature_name - Feature name being rate limited
  * @returns {object} Component message for rate limit
@@ -521,6 +532,27 @@ export async function get_user_script(options: { client: Client; user_id: string
         }
       }
 
+      if (is_user_not_found(user_result.error)) {
+        console.warn(`[ - GET SCRIPT - ] User not found for ${options.user_id}`)
+        return {
+          success : false,
+          message : component.build_message({
+            components: [
+              component.container({
+                components: [
+                  component.text([
+                    "## No Key Found",
+                    "You do not have a key linked to your Discord account.",
+                    "",
+                    "Please use **Redeem Key** or **Get Script** first.",
+                  ]),
+                ],
+              }),
+            ],
+          }),
+        }
+      }
+
       console.error(`[ - GET SCRIPT - ] Failed for user ${options.user_id}:`, user_result.error)
 
       return {
@@ -594,11 +626,32 @@ export async function reset_user_hwid(options: { client: Client; user_id: string
  * @param {object} options - Options containing client and user_id
  * @returns {Promise<object>} Result with user stats and leaderboard
  */
-export async function get_user_stats(options: { client: Client; user_id: string }): Promise<{ success: boolean; data?: any; error?: string }> {
+export async function get_user_stats(options: { client: Client; user_id: string }): Promise<{ success: boolean; data?: any; error?: string; message?: any }> {
   try {
     const user_result = await get_user_with_cache(options.user_id, options.client)
 
     if (!user_result.success || !user_result.data) {
+      if (is_user_not_found(user_result.error)) {
+        console.warn(`[ - GET STATS - ] User not found for ${options.user_id}`)
+        return {
+          success : false,
+          message : component.build_message({
+            components: [
+              component.container({
+                components: [
+                  component.text([
+                    "## No Key Found",
+                    "You do not have a key linked to your Discord account.",
+                    "",
+                    "Please use **Get Script** first, then try again.",
+                  ]),
+                ],
+              }),
+            ],
+          }),
+        }
+      }
+
       console.error(`[ - GET STATS - ] Failed for user ${options.user_id}:`, user_result.error)
       return {
         success : false,

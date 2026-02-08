@@ -10,6 +10,11 @@ export async function handle_get_stats(interaction: ButtonInteraction): Promise<
   const stats_result = await get_user_stats({ client: interaction.client, user_id: member.id })
 
   if (!stats_result.success) {
+    if (stats_result.message) {
+      await api.edit_deferred_reply(interaction, stats_result.message)
+      return
+    }
+
     const message = component.build_message({
       components: [
         component.container({
