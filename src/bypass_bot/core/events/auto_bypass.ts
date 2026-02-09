@@ -4,7 +4,9 @@ import { component, db, guild_settings } from "@shared/utils"
 import { log_error }                     from "@shared/utils/error_logger"
 import { check_bypass_rate_limit } from "../limits/bypass_rate_limit"
 
-const allow_message_content      = process.env.BYPASS_ENABLE_MESSAGE_CONTENT === "true"
+const allow_message_content      = ["true", "1", "yes"].includes(
+  String(process.env.BYPASS_ENABLE_MESSAGE_CONTENT || "").toLowerCase()
+)
 const notice_cooldown_ms         = 60_000
 const last_missing_intent_notice = new Map<string, number>()
 

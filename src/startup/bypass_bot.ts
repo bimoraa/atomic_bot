@@ -13,7 +13,9 @@ config()
 
 const bypass_token           = process.env.BYPASS_DISCORD_TOKEN!
 const bypass_client_id       = process.env.BYPASS_CLIENT_ID!
-const allow_message_content  = process.env.BYPASS_ENABLE_MESSAGE_CONTENT === "true"
+const allow_message_content  = ["true", "1", "yes"].includes(
+  String(process.env.BYPASS_ENABLE_MESSAGE_CONTENT || "").toLowerCase()
+)
 
 if (!bypass_token || !bypass_client_id) {
   console.log("[ - BYPASS - ] Token not configured, skipping bypass bot startup")
