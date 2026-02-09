@@ -19,6 +19,11 @@ export async function load_commands(client: Client & { commands: Collection<stri
       if (item.isDirectory()) {
         await load_from_directory(item_path);
       } else if (item.isFile() && (item.name.endsWith(".ts") || item.name.endsWith(".js"))) {
+        // - SKIP UTILITY AND HELPER FILES - \\
+        if (item.name.includes("_utils") || item.name.includes("_mod_") || item.name.startsWith("afk_set")) {
+          continue;
+        }
+
         const imported = await import(item_path);
         const command = imported.default || imported.command;
         

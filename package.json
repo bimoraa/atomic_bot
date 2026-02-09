@@ -7,8 +7,8 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "tsc --incremental && tsc-alias && cp -r src/shared/config dist/shared/ && cp -r src/atomic_bot/guide dist/atomic_bot/",
-    "build:fast": "tsc --incremental --skipLibCheck && tsc-alias && cp -r src/shared/config dist/shared/ && cp -r src/atomic_bot/guide dist/atomic_bot/",
+    "build": "tsc --incremental && tsc-alias && cp -r src/shared/config dist/shared/ && cp -r src/shared/sub_commands dist/shared/ && cp -r src/atomic_bot/guide dist/atomic_bot/",
+    "build:fast": "tsc --incremental --skipLibCheck && tsc-alias && cp -r src/shared/config dist/shared/ && cp -r src/shared/sub_commands dist/shared/ && cp -r src/atomic_bot/guide dist/atomic_bot/",
     "start": "node dist/index.js",
     "start:atomic": "node dist/startup/atomic_bot.js",
     "start:jkt48": "node dist/startup/jkt48_bot.js",

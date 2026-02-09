@@ -5,8 +5,12 @@ import { join }        from "path"
 
 export const sub_commands = new Collection<string, SubCommand>()
 
+/**
+ * - LOAD SUB COMMANDS FROM SHARED FOLDER - \\
+ * @returns {Promise<void>}
+ */
 export async function load_sub_commands(): Promise<void> {
-  const sub_commands_path = join(__dirname, "../../shared/sub_commands")
+  const sub_commands_path = join(__dirname, "../../../shared/sub_commands")
   const files             = readdirSync(sub_commands_path).filter(file => file.endsWith(".ts") || file.endsWith(".js"))
 
   for (const file of files) {
