@@ -491,6 +491,23 @@ async function init_tables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_middleman_service_status_guild ON middleman_service_status(guild_id)
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS jkt48_guild_notification_settings (
+        id         SERIAL PRIMARY KEY,
+        guild_id   VARCHAR(255) NOT NULL,
+        channel_id VARCHAR(255) NOT NULL,
+        platform   VARCHAR(50) NOT NULL,
+        updated_at BIGINT NOT NULL,
+        updated_by VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(guild_id, platform)
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_jkt48_guild_settings_platform ON jkt48_guild_notification_settings(platform)
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")

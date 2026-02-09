@@ -8,7 +8,7 @@ import * as showroom_live from "../../infrastructure/api/showroom_live"
 
 const NOTIFICATION_COLLECTION        = "idn_live_notifications"
 const LIVE_STATE_COLLECTION          = "idn_live_state"
-const LIVE_NOTIFICATION_CHANNEL_ID   = "1468291039889588326"
+const GUILD_NOTIFICATION_SETTINGS    = "jkt48_guild_notification_settings"
 const HISTORY_API_BASE               = process.env.JKT48_HISTORY_API_BASE || ""
 let __history_base_warned            = false
 
@@ -206,19 +206,46 @@ const live_state_cache = new Cache<live_state_record>(2 * 60 * 1000, 200, 60 * 1
  */
 async function send_live_channel_notification(client: Client, message: object, platform: string, live_key: string): Promise<void> {
   try {
-    const channel = client.channels.cache.get(LIVE_NOTIFICATION_CHANNEL_ID)
-      || await client.channels.fetch(LIVE_NOTIFICATION_CHANNEL_ID)
-    if (!channel || !("send" in channel)) {
-      throw new Error("Channel not found or not sendable")
+    // - GET ALL GUILDS WITH NOTIFICATION SETTINGS FOR THIS PLATFORM - \\
+    const guild_settings = await db.find_many<{
+      guild_id   : string
+      channel_id : string
+      platform   : string
+    }>(GUILD_NOTIFICATION_SETTINGS, { platform: platform })
+
+    if (guild_settings.length === 0) {
+      console.log(`[ - ${platform.toUpperCase()} LIVE - ] No guilds configured for notifications`)
+      return
     }
 
-    await (channel as any).send(message)
-    console.log(`[ - ${platform.toUpperCase()} LIVE - ] Sent channel notification for ${live_key}`)
+    // - SEND TO ALL CONFIGURED CHANNELS IN PARALLEL - \\
+    await Promise.all(
+      guild_settings.map(async (setting) => {
+        try {
+          const channel = client.channels.cache.get(setting.channel_id)
+            || await client.channels.fetch(setting.channel_id).catch(() => null)
+
+          if (!channel || !("send" in channel)) {
+            console.warn(`[ - ${platform.toUpperCase()} LIVE - ] Channel ${setting.channel_id} not found or not sendable in guild ${setting.guild_id}`)
+            return
+          }
+
+          await (channel as any).send(message)
+          console.log(`[ - ${platform.toUpperCase()} LIVE - ] Sent notification to guild ${setting.guild_id} channel ${setting.channel_id} for ${live_key}`)
+        } catch (error) {
+          await log_error(client, error as Error, "live_channel_notify", {
+            platform   : platform,
+            live_key   : live_key,
+            guild_id   : setting.guild_id,
+            channel_id : setting.channel_id,
+          })
+        }
+      })
+    )
   } catch (error) {
-    await log_error(client, error as Error, "live_channel_notify", {
+    await log_error(client, error as Error, "live_channel_notify_fetch_settings", {
       platform : platform,
       live_key : live_key,
-      channel_id: LIVE_NOTIFICATION_CHANNEL_ID,
     })
   }
 }
