@@ -4,6 +4,10 @@ import { component, db, guild_settings } from "@shared/utils"
 import { log_error }                     from "@shared/utils/error_logger"
 import { check_bypass_rate_limit } from "../limits/bypass_rate_limit"
 
+const allow_message_content      = process.env.BYPASS_ENABLE_MESSAGE_CONTENT === "true"
+const notice_cooldown_ms         = 60_000
+const last_missing_intent_notice = new Map<string, number>()
+
 /**
  * @param {Message} message - Discord message
  * @returns {string | null} Extracted URL if found
@@ -53,7 +57,36 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   }
 
   const url = extract_url_from_message(message)
-  if (!url) return false
+  if (!url) {
+    const should_notice = !allow_message_content && message.content.length === 0 && message.embeds.length === 0
+    if (should_notice && !is_dm) {
+      const now       = Date.now()
+      const cache_key = `${message.guildId || "dm"}:${message.channelId}`
+      const last_sent = last_missing_intent_notice.get(cache_key) || 0
+
+      if (now - last_sent >= notice_cooldown_ms) {
+        const notice_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  "## Auto Bypass Disabled",
+                  "",
+                  "Message Content intent is not enabled for this bot.",
+                  "Enable it in the Discord Developer Portal and set BYPASS_ENABLE_MESSAGE_CONTENT=true.",
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        await message.reply(notice_message).catch(() => {})
+        last_missing_intent_notice.set(cache_key, now)
+      }
+    }
+
+    return false
+  }
 
   try {
     if (!is_dm && message.guildId) {
