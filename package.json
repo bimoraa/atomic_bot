@@ -7,10 +7,18 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "tsc --incremental && cp -r src/shared/config dist/shared/ && cp -r guide dist/",
-    "build:fast": "tsc --incremental --skipLibCheck && cp -r src/shared/config dist/shared/ && cp -r guide dist/",
+    "build": "tsc --incremental && tsc-alias && cp -r src/shared/config dist/shared/ && cp -r src/atomic_bot/guide dist/atomic_bot/",
+    "build:fast": "tsc --incremental --skipLibCheck && tsc-alias && cp -r src/shared/config dist/shared/ && cp -r src/atomic_bot/guide dist/atomic_bot/",
     "start": "node dist/index.js",
-    "dev": "NODE_ENV=development nodemon --exec ts-node src/index.ts --ext ts",
+    "start:atomic": "node dist/startup/atomic_bot.js",
+    "start:jkt48": "node dist/startup/jkt48_bot.js",
+    "start:bypass": "node dist/startup/bypass_bot.js",
+    "start:all": "concurrently \"npm run start:atomic\" \"npm run start:jkt48\" \"npm run start:bypass\"",
+    "dev": "nodemon --exec ts-node src/index.ts --ext ts",
+    "dev:atomic": "NODE_ENV=development nodemon --exec ts-node src/startup/atomic_bot.ts --ext ts",
+    "dev:jkt48": "nodemon --exec ts-node src/startup/jkt48_bot.ts --ext ts",
+    "dev:bypass": "nodemon --exec ts-node src/startup/bypass_bot.ts --ext ts",
+    "dev:all": "concurrently \"npm run dev:atomic\" \"npm run dev:jkt48\" \"npm run dev:bypass\"",
     "heroku-postbuild": "npm run build"
   },
   "dependencies": {
@@ -19,7 +27,8 @@
     "@distube/youtube": "^1.0.4",
     "@distube/yt-dlp": "^2.0.1",
     "@distube/ytdl-core": "^4.16.12",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
+    "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "discord-player": "^7.1.0",
     "discord.js": "^14.16.3",
@@ -43,6 +52,7 @@
     "@types/yt-search": "^2.10.3",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.3.2"
   }
 }

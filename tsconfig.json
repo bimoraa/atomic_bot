@@ -5,6 +5,14 @@
     "lib": ["ES2022"],
     "outDir": "./dist",
     "rootDir": "./src",
+    "baseUrl": "./src",
+    "paths": {
+      "@shared/*":  ["shared/*"],
+      "@atomic/*":  ["atomic_bot/*"],
+      "@jkt48/*":   ["jkt48_bot/*"],
+      "@bypass/*":  ["bypass_bot/*"],
+      "@startup/*": ["startup/*"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

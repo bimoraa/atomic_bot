@@ -1,0 +1,805 @@
+import { Client }                from "discord.js"
+import { db, component }         from "@shared/utils"
+import { log_error }             from "@shared/utils/error_logger"
+import * as luarmor              from "../../../infrastructure/api/luarmor"
+
+const RESET_COLLECTION            = "service_provider_resets"
+const USER_CACHE_COLLECTION       = "service_provider_user_cache"
+const HWID_RESET_TRACKER          = "hwid_reset_tracker"
+const HWID_RESET_CACHE            = "hwid_reset_cache"
+const HWID_LESS_STATUS_COLLECTION = "hwid_less_status"
+const HWID_LESS_STATUS_KEY        = "auto_hwid_less"
+const CACHE_DURATION_MS           = 120 * 60 * 1000
+const RESET_CACHE_TTL_MS          = 30000
+const RESET_THRESHOLD             = 100
+const HWID_LESS_DURATION_MS       = 60 * 60 * 1000
+const PROJECT_ID                  = "6958841b2d9e5e049a24a23e376e0d77"
+const NOTIFICATION_USER           = "1118453649727823974"
+
+let __auto_hwid_less_lock          = false
+let __auto_disable_timer           : NodeJS.Timeout | null = null
+let __auto_disable_expires_at      : number | null         = null
+
+/**
+ * - CHECK IF ERROR IS RATE LIMITED - \\
+ * @param {string} error_message - Error message to check
+ * @returns {boolean} True if rate limited
+ */
+function is_rate_limited(error_message?: string): boolean {
+  if (!error_message) return false
+  const msg = error_message.toLowerCase()
+  return msg.includes("ratelimit") || msg.includes("rate limit") || msg.includes("too many requests")
+}
+
+/**
+ * - CHECK IF USER NOT FOUND - \\
+ * @param {string | undefined} error_message - Error message to check
+ * @returns {boolean} True if user is not found
+ */
+function is_user_not_found(error_message?: string): boolean {
+  if (!error_message) return false
+  const msg = error_message.toLowerCase()
+  return msg.includes("user not found")
+}
+
+/**
+ * - CREATE RATE LIMIT MESSAGE - \\
+ * @param {string} feature_name - Feature name being rate limited
+ * @returns {object} Component message for rate limit
+ */
+export function create_rate_limit_message(feature_name: string) {
+  const retry_timestamp = Math.floor(Date.now() / 1000) + 60
+
+  return component.build_message({
+    components: [
+      component.container({
+        accent_color: 15277667,
+        components: [
+          component.text("## Error!"),
+        ],
+      }),
+      component.container({
+        components: [
+          component.text([
+            "**Sorry for the inconvenience.**",
+            `The **${feature_name}** feature is currently having an issue and has been **rate-limited by Luarmor**.`,
+          ]),
+          component.separator(2),
+          component.text("HWID reset may be disabled by the developer. You can execute the script directly in-game without resetting your HWID."),
+        ],
+      }),
+      component.container({
+        components: [
+          component.text([
+            `Please wait around **<t:${retry_timestamp}:R>** before trying again.`,
+            "Thank you so much for your patience and understanding.",
+          ]),
+        ],
+      }),
+    ],
+  })
+}
+
+interface reset_record {
+  _id?          : any
+  user_id       : string
+  last_reset_at : number
+}
+
+interface cached_user {
+  _id?         : any
+  user_id      : string
+  user_data    : luarmor.luarmor_user
+  cached_at    : number
+  last_updated : number
+}
+
+/**
+ * - GET CACHED USER FROM DATABASE - \\
+ * @param {string} user_id - Discord user ID
+ * @returns {Promise<luarmor.luarmor_user | null>} Cached user data or null
+ */
+async function get_cached_user(user_id: string): Promise<luarmor.luarmor_user | null> {
+  try {
+    if (!db.is_connected()) {
+      console.log("[ - SERVICE PROVIDER CACHE - ] DB not connected, skipping cache lookup")
+      return null
+    }
+
+    const cached = await db.find_one<cached_user>(USER_CACHE_COLLECTION, { user_id })
+
+    if (!cached) {
+      console.log(`[ - SERVICE PROVIDER CACHE - ] Cache miss for user_id: ${user_id}`)
+      return null
+    }
+
+    const now = Date.now()
+    if (now - cached.cached_at > CACHE_DURATION_MS) {
+      console.log(`[ - SERVICE PROVIDER CACHE - ] Cache expired for user_id: ${user_id} (age: ${Math.floor((now - cached.cached_at) / 1000)}s)`)
+      return null
+    }
+
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Cache hit for user_id: ${user_id}`)
+    return cached.user_data
+  } catch (error) {
+    console.error("[ - SERVICE PROVIDER CACHE - ] Error reading cache:", error)
+    return null
+  }
+}
+
+/**
+ * - SAVE USER TO CACHE - \\
+ * @param {string} user_id - Discord user ID
+ * @param {luarmor.luarmor_user} user_data - User data to cache
+ * @returns {Promise<void>}
+ */
+async function save_cached_user(user_id: string, user_data: luarmor.luarmor_user): Promise<void> {
+  try {
+    if (!db.is_connected()) {
+      console.log("[ - SERVICE PROVIDER CACHE - ] DB not connected, skipping cache save")
+      return
+    }
+
+    const now = Date.now()
+    await db.update_one<cached_user>(
+      USER_CACHE_COLLECTION,
+      { user_id },
+      {
+        user_id      : user_id,
+        user_data    : user_data,
+        cached_at    : now,
+        last_updated : now,
+      },
+      true
+    )
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Saved cache for user_id: ${user_id}`)
+  } catch (error) {
+    console.error(`[ - SERVICE PROVIDER CACHE - ] Error saving cache for user_id: ${user_id}`, error)
+  }
+}
+
+interface hwid_reset_request {
+  _id?      : any
+  timestamp : number
+  user_id   : string
+}
+
+interface hwid_less_status {
+  _id?                  : any
+  status_key            : string
+  enabled               : boolean
+  enabled_at            : number
+  expires_at            : number
+  triggered_by          : string
+  reset_count           : number
+  disabled_at           : number | null
+  disable_notified_at   : number | null
+}
+
+interface hwid_reset_cache_entry {
+  _id?        : any
+  reset_count : number
+  cached_at   : number
+}
+
+/**
+ * - GET CACHED RESET COUNT - \\
+ * @returns {Promise<number | null>} Cached reset count or null
+ */
+async function get_cached_reset_count(): Promise<number | null> {
+  try {
+    const cached = await db.find_one<hwid_reset_cache_entry>(HWID_RESET_CACHE, {})
+
+    if (!cached) return null
+
+    const now = Date.now()
+    if (now - cached.cached_at > RESET_CACHE_TTL_MS) {
+      return null
+    }
+
+    return cached.reset_count
+  } catch (error) {
+    return null
+  }
+}
+
+/**
+ * - SAVE RESET COUNT TO CACHE - \\
+ * @param {number} reset_count - Reset count to cache
+ * @returns {Promise<void>}
+ */
+async function save_reset_count_cache(reset_count: number): Promise<void> {
+  try {
+    await db.delete_many(HWID_RESET_CACHE, {})
+
+    await db.insert_one(HWID_RESET_CACHE, {
+      reset_count : reset_count,
+      cached_at   : Date.now(),
+    })
+  } catch (error) {
+    console.error("[ - HWID RESET TRACKER - ] Failed to cache reset count:", error)
+  }
+}
+
+/**
+ * - TRACK HWID RESET REQUEST - \\
+ * @param {string} user_id - Discord user ID
+ * @returns {Promise<void>}
+ */
+async function track_hwid_reset(user_id: string): Promise<void> {
+  try {
+    await db.insert_one(HWID_RESET_TRACKER, {
+      user_id   : user_id,
+      timestamp : Date.now(),
+    })
+
+    await db.delete_many(HWID_RESET_CACHE, {})
+  } catch (error) {
+    console.error("[ - HWID RESET TRACKER - ] Failed to track reset:", error)
+  }
+}
+
+/**
+ * - CHECK AND AUTO-ENABLE HWID LESS - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<void>}
+ */
+async function check_and_enable_hwid_less(client: Client): Promise<void> {
+  try {
+    const cached_count = await get_cached_reset_count()
+
+    let reset_count: number
+
+    if (cached_count !== null) {
+      reset_count = cached_count
+      console.log(`[ - HWID RESET TRACKER - ] Using cached reset count: ${reset_count}/${RESET_THRESHOLD}`)
+    } else {
+      const one_minute_ago = Date.now() - 60000
+
+      const recent_resets = await db.find_many<hwid_reset_request>(HWID_RESET_TRACKER, {
+        timestamp: { $gte: one_minute_ago },
+      })
+
+      reset_count = recent_resets.length
+
+      await save_reset_count_cache(reset_count)
+
+      console.log(`[ - HWID RESET TRACKER - ] Resets in last minute: ${reset_count}/${RESET_THRESHOLD}`)
+    }
+
+    if (reset_count >= RESET_THRESHOLD) {
+      if (__auto_hwid_less_lock) {
+        console.log("[ - HWID RESET TRACKER - ] Auto HWID less already processing")
+      } else {
+        __auto_hwid_less_lock = true
+
+        try {
+          const existing_status = await db.find_one<hwid_less_status>(
+            HWID_LESS_STATUS_COLLECTION,
+            {
+              status_key : HWID_LESS_STATUS_KEY,
+              enabled    : true,
+              expires_at : { $gt: Date.now() },
+            }
+          )
+
+          if (existing_status) {
+            console.log("[ - HWID RESET TRACKER - ] HWID less already enabled")
+
+            if (
+              !__auto_disable_timer ||
+              __auto_disable_expires_at !== existing_status.expires_at
+            ) {
+              schedule_auto_disable(client, existing_status.expires_at)
+            }
+          } else {
+            const enable_result = await luarmor.update_project_settings(PROJECT_ID, true)
+
+            if (enable_result.success) {
+              const now = Date.now()
+              const expires_at = now + HWID_LESS_DURATION_MS
+
+              await db.update_one<hwid_less_status>(
+                HWID_LESS_STATUS_COLLECTION,
+                { status_key: HWID_LESS_STATUS_KEY },
+                {
+                  status_key          : HWID_LESS_STATUS_KEY,
+                  enabled             : true,
+                  enabled_at          : now,
+                  expires_at          : expires_at,
+                  triggered_by        : "auto",
+                  reset_count         : reset_count,
+                  disabled_at         : null,
+                  disable_notified_at : null,
+                },
+                true
+              )
+
+              console.log(`[ - HWID RESET TRACKER - ] Auto-enabled HWID less for 1 hour (${reset_count} requests)`)
+
+              try {
+                const notification_user = await client.users.fetch(NOTIFICATION_USER)
+                const message = component.build_message({
+                  components: [
+                    component.container({
+                      accent_color: 0xED4245,
+                      components: [
+                        component.text("## Auto HWID-Less Enabled!"),
+                      ],
+                    }),
+                    component.container({
+                      components: [
+                        component.text([
+                          "## Details:",
+                          `- Trigger: **Auto (High Reset Requests)**`,
+                          `- Reset Count: **${reset_count} requests in 1 minute**`,
+                          `- Threshold: **${RESET_THRESHOLD} requests/minute**`,
+                          `- Duration: **1 hour**`,
+                          `- Expires: <t:${Math.floor(expires_at / 1000)}:R>`,
+                          ``,
+                          `HWID-less mode has been automatically enabled due to high reset request volume.`,
+                        ]),
+                      ],
+                    }),
+                  ],
+                })
+
+                await notification_user.send(message)
+              } catch (dm_error) {
+                console.error("[ - HWID RESET TRACKER - ] Failed to send notification:", dm_error)
+              }
+
+              schedule_auto_disable(client, expires_at)
+            } else {
+              console.error("[ - HWID RESET TRACKER - ] Failed to enable HWID less:", enable_result.error)
+            }
+          }
+        } finally {
+          __auto_hwid_less_lock = false
+        }
+      }
+    }
+
+    const old_timestamp = Date.now() - 300000
+    await db.delete_many(HWID_RESET_TRACKER, {
+      timestamp: { $lt: old_timestamp },
+    })
+  } catch (error) {
+    console.error("[ - HWID RESET TRACKER - ] Error checking reset count:", error)
+  }
+}
+
+/**
+ * - SCHEDULE AUTO DISABLE HWID LESS - \\
+ * @param {Client} client - Discord client
+ * @param {number} expires_at - Expiration timestamp (ms)
+ * @returns {void}
+ */
+function schedule_auto_disable(client: Client, expires_at: number): void {
+  if (__auto_disable_timer) {
+    clearTimeout(__auto_disable_timer)
+    __auto_disable_timer = null
+  }
+
+  __auto_disable_expires_at = expires_at
+
+  const delay_ms = Math.max(expires_at - Date.now(), 0)
+
+  __auto_disable_timer = setTimeout(() => {
+    void run_auto_disable(client, expires_at)
+  }, delay_ms)
+}
+
+/**
+ * - RUN AUTO DISABLE HWID LESS - \\
+ * @param {Client} client - Discord client
+ * @param {number} expected_expires_at - Expected expiration timestamp (ms)
+ * @returns {Promise<void>}
+ */
+async function run_auto_disable(client: Client, expected_expires_at: number): Promise<void> {
+  try {
+    const status = await db.find_one<hwid_less_status>(
+      HWID_LESS_STATUS_COLLECTION,
+      { status_key: HWID_LESS_STATUS_KEY }
+    )
+
+    if (!status || !status.enabled) {
+      return
+    }
+
+    if (status.expires_at !== expected_expires_at) {
+      return
+    }
+
+    if (status.expires_at > Date.now()) {
+      return
+    }
+
+    const disable_result = await luarmor.update_project_settings(PROJECT_ID, false)
+    if (!disable_result.success) {
+      console.error("[ - HWID RESET TRACKER - ] Failed to auto-disable HWID less:", disable_result.error)
+      return
+    }
+
+    const now = Date.now()
+    const updated = await db.update_one<hwid_less_status>(
+      HWID_LESS_STATUS_COLLECTION,
+      {
+        status_key : HWID_LESS_STATUS_KEY,
+        enabled    : true,
+        expires_at : expected_expires_at,
+      },
+      {
+        enabled             : false,
+        disabled_at         : now,
+        disable_notified_at : now,
+      }
+    )
+
+    if (!updated) {
+      return
+    }
+
+    console.log("[ - HWID RESET TRACKER - ] Auto-disabled HWID less after 1 hour")
+
+    try {
+      const notification_user = await client.users.fetch(NOTIFICATION_USER)
+      const message = component.build_message({
+        components: [
+          component.container({
+            accent_color: 0x57F287,
+            components: [
+              component.text("## Auto HWID-Less Disabled!"),
+            ],
+          }),
+          component.container({
+            components: [
+              component.text([
+                "HWID-less mode has been automatically disabled after 1 hour.",
+                "",
+                "Normal HWID protection is now re-enabled.",
+              ]),
+            ],
+          }),
+        ],
+      })
+
+      await notification_user.send(message)
+    } catch (dm_error) {
+      console.error("[ - HWID RESET TRACKER - ] Failed to send disable notification:", dm_error)
+    }
+  } catch (error) {
+    console.error("[ - HWID RESET TRACKER - ] Failed to auto-disable HWID less:", error)
+  } finally {
+    if (__auto_disable_expires_at === expected_expires_at) {
+      __auto_disable_expires_at = null
+      __auto_disable_timer = null
+    }
+  }
+}
+
+/**
+ * - GET USER WITH CACHE FALLBACK - \\
+ * @param {string} user_id - Discord user ID
+ * @param {Client} client - Discord client
+ * @returns {Promise<object>} Result with user data
+ */
+async function get_user_with_cache(user_id: string, client: Client): Promise<{ success: boolean; data?: luarmor.luarmor_user; error?: string; from_cache?: boolean }> {
+  const cached = await get_cached_user(user_id)
+
+  if (cached) {
+    console.log(`[ - SERVICE PROVIDER CACHE - ] Returning cached data for user_id: ${user_id}`)
+    return {
+      success    : true,
+      data       : cached,
+      from_cache : true,
+    }
+  }
+
+  console.log(`[ - SERVICE PROVIDER CACHE - ] Fetching from Luarmor for user_id: ${user_id}`)
+  const user_result = await luarmor.get_user_by_discord(user_id)
+
+  if (user_result.success && user_result.data) {
+    await save_cached_user(user_id, user_result.data)
+    return {
+      success    : true,
+      data       : user_result.data,
+      from_cache : false,
+    }
+  }
+
+  return {
+    success : false,
+    error   : user_result.error,
+  }
+}
+
+/**
+ * - GET USER SCRIPT - \\
+ * @param {object} options - Options containing client and user_id
+ * @returns {Promise<object>} Result with script or error
+ */
+export async function get_user_script(options: { client: Client; user_id: string }): Promise<{ success: boolean; script?: string; error?: string; message?: any }> {
+  try {
+    const user_result = await get_user_with_cache(options.user_id, options.client)
+
+    if (!user_result.success || !user_result.data) {
+      if (is_rate_limited(user_result.error)) {
+        console.warn(`[ - GET SCRIPT - ] Rate limited for user ${options.user_id}`)
+        return {
+          success : false,
+          message : create_rate_limit_message("Get Script"),
+        }
+      }
+
+      if (is_user_not_found(user_result.error)) {
+        console.warn(`[ - GET SCRIPT - ] User not found for ${options.user_id}`)
+        return {
+          success : false,
+          message : component.build_message({
+            components: [
+              component.container({
+                components: [
+                  component.text([
+                    "## No Key Found",
+                    "You do not have a key linked to your Discord account.",
+                    "",
+                    "Please use **Redeem Key** or **Get Script** first.",
+                  ]),
+                ],
+              }),
+            ],
+          }),
+        }
+      }
+
+      console.error(`[ - GET SCRIPT - ] Failed for user ${options.user_id}:`, user_result.error)
+
+      return {
+        success : false,
+        error   : user_result.error || "User not found",
+      }
+    }
+
+    const loader_script = luarmor.get_full_loader_script(user_result.data.user_key)
+
+    console.log(`[ - GET SCRIPT - ] Success for user ${options.user_id}`)
+
+    return {
+      success : true,
+      script  : loader_script,
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "get_user_script", {
+      user_id : options.user_id,
+    })
+    return {
+      success : false,
+      error   : "Failed to get script",
+    }
+  }
+}
+
+/**
+ * - RESET USER HWID - \\
+ * @param {object} options - Options containing client and user_id
+ * @returns {Promise<object>} Result with success status
+ */
+export async function reset_user_hwid(options: { client: Client; user_id: string }): Promise<{ success: boolean; message?: any; error?: string }> {
+  try {
+    const reset_result = await luarmor.reset_hwid_by_discord(options.user_id)
+
+    if (reset_result.success) {
+      console.log(`[ - RESET HWID - ] Success for user ${options.user_id}`)
+      track_and_check_hwid_reset(options.client, options.user_id)
+      return { 
+        success : true, 
+        message : "HWID reset successfully" 
+      }
+    }
+
+    if (is_rate_limited(reset_result.error)) {
+      console.warn(`[ - RESET HWID - ] Rate limited for user ${options.user_id}`)
+      return { 
+        success : false, 
+        message : create_rate_limit_message("HWID Reset") 
+      }
+    }
+
+    console.error(`[ - RESET HWID - ] Failed for user ${options.user_id}:`, reset_result.error)
+
+    return { 
+      success : false, 
+      error   : reset_result.error || "Failed to reset HWID" 
+    }
+  } catch (error) {
+    console.error(`[ - RESET HWID - ] Exception for user ${options.user_id}:`, error)
+    return { 
+      success : false, 
+      error   : "Failed to reset HWID" 
+    }
+  }
+}
+
+/**
+ * - GET USER STATS - \\
+ * @param {object} options - Options containing client and user_id
+ * @returns {Promise<object>} Result with user stats and leaderboard
+ */
+export async function get_user_stats(options: { client: Client; user_id: string }): Promise<{ success: boolean; data?: any; error?: string; message?: any }> {
+  try {
+    const user_result = await get_user_with_cache(options.user_id, options.client)
+
+    if (!user_result.success || !user_result.data) {
+      if (is_user_not_found(user_result.error)) {
+        console.warn(`[ - GET STATS - ] User not found for ${options.user_id}`)
+        return {
+          success : false,
+          message : component.build_message({
+            components: [
+              component.container({
+                components: [
+                  component.text([
+                    "## No Key Found",
+                    "You do not have a key linked to your Discord account.",
+                    "",
+                    "Please use **Get Script** first, then try again.",
+                  ]),
+                ],
+              }),
+            ],
+          }),
+        }
+      }
+
+      console.error(`[ - GET STATS - ] Failed for user ${options.user_id}:`, user_result.error)
+      return {
+        success : false,
+        error   : user_result.error || "User not found",
+      }
+    }
+
+    const all_users_result = await luarmor.get_all_users()
+    let leaderboard_text   = "Unable to fetch leaderboard"
+
+    if (all_users_result.success && all_users_result.data) {
+      const rank_info = luarmor.get_execution_rank(all_users_result.data, options.user_id)
+      if (rank_info.rank > 0) {
+        leaderboard_text = `You are #${rank_info.rank} of ${rank_info.total} users`
+      } else {
+        leaderboard_text = `Not ranked yet (${all_users_result.data.length} total users)`
+      }
+    } else {
+      console.warn(`[ - GET STATS - ] Failed to fetch leaderboard for ${options.user_id}:`, all_users_result.error)
+    }
+
+    console.log(`[ - GET STATS - ] Success for user ${options.user_id}`)
+
+    return {
+      success : true,
+      data    : {
+        user             : user_result.data,
+        leaderboard_text : leaderboard_text,
+      },
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "get_user_stats", {
+      user_id : options.user_id,
+    })
+    return {
+      success : false,
+      error   : "Failed to get stats",
+    }
+  }
+}
+
+/**
+ * - REDEEM USER KEY - \\
+ * @param {object} options - Options containing client, user_id, and user_key
+ * @returns {Promise<object>} Result with success status and script
+ */
+export async function redeem_user_key(options: { client: Client; user_id: string; user_key: string }): Promise<{ success: boolean; message?: string; error?: string; script?: string }> {
+  try {
+    const existing_user = await luarmor.get_user_by_discord(options.user_id)
+
+    if (existing_user.success && existing_user.data) {
+      console.warn(`[ - REDEEM KEY - ] User ${options.user_id} already has a key`)
+      return {
+        success : false,
+        error   : "You already have a key linked to your Discord account",
+      }
+    }
+
+    const verify_result = await luarmor.get_user_by_key(options.user_key)
+
+    if (!verify_result.success || !verify_result.data) {
+      console.error(`[ - REDEEM KEY - ] Invalid key for user ${options.user_id}`)
+      return {
+        success : false,
+        error   : "Invalid key or key does not exist",
+      }
+    }
+
+    if (verify_result.data.discord_id && verify_result.data.discord_id !== options.user_id) {
+      console.warn(`[ - REDEEM KEY - ] Key ${options.user_key} already linked to another user`)
+      return {
+        success : false,
+        error   : "This key is already linked to another Discord account",
+      }
+    }
+
+    const link_result = await luarmor.link_discord(options.user_key, options.user_id)
+
+    if (link_result.success) {
+      console.log(`[ - REDEEM KEY - ] Successfully linked key for user ${options.user_id}`)
+
+      if (verify_result.data) {
+        await save_cached_user(options.user_id, verify_result.data)
+      }
+
+      const loader_script = luarmor.get_full_loader_script(options.user_key)
+      return {
+        success : true,
+        message : "Key linked successfully",
+        script  : loader_script,
+      }
+    } else {
+      console.error(`[ - REDEEM KEY - ] Failed to link key for user ${options.user_id}:`, link_result.error)
+      return {
+        success : false,
+        error   : link_result.error || "Failed to link key",
+      }
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "redeem_user_key", {
+      user_id  : options.user_id,
+      user_key : options.user_key,
+    })
+    return {
+      success : false,
+      error   : "Failed to redeem key",
+    }
+  }
+}
+
+/**
+ * - TRACK AND CHECK HWID RESET - \\
+ * @param {Client} client - Discord client
+ * @param {string} user_id - Discord user ID
+ * @returns {Promise<void>}
+ */
+export async function track_and_check_hwid_reset(client: Client, user_id: string): Promise<void> {
+  await track_hwid_reset(user_id)
+  await check_and_enable_hwid_less(client)
+}
+
+/**
+ * - GET EXECUTION LEADERBOARD - \\
+ * @param {object} options - Options containing client
+ * @returns {Promise<object>} Result with leaderboard data
+ */
+export async function get_execution_leaderboard(options: { client: Client }): Promise<{ success: boolean; data?: any[]; error?: string }> {
+  try {
+    const all_users = await luarmor.get_all_users()
+
+    if (!all_users.success || !all_users.data) {
+      return {
+        success : false,
+        error   : all_users.error || "Failed to fetch users",
+      }
+    }
+
+    const sorted = all_users.data.sort((a: any, b: any) => b.total_executions - a.total_executions)
+
+    return {
+      success : true,
+      data    : sorted,
+    }
+  } catch (error) {
+    await log_error(options.client, error as Error, "get_execution_leaderboard", {})
+    return {
+      success : false,
+      error   : "Failed to fetch leaderboard",
+    }
+  }
+}
