@@ -2,6 +2,7 @@ import { Client, Collection, GatewayIntentBits, ActivityType, REST, Routes } fro
 import { config }                                                            from "dotenv"
 import { Command }                                                           from "@shared/types/command"
 import { log_error }                                                         from "@shared/utils/error_logger"
+import { db }                                                                from "@shared/utils"
 import { readdirSync }                                                       from "fs"
 import { join }                                                              from "path"
 import { start_idn_live_scheduler }                                          from "@jkt48/core/schedulers/idn_live_monitor"
@@ -96,6 +97,18 @@ async function register_jkt48_commands(commands_data: object[]) {
 client.once("ready", async () => {
   console.log(`[ - JKT48 - ] Bot logged in as ${client.user?.tag}`)
   console.log(`[ - JKT48 - ] Serving ${client.guilds.cache.size} guilds`)
+
+  // - CONNECT TO DATABASE - \\
+  try {
+    const mongo = await db.connect()
+    if (!mongo) {
+      console.error("[ - JKT48 - ] Database connection failed - live monitoring may not work properly")
+    } else {
+      console.log("[ - JKT48 - ] Database connected successfully")
+    }
+  } catch (error) {
+    console.error("[ - JKT48 - ] Database connection error:", error)
+  }
 
   try {
     const commands_data = await load_jkt48_commands()
