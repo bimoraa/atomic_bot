@@ -854,9 +854,14 @@ export async function remove_notification(options: { user_id: string; member_nam
  */
 export async function get_user_subscriptions(user_id: string, client: Client): Promise<notification_subscription[]> {
   try {
+    if (!db.is_connected()) {
+      console.warn("[ - JKT48 - ] Database not connected, cannot fetch subscriptions")
+      return []
+    }
     return await db.find_many<notification_subscription>(NOTIFICATION_COLLECTION, { user_id })
   } catch (error) {
-    await log_error(client, error as Error, "idn_live_get_subscriptions", { user_id })
+    console.error("[ - JKT48 - ] Failed to fetch subscriptions:", (error as Error).message)
+    await log_error(client, error as Error, "idn_live_get_subscriptions", { user_id }).catch(() => {})
     return []
   }
 }
@@ -873,7 +878,7 @@ export async function get_member_suggestions(options: { query: string; user_id: 
     const suggestions_map  = new Map<string, member_suggestion>()
 
     // - START SUBSCRIPTION FETCH IMMEDIATELY SO IT RUNS IN PARALLEL - \\
-    const subscriptions_promise = get_user_subscriptions(options.user_id, options.client)
+    const subscriptions_promise = get_user_subscriptions(options.user_id, options.client).catch(() => [])
 
     if (options.include_live !== false) {
       if (platform === "idn") {
@@ -882,8 +887,14 @@ export async function get_member_suggestions(options: { query: string; user_id: 
           idn_live.get_idn_roster_members(options.client, {
             max_wait_ms : 2000,
             allow_stale : true,
+          }).catch((err) => {
+            console.error("[ - JKT48 - ] Autocomplete: Failed to fetch roster members:", err.message)
+            return []
           }),
-          idn_live.get_all_members(options.client),
+          idn_live.get_all_members(options.client).catch((err) => {
+            console.error("[ - JKT48 - ] Autocomplete: Failed to fetch live members:", err.message)
+            return []
+          }),
         ])
 
         for (const member of roster_members) {
@@ -904,7 +915,10 @@ export async function get_member_suggestions(options: { query: string; user_id: 
       }
 
       if (platform === "showroom") {
-        const showroom_members = await showroom_live.fetch_showroom_members(options.client)
+        const showroom_members = await showroom_live.fetch_showroom_members(options.client).catch((err) => {
+          console.error("[ - JKT48 - ] Autocomplete: Failed to fetch showroom members:", err.message)
+          return []
+        })
         for (const member of showroom_members) {
           const key   = member.room_id.toString()
           const label = `${format_member_display_name(member.name)} (Showroom)`
@@ -948,11 +962,21 @@ export async function get_member_suggestions(options: { query: string; user_id: 
 
     return limited.slice(0, 25)
   } catch (error) {
+    console.error("[ - JKT48 - ] Autocomplete error:", error)
     await log_error(options.client, error as Error, "idn_live_get_member_suggestions", {
       query   : options.query,
       user_id : options.user_id,
       platform: options.platform,
-    })
+    }).catch(() => {})
+    
+    // - RETURN FALLBACK SUGGESTIONS INSTEAD OF EMPTY ARRAY - \\
+    const fallback_query = options.query.trim()
+    if (fallback_query) {
+      return [{
+        name  : format_member_display_name(to_title_case(fallback_query)),
+        value : fallback_query,
+      }]
+    }
     return []
   }
 }

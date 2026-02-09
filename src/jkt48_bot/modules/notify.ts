@@ -198,12 +198,12 @@ export const command: Command = {
    * @returns {Promise<void>}
    */
   async autocomplete(interaction: AutocompleteInteraction) {
-    const focused_value = interaction.options.getFocused()
-    const subcommand    = interaction.options.getSubcommand()
-    const include_live  = subcommand !== "remove"
-    const platform      = interaction.options.getString("type") || "idn"
-
     try {
+      const focused_value = interaction.options.getFocused()
+      const subcommand    = interaction.options.getSubcommand()
+      const include_live  = subcommand !== "remove"
+      const platform      = interaction.options.getString("type") || "idn"
+
       const suggestions = await get_member_suggestions({
         query        : focused_value,
         user_id      : interaction.user.id,
@@ -214,17 +214,23 @@ export const command: Command = {
 
       await interaction.respond(
         suggestions.map((suggestion) => ({
-          name  : suggestion.name,
-          value : suggestion.value,
+          name  : suggestion.name.slice(0, 100),
+          value : suggestion.value.slice(0, 100),
         }))
       )
     } catch (error) {
+      console.error("[ - JKT48 - ] Autocomplete handler error:", error)
       await log_error(interaction.client, error as Error, "notify_autocomplete", {
-        subcommand : subcommand,
+        subcommand : interaction.options.getSubcommand(),
         user_id    : interaction.user.id,
-        query      : focused_value,
-      })
-      await interaction.respond([])
+      }).catch(() => {})
+      
+      // - ALWAYS RESPOND TO PREVENT "FAILED TO LOAD OPTION" ERROR - \\
+      try {
+        await interaction.respond([])
+      } catch {
+        // - ALREADY RESPONDED OR TIMED OUT - \\
+      }
     }
   },
 }
