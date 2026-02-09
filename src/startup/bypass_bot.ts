@@ -13,21 +13,19 @@ config()
 
 const bypass_token           = process.env.BYPASS_DISCORD_TOKEN!
 const bypass_client_id       = process.env.BYPASS_CLIENT_ID!
-const allow_message_content  = ["true", "1", "yes"].includes(
-  String(process.env.BYPASS_ENABLE_MESSAGE_CONTENT || "").toLowerCase()
-)
 
 if (!bypass_token || !bypass_client_id) {
   console.log("[ - BYPASS - ] Token not configured, skipping bypass bot startup")
   process.exit(0)
 }
 
+// - MESSAGE CONTENT INTENT IS REQUIRED FOR AUTO BYPASS - \\
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.DirectMessages,
-    ...(allow_message_content ? [GatewayIntentBits.MessageContent] : []),
+    GatewayIntentBits.MessageContent,
   ],
   presence: {
     status    : "dnd",

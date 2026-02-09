@@ -4,12 +4,6 @@ import { component, db, guild_settings } from "@shared/utils"
 import { log_error }                     from "@shared/utils/error_logger"
 import { check_bypass_rate_limit } from "../limits/bypass_rate_limit"
 
-const allow_message_content      = ["true", "1", "yes"].includes(
-  String(process.env.BYPASS_ENABLE_MESSAGE_CONTENT || "").toLowerCase()
-)
-const notice_cooldown_ms         = 60_000
-const last_missing_intent_notice = new Map<string, number>()
-
 /**
  * @param {Message} message - Discord message
  * @returns {string | null} Extracted URL if found
@@ -48,45 +42,38 @@ function extract_url_from_message(message: Message): string | null {
  * @returns {Promise<boolean>} True if message was handled
  */
 export async function handle_auto_bypass(message: Message): Promise<boolean> {
-  const is_dm             = message.channel.isDMBased()
+  const is_dm    = message.channel.isDMBased()
+  const guild_id = message.guildId
+
+  console.log(`[ - AUTO BYPASS - ] Message received - DM: ${is_dm}, Guild: ${guild_id || "N/A"}, Channel: ${message.channelId}`)
 
   if (!is_dm) {
-    const guild_id = message.guildId
-    if (!guild_id) return false
+    if (!guild_id) {
+      console.log(`[ - AUTO BYPASS - ] No guild ID, skipping`)
+      return false
+    }
 
     const bypass_channel_id = await guild_settings.get_guild_setting(guild_id, "bypass_channel")
-    if (!bypass_channel_id || message.channelId !== bypass_channel_id) return false
+    console.log(`[ - AUTO BYPASS - ] Bypass channel for guild ${guild_id}: ${bypass_channel_id || "NOT SET"}`)
+    
+    if (!bypass_channel_id) {
+      console.log(`[ - AUTO BYPASS - ] No bypass channel configured for guild ${guild_id}`)
+      return false
+    }
+
+    if (message.channelId !== bypass_channel_id) {
+      console.log(`[ - AUTO BYPASS - ] Message not in bypass channel (${message.channelId} !== ${bypass_channel_id})`)
+      return false
+    }
   }
 
   const url = extract_url_from_message(message)
+  console.log(`[ - AUTO BYPASS - ] Extracted URL: ${url || "NONE"}`)
+  console.log(`[ - AUTO BYPASS - ] Message content length: ${message.content?.length || 0}`)
+  console.log(`[ - AUTO BYPASS - ] Message embeds: ${message.embeds.length}`)
+  
   if (!url) {
-    const should_notice = !allow_message_content && message.content.length === 0 && message.embeds.length === 0
-    if (should_notice && !is_dm) {
-      const now       = Date.now()
-      const cache_key = `${message.guildId || "dm"}:${message.channelId}`
-      const last_sent = last_missing_intent_notice.get(cache_key) || 0
-
-      if (now - last_sent >= notice_cooldown_ms) {
-        const notice_message = component.build_message({
-          components: [
-            component.container({
-              components: [
-                component.text([
-                  "## Auto Bypass Disabled",
-                  "",
-                  "Message Content intent is not enabled for this bot.",
-                  "Enable it in the Discord Developer Portal and set BYPASS_ENABLE_MESSAGE_CONTENT=true.",
-                ]),
-              ],
-            }),
-          ],
-        })
-
-        await message.reply(notice_message).catch(() => {})
-        last_missing_intent_notice.set(cache_key, now)
-      }
-    }
-
+    console.log(`[ - AUTO BYPASS - ] No URL found in message`)
     return false
   }
 
