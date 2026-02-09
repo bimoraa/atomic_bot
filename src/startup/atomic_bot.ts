@@ -98,10 +98,10 @@ let voice_connection: VoiceConnection | null = null
 
 export { client }
 
-import "./core/handlers/events/guild_member/guild_member_add"
-import "./core/handlers/events/guild_member/guild_member_booster"
-import "./core/handlers/events/voice/voice_state_update"
-import "./core/handlers/events/message/message_delete"
+import "../atomic_bot/core/handlers/events/guild_member/guild_member_add"
+import "../atomic_bot/core/handlers/events/guild_member/guild_member_booster"
+import "../atomic_bot/core/handlers/events/voice/voice_state_update"
+import "../atomic_bot/core/handlers/events/message/message_delete"
 
 /**
  * - JOIN VOICE CHANNEL WITH AUTO-RECONNECT - \\

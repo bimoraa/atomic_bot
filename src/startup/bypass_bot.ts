@@ -11,8 +11,9 @@ import { handle_bypass_support_type_select }                                    
 
 config()
 
-const bypass_token     = process.env.BYPASS_DISCORD_TOKEN!
-const bypass_client_id = process.env.BYPASS_CLIENT_ID!
+const bypass_token           = process.env.BYPASS_DISCORD_TOKEN!
+const bypass_client_id       = process.env.BYPASS_CLIENT_ID!
+const allow_message_content  = process.env.BYPASS_ENABLE_MESSAGE_CONTENT === "true"
 
 if (!bypass_token || !bypass_client_id) {
   console.log("[ - BYPASS - ] Token not configured, skipping bypass bot startup")
@@ -23,8 +24,8 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
     GatewayIntentBits.DirectMessages,
+    ...(allow_message_content ? [GatewayIntentBits.MessageContent] : []),
   ],
   presence: {
     status    : "online",
