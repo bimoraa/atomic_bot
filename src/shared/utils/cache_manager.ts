@@ -1,17 +1,23 @@
 import { guild_cache, user_cache, db_cache, log_all_cache_stats, cache_stats } from "./cache"
 import * as db_cache_util from "./db_cache"
 
+const is_production = process.env.NODE_ENV === "production"
+
 /**
  * - CACHE WARMUP ON STARTUP - \\
  * @returns {Promise<void>}
  */
 export async function warm_caches(): Promise<void> {
-    console.log('[ - CACHE MANAGER - ] Starting cache warmup...')
+    if (!is_production) {
+        console.log('[ - CACHE MANAGER - ] Starting cache warmup...')
+    }
 
     try {
         await db_cache_util.warm_collection_cache('guild_settings', 5 * 60 * 1000)
 
-        console.log('[ - CACHE MANAGER - ] Cache warmup completed')
+        if (!is_production) {
+            console.log('[ - CACHE MANAGER - ] Cache warmup completed')
+        }
     } catch (error) {
         console.error('[ - CACHE MANAGER - ] Cache warmup failed:', error)
     }
@@ -23,7 +29,9 @@ export async function warm_caches(): Promise<void> {
  * @returns {NodeJS.Timeout} Interval timer
  */
 export function start_cache_stats_logging(interval_ms: number = 10 * 60 * 1000): NodeJS.Timeout {
-    console.log(`[ - CACHE MANAGER - ] Starting cache stats logging every ${interval_ms / 1000}s`)
+    if (!is_production) {
+        console.log(`[ - CACHE MANAGER - ] Starting cache stats logging every ${interval_ms / 1000}s`)
+    }
 
     return setInterval(() => {
         log_all_cache_stats()
@@ -35,13 +43,17 @@ export function start_cache_stats_logging(interval_ms: number = 10 * 60 * 1000):
  * @returns {void}
  */
 export function invalidate_all_caches(): void {
-    console.log('[ - CACHE MANAGER - ] Invalidating all caches...')
+    if (!is_production) {
+        console.log('[ - CACHE MANAGER - ] Invalidating all caches...')
+    }
 
     guild_cache.clear()
     user_cache.clear()
     db_cache.clear()
 
-    console.log('[ - CACHE MANAGER - ] All caches invalidated')
+    if (!is_production) {
+        console.log('[ - CACHE MANAGER - ] All caches invalidated')
+    }
 }
 
 /**
@@ -87,13 +99,15 @@ export function get_cache_health(): {
 export function optimize_cache_sizes(): void {
     const health = get_cache_health()
 
-    console.log('[ - CACHE MANAGER - ] Cache health check:')
-    console.log(`[ - CACHE MANAGER - ] Healthy: ${health.healthy}`)
+    if (!is_production) {
+        console.log('[ - CACHE MANAGER - ] Cache health check:')
+        console.log(`[ - CACHE MANAGER - ] Healthy: ${health.healthy}`)
 
-    if (health.warnings.length > 0) {
-        console.log('[ - CACHE MANAGER - ] Warnings:')
-        for (const warning of health.warnings) {
-            console.log(`[ - CACHE MANAGER - ]   - ${warning}`)
+        if (health.warnings.length > 0) {
+            console.log('[ - CACHE MANAGER - ] Warnings:')
+            for (const warning of health.warnings) {
+                console.log(`[ - CACHE MANAGER - ]   - ${warning}`)
+            }
         }
     }
 
@@ -106,7 +120,9 @@ export function optimize_cache_sizes(): void {
  * @returns {NodeJS.Timeout} Interval timer
  */
 export function start_cache_optimization(interval_ms: number = 30 * 60 * 1000): NodeJS.Timeout {
-    console.log(`[ - CACHE MANAGER - ] Starting periodic cache optimization every ${interval_ms / 1000}s`)
+    if (!is_production) {
+        console.log(`[ - CACHE MANAGER - ] Starting periodic cache optimization every ${interval_ms / 1000}s`)
+    }
 
     return setInterval(() => {
         optimize_cache_sizes()

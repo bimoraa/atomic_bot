@@ -1,6 +1,8 @@
 import * as db from "./database"
 import { db_cache } from "./cache"
 
+const is_production = process.env.NODE_ENV === "production"
+
 const collection_key_index: Map<string, Set<string>> = new Map()
 
 /**
@@ -236,5 +238,7 @@ export async function warm_collection_cache<T extends object>(
         register_collection_key(collection, cache_key)
     }
 
-    console.log(`[ - DB CACHE - ] Warmed cache for ${collection}: ${data.length} items`)
+    if (!is_production) {
+        console.log(`[ - DB CACHE - ] Warmed cache for ${collection}: ${data.length} items`)
+    }
 }

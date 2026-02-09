@@ -10,6 +10,11 @@ import { handle_history_live_button }                                        fro
 
 config()
 
+const is_production = process.env.NODE_ENV === "production"
+if (is_production) {
+  console.log = () => {}
+}
+
 const jkt48_token     = process.env.JKT48_DISCORD_TOKEN!
 const jkt48_client_id = process.env.JKT48_CLIENT_ID!
 

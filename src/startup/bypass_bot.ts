@@ -11,6 +11,11 @@ import { handle_bypass_support_type_select }                                    
 
 config()
 
+const is_production = process.env.NODE_ENV === "production"
+if (is_production) {
+  console.log = () => {}
+}
+
 const bypass_token           = process.env.BYPASS_DISCORD_TOKEN!
 const bypass_client_id       = process.env.BYPASS_CLIENT_ID!
 

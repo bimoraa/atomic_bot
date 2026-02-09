@@ -1,5 +1,7 @@
 // - CACHE UTILITY WITH STATISTICS AND PERFORMANCE TRACKING - \\
 
+const is_production = process.env.NODE_ENV === "production"
+
 /**
  * Cache item with value and expiration time
  */
@@ -300,8 +302,10 @@ export class Cache<T> {
    * @returns {void}
    */
   log_stats(): void {
-    const stats = this.get_stats()
-    console.log(`[ - CACHE STATS (${this.namespace}) - ] Hits: ${stats.hits} | Misses: ${stats.misses} | Evictions: ${stats.evictions} | Size: ${stats.size} | Hit Rate: ${stats.hit_rate}%`)
+    if (!is_production) {
+      const stats = this.get_stats()
+      console.log(`[ - CACHE STATS (${this.namespace}) - ] Hits: ${stats.hits} | Misses: ${stats.misses} | Evictions: ${stats.evictions} | Size: ${stats.size} | Hit Rate: ${stats.hit_rate}%`)
+    }
   }
 
   /**
@@ -422,12 +426,14 @@ export async function get_or_set_async<T>(key: string, factory: () => Promise<T>
  * @returns {void}
  */
 export function log_all_cache_stats(): void {
-  console.log('[ - CACHE STATS - ] =================================')
-  global_cache.log_stats()
-  guild_cache.log_stats()
-  user_cache.log_stats()
-  db_cache.log_stats()
-  console.log('[ - CACHE STATS - ] =================================')
+  if (!is_production) {
+    console.log('[ - CACHE STATS - ] =================================')
+    global_cache.log_stats()
+    guild_cache.log_stats()
+    user_cache.log_stats()
+    db_cache.log_stats()
+    console.log('[ - CACHE STATS - ] =================================')
+  }
 }
 
 /**

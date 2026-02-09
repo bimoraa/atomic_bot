@@ -35,8 +35,7 @@ config()
 const is_dev = process.env.NODE_ENV === "development"
 
 if (!is_dev) {
-  console.log  = () => {}
-  console.warn = () => {}
+  console.log = () => {}
 }
 
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN

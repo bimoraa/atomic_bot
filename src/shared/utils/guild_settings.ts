@@ -1,5 +1,7 @@
 import { db, cache } from "."
 
+const is_production = process.env.NODE_ENV === "production"
+
 const GUILD_SETTINGS_TTL = 5 * 60 * 1000 // - 5 minutes - \\
 
 /**
@@ -135,37 +137,49 @@ export async function set_guild_setting(
   value: string
 ): Promise<boolean> {
   try {
-    console.log(`[ - GUILD SETTINGS - ] Setting ${key} = ${value} for guild ${guild_id}`)
+    if (!is_production) {
+      console.log(`[ - GUILD SETTINGS - ] Setting ${key} = ${value} for guild ${guild_id}`)
+    }
 
     if (!db.is_connected()) {
       console.error("[ - GUILD SETTINGS ERROR - ] Database not connected")
       throw new Error("Database not connected")
     }
 
-    console.log(`[ - GUILD SETTINGS - ] Fetching existing settings...`)
+    if (!is_production) {
+      console.log(`[ - GUILD SETTINGS - ] Fetching existing settings...`)
+    }
     const existing = await db.find_one<{ guild_id: string; settings: guild_settings_data }>(
       "guild_settings",
       { guild_id }
     )
 
-    console.log(`[ - GUILD SETTINGS - ] Existing settings:`, existing)
+    if (!is_production) {
+      console.log(`[ - GUILD SETTINGS - ] Existing settings:`, existing)
+    }
 
     const updated_settings: guild_settings_data = {
       ...(existing?.settings || {}),
       [key]: value,
     }
 
-    console.log(`[ - GUILD SETTINGS - ] Updated settings:`, updated_settings)
+    if (!is_production) {
+      console.log(`[ - GUILD SETTINGS - ] Updated settings:`, updated_settings)
+    }
 
     if (existing) {
-      console.log(`[ - GUILD SETTINGS - ] Updating existing record...`)
+      if (!is_production) {
+        console.log(`[ - GUILD SETTINGS - ] Updating existing record...`)
+      }
       await db.update_one(
         "guild_settings",
         { guild_id },
         { settings: updated_settings, updated_at: new Date() }
       )
     } else {
-      console.log(`[ - GUILD SETTINGS - ] Inserting new record...`)
+      if (!is_production) {
+        console.log(`[ - GUILD SETTINGS - ] Inserting new record...`)
+      }
       await db.insert_one("guild_settings", {
         guild_id,
         settings: updated_settings,
@@ -174,7 +188,9 @@ export async function set_guild_setting(
 
     invalidate_guild_cache(guild_id)
 
-    console.log(`[ - GUILD SETTINGS - ] Successfully set ${key} for guild ${guild_id}`)
+    if (!is_production) {
+      console.log(`[ - GUILD SETTINGS - ] Successfully set ${key} for guild ${guild_id}`)
+    }
     return true
   } catch (err) {
     console.error(`[ - GUILD SETTINGS ERROR - ] SET_GUILD_SETTING: ${(err as Error).message}`)
@@ -218,7 +234,9 @@ export async function remove_guild_setting(
 
     invalidate_guild_cache(guild_id)
 
-    console.log(`[ - GUILD SETTINGS - ] Removed ${key} for guild ${guild_id}`)
+    if (!is_production) {
+      console.log(`[ - GUILD SETTINGS - ] Removed ${key} for guild ${guild_id}`)
+    }
     return true
   } catch (err) {
     console.error(`[ - GUILD SETTINGS ERROR - ] REMOVE_GUILD_SETTING: ${(err as Error).message}`, { guild_id, key })
@@ -242,7 +260,9 @@ export async function clear_all_guild_settings(guild_id: string): Promise<boolea
       invalidate_guild_cache(guild_id)
     }
 
-    console.log(`[ - GUILD SETTINGS - ] Cleared all settings for guild ${guild_id}`)
+    if (!is_production) {
+      console.log(`[ - GUILD SETTINGS - ] Cleared all settings for guild ${guild_id}`)
+    }
     return deleted
   } catch (err) {
     console.error(`[ - GUILD SETTINGS ERROR - ] CLEAR_ALL_GUILD_SETTINGS: ${(err as Error).message}`, { guild_id })
