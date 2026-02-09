@@ -1,7 +1,39 @@
 import { Message } from "discord.js"
 import { bypass_link } from "@shared/services/bypass_service"
 import { component, db, guild_settings } from "@shared/utils"
+import { log_error }                     from "@shared/utils/error_logger"
 import { check_bypass_rate_limit } from "../limits/bypass_rate_limit"
+
+/**
+ * @param {Message} message - Discord message
+ * @returns {string | null} Extracted URL if found
+ */
+function extract_url_from_message(message: Message): string | null {
+  const content = message.content?.trim() ?? ""
+  if (content.length > 0) {
+    const match = content.match(/https?:\/\/[^\s<>]+/i)
+    if (match) return match[0]
+  }
+
+  for (const embed of message.embeds) {
+    if (embed.url && embed.url.startsWith("http")) return embed.url
+
+    const description = embed.description ?? ""
+    const desc_match  = description.match(/https?:\/\/[^\s<>]+/i)
+    if (desc_match) return desc_match[0]
+
+    const title = embed.title ?? ""
+    const title_match = title.match(/https?:\/\/[^\s<>]+/i)
+    if (title_match) return title_match[0]
+
+    for (const field of embed.fields) {
+      const field_match = field.value.match(/https?:\/\/[^\s<>]+/i)
+      if (field_match) return field_match[0]
+    }
+  }
+
+  return null
+}
 
 /**
  * - AUTO BYPASS HANDLER - \\
@@ -20,12 +52,8 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     if (!bypass_channel_id || message.channelId !== bypass_channel_id) return false
   }
 
-  if (!message.content.includes("https://")) return false
-
-  const url_match = message.content.match(/https?:\/\/[^\s]+/)
-  if (!url_match) return false
-
-  const url = url_match[0]
+  const url = extract_url_from_message(message)
+  if (!url) return false
 
   try {
     if (!is_dm && message.guildId) {
@@ -140,6 +168,12 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     return true
   } catch (error) {
     console.error("[ - AUTO BYPASS - ] Error:", error)
+    await log_error(message.client, error as Error, "Auto Bypass", {
+      channel : message.channelId,
+      guild   : message.guild?.name || "DM",
+      user    : message.author.tag,
+      url     : url || "unknown",
+    })
     return false
   }
 }

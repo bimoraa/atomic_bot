@@ -28,11 +28,11 @@ const client = new Client({
     ...(allow_message_content ? [GatewayIntentBits.MessageContent] : []),
   ],
   presence: {
-    status    : "online",
+    status    : "dnd",
     activities: [{
-      name : "Bypass Services",
-      type : ActivityType.Playing,
-      state: "Delta Executor Bypass",
+      name : "Atomic-7",
+      type : ActivityType.Custom,
+      state: "Made with ❤️ by Atomic-7",
     }],
   },
 }) as Client & { commands: Collection<string, Command> }
