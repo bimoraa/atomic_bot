@@ -724,8 +724,10 @@ export async function get_all_members(client: Client): Promise<jkt48_member[]> {
 
     return Array.from(unique_members.values())
   } catch (error) {
-    await log_error(client, error as Error, "idn_live_get_members", {})
-    return []
+    await log_error(client, error as Error, "idn_live_get_members", {}).catch(() => {})
+    // - FALLBACK TO CONFIG FILE - \\
+    console.log("[ - JKT48 - ] API failed, using config file fallback")
+    return await load_idn_cfg_members(client)
   }
 }
 
@@ -780,8 +782,14 @@ export async function get_idn_roster_members(client: Client, options?: { max_wai
     await save_idn_roster_cache(client, members, "remote_or_uuid")
     return members
   } catch (error) {
-    await log_error(client, error as Error, "idn_live_get_roster_members", {})
-    return roster_cache.data
+    await log_error(client, error as Error, "idn_live_get_roster_members", {}).catch(() => {})
+    // - FALLBACK TO CACHE OR CONFIG FILE - \\
+    if (roster_cache.data.length > 0) {
+      console.log("[ - JKT48 - ] Roster API failed, using cache")
+      return roster_cache.data
+    }
+    console.log("[ - JKT48 - ] Roster API failed, using config file fallback")
+    return await load_idn_cfg_members(client)
   }
 }
 

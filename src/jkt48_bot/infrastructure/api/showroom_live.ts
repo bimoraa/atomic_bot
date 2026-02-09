@@ -233,8 +233,9 @@ export async function fetch_showroom_members(client: Client): Promise<showroom_m
   } catch (error) {
     await log_error(client, error as Error, "showroom_fetch_members", {
       path : SHOWROOM_CFG_PATH,
-    })
-    return await load_showroom_cfg_members(client)
+    }).catch(() => {})
+    console.log("[ - SHOWROOM - ] Config load failed, returning empty array")
+    return []
   }
 }
 
