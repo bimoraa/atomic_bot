@@ -658,13 +658,11 @@ export function register_audit_logs(client: Client): void {
         component.container({
           accent_color: COLOR.DELETE,
           components: [
-            component.section({
-              content: [
-                "### Bulk Message Delete",
-                `- Channel: <#${first.channel.id}>`,
-                `- Count: ${messages.size} messages`,
-              ].join("\n"),
-            }),
+            component.text([
+              "### Bulk Message Delete",
+              `- Channel: <#${first.channel.id}>`,
+              `- Count: ${messages.size} messages`,
+            ].join("\n")),
           ],
         }),
       ],
