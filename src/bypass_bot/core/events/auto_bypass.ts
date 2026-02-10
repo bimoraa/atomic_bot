@@ -148,7 +148,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
                 content   : `Completed in ${result.time}s • Requested by <@${message.author.id}>`,
                 accessory : component.secondary_button(
                   "Mobile Copy",
-                  `bypass_mobile_copy:${message.id}`
+                  `bypass_mobile_copy:${message.author.id}:${message.id}`
                 ),
               }),
             ],

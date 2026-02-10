@@ -191,8 +191,6 @@ const bypass_command: Command = {
       } catch (db_error) {
         console.error(`[ - BYPASS - ] Failed to store in database:`, db_error)
       }
-      
-      console.log(`[ - BYPASS - ] Button custom_id will be: bypass_mobile_copy:${interaction.id}`)
 
       const success_message = component.build_message({
         components: [
@@ -212,7 +210,7 @@ const bypass_command: Command = {
                 content   : `Completed in ${result.time}s • Requested by <@${interaction.user.id}>`,
                 accessory : component.secondary_button(
                   "Mobile Copy",
-                  `bypass_mobile_copy:${interaction.id}`
+                  `bypass_mobile_copy:${interaction.user.id}:${interaction.id}`
                 ),
               }),
             ],
