@@ -32,19 +32,28 @@ export async function submit_review(options: submit_review_options) {
         component.container({
           components: [
             component.section({
-              content: [
-                `## New Review from <@${user_id}>`,
-                `**Review:** ${review_text}`,
-                `**Rating:** ${stars}`,
-                `**Reviewed:** ${time.relative_time(timestamp)}`,
-              ],
-              thumbnail: user_avatar,
+              content: [`## New Review From <@${user_id}>`],
             }),
-            component.divider(),
-            component.action_row(
-              component.primary_button("Submit a Review", "review_submit"),
-              component.secondary_button("Useful", `review_useful_${user_id}_${timestamp}`)
-            ),
+          ],
+        }),
+        component.container({
+          components: [
+            component.section({
+              content: [
+                `- **Review:** ${review_text}`,
+                `- **Rating:** ${stars}(${rating}/5)`,
+                `- **Reviewed:** <t:${timestamp}:R> | <t:${timestamp}:F>`,
+              ],
+              media: user_avatar,
+            }),
+          ],
+        }),
+        component.container({
+          components: [
+            component.section({
+              content   : [`Thank u <@${user_id}> for the Review!`],
+              accessory : component.primary_button("Submit a Review", "review_submit"),
+            }),
           ],
         }),
       ],
