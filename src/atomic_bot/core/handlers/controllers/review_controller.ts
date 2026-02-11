@@ -30,6 +30,19 @@ export async function submit_review(options: submit_review_options) {
     // - VALIDATE AVATAR URL - \\
     const valid_avatar = user_avatar && user_avatar.startsWith("http") ? user_avatar : undefined
 
+    // - BUILD REVIEW DETAILS SECTION - \\
+    const review_section_options: any = {
+      content: [
+        `- **Review:** ${review_text}`,
+        `- **Rating:** ${stars}(${rating}/5)`,
+        `- **Reviewed:** <t:${timestamp}:R> | <t:${timestamp}:F>`,
+      ],
+    }
+
+    if (valid_avatar) {
+      review_section_options.accessory = component.thumbnail(valid_avatar)
+    }
+
     const message = component.build_message({
       components: [
         component.container({
@@ -41,14 +54,7 @@ export async function submit_review(options: submit_review_options) {
         }),
         component.container({
           components: [
-            component.section({
-              content: [
-                `- **Review:** ${review_text}`,
-                `- **Rating:** ${stars}(${rating}/5)`,
-                `- **Reviewed:** <t:${timestamp}:R> | <t:${timestamp}:F>`,
-              ],
-              media: valid_avatar,
-            }),
+            component.section(review_section_options),
           ],
         }),
         component.container({
