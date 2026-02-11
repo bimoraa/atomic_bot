@@ -1,7 +1,8 @@
-import { Client, TextChannel } from "discord.js"
-import { load_config }         from "@shared/config/loader"
-import { component, time, api } from "@shared/utils"
-import { log_error }           from "@shared/utils/error_logger"
+import { Client, TextChannel }        from "discord.js"
+import { load_config }                from "@shared/config/loader"
+import { component, time, api }       from "@shared/utils"
+import { log_error }                  from "@shared/utils/error_logger"
+import * as review_manager            from "@shared/database/managers/review_manager"
 
 const config = load_config<{ review_channel_id: string }>("review")
 
@@ -20,6 +21,17 @@ export async function submit_review(options: submit_review_options) {
     return {
       success : false,
       error   : "Rating must be between 1 and 5",
+    }
+  }
+
+  // - CHECK DAILY REVIEW LIMIT - \\
+  const can_submit = await review_manager.can_submit_review(user_id)
+  
+  if (!can_submit) {
+    const remaining = await review_manager.get_remaining_reviews(user_id)
+    return {
+      success : false,
+      error   : `You've reached your daily review limit (2 reviews per day). Try again tomorrow!`,
     }
   }
 
@@ -66,8 +78,6 @@ export async function submit_review(options: submit_review_options) {
       ],
     })
 
-    console.log("[ - REVIEW PAYLOAD - ]", JSON.stringify(message, null, 2))
-
     const response = await api.send_components_v2(
       config.review_channel_id,
       api.get_token(),
@@ -75,8 +85,6 @@ export async function submit_review(options: submit_review_options) {
     )
 
     if (response.error) {
-      console.error("[ - REVIEW API ERROR - ]", JSON.stringify(response, null, 2))
-      
       await log_error(client, new Error("Discord API Error"), "Review Controller - API", {
         user_id,
         rating,
@@ -88,6 +96,15 @@ export async function submit_review(options: submit_review_options) {
         error   : "Failed to submit review",
       }
     }
+
+    // - SAVE REVIEW TO DATABASE - \\
+    await review_manager.save_review(
+      user_id,
+      review_text,
+      rating,
+      timestamp,
+      response.id || ""
+    )
 
     return {
       success    : true,
