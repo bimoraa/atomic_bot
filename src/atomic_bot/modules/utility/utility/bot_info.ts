@@ -43,8 +43,7 @@ export const command: Command = {
         component.container({
           components: [
             component.section({
-              content   : [`## ${client.user?.username} - Bot Information`],
-              thumbnail : bot_avatar,
+              content   : [`## ${client.user?.username} - Bot Information`]
             }),
           ],
         }),
