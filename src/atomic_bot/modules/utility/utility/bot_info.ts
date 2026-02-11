@@ -29,6 +29,8 @@ export const command: Command = {
     const node_version   = process.version
     const server_time    = time.full_date_time(time.now())
     const timezone       = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const locale         = Intl.DateTimeFormat().resolvedOptions().locale
+    const server_loc     = `${os.hostname()} (${locale})`
     
     // - BOT STATS - \\
     const guild_count    = client.guilds.cache.size
@@ -49,6 +51,7 @@ export const command: Command = {
               `## System Information`,
               `- **Server Time:** ${server_time}`,
               `- **Timezone:** ${timezone}`,
+              `- **Server Location:** ${server_loc}`,
               `- **Platform:** ${platform} (${arch})`,
               `- **Node Version:** ${node_version}`,
               `- **Discord.js:** v${djsVersion}`,
