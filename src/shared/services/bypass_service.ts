@@ -25,8 +25,9 @@ interface SupportedService {
  * @returns Promise with bypass result
  */
 export async function bypass_link(url: string): Promise<BypassResponse> {
+  const trimmed_url = url.trim()
+
   try {
-    const trimmed_url = url.trim()
     const start_time  = Date.now()
     const params      = new URLSearchParams({ url: trimmed_url })
 
@@ -67,6 +68,10 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
       console.warn(`[ - BYPASS - ] External API Error:`, error.message)
     } else if (error.message.includes("HTTP 429")) {
       console.warn(`[ - BYPASS - ] Rate Limit:`, error.message)
+      console.warn(`[ - BYPASS - ] Debug 429:`, {
+        url   : trimmed_url,
+        api   : BYPASS_API_URL,
+      })
     } else {
       console.error(`[ - BYPASS - ] Error:`, error.message)
     }
