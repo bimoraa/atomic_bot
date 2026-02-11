@@ -63,31 +63,33 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
     }
 
   } catch (error: any) {
+    const message = typeof error?.message === "string" ? error.message : ""
+    const name    = typeof error?.name === "string" ? error.name : ""
     // - LOG AS WARN FOR EXPECTED API ERRORS TO REDUCE NOISE - \\
-    if (error.message.includes("HTTP 5")) {
-      console.warn(`[ - BYPASS - ] External API Error:`, error.message)
-    } else if (error.message.includes("HTTP 429")) {
-      console.warn(`[ - BYPASS - ] Rate Limit:`, error.message)
+    if (message.includes("HTTP 5")) {
+      console.warn(`[ - BYPASS - ] External API Error:`, message)
+    } else if (message.includes("HTTP 429")) {
+      console.warn(`[ - BYPASS - ] Rate Limit:`, message)
       console.warn(`[ - BYPASS - ] Debug 429:`, {
         url   : trimmed_url,
         api   : BYPASS_API_URL,
       })
     } else {
-      console.error(`[ - BYPASS - ] Error:`, error.message)
+      console.error(`[ - BYPASS - ] Error:`, message || error)
     }
 
     let error_message = "Unknown error occurred"
 
-    if (error.name === "AbortError" || error.message.includes("aborted")) {
+    if (name === "AbortError" || message.includes("aborted")) {
       error_message = "Request timeout - Please try again later."
-    } else if (error.message.includes("not supported") || error.message.includes("unsupported")) {
+    } else if (message.includes("not supported") || message.includes("unsupported")) {
       error_message = "Link is not supported."
-    } else if (error.message.includes("429")) {
+    } else if (message.includes("429")) {
       error_message = "Rate limit exceeded - Please wait a moment."
-    } else if (error.message.includes("5")) {
+    } else if (message.includes("5")) {
       error_message = "Service unavailable - Please try again later."
-    } else if (error.message) {
-      error_message = error.message
+    } else if (message) {
+      error_message = message
     }
 
     return {
