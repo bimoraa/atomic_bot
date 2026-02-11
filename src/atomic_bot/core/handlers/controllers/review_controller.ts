@@ -27,6 +27,9 @@ export async function submit_review(options: submit_review_options) {
     const stars     = "⭐".repeat(rating)
     const timestamp = time.now()
 
+    // - VALIDATE AVATAR URL - \\
+    const valid_avatar = user_avatar && user_avatar.startsWith("http") ? user_avatar : undefined
+
     const message = component.build_message({
       components: [
         component.container({
@@ -44,7 +47,7 @@ export async function submit_review(options: submit_review_options) {
                 `- **Rating:** ${stars}(${rating}/5)`,
                 `- **Reviewed:** <t:${timestamp}:R> | <t:${timestamp}:F>`,
               ],
-              media: user_avatar,
+              media: valid_avatar,
             }),
           ],
         }),
@@ -59,6 +62,8 @@ export async function submit_review(options: submit_review_options) {
       ],
     })
 
+    console.log("[ - REVIEW PAYLOAD - ]", JSON.stringify(message, null, 2))
+
     const response = await api.send_components_v2(
       config.review_channel_id,
       api.get_token(),
@@ -66,6 +71,14 @@ export async function submit_review(options: submit_review_options) {
     )
 
     if (response.error) {
+      console.error("[ - REVIEW API ERROR - ]", JSON.stringify(response, null, 2))
+      
+      await log_error(client, new Error("Discord API Error"), "Review Controller - API", {
+        user_id,
+        rating,
+        api_response : response,
+      }).catch(() => {})
+      
       return {
         success : false,
         error   : "Failed to submit review",
