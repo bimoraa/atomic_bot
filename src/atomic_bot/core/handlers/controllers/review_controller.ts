@@ -24,7 +24,7 @@ export async function submit_review(options: submit_review_options) {
   }
 
   try {
-    const stars     = "⭐".repeat(rating)
+    const stars     = "⭐️".repeat(rating)
     const timestamp = time.now()
 
     // - VALIDATE AVATAR URL - \\
