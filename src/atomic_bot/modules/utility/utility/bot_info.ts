@@ -36,15 +36,11 @@ export const command: Command = {
     const channel_count  = client.channels.cache.size
     const ping           = client.ws.ping
 
-    const bot_avatar     = client.user?.displayAvatarURL({ size: 256 }) || ""
-
     const message = component.build_message({
       components: [
         component.container({
           components: [
-            component.section({
-              content   : [`## ${client.user?.username} - Bot Information`]
-            }),
+            component.text(`## ${client.user?.username} - Bot Information`),
           ],
         }),
         component.container({
