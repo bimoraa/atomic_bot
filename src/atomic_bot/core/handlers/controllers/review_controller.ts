@@ -47,9 +47,7 @@ export async function submit_review(options: submit_review_options) {
       components: [
         component.container({
           components: [
-            component.section({
-              content: [`## New Review From <@${user_id}>`],
-            }),
+            component.text(`## New Review From <@${user_id}>`),
           ],
         }),
         component.container({
