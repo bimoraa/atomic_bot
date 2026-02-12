@@ -3,6 +3,44 @@ import { ButtonInteraction, CommandInteraction, StringSelectMenuInteraction, Mod
 
 const base_url = "https://discord.com/api/v10"
 
+/**
+ * - SAFE JSON PARSE RESPONSE - \\
+ * @param {Response} response - Fetch response
+ * @returns {Promise<unknown>} Parsed response body
+ */
+async function safe_parse_response_json(response: Response): Promise<unknown> {
+  const body_text = await response.text()
+
+  if (!body_text) {
+    return {}
+  }
+
+  try {
+    return JSON.parse(body_text)
+  } catch {
+    return {
+      error        : true,
+      parse_error  : "invalid_json_response",
+      status       : response.status,
+      content_type : response.headers.get("content-type") || "unknown",
+      body_preview : body_text.slice(0, 300),
+    }
+  }
+}
+
+/**
+ * - ENSURE API RESPONSE OBJECT - \\
+ * @param {unknown} value - Parsed value
+ * @returns {api_response} Object response
+ */
+function as_api_response(value: unknown): api_response {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as api_response
+  }
+
+  return {}
+}
+
 export interface api_response {
   id?: string
   error?: boolean
@@ -32,7 +70,7 @@ export async function send_components_v2(
     body: JSON.stringify(payload),
   })
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -56,7 +94,7 @@ export async function edit_components_v2(
     body: JSON.stringify(payload),
   })
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -96,7 +134,7 @@ export async function edit_interaction_response(
     }
   )
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -120,7 +158,7 @@ export async function send_components_v2_followup(
     }
   )
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -144,7 +182,7 @@ export async function edit_deferred_reply(
     }
   )
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -214,7 +252,7 @@ export async function edit_deferred_reply_with_files(
     }
   )
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -252,7 +290,7 @@ export async function get_message(
     },
   })
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -277,7 +315,12 @@ export async function get_channel_messages(
     return []
   }
 
-  return (await response.json()) as api_response[]
+  const data = await safe_parse_response_json(response)
+  if (!Array.isArray(data)) {
+    return []
+  }
+
+  return data as api_response[]
 }
 
 export async function add_reaction(
@@ -372,7 +415,7 @@ export async function send_webhook(
     return {}
   }
 
-  return (await response.json()) as api_response
+  return as_api_response(await safe_parse_response_json(response))
 }
 
 export async function create_dm_channel(user_id: string, token: string): Promise<api_response> {
@@ -385,7 +428,7 @@ export async function create_dm_channel(user_id: string, token: string): Promise
     body: JSON.stringify({ recipient_id: user_id }),
   })
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -416,7 +459,7 @@ export async function get_user(user_id: string, token: string): Promise<api_resp
     },
   })
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -437,7 +480,7 @@ export async function get_guild_member(
     },
   })
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -502,7 +545,7 @@ export async function create_thread(
     }),
   })
 
-  const data = (await response.json()) as api_response
+  const data = as_api_response(await safe_parse_response_json(response))
 
   if (!response.ok) {
     return { error: true, ...data }
@@ -541,7 +584,7 @@ export async function upload_image(
 
   if (!response.ok) return null
 
-  const data = (await response.json()) as any
+  const data = await safe_parse_response_json(response) as any
   if (data.attachments && data.attachments.length > 0) {
     return data.attachments[0].url
   }
