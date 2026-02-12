@@ -69,46 +69,56 @@ function build_history_debug_payload(payload: {
  * - FETCH IDN HISTORY STATS FALLBACK - \\
  * @param {Client} client - Discord client
  * @param {string} slug - IDN live slug
+ * @param {string} uuid - IDN creator UUID
  * @returns {Promise<Record<string, any>>} Stats payload
  */
-async function fetch_idn_stats_fallback(client: Client, slug: string): Promise<Record<string, any>> {
-  const endpoints = [
-    `https://api.idn.app/api/v4/livestream/${slug}/stats`,
-    `https://api.idn.app/api/v4/livestream/${slug}/statistics`,
-    `https://api.idn.app/api/v4/livestream/${slug}/summary`,
-  ]
-
-  const errors: Array<{ endpoint: string; status?: number; message: string }> = []
-
-  for (const endpoint of endpoints) {
-    try {
-      const response = await axios.get(endpoint, {
-        timeout : 15000,
-        headers : {
-          "User-Agent" : "Android/14/SM-A528B/6.47.4",
-          "x-api-key"  : "123f4c4e-6ce1-404d-8786-d17e46d65b5c",
-        },
-      })
-
-      const payload = response.data?.data || response.data || {}
-      if (payload && Object.keys(payload).length > 0) {
-        return payload
-      }
-    } catch (error) {
-      const status = (error as any)?.response?.status
-      const message = (error as any)?.response?.data?.message || (error as Error).message
-      errors.push({ endpoint: endpoint, status: status, message: message })
-    }
+async function fetch_idn_stats_fallback(client: Client, slug: string, uuid: string): Promise<Record<string, any>> {
+  if (!uuid) {
+    return {}
   }
 
-  if (errors.length > 0) {
-    await log_error(client, new Error("IDN history stats fallback failed"), "idn_history_stats_fetch", {
-      slug   : slug,
-      errors : errors,
+  const endpoint = "https://mobile-api.idn.app/v3/profile/livestreams"
+
+  try {
+    const response = await axios.get(endpoint, {
+      timeout : 15000,
+      params  : {
+        uuid : uuid,
+      },
+      headers : {
+        "User-Agent" : "IDN/6.41.1 (com.idntimes.IDNTimes; build:745; iOS 17.2.1) Alamofire/5.1.0",
+        "Accept"     : "application/json",
+      },
     })
-  }
 
-  return {}
+    const livestreams = Array.isArray(response.data?.data) ? response.data.data : []
+    const matched_live = livestreams.find((item: any) => item?.slug === slug)
+      || livestreams[0]
+
+    if (!matched_live) {
+      return {}
+    }
+
+    return {
+      ...matched_live,
+      viewers      : pick_number([matched_live?.view_count, matched_live?.viewer_count]),
+      viewer_count : pick_number([matched_live?.view_count, matched_live?.viewer_count]),
+      view_count   : pick_number([matched_live?.view_count, matched_live?.viewer_count]),
+    }
+  } catch (error) {
+    const status  = (error as any)?.response?.status
+    const message = (error as any)?.response?.data?.message || (error as Error).message
+
+    await log_error(client, new Error("IDN history stats fallback failed"), "idn_history_stats_fetch", {
+      slug     : slug,
+      uuid     : uuid,
+      endpoint : `${endpoint}?uuid=${uuid}`,
+      status   : status,
+      message  : message,
+    })
+
+    return {}
+  }
 }
 
 function normalize_idn_username(input: string): string {
@@ -582,7 +592,7 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
       || viewers_value === undefined
 
     if (should_fetch_fallback) {
-      fallback_payload = await fetch_idn_stats_fallback(client, slug)
+      fallback_payload = await fetch_idn_stats_fallback(client, slug, String(creator?.uuid || ""))
     }
 
     const fallback_stats = fallback_payload?.stats || fallback_payload?.statistics || fallback_payload
