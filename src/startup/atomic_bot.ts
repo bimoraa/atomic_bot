@@ -94,6 +94,10 @@ const client = new Client({
 client.commands = new Collection()
 
 let voice_connection: VoiceConnection | null = null
+let typing_interval: NodeJS.Timeout | null = null
+
+const PERSISTENT_TYPING_CHANNEL_ID  = "1257034070035267636"
+const PERSISTENT_TYPING_INTERVAL_MS = 8000
 
 export { client }
 
@@ -183,6 +187,41 @@ function update_presence(): void {
   })
 }
 
+/**
+ * - START PERSISTENT TYPING - \\
+ * @returns {Promise<void>}
+ */
+async function start_persistent_typing(): Promise<void> {
+  if (typing_interval) {
+    clearInterval(typing_interval)
+    typing_interval = null
+  }
+
+  const send_typing = async (): Promise<void> => {
+    try {
+      const channel = client.channels.cache.get(PERSISTENT_TYPING_CHANNEL_ID)
+        || await client.channels.fetch(PERSISTENT_TYPING_CHANNEL_ID).catch(() => null)
+
+      if (!channel || !("sendTyping" in channel)) {
+        return
+      }
+
+      await (channel as any).sendTyping()
+    } catch (error) {
+      await log_error(client, error as Error, "persistent_typing_loop", {
+        channel_id : PERSISTENT_TYPING_CHANNEL_ID,
+      })
+    }
+  }
+
+  await send_typing()
+  typing_interval = setInterval(() => {
+    void send_typing()
+  }, PERSISTENT_TYPING_INTERVAL_MS)
+
+  console.log(`[ - TYPING - ] Persistent typing started in channel ${PERSISTENT_TYPING_CHANNEL_ID}`)
+}
+
 client.once("ready", async () => {
   if (login_timeout) {
     clearTimeout(login_timeout)
@@ -217,6 +256,7 @@ client.once("ready", async () => {
   }
 
   join_voice_channel()
+  await start_persistent_typing()
 
   update_presence()
   setInterval(update_presence, 60000)
