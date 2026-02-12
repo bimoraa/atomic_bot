@@ -41,6 +41,44 @@ const client = new Client({
 
 client.commands = new Collection()
 
+let typing_interval: NodeJS.Timeout | null = null
+
+const PERSISTENT_TYPING_CHANNEL_ID  = "1257034070035267636"
+const PERSISTENT_TYPING_INTERVAL_MS = 8000
+
+/**
+ * - START PERSISTENT TYPING - \\
+ * @returns {Promise<void>}
+ */
+async function start_persistent_typing(): Promise<void> {
+  if (typing_interval) {
+    clearInterval(typing_interval)
+    typing_interval = null
+  }
+
+  const send_typing = async (): Promise<void> => {
+    try {
+      const channel = client.channels.cache.get(PERSISTENT_TYPING_CHANNEL_ID)
+        || await client.channels.fetch(PERSISTENT_TYPING_CHANNEL_ID).catch(() => null)
+
+      if (!channel || !("sendTyping" in channel)) {
+        return
+      }
+
+      await (channel as any).sendTyping()
+    } catch (error) {
+      await log_error(client, error as Error, "persistent_typing_loop_jkt48", {
+        channel_id : PERSISTENT_TYPING_CHANNEL_ID,
+      })
+    }
+  }
+
+  await send_typing()
+  typing_interval = setInterval(() => {
+    void send_typing()
+  }, PERSISTENT_TYPING_INTERVAL_MS)
+}
+
 /**
  * - LOAD JKT48 COMMANDS - \\
  * @returns {Promise<object[]>} Array of command data for registration
@@ -97,6 +135,8 @@ async function register_jkt48_commands(commands_data: object[]) {
 client.once("ready", async () => {
   console.log(`[ - JKT48 - ] Bot logged in as ${client.user?.tag}`)
   console.log(`[ - JKT48 - ] Serving ${client.guilds.cache.size} guilds`)
+
+  await start_persistent_typing()
 
   // - CONNECT TO DATABASE - \\
   try {

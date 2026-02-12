@@ -44,6 +44,44 @@ const client = new Client({
 
 client.commands = new Collection()
 
+let typing_interval: NodeJS.Timeout | null = null
+
+const PERSISTENT_TYPING_CHANNEL_ID  = "1257034070035267636"
+const PERSISTENT_TYPING_INTERVAL_MS = 8000
+
+/**
+ * - START PERSISTENT TYPING - \\
+ * @returns {Promise<void>}
+ */
+async function start_persistent_typing(): Promise<void> {
+  if (typing_interval) {
+    clearInterval(typing_interval)
+    typing_interval = null
+  }
+
+  const send_typing = async (): Promise<void> => {
+    try {
+      const channel = client.channels.cache.get(PERSISTENT_TYPING_CHANNEL_ID)
+        || await client.channels.fetch(PERSISTENT_TYPING_CHANNEL_ID).catch(() => null)
+
+      if (!channel || !("sendTyping" in channel)) {
+        return
+      }
+
+      await (channel as any).sendTyping()
+    } catch (error) {
+      await log_error(client, error as Error, "persistent_typing_loop_bypass", {
+        channel_id : PERSISTENT_TYPING_CHANNEL_ID,
+      })
+    }
+  }
+
+  await send_typing()
+  typing_interval = setInterval(() => {
+    void send_typing()
+  }, PERSISTENT_TYPING_INTERVAL_MS)
+}
+
 /**
  * @param client - Discord client instance
  * @returns Array of command data for registration
@@ -92,6 +130,8 @@ async function register_bypass_commands(commands_data: object[]): Promise<void> 
 client.once("ready", async () => {
   console.log(`[ - BYPASS - ] Bot logged in as ${client.user?.tag}`)
   console.log(`[ - BYPASS - ] Serving ${client.guilds.cache.size} guilds`)
+
+  await start_persistent_typing()
 
   try {
     const commands_data = await load_bypass_commands(client)
