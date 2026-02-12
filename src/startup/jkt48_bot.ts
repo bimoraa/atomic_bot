@@ -30,11 +30,11 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
   ],
   presence: {
-    status    : "online",
+    status    : "dnd",
     activities: [{
-      name : "JKT48 Live Streams",
-      type : ActivityType.Watching,
-      state: "Monitoring JKT48 Streams",
+      name : "Atomic-7",
+      type : ActivityType.Custom,
+      state: "Made with ❤️ by Atomic-7",
     }],
   },
 }) as Client & { commands: Collection<string, Command> }
