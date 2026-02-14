@@ -67,6 +67,7 @@ async function start_persistent_typing(): Promise<void> {
 
       await (channel as any).sendTyping()
     } catch (error) {
+      console.error("[ - JKT48 - ] Failed to send typing:", error)
       await log_error(client, error as Error, "persistent_typing_loop_jkt48", {
         channel_id : PERSISTENT_TYPING_CHANNEL_ID,
       })

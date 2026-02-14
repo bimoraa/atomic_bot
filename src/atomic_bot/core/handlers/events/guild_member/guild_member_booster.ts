@@ -1,4 +1,4 @@
-import { Events, GuildMember, PartialGuildMember } from "discord.js"
+import { Events, GuildMember, Message, PartialGuildMember } from "discord.js"
 import { client }                    from "@startup/atomic_bot"
 import { load_config }               from "@shared/config/loader"
 import { send_booster_log }          from "../../controllers/booster_controller"
@@ -10,12 +10,20 @@ interface booster_config {
   booster_media_url     : string
 }
 
-client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuildMember, new_member: GuildMember) => {
-  try {
-    const is_boost_start = new_member.premiumSince && !old_member.premiumSince
-    const is_boost_stop  = !new_member.premiumSince && old_member.premiumSince
+/**
+ * - CHECK BOOST SYSTEM MESSAGE - \\
+ * @param {Message} message - Discord message
+ * @returns {boolean} True when message is boost system log
+ */
+function is_boost_system_message(message: Message): boolean {
+  const boost_message_types = new Set<number>([8, 9, 10, 11])
+  return boost_message_types.has(Number(message.type))
+}
 
-    if (!is_boost_start && !is_boost_stop) return
+client.on(Events.MessageCreate, async (message: Message) => {
+  try {
+    if (!message.inGuild()) return
+    if (!is_boost_system_message(message)) return
 
     const config = load_config<booster_config>("booster")
 
@@ -26,62 +34,77 @@ client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuil
         new Error("Booster log channel id is missing"),
         "booster_log_config",
         {
-          guild_id : new_member.guild.id,
+          guild_id : message.guild.id,
         }
       )
       return
     }
 
-    if (is_boost_start) {
-      console.log(`[ - BOOSTER LOG - ] ${new_member.user.tag} started boosting the server`)
+    let new_boost_count = 1
 
-      let new_boost_count = 1
-
-      try {
-        const whitelist_data = await booster_manager.get_whitelist(
-          new_member.user.id,
-          new_member.guild.id
-        )
-
-        if (whitelist_data) {
-          new_boost_count = (whitelist_data.boost_count || 0) + 1
-          await booster_manager.update_boost_count(
-            new_member.user.id,
-            new_member.guild.id,
-            new_boost_count
-          )
-        } else {
-          await booster_manager.add_whitelist(
-            new_member.user.id,
-            new_member.guild.id,
-            new_boost_count
-          )
-        }
-      } catch (db_error) {
-        console.error("[ - BOOSTER LOG - ] Failed to update boost count:", db_error)
-        await log_error(
-          client,
-          db_error instanceof Error ? db_error : new Error(String(db_error)),
-          "booster_log_db_update",
-          {
-            user_id  : new_member.user.id,
-            guild_id : new_member.guild.id,
-          }
-        )
-      }
-
-      const user_avatar = new_member.user.displayAvatarURL({ extension: "png", size: 256 })
-
-      await send_booster_log(
-        client,
-        config.booster_log_channel_id,
-        new_member.user.id,
-        new_boost_count,
-        user_avatar
+    try {
+      const whitelist_data = await booster_manager.get_whitelist(
+        message.author.id,
+        message.guild.id
       )
 
-      console.log(`[ - BOOSTER LOG - ] Logged boost for ${new_member.user.tag}, total boosts: ${new_boost_count}`)
+      if (whitelist_data) {
+        new_boost_count = (whitelist_data.boost_count || 0) + 1
+        await booster_manager.update_boost_count(
+          message.author.id,
+          message.guild.id,
+          new_boost_count
+        )
+      } else {
+        await booster_manager.add_whitelist(
+          message.author.id,
+          message.guild.id,
+          new_boost_count
+        )
+      }
+    } catch (db_error) {
+      console.error("[ - BOOSTER LOG - ] Failed to update boost count:", db_error)
+      await log_error(
+        client,
+        db_error instanceof Error ? db_error : new Error(String(db_error)),
+        "booster_log_db_update",
+        {
+          user_id  : message.author.id,
+          guild_id : message.guild.id,
+        }
+      )
     }
+
+    const user_avatar = message.author.displayAvatarURL({ extension: "png", size: 256 })
+
+    await send_booster_log(
+      client,
+      config.booster_log_channel_id,
+      message.author.id,
+      new_boost_count,
+      user_avatar
+    )
+
+    console.log(`[ - BOOSTER LOG - ] Logged boost for ${message.author.tag}, total boosts: ${new_boost_count}`)
+  } catch (error) {
+    console.error("[ - BOOSTER LOG - ] Error processing boost message:", error)
+    await log_error(
+      client,
+      error instanceof Error ? error : new Error(String(error)),
+      "booster_log_message",
+      {
+        channel_id : message.channelId,
+        guild_id   : message.guildId,
+      }
+    )
+  }
+})
+
+client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuildMember, new_member: GuildMember) => {
+  try {
+    const is_boost_stop  = !new_member.premiumSince && old_member.premiumSince
+
+    if (!is_boost_stop) return
 
     if (is_boost_stop) {
       console.log(`[ - BOOSTER LOG - ] ${new_member.user.tag} stopped boosting the server`)

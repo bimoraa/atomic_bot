@@ -70,6 +70,7 @@ async function start_persistent_typing(): Promise<void> {
 
       await (channel as any).sendTyping()
     } catch (error) {
+      console.error("[ - BYPASS - ] Failed to send typing:", error)
       await log_error(client, error as Error, "persistent_typing_loop_bypass", {
         channel_id : PERSISTENT_TYPING_CHANNEL_ID,
       })
