@@ -56,25 +56,6 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     const settings          = await guild_settings.get_all_guild_settings(guild_id)
     const bypass_channel_id = settings?.bypass_channel || null
 
-    if (settings?.bypass_enabled === "false") {
-      const maintenance_message = component.build_message({
-        components: [
-          component.container({
-            components: [
-              component.text([
-                "## Under Maintenance",
-                "",
-                `Reason: ${settings.bypass_disabled_reason || "No reason provided"}`,
-              ]),
-            ],
-          }),
-        ],
-      })
-
-      await message.reply(maintenance_message)
-      return true
-    }
-
     console.log(`[ - AUTO BYPASS - ] Bypass channel for guild ${guild_id}: ${bypass_channel_id || "NOT SET"}`)
     
     if (!bypass_channel_id) {
@@ -96,6 +77,28 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   if (!url) {
     console.log(`[ - AUTO BYPASS - ] No URL found in message`)
     return false
+  }
+
+  if (!is_dm && guild_id) {
+    const settings = await guild_settings.get_all_guild_settings(guild_id)
+    if (settings?.bypass_enabled === "false") {
+      const maintenance_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text([
+                "## Under Maintenance",
+                "",
+                `Reason: ${settings.bypass_disabled_reason || "No reason provided"}`,
+              ]),
+            ],
+          }),
+        ],
+      })
+
+      await message.reply(maintenance_message)
+      return true
+    }
   }
 
   try {
