@@ -1,5 +1,5 @@
 import { Client, Guild, Invite } from "discord.js"
-import { api, component, db }    from "../../utils"
+import { component, db }         from "../../utils"
 import { load_config }           from "../../config/loader"
 import { log_error }             from "../../utils/error_logger"
 
@@ -103,40 +103,52 @@ async function send_invite_log(
     invite: invite_snapshot | null
   }
 ): Promise<void> {
-  const channel_id = config.invite_log_channel_id
-  if (!channel_id) return
+  try {
+    const channel_id = config.invite_log_channel_id
+    if (!channel_id) return
 
-  const invite = options.invite
-  const inviter_text = invite?.inviter_id
-    ? `<@${invite.inviter_id}>`
-    : (invite?.source === "vanity" ? "Vanity URL" : "Unknown")
-  const channel_text = invite?.channel_id
-    ? `<#${invite.channel_id}>`
-    : (invite?.source === "vanity" ? "N/A" : "Unknown")
-  const lines = [
-    "### Invite Used",
-    `- Member: <@${options.member_id}> (${options.member_tag})`,
-    `- Code: ${invite?.code || "Unknown"}`,
-    `- Inviter: ${inviter_text}`,
-    `- Channel: ${channel_text}`,
-    `- Uses: ${typeof invite?.uses === "number" ? invite.uses : "Unknown"}`,
-  ]
+    const channel = await client.channels.fetch(channel_id).catch(() => null)
+    if (!channel || !channel.isTextBased() || !("send" in channel)) {
+      await log_error(client, new Error("Invite log channel unavailable"), "invite_logger_send", {
+        channel_id : channel_id,
+        member_id  : options.member_id,
+      })
+      return
+    }
 
-  const message = component.build_message({
-    components : [
-      component.container({
-        components : [
-          component.text(lines),
-        ],
-      }),
-    ],
-  })
+    const invite = options.invite
+    const inviter_text = invite?.inviter_id
+      ? `<@${invite.inviter_id}>`
+      : (invite?.source === "vanity" ? "Vanity URL" : "Unknown")
+    const channel_text = invite?.channel_id
+      ? `<#${invite.channel_id}>`
+      : (invite?.source === "vanity" ? "N/A" : "Unknown")
+    const lines = [
+      "### Invite Used",
+      `- Member: <@${options.member_id}> (${options.member_tag})`,
+      `- Code: ${invite?.code || "Unknown"}`,
+      `- Inviter: ${inviter_text}`,
+      `- Channel: ${channel_text}`,
+      `- Uses: ${typeof invite?.uses === "number" ? invite.uses : "Unknown"}`,
+    ]
 
-  const result = await api.send_components_v2(channel_id, api.get_token(), message)
-  if (result.error) {
-    await log_error(client, new Error("Invite log failed"), "invite_logger_send", {
-      channel_id : channel_id,
-      response   : result,
+    const message = component.build_message({
+      components : [
+        component.container({
+          components : [
+            component.text(lines),
+          ],
+        }),
+      ],
+    })
+
+    await (channel as any).send(message)
+  } catch (error) {
+    await log_error(client, error as Error, "invite_logger_send", {
+      channel_id : config.invite_log_channel_id,
+      member_id  : options.member_id,
+      member_tag : options.member_tag,
+      invite     : options.invite,
     })
   }
 }

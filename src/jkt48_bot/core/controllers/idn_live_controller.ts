@@ -1030,6 +1030,8 @@ export async function check_and_notify_live_changes(client: Client): Promise<voi
       handle_notify_for_showroom(client, showroom_live_rooms),
     ])
 
+    await sync_active_idn_history(client)
+
     await Promise.all([
       cleanup_live_state(client, "idn", idn_live_rooms.map((room) => `idn:${room.slug || room.username}`)),
       cleanup_live_state(client, "showroom", showroom_live_rooms.map((room) => `showroom:${room.room_id}`)),
@@ -1223,6 +1225,59 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
 }
 
 /**
+ * - SYNC ACTIVE IDN HISTORY - \\
+ * @param {Client} client - Discord client
+ * @returns {Promise<void>}
+ */
+async function sync_active_idn_history(client: Client): Promise<void> {
+  const active_states = await db.find_many<live_state_record>(LIVE_STATE_COLLECTION, {
+    is_live : true,
+    type    : "idn",
+  })
+
+  await Promise.all(active_states.map(async (state) => {
+    try {
+      if (!state.slug) return
+
+      const now_ms      = Date.now()
+      const enrich      = await fetch_idn_history(client, state.slug)
+      const history_key = state.live_key || `idn:${state.slug || state.username || "unknown"}`
+      const started_at  = enrich.started_at || state.started_at || now_ms
+      const ended_at    = enrich.ended_at || now_ms
+
+      const record: live_history_record = {
+        platform      : "idn",
+        member_name   : state.member_name || state.username || "Unknown",
+        title         : state.title || "",
+        url           : state.url || "",
+        image         : state.image || "",
+        viewers       : enrich.viewers       ?? state.viewers ?? 0,
+        comments      : enrich.comments      ?? 0,
+        comment_users : enrich.comment_users ?? 0,
+        total_gold    : enrich.total_gold    ?? 0,
+        started_at    : started_at,
+        ended_at      : ended_at,
+        duration_ms   : Math.max(0, ended_at - started_at),
+        live_key      : history_key,
+      }
+
+      await db.update_one<live_history_record>(
+        "live_history",
+        { live_key: history_key },
+        record,
+        true
+      )
+    } catch (error) {
+      await log_error(client, error as Error, "idn_live_sync_active_history", {
+        slug     : state.slug,
+        username : state.username,
+        live_key : state.live_key,
+      })
+    }
+  }))
+}
+
+/**
  * - CLEANUP LIVE STATE - \\
  * @param {Client} client - Discord client
  * @param {live_platform} platform - Live platform
@@ -1278,13 +1333,12 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
       duration_ms   : Math.max(0, final_ended_at - final_started_at),
     }
 
-    const existing_history = await db.find_one<live_history_record>("live_history", {
-      live_key : history_key,
-    })
-
-    if (!existing_history) {
-      await db.insert_one<live_history_record>("live_history", history_record)
-    }
+    await db.update_one<live_history_record>(
+      "live_history",
+      { live_key: history_key },
+      history_record,
+      true
+    )
 
     // - USE live_key FOR DELETE — _id IS NEVER STORED IN generic_data JSONB - \\
     const delete_filter = state.live_key
