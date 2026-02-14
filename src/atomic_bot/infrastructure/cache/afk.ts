@@ -60,12 +60,27 @@ export async function set_afk(user_id: string, reason: string, original_nickname
   afk_users.set(user_id, afk_data)
   
   try {
-    await db.update_one<AfkData>(
+    const updated = await db.update_one<AfkData>(
       COLLECTION,
       { user_id },
-      afk_data,
-      true
+      afk_data
     )
+
+    if (!updated) {
+      try {
+        await db.insert_one<AfkData>(COLLECTION, afk_data)
+      } catch (insert_error: any) {
+        if (insert_error?.code === "23505") {
+          await db.update_one<AfkData>(
+            COLLECTION,
+            { user_id },
+            afk_data
+          )
+        } else {
+          throw insert_error
+        }
+      }
+    }
   } catch (error) {
     console.error("[ - AFK - ] Failed to save AFK to database:", error)
   }
