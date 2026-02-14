@@ -1,6 +1,6 @@
 import { Message, Client }                   from "discord.js"
 import { SubCommand }                        from "../types/sub_command"
-import { set_afk }                           from "../../atomic_bot/infrastructure/cache/afk"
+import { set_afk, is_ignored_channel }       from "../../atomic_bot/infrastructure/cache/afk"
 import { component }                         from "../utils"
 import { sanitize_afk_reason }               from "../../atomic_bot/modules/utility/afk/afk_utils"
 
@@ -9,6 +9,21 @@ const afk_command: SubCommand = {
   description: "Set your AFK status",
 
   async execute(message: Message, args: string[], client: Client) {
+    if (message.guild && is_ignored_channel(message.guild.id, message.channel.id)) {
+      const ignored_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text("AFK set is disabled in this channel."),
+            ],
+          }),
+        ],
+      })
+
+      await message.reply(ignored_message).catch(() => {})
+      return
+    }
+
     const raw_reason = args.join(" ").trim() || "AFK"
     const reason     = sanitize_afk_reason(raw_reason)
     const member     = message.guild?.members.cache.get(message.author.id)
