@@ -78,6 +78,11 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   }
 
   try {
+    const client_id  = message.client.user?.id || ""
+    const invite_url = client_id
+      ? `https://discord.com/api/oauth2/authorize?client_id=${client_id}&permissions=0&scope=bot%20applications.commands`
+      : "https://discord.com/oauth2/authorize"
+
     if (!is_dm && message.guildId) {
       const rate_limit = check_bypass_rate_limit(message.guildId)
       if (!rate_limit.allowed) {
@@ -106,7 +111,10 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
         components: [
           component.container({
             components: [
-              component.text(["<a:GTA_Loading:1459707117840629832> Bypassing link..."]),
+              component.section({
+                content   : "## <a:GTA_Loading:1459707117840629832> - Bypassing Link\nHang on! We're processing your bypass.\n",
+                accessory : component.link_button("Invite BOT", invite_url),
+              }),
             ],
           }),
         ],
@@ -135,21 +143,29 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
           component.container({
             components: [
               component.section({
-                content   : "## <:checkmark:1417196825110253780> Bypass Completed Successfully\nThe bypass process has finished successfully. Use `/bypass` or send a link to bypass.",
+                content   : "## <:checkmark:1417196825110253780> - Bypass Completed\nYour bypass was completed successfully. Use /bypass or send a link to start another bypass.\n",
                 thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
               }),
             ],
           }),
           component.container({
             components: [
-              component.text(`## <:rbx:1447976733050667061> Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``),
+              component.text(`## <:rbx:1447976733050667061> - Desktop Copy\n\`\`\`\n${result.result}\n\`\`\``),
               component.divider(2),
               component.section({
-                content   : `Completed in ${result.time}s • Requested by <@${message.author.id}>`,
+                content   : `Completed in ${result.time}s • Requested by <@${message.author.id}> `,
                 accessory : component.secondary_button(
                   "Mobile Copy",
                   `bypass_mobile_copy:${message.author.id}:${message.id}`
                 ),
+              }),
+            ],
+          }),
+          component.container({
+            components: [
+              component.section({
+                content   : "Want to invite the bot to your server? Click here →\n",
+                accessory : component.link_button("Invite BOT", invite_url),
               }),
             ],
           }),
