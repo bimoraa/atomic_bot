@@ -297,12 +297,12 @@ client.on("userUpdate", async (old_user, new_user) => {
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
 
-  if (/\brian\b/i.test(message.content)) {
+  if (/\b(rian|ryan)\b/i.test(message.content)) {
     try {
       await message.delete()
     } catch (error) {
       await log_error(client, error as Error, "message_filter_delete", {
-        keyword : "rian",
+        keyword : "rian|ryan",
         user    : message.author.tag,
         guild   : message.guild?.name || "DM",
         channel : message.channel.id,
