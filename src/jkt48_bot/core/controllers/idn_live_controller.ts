@@ -10,7 +10,10 @@ const NOTIFICATION_COLLECTION        = "idn_live_notifications"
 const LIVE_STATE_COLLECTION          = "idn_live_state"
 const GUILD_NOTIFICATION_SETTINGS    = "jkt48_guild_notification_settings"
 const HISTORY_API_BASE               = process.env.JKT48_HISTORY_API_BASE || ""
+const IDN_FALLBACK_COOLDOWN_MS       = 30 * 60 * 1000
+const IDN_FALLBACK_RATE_LIMIT_MS     = 5 * 60 * 1000
 let __history_base_warned            = false
+let __idn_fallback_disabled_until    = 0
 
 /**
  * - PICK FIRST VALID NUMBER - \\
@@ -77,6 +80,10 @@ async function fetch_idn_stats_fallback(client: Client, slug: string, uuid: stri
     return {}
   }
 
+  if (Date.now() < __idn_fallback_disabled_until) {
+    return {}
+  }
+
   const endpoint = "https://mobile-api.idn.app/v3/profile/livestreams"
 
   try {
@@ -106,15 +113,27 @@ async function fetch_idn_stats_fallback(client: Client, slug: string, uuid: stri
       view_count   : pick_number([matched_live?.view_count, matched_live?.viewer_count]),
     }
   } catch (error) {
-    const status  = (error as any)?.response?.status
-    const message = (error as any)?.response?.data?.message || (error as Error).message
+    const status          = Number((error as any)?.response?.status || 0)
+    const message         = (error as any)?.response?.data?.message || (error as Error).message
+    const expected_status = [401, 403, 404]
 
-    await log_error(client, new Error("IDN history stats fallback failed"), "idn_history_stats_fetch", {
-      slug     : slug,
-      uuid     : uuid,
-      endpoint : `${endpoint}?uuid=${uuid}`,
-      status   : status,
-      message  : message,
+    if (expected_status.includes(status)) {
+      __idn_fallback_disabled_until = Date.now() + IDN_FALLBACK_COOLDOWN_MS
+      return {}
+    }
+
+    if (status === 429) {
+      __idn_fallback_disabled_until = Date.now() + IDN_FALLBACK_RATE_LIMIT_MS
+      return {}
+    }
+
+    await log_error(client, error as Error, "idn_history_stats_fetch", {
+      slug               : slug,
+      uuid               : uuid,
+      endpoint           : `${endpoint}?uuid=${uuid}`,
+      status             : status || undefined,
+      message            : message,
+      fallback_cooldown  : __idn_fallback_disabled_until,
     })
 
     return {}
