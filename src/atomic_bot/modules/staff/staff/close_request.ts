@@ -6,7 +6,7 @@ import { ticket_types, get_ticket } from "@shared/database/unified_ticket"
 import { close_ticket } from "@shared/database/unified_ticket/close"
 import { is_staff, is_admin_or_mod } from "@shared/database/settings/permissions"
 
-const COLLECTION_NAME = "close_requests"
+const __collection_name = "close_requests"
 
 interface CloseRequest {
   thread_id:    string
@@ -47,7 +47,7 @@ export async function close_ticket_by_deadline(thread: ThreadChannel, reason: st
   })
 
   if (db.is_connected()) {
-    await db.delete_one(COLLECTION_NAME, { thread_id: thread.id })
+    await db.delete_one(__collection_name, { thread_id: thread.id })
   }
   active_timeouts.delete(thread.id)
 }
@@ -77,7 +77,7 @@ function schedule_close(thread_id: string, deadline: number, reason: string): vo
 export async function load_close_requests(): Promise<void> {
   if (!db.is_connected()) return
 
-  const requests = await db.find_many<CloseRequest>(COLLECTION_NAME, {})
+  const requests = await db.find_many<CloseRequest>(__collection_name, {})
   const now = Date.now()
 
   for (const req of requests) {
@@ -86,7 +86,7 @@ export async function load_close_requests(): Promise<void> {
       if (thread && !thread.archived) {
         await close_ticket_by_deadline(thread, req.reason || "Deadline reached")
       }
-      await db.delete_one(COLLECTION_NAME, { thread_id: req.thread_id })
+      await db.delete_one(__collection_name, { thread_id: req.thread_id })
     } else {
       schedule_close(req.thread_id, req.deadline, req.reason || "Deadline reached")
     }
@@ -103,14 +103,14 @@ export async function cancel_close_request(thread_id: string): Promise<boolean> 
   }
 
   if (db.is_connected()) {
-    return db.delete_one(COLLECTION_NAME, { thread_id })
+    return db.delete_one(__collection_name, { thread_id })
   }
   return false
 }
 
 export async function get_close_request(thread_id: string): Promise<CloseRequest | null> {
   if (!db.is_connected()) return null
-  return db.find_one<CloseRequest>(COLLECTION_NAME, { thread_id })
+  return db.find_one<CloseRequest>(__collection_name, { thread_id })
 }
 
 function build_close_request_message(
@@ -255,7 +255,7 @@ const command: Command = {
         created_at: Date.now(),
         message_id: sent.id,
       }
-      await db.update_one(COLLECTION_NAME, { thread_id: thread.id }, request, true)
+      await db.update_one(__collection_name, { thread_id: thread.id }, request, true)
     }
 
     if (deadline) {

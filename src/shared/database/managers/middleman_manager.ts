@@ -1,7 +1,7 @@
 import { db } from "../../utils"
 
-const COLLECTION         = "middleman_transactions"
-const TICKETS_COLLECTION = "middleman_tickets"
+const __collection         = "middleman_transactions"
+const __tickets_collection = "middleman_tickets"
 
 export interface MiddlemanTransaction {
   id               : number
@@ -47,7 +47,7 @@ export async function create_middleman_ticket(ticket: MiddlemanTicket): Promise<
   if (!db.is_connected()) return false
   
   try {
-    await db.insert_one(TICKETS_COLLECTION, ticket)
+    await db.insert_one(__tickets_collection, ticket)
     console.log(`[ - MIDDLEMAN MANAGER - ] Ticket created: ${ticket.ticket_id}`)
     return true
   } catch (error) {
@@ -67,7 +67,7 @@ export async function update_middleman_ticket(thread_id: string, updates: Partia
   
   try {
     await db.update_one(
-      TICKETS_COLLECTION,
+      __tickets_collection,
       { thread_id },
       { ...updates, updated_at: Math.floor(Date.now() / 1000) },
       false
@@ -87,7 +87,7 @@ export async function update_middleman_ticket(thread_id: string, updates: Partia
  */
 export async function get_middleman_ticket(thread_id: string): Promise<MiddlemanTicket | null> {
   if (!db.is_connected()) return null
-  return await db.find_one<MiddlemanTicket>(TICKETS_COLLECTION, { thread_id })
+  return await db.find_one<MiddlemanTicket>(__tickets_collection, { thread_id })
 }
 
 /**
@@ -96,7 +96,7 @@ export async function get_middleman_ticket(thread_id: string): Promise<Middleman
  */
 export async function get_active_middleman_tickets(): Promise<MiddlemanTicket[]> {
   if (!db.is_connected()) return []
-  return await db.find_many<MiddlemanTicket>(TICKETS_COLLECTION, { status: "open" })
+  return await db.find_many<MiddlemanTicket>(__tickets_collection, { status: "open" })
 }
 
 /**
@@ -107,14 +107,14 @@ export async function get_active_middleman_tickets(): Promise<MiddlemanTicket[]>
 export async function get_user_active_ticket(user_id: string): Promise<MiddlemanTicket | null> {
   if (!db.is_connected()) return null
   
-  const as_requester = await db.find_one<MiddlemanTicket>(TICKETS_COLLECTION, {
+  const as_requester = await db.find_one<MiddlemanTicket>(__tickets_collection, {
     requester_id: user_id,
     status      : "open"
   })
   
   if (as_requester) return as_requester
   
-  return await db.find_one<MiddlemanTicket>(TICKETS_COLLECTION, {
+  return await db.find_one<MiddlemanTicket>(__tickets_collection, {
     partner_id: user_id,
     status    : "open"
   })
@@ -128,12 +128,12 @@ export async function get_user_active_ticket(user_id: string): Promise<Middleman
 export async function count_user_active_tickets(user_id: string): Promise<number> {
   if (!db.is_connected()) return 0
   
-  const as_requester = await db.find_many<MiddlemanTicket>(TICKETS_COLLECTION, {
+  const as_requester = await db.find_many<MiddlemanTicket>(__tickets_collection, {
     requester_id: user_id,
     status      : "open"
   })
   
-  const as_partner = await db.find_many<MiddlemanTicket>(TICKETS_COLLECTION, {
+  const as_partner = await db.find_many<MiddlemanTicket>(__tickets_collection, {
     partner_id: user_id,
     status    : "open"
   })
@@ -153,7 +153,7 @@ export async function complete_middleman_ticket(thread_id: string, completed_by:
   try {
     const timestamp = Math.floor(Date.now() / 1000)
     await db.update_one(
-      TICKETS_COLLECTION,
+      __tickets_collection,
       { thread_id },
       {
         status      : "completed",
@@ -183,7 +183,7 @@ export async function cancel_middleman_ticket(thread_id: string, reason?: string
   try {
     const timestamp = Math.floor(Date.now() / 1000)
     await db.update_one(
-      TICKETS_COLLECTION,
+      __tickets_collection,
       { thread_id },
       {
         status      : "cancelled",
@@ -218,7 +218,7 @@ export async function load_active_tickets(): Promise<MiddlemanTicket[]> {
  */
 export async function get_all_transactions(): Promise<MiddlemanTransaction[]> {
   if (!db.is_connected()) return []
-  return await db.find_many<MiddlemanTransaction>(COLLECTION, {})
+  return await db.find_many<MiddlemanTransaction>(__collection, {})
 }
 
 /**
@@ -229,8 +229,8 @@ export async function get_all_transactions(): Promise<MiddlemanTransaction[]> {
 export async function get_user_transactions(user_id: string): Promise<MiddlemanTransaction[]> {
   if (!db.is_connected()) return []
   
-  const as_requester = await db.find_many<MiddlemanTransaction>(COLLECTION, { requester_id: user_id })
-  const as_partner   = await db.find_many<MiddlemanTransaction>(COLLECTION, { partner_id: user_id })
+  const as_requester = await db.find_many<MiddlemanTransaction>(__collection, { requester_id: user_id })
+  const as_partner   = await db.find_many<MiddlemanTransaction>(__collection, { partner_id: user_id })
   
   return [...as_requester, ...as_partner]
 }
@@ -242,7 +242,7 @@ export async function get_user_transactions(user_id: string): Promise<MiddlemanT
  */
 export async function get_transaction_by_ticket(ticket_id: string): Promise<MiddlemanTransaction | null> {
   if (!db.is_connected()) return null
-  return await db.find_one<MiddlemanTransaction>(COLLECTION, { ticket_id })
+  return await db.find_one<MiddlemanTransaction>(__collection, { ticket_id })
 }
 
 /**
@@ -252,7 +252,7 @@ export async function get_transaction_by_ticket(ticket_id: string): Promise<Midd
 export async function get_transaction_stats(): Promise<{ total: number; total_this_month: number }> {
   if (!db.is_connected()) return { total: 0, total_this_month: 0 }
   
-  const all_transactions = await db.find_many<MiddlemanTransaction>(COLLECTION, {})
+  const all_transactions = await db.find_many<MiddlemanTransaction>(__collection, {})
   const now              = new Date()
   const month_start      = Math.floor(new Date(now.getFullYear(), now.getMonth(), 1).getTime() / 1000)
   

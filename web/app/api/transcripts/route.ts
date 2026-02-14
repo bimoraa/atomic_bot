@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const ALLOWED_USER_ID = '1118453649727823974'
+const __allowed_user_id = '1118453649727823974'
 
 // - GET ALL TRANSCRIPTS - \\
 /**
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
     const user = JSON.parse(discord_user_cookie.value)
     
-    if (user.id !== ALLOWED_USER_ID) {
+    if (user.id !== __allowed_user_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

@@ -10,9 +10,9 @@ interface server_tag_user {
   added_at   : number
 }
 
-const COLLECTION          = "server_tag_users"
-const TARGET_GUILD_ID     = "1250337227582472243"
-const SERVER_TAG_LOG_ID   = "1457105102044139597"
+const __collection          = "server_tag_users"
+const __target_guild_id     = "1250337227582472243"
+const __server_tag_log_id   = "1457105102044139597"
 
 export async function check_server_tag_change(
   client   : Client,
@@ -34,28 +34,28 @@ export async function check_server_tag_change(
     const old_guild_id = old_user.primaryGuild?.identityGuildId
     const new_guild_id = new_user.primaryGuild?.identityGuildId
     
-    const switched_to_target_guild = (old_guild_id !== TARGET_GUILD_ID || !old_tag) && new_tag && new_guild_id === TARGET_GUILD_ID
+    const switched_to_target_guild = (old_guild_id !== __target_guild_id || !old_tag) && new_tag && new_guild_id === __target_guild_id
     
     if (switched_to_target_guild) {
       console.log(`[ - SERVER TAG - ] User ${new_user.username} added server tag: ${new_tag}`)
       
-      const existing = await db.find_one<server_tag_user>(COLLECTION, {
+      const existing = await db.find_one<server_tag_user>(__collection, {
         user_id  : new_user.id,
-        guild_id : TARGET_GUILD_ID,
+        guild_id : __target_guild_id,
       })
       
       if (!existing) {
         const tag_data: server_tag_user = {
           user_id  : new_user.id,
-          guild_id : TARGET_GUILD_ID,
+          guild_id : __target_guild_id,
           username : new_user.username,
           tag      : new_tag,
           added_at : Math.floor(Date.now() / 1000),
         }
         
-        await db.insert_one(COLLECTION, tag_data)
+        await db.insert_one(__collection, tag_data)
         
-        const guild = client.guilds.cache.get(TARGET_GUILD_ID)
+        const guild = client.guilds.cache.get(__target_guild_id)
         const guild_name = guild?.name || "our server"
         
         const dm_message = component.build_message({
@@ -83,7 +83,7 @@ export async function check_server_tag_change(
           console.log(`[ - SERVER TAG - ] DM sent successfully to ${new_user.username}`)
         }
         
-        const log_channel = guild?.channels.cache.get(SERVER_TAG_LOG_ID)
+        const log_channel = guild?.channels.cache.get(__server_tag_log_id)
         if (log_channel?.isTextBased()) {
           const log_message = component.build_message({
             components: [
@@ -115,10 +115,10 @@ export async function check_server_tag_change(
       }
     }
     
-    if (old_tag && old_guild_id === TARGET_GUILD_ID && (!new_tag || new_guild_id !== TARGET_GUILD_ID)) {
-      await db.delete_one(COLLECTION, {
+    if (old_tag && old_guild_id === __target_guild_id && (!new_tag || new_guild_id !== __target_guild_id)) {
+      await db.delete_one(__collection, {
         user_id  : new_user.id,
-        guild_id : TARGET_GUILD_ID,
+        guild_id : __target_guild_id,
       })
       
       console.log(`[ - SERVER TAG - ] User ${new_user.username} removed server tag`)
@@ -135,7 +135,7 @@ export async function check_server_tag_change(
 
 export async function get_all_tagged_users(guild_id: string): Promise<server_tag_user[]> {
   try {
-    const users = await db.find_many<server_tag_user>(COLLECTION, { guild_id })
+    const users = await db.find_many<server_tag_user>(__collection, { guild_id })
     return users.sort((a, b) => b.added_at - a.added_at)
   } catch (error) {
     console.error("[ - SERVER TAG - ] Failed to get tagged users:", error)
@@ -162,7 +162,7 @@ export async function sync_guild_tagged_users(client: Client, guild_id: string):
         const user = member.user
         
         if (user.primaryGuild?.tag && user.primaryGuild.identityGuildId === guild_id) {
-          const existing = await db.find_one<server_tag_user>(COLLECTION, {
+          const existing = await db.find_one<server_tag_user>(__collection, {
             user_id  : user.id,
             guild_id : guild_id,
           })
@@ -176,7 +176,7 @@ export async function sync_guild_tagged_users(client: Client, guild_id: string):
               added_at : Date.now(),
             }
             
-            await db.insert_one(COLLECTION, tag_data)
+            await db.insert_one(__collection, tag_data)
             synced_count++
             console.log(`[ - SERVER TAG - ] Synced: ${user.username} - ${user.primaryGuild.tag}`)
           }

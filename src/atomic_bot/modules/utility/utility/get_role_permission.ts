@@ -18,20 +18,20 @@ interface CommandPermission {
   allow_higher_roles: boolean
 }
 
-const PERMISSIONS_DIR = join(__dirname, "../../permissions")
-const ROLES_PATH      = join(PERMISSIONS_DIR, "roles.cfg")
+const __permissions_dir = join(__dirname, "../../permissions")
+const __roles_path      = join(__permissions_dir, "roles.cfg")
 
 function load_roles(): RolesMapping {
-  if (!file.exists(ROLES_PATH)) return {}
+  if (!file.exists(__roles_path)) return {}
   try {
-    return file.read_json<RolesMapping>(ROLES_PATH)
+    return file.read_json<RolesMapping>(__roles_path)
   } catch {
     return {}
   }
 }
 
 function load_permission(command_name: string): CommandPermission | null {
-  const perm_path = join(PERMISSIONS_DIR, `${command_name}.cfg`)
+  const perm_path = join(__permissions_dir, `${command_name}.cfg`)
   if (!file.exists(perm_path)) return null
   try {
     return file.read_json<CommandPermission>(perm_path)
@@ -41,9 +41,9 @@ function load_permission(command_name: string): CommandPermission | null {
 }
 
 function get_all_permission_files(): string[] {
-  if (!file.dir_exists(PERMISSIONS_DIR)) return []
+  if (!file.dir_exists(__permissions_dir)) return []
   
-  return readdirSync(PERMISSIONS_DIR)
+  return readdirSync(__permissions_dir)
     .filter(f => f.endsWith(".cfg") && f !== "roles.cfg")
     .map(f => f.replace(".cfg", ""))
 }

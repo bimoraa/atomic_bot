@@ -12,8 +12,8 @@ interface guild_settings_record {
   }
 }
 
-const ALLOWED_USER_ID = "1118453649727823974"
-const MAX_ROWS        = 40
+const __allowed_user_id = "1118453649727823974"
+const __max_rows        = 40
 
 /**
  * - VIEW BYPASS GUILD COMMAND - \\
@@ -24,7 +24,7 @@ const view_bypass_guild_command: Command = {
     .setDescription("View guilds that configured bypass channel"),
 
   execute: async (interaction: ChatInputCommandInteraction) => {
-    if (interaction.user.id !== ALLOWED_USER_ID) {
+    if (interaction.user.id !== __allowed_user_id) {
       const denied_message = component.build_message({
         components: [
           component.container({
@@ -75,7 +75,7 @@ const view_bypass_guild_command: Command = {
         return
       }
 
-      const visible_rows = bypass_rows.slice(0, MAX_ROWS)
+      const visible_rows = bypass_rows.slice(0, __max_rows)
       const lines = visible_rows.map((record, index) => {
         const guild_name = interaction.client.guilds.cache.get(record.guild_id)?.name || "Unknown Guild"
         const channel_id = record.settings?.bypass_channel || "-"
@@ -92,8 +92,8 @@ const view_bypass_guild_command: Command = {
                 "",
                 `Total: ${bypass_rows.length} guild(s)`,
                 ...lines,
-                bypass_rows.length > MAX_ROWS
-                  ? `... and ${bypass_rows.length - MAX_ROWS} more guild(s)`
+                bypass_rows.length > __max_rows
+                  ? `... and ${bypass_rows.length - __max_rows} more guild(s)`
                   : "",
               ].filter(Boolean)),
             ],

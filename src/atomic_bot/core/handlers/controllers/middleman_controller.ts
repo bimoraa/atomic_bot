@@ -27,7 +27,7 @@ interface TransactionRange {
   fee   : string
 }
 
-const TRANSACTION_RANGES: Record<string, TransactionRange> = {
+const __transaction_ranges: Record<string, TransactionRange> = {
   "dVzaCndYpO": { label: "Rp 10.000 – Rp 50.000",   range: "Rp 10.000 – Rp 50.000",   fee: "Rp 1.500" },
   "laf8By4Gtm": { label: "Rp 50.000 – Rp 100.000",  range: "Rp 50.000 – Rp 100.000",  fee: "Rp 5.000" },
   "1FS1PRT0Ys": { label: "Rp 100.000 – Rp 200.000", range: "Rp 100.000 – Rp 200.000", fee: "Rp 8.000" },
@@ -62,7 +62,7 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
     return { success: false, error: "Middleman ticket configuration not found." }
   }
 
-  const range_data = TRANSACTION_RANGES[range_id]
+  const range_data = __transaction_ranges[range_id]
   if (!range_data) {
     return { success: false, error: "Invalid transaction range." }
   }

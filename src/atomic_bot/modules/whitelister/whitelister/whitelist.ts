@@ -7,7 +7,7 @@ import {
 import { Command }          from "@shared/types/command"
 import { whitelist }        from "../../../core/handlers/controllers/whitelister_controller"
 
-const ALLOWED_ROLE_ID = "1277272542914281512"
+const __allowed_role_id = "1277272542914281512"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -44,7 +44,7 @@ export const command: Command = {
 
     const member = interaction.member as GuildMember
 
-    if (!member || !member.roles || !member.roles.cache.has(ALLOWED_ROLE_ID)) {
+    if (!member || !member.roles || !member.roles.cache.has(__allowed_role_id)) {
       await interaction.reply({
         content  : "You don't have permission to use this command.",
         ephemeral: true,

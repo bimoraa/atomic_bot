@@ -3,7 +3,7 @@ import { Command }                                           from "@shared/types
 import { api, component, db }                                from "@shared/utils"
 import { log_error }                                         from "@shared/utils/error_logger"
 
-const INVITE_LEADERBOARD_COLLECTION = "invite_leaderboard"
+const __invite_leaderboard_collection = "invite_leaderboard"
 
 interface invite_leaderboard_record {
   guild_id     : string
@@ -35,7 +35,7 @@ async function execute_invite_leaderboard(interaction: ChatInputCommandInteracti
       return
     }
 
-    const records = await db.find_many<invite_leaderboard_record>(INVITE_LEADERBOARD_COLLECTION, { guild_id: guild_id })
+    const records = await db.find_many<invite_leaderboard_record>(__invite_leaderboard_collection, { guild_id: guild_id })
     if (records.length === 0) {
       await api.edit_deferred_reply(interaction, component.build_message({
         components : [

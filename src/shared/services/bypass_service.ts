@@ -1,10 +1,10 @@
 // - BYPASS LINK SERVICE - \\
 
-const BYPASS_API_KEY = process.env.BYPASS_API_KEY || ""
-const BYPASS_API_URL = process.env.BYPASS_API_URL || ""
+const __bypass_api_key = process.env.BYPASS_API_KEY || ""
+const __bypass_api_url = process.env.BYPASS_API_URL || ""
 
 // - PERFORMANCE OPTIMIZATION - \\
-const BYPASS_TIMEOUT = 60000
+const __bypass_timeout = 60000
 
 interface BypassResponse {
   success : boolean
@@ -31,14 +31,20 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
     const start_time  = Date.now()
     const params      = new URLSearchParams({ url: trimmed_url })
 
-    const response = await fetch(`${BYPASS_API_URL}?${params}`, {
+    const controller = new AbortController()
+    const timeout_id = setTimeout(() => controller.abort(), __bypass_timeout)
+
+    const response = await fetch(`${__bypass_api_url}?${params}`, {
       method  : "GET",
       headers : {
-        "x-api-key"       : BYPASS_API_KEY,
+        "x-api-key"       : __bypass_api_key,
         "Accept-Encoding" : "gzip, deflate, br",
         "Connection"      : "keep-alive",
       },
+      signal : controller.signal,
     })
+
+    clearTimeout(timeout_id)
 
     if (!response.ok) {
       const error_data: any = await response.json().catch(() => ({}))
@@ -72,7 +78,7 @@ export async function bypass_link(url: string): Promise<BypassResponse> {
       console.warn(`[ - BYPASS - ] Rate Limit:`, message)
       console.warn(`[ - BYPASS - ] Debug 429:`, {
         url   : trimmed_url,
-        api   : BYPASS_API_URL,
+        api   : __bypass_api_url,
       })
     } else {
       console.error(`[ - BYPASS - ] Error:`, message || error)
@@ -107,10 +113,10 @@ export async function get_supported_services(): Promise<SupportedService[]> {
     const controller = new AbortController()
     const timeout_id = setTimeout(() => controller.abort(), 5000)
 
-    const response = await fetch(`${BYPASS_API_URL.replace('/bypass', '/supported')}`, {
+    const response = await fetch(`${__bypass_api_url.replace('/bypass', '/supported')}`, {
       method  : "GET",
       headers : {
-        "x-api-key"       : BYPASS_API_KEY,
+        "x-api-key"       : __bypass_api_key,
         "Accept-Encoding" : "gzip, deflate, br",
         "Connection"      : "keep-alive",
       },

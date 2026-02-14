@@ -16,14 +16,14 @@ interface reputation_log {
   timestamp    : Date
 }
 
-const COLLECTION_REPUTATION = "reputation"
-const COLLECTION_REP_LOG    = "reputation_log"
+const __collection_reputation = "reputation"
+const __collection_rep_log    = "reputation_log"
 
-const COOLDOWN_HOURS = 24
+const __cooldown_hours = 24
 
 export async function can_give_rep(user_id: string, guild_id: string): Promise<boolean> {
   const record = await db.find_one<reputation_record>(
-    COLLECTION_REPUTATION,
+    __collection_reputation,
     { user_id, guild_id }
   )
 
@@ -33,12 +33,12 @@ export async function can_give_rep(user_id: string, guild_id: string): Promise<b
   const last_given     = new Date(record.last_given_at)
   const hours_since    = (now.getTime() - last_given.getTime()) / (1000 * 60 * 60)
 
-  return hours_since >= COOLDOWN_HOURS
+  return hours_since >= __cooldown_hours
 }
 
 export async function get_cooldown_remaining(user_id: string, guild_id: string): Promise<number> {
   const record = await db.find_one<reputation_record>(
-    COLLECTION_REPUTATION,
+    __collection_reputation,
     { user_id, guild_id }
   )
 
@@ -47,7 +47,7 @@ export async function get_cooldown_remaining(user_id: string, guild_id: string):
   const now         = new Date()
   const last_given  = new Date(record.last_given_at)
   const hours_since = (now.getTime() - last_given.getTime()) / (1000 * 60 * 60)
-  const remaining   = COOLDOWN_HOURS - hours_since
+  const remaining   = __cooldown_hours - hours_since
 
   return remaining > 0 ? Math.ceil(remaining) : 0
 }
@@ -60,12 +60,12 @@ export async function give_reputation(
 ): Promise<boolean> {
   try {
     const to_user = await db.find_one<reputation_record>(
-      COLLECTION_REPUTATION,
+      __collection_reputation,
       { user_id: to_user_id, guild_id }
     )
 
     await db.update_one<reputation_record>(
-      COLLECTION_REPUTATION,
+      __collection_reputation,
       { user_id: to_user_id, guild_id },
       {
         user_id      : to_user_id,
@@ -78,12 +78,12 @@ export async function give_reputation(
     )
 
     const from_user = await db.find_one<reputation_record>(
-      COLLECTION_REPUTATION,
+      __collection_reputation,
       { user_id: from_user_id, guild_id }
     )
 
     await db.update_one<reputation_record>(
-      COLLECTION_REPUTATION,
+      __collection_reputation,
       { user_id: from_user_id, guild_id },
       {
         user_id      : from_user_id,
@@ -96,7 +96,7 @@ export async function give_reputation(
     )
 
     await db.insert_one<reputation_log>(
-      COLLECTION_REP_LOG,
+      __collection_rep_log,
       {
         from_user_id,
         to_user_id,
@@ -114,14 +114,14 @@ export async function give_reputation(
 
 export async function get_reputation(user_id: string, guild_id: string): Promise<reputation_record | null> {
   return db.find_one<reputation_record>(
-    COLLECTION_REPUTATION,
+    __collection_reputation,
     { user_id, guild_id }
   )
 }
 
 export async function get_leaderboard(guild_id: string, limit: number = 10): Promise<reputation_record[]> {
   const records = await db.find_many<reputation_record>(
-    COLLECTION_REPUTATION,
+    __collection_reputation,
     { guild_id }
   )
 
@@ -132,7 +132,7 @@ export async function get_leaderboard(guild_id: string, limit: number = 10): Pro
 
 export async function get_reputation_logs(user_id: string, guild_id: string, limit: number = 5): Promise<reputation_log[]> {
   const logs = await db.find_many<reputation_log>(
-    COLLECTION_REP_LOG,
+    __collection_rep_log,
     { to_user_id: user_id, guild_id }
   )
 

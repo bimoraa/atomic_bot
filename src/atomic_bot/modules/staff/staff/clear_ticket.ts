@@ -20,7 +20,7 @@ import {
 }                            from "@shared/database/unified_ticket"
 import { log_error }         from "@shared/utils/error_logger"
 
-const TICKETS_COLLECTION = "unified_tickets"
+const __tickets_collection = "unified_tickets"
 
 interface TicketData {
   thread_id : string
@@ -329,7 +329,7 @@ export const command: Command = {
               } else {
                 // - CHANNEL NOT FOUND, DELETE FROM DATABASE - \\
                 if (db.is_connected()) {
-                  await db.delete_one(TICKETS_COLLECTION, { thread_id: ticket.thread_id })
+                  await db.delete_one(__tickets_collection, { thread_id: ticket.thread_id })
                 }
                 closed++
               }

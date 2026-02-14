@@ -8,14 +8,14 @@ import {
 import { get_ticket } from "./state"
 import { is_admin, is_staff } from "../settings/permissions"
 
-const HELPER_ROLE_ID = "1357767950421065981"
+const __helper_role_id = "1357767950421065981"
 
 export async function add_member(interaction: ButtonInteraction, ticket_type: string): Promise<void> {
   const thread    = interaction.channel as ThreadChannel
   const member    = interaction.member as GuildMember
   const data      = get_ticket(thread.id)
   const owner_id  = data?.owner_id
-  const is_helper = member.roles.cache.has(HELPER_ROLE_ID)
+  const is_helper = member.roles.cache.has(__helper_role_id)
 
   if (ticket_type === "helper") {
     if (member.id !== owner_id && !is_admin(member) && !is_staff(member) && !is_helper) {

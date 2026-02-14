@@ -8,8 +8,8 @@ interface review_record {
   message_id   : string
 }
 
-const COLLECTION_REVIEWS   = "reviews"
-const DAILY_REVIEW_LIMIT   = 2
+const __collection_reviews   = "reviews"
+const __daily_review_limit   = 2
 
 /**
  * @param {string} user_id - User ID
@@ -19,7 +19,7 @@ export async function get_today_review_count(user_id: string): Promise<number> {
   const today_start = get_day_start_timestamp()
 
   const reviews = await db.find_many<review_record>(
-    COLLECTION_REVIEWS,
+    __collection_reviews,
     { 
       user_id,
       timestamp: { $gte: today_start }
@@ -35,7 +35,7 @@ export async function get_today_review_count(user_id: string): Promise<number> {
  */
 export async function can_submit_review(user_id: string): Promise<boolean> {
   const count = await get_today_review_count(user_id)
-  return count < DAILY_REVIEW_LIMIT
+  return count < __daily_review_limit
 }
 
 /**
@@ -54,7 +54,7 @@ export async function save_review(
   message_id  : string
 ): Promise<boolean> {
   try {
-    await db.insert_one(COLLECTION_REVIEWS, {
+    await db.insert_one(__collection_reviews, {
       user_id,
       review_text,
       rating,
@@ -75,7 +75,7 @@ export async function save_review(
  */
 export async function get_remaining_reviews(user_id: string): Promise<number> {
   const count = await get_today_review_count(user_id)
-  return Math.max(0, DAILY_REVIEW_LIMIT - count)
+  return Math.max(0, __daily_review_limit - count)
 }
 
 /**

@@ -3,8 +3,8 @@ import { logger }          from "@shared/utils"
 import { log_error }       from "@shared/utils/error_logger"
 import * as share_settings from "@atomic/core/handlers/shared/controller/share_settings_controller"
 
-const log                      = logger.create_logger("share_settings_forum")
-const FORUM_UPDATE_INTERVAL_MS = 15000
+const log                        = logger.create_logger("share_settings_forum")
+const __forum_update_interval_ms = 15000
 
 /**
  * - UPDATE FORUM POSTS - \\
@@ -42,6 +42,6 @@ export async function start_share_settings_forum_scheduler(client: Client): Prom
 
   setTimeout(() => share_settings.cleanup_forum_sticky_thread(client), 2000)
   setTimeout(() => share_settings.backfill_forum_extras(client), 3000)
-  setInterval(() => update_forum_posts(client), FORUM_UPDATE_INTERVAL_MS)
+  setInterval(() => update_forum_posts(client), __forum_update_interval_ms)
   setTimeout(() => update_forum_posts(client), 5000)
 }

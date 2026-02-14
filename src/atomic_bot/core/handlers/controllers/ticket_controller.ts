@@ -2,8 +2,8 @@ import { GuildMember } from "discord.js"
 import { load_config } from "@shared/config/loader"
 import { db }          from "@shared/utils"
 
-const PURCHASE_TICKETS_COLLECTION = "purchase_tickets"
-const PRIORITY_TICKETS_COLLECTION = "priority_tickets"
+const __purchase_tickets_collection = "purchase_tickets"
+const __priority_tickets_collection = "priority_tickets"
 
 interface purchase_ticket_data {
   thread_id       : string
@@ -106,13 +106,13 @@ export async function save_purchase_ticket(thread_id: string): Promise<void> {
     log_message_id : purchase_logs.get(thread_id),
   }
 
-  await db.update_one(PURCHASE_TICKETS_COLLECTION, { thread_id }, data, true)
+  await db.update_one(__purchase_tickets_collection, { thread_id }, data, true)
 }
 
 export async function load_purchase_ticket(thread_id: string): Promise<boolean> {
   if (!db.is_connected()) return false
 
-  const data = await db.find_one<purchase_ticket_data>(PURCHASE_TICKETS_COLLECTION, { thread_id })
+  const data = await db.find_one<purchase_ticket_data>(__purchase_tickets_collection, { thread_id })
   if (!data) return false
 
   if (data.owner_id)       purchase_owners.set(thread_id, data.owner_id)
@@ -127,13 +127,13 @@ export async function load_purchase_ticket(thread_id: string): Promise<boolean> 
 
 export async function delete_purchase_ticket(thread_id: string): Promise<void> {
   if (!db.is_connected()) return
-  await db.delete_one(PURCHASE_TICKETS_COLLECTION, { thread_id })
+  await db.delete_one(__purchase_tickets_collection, { thread_id })
 }
 
 export async function load_all_purchase_tickets(): Promise<void> {
   if (!db.is_connected()) return
 
-  const tickets = await db.find_many<purchase_ticket_data>(PURCHASE_TICKETS_COLLECTION, {})
+  const tickets = await db.find_many<purchase_ticket_data>(__purchase_tickets_collection, {})
   for (const data of tickets) {
     if (data.owner_id)       purchase_owners.set(data.thread_id, data.owner_id)
     if (data.ticket_id)      purchase_ticket_ids.set(data.thread_id, data.ticket_id)
@@ -161,13 +161,13 @@ export async function save_priority_ticket(thread_id: string): Promise<void> {
     description    : ticket_descriptions.get(thread_id) || "",
   }
 
-  await db.update_one(PRIORITY_TICKETS_COLLECTION, { thread_id }, data, true)
+  await db.update_one(__priority_tickets_collection, { thread_id }, data, true)
 }
 
 export async function load_priority_ticket(thread_id: string): Promise<boolean> {
   if (!db.is_connected()) return false
 
-  const data = await db.find_one<priority_ticket_data>(PRIORITY_TICKETS_COLLECTION, { thread_id })
+  const data = await db.find_one<priority_ticket_data>(__priority_tickets_collection, { thread_id })
   if (!data) return false
 
   if (data.owner_id)       ticket_owners.set(thread_id, data.owner_id)
@@ -184,13 +184,13 @@ export async function load_priority_ticket(thread_id: string): Promise<boolean> 
 
 export async function delete_priority_ticket(thread_id: string): Promise<void> {
   if (!db.is_connected()) return
-  await db.delete_one(PRIORITY_TICKETS_COLLECTION, { thread_id })
+  await db.delete_one(__priority_tickets_collection, { thread_id })
 }
 
 export async function load_all_priority_tickets(): Promise<void> {
   if (!db.is_connected()) return
 
-  const tickets = await db.find_many<priority_ticket_data>(PRIORITY_TICKETS_COLLECTION, {})
+  const tickets = await db.find_many<priority_ticket_data>(__priority_tickets_collection, {})
   for (const data of tickets) {
     if (data.owner_id)       ticket_owners.set(data.thread_id, data.owner_id)
     if (data.ticket_id)      ticket_ticket_ids.set(data.thread_id, data.ticket_id)

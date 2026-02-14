@@ -2,12 +2,14 @@ import { GuildMember } from "discord.js"
 import { load_config } from "../../config/loader"
 import { db } from "../../utils"
 
-const TICKETS_COLLECTION = "unified_tickets"
+const __tickets_collection = "unified_tickets"
 
 // - BATCH SAVE OPTIMIZATION - \\
 let save_queue: Set<string> = new Set()
 let save_timeout: NodeJS.Timeout | null = null
-const BATCH_DELAY_MS = 500
+const __batch_delay_ms = 500
+const __join_claim_cooldown_ms = 15 * 1000
+const __join_claim_cooldowns   = new Map<string, number>()
 
 export interface TicketTypeConfig {
   name                 : string
@@ -105,6 +107,23 @@ export function remove_user_open_ticket(ticket_type: string, user_id: string): v
   open_tickets.get(ticket_type)?.delete(user_id)
 }
 
+export function get_join_claim_cooldown_remaining_ms(user_id: string): number {
+  const expires_at = __join_claim_cooldowns.get(user_id)
+  if (!expires_at) return 0
+
+  const remaining = expires_at - Date.now()
+  if (remaining <= 0) {
+    __join_claim_cooldowns.delete(user_id)
+    return 0
+  }
+
+  return remaining
+}
+
+export function activate_join_claim_cooldown(user_id: string): void {
+  __join_claim_cooldowns.set(user_id, Date.now() + __join_claim_cooldown_ms)
+}
+
 export async function save_ticket(thread_id: string): Promise<void> {
   if (!db.is_connected()) return
 
@@ -117,7 +136,7 @@ export async function save_ticket(thread_id: string): Promise<void> {
 
   save_timeout = setTimeout(async () => {
     await flush_save_queue()
-  }, BATCH_DELAY_MS)
+  }, __batch_delay_ms)
 }
 
 export async function save_ticket_immediate(thread_id: string): Promise<void> {
@@ -126,7 +145,7 @@ export async function save_ticket_immediate(thread_id: string): Promise<void> {
   const data = ticket_data.get(thread_id)
   if (!data) return
 
-  await db.update_one(TICKETS_COLLECTION, { thread_id }, data, true)
+  await db.update_one(__tickets_collection, { thread_id }, data, true)
 }
 
 async function flush_save_queue(): Promise<void> {
@@ -138,7 +157,7 @@ async function flush_save_queue(): Promise<void> {
   const save_promises = tickets_to_save.map(async (thread_id) => {
     const data = ticket_data.get(thread_id)
     if (!data) return
-    await db.update_one(TICKETS_COLLECTION, { thread_id }, data, true)
+    await db.update_one(__tickets_collection, { thread_id }, data, true)
   })
 
   await Promise.allSettled(save_promises)
@@ -155,7 +174,7 @@ export async function flush_all_tickets(): Promise<void> {
 export async function load_ticket(thread_id: string): Promise<boolean> {
   if (!db.is_connected()) return false
 
-  const data = await db.find_one<TicketData>(TICKETS_COLLECTION, { thread_id })
+  const data = await db.find_one<TicketData>(__tickets_collection, { thread_id })
   if (!data) return false
 
   ticket_data.set(thread_id, data)
@@ -164,13 +183,13 @@ export async function load_ticket(thread_id: string): Promise<boolean> {
 
 export async function delete_ticket_db(thread_id: string): Promise<void> {
   if (!db.is_connected()) return
-  await db.delete_one(TICKETS_COLLECTION, { thread_id })
+  await db.delete_one(__tickets_collection, { thread_id })
 }
 
 export async function load_all_tickets(): Promise<void> {
   if (!db.is_connected()) return
 
-  const tickets = await db.find_many<TicketData>(TICKETS_COLLECTION, {})
+  const tickets = await db.find_many<TicketData>(__tickets_collection, {})
   for (const data of tickets) {
     ticket_data.set(data.thread_id, data)
 

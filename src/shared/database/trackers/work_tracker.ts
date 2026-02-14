@@ -1,8 +1,8 @@
 import { db, time, logger } from "../../utils"
 
-const WORK_LOGS_COLLECTION    = "work_logs"
-const WORK_REPORTS_COLLECTION = "work_reports"
-const log                     = logger.create_logger("work_tracker")
+const __work_logs_collection    = "work_logs"
+const __work_reports_collection = "work_reports"
+const log                       = logger.create_logger("work_tracker")
 
 export interface WorkLog {
   work_id:       string
@@ -31,8 +31,8 @@ export interface WorkReport {
   last_work:            number
 }
 
-const SALARY_TICKET    = 2500
-const SALARY_WHITELIST = 1500
+const __salary_ticket    = 2500
+const __salary_whitelist = 1500
 
 export function get_week_number(): number {
   const now        = new Date()
@@ -61,7 +61,7 @@ export function format_date_id(): string {
 export async function get_next_work_id(staff_id: string): Promise<string> {
   const week   = get_week_number()
   const year   = get_year()
-  const count  = await db.count(WORK_LOGS_COLLECTION, { staff_id, week_number: week, year })
+  const count  = await db.count(__work_logs_collection, { staff_id, week_number: week, year })
   return `WORK-${count + 1}`
 }
 
@@ -78,7 +78,7 @@ export async function add_work_log(
   const work_id     = await get_next_work_id(staff_id)
   const week_number = get_week_number()
   const year        = get_year()
-  const salary      = type === "ticket" ? SALARY_TICKET : SALARY_WHITELIST
+  const salary      = type === "ticket" ? __salary_ticket : __salary_whitelist
   const created_at  = time.now()
   const date        = format_date_id()
 
@@ -97,7 +97,7 @@ export async function add_work_log(
     created_at,
   }
 
-  await db.insert_one(WORK_LOGS_COLLECTION, work_log)
+  await db.insert_one(__work_logs_collection, work_log)
   await update_work_report(staff_id, staff_name, salary)
 
   log.info(`Added work log ${work_id} for ${staff_name} (${type})`)
@@ -115,7 +115,7 @@ export async function update_work_report(
   const year        = get_year()
   const now         = time.now()
 
-  const existing = await db.find_one<WorkReport>(WORK_REPORTS_COLLECTION, { staff_id })
+  const existing = await db.find_one<WorkReport>(__work_reports_collection, { staff_id })
 
   if (existing) {
     const is_same_week = existing.week_number === week_number && existing.year === year
@@ -129,7 +129,7 @@ export async function update_work_report(
     // - VALIDATE AND PREVENT CORRUPTION - \\
     if (current_total_salary > 1000000000) {
       log.error(`Corrupted data detected for ${staff_id}, resetting total_salary from ${current_total_salary}`)
-      await db.update_one(WORK_REPORTS_COLLECTION, { staff_id }, {
+      await db.update_one(__work_reports_collection, { staff_id }, {
         staff_id,
         staff_name,
         total_work:           1,
@@ -148,7 +148,7 @@ export async function update_work_report(
     const total_salary         = current_total_salary + new_salary
     const salary_this_week     = is_same_week ? current_salary_week + new_salary : new_salary
 
-    await db.update_one(WORK_REPORTS_COLLECTION, { staff_id }, {
+    await db.update_one(__work_reports_collection, { staff_id }, {
       staff_id,
       staff_name,
       total_work,
@@ -164,7 +164,7 @@ export async function update_work_report(
   } else {
     const new_salary = Math.max(0, parseInt(String(salary)))
     
-    await db.update_one(WORK_REPORTS_COLLECTION, { staff_id }, {
+    await db.update_one(__work_reports_collection, { staff_id }, {
       staff_id,
       staff_name,
       total_work:           1,
@@ -183,7 +183,7 @@ export async function get_work_report(staff_id: string): Promise<WorkReport | nu
     console.warn("[ - WORK TRACKER - ] Database not connected, cannot get work report")
     return null
   }
-  return await db.find_one<WorkReport>(WORK_REPORTS_COLLECTION, { staff_id })
+  return await db.find_one<WorkReport>(__work_reports_collection, { staff_id })
 }
 
 export async function get_work_logs(
@@ -195,12 +195,12 @@ export async function get_work_logs(
     console.warn("[ - WORK TRACKER - ] Database not connected, cannot get work logs")
     return []
   }
-  return await db.find_many<WorkLog>(WORK_LOGS_COLLECTION, { staff_id, week_number, year })
+  return await db.find_many<WorkLog>(__work_logs_collection, { staff_id, week_number, year })
 }
 
 export async function get_all_staff_reports(): Promise<WorkReport[]> {
   if (!db.is_connected()) return []
-  return await db.find_many<WorkReport>(WORK_REPORTS_COLLECTION, {})
+  return await db.find_many<WorkReport>(__work_reports_collection, {})
 }
 
 export function format_salary(amount: number): string {

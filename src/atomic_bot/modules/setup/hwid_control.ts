@@ -8,9 +8,9 @@ interface hwid_config {
   enabled: boolean
 }
 
-const COLLECTION_NAME       = "hwid_control"
-const SERVICE_PROVIDER_ID   = "6958841b2d9e5e049a24a23e376e0d77"
-const FREE_PROJECT_ID       = "cd7560b7384fd815dafd993828c40d2b"
+const __collection_name       = "hwid_control"
+const __service_provider_id   = "6958841b2d9e5e049a24a23e376e0d77"
+const __free_project_id       = "cd7560b7384fd815dafd993828c40d2b"
 
 /**
  * Load HWID configuration from database.
@@ -18,7 +18,7 @@ const FREE_PROJECT_ID       = "cd7560b7384fd815dafd993828c40d2b"
  */
 async function load_config(): Promise<hwid_config> {
   try {
-    const config = await db.find_one<hwid_config>(COLLECTION_NAME, {})
+    const config = await db.find_one<hwid_config>(__collection_name, {})
     return config || { enabled: true }
   } catch {
     return { enabled: true }
@@ -30,7 +30,7 @@ async function load_config(): Promise<hwid_config> {
  * @param config Config to save.
  */
 async function save_config(config: hwid_config): Promise<void> {
-  await db.update_one(COLLECTION_NAME, {}, config, true)
+  await db.update_one(__collection_name, {}, config, true)
 }
 
 /**

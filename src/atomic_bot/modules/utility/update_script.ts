@@ -3,9 +3,9 @@ import { Command }                                                       from "@
 import { component, http, env, db }                                      from "@shared/utils"
 import { log_error }                                                     from "@shared/utils/error_logger"
 
-const COLLECTION              = "luarmor_scripts"
-const KEY_DETAILS_URL         = "https://api.luarmor.net/v3/keys"
-const LOADER_SCRIPT_BASE_URL  = "https://api.luarmor.net/files/v3/loaders"
+const __collection              = "luarmor_scripts"
+const __key_details_url         = "https://api.luarmor.net/v3/keys"
+const __loader_script_base_url  = "https://api.luarmor.net/files/v3/loaders"
 
 interface luarmor_script_info {
   script_name     : string
@@ -63,7 +63,7 @@ function build_headers(): Record<string, string> {
  */
 async function fetch_key_details(): Promise<luarmor_key_details_response> {
   const api_key = get_api_key()
-  const url     = `${KEY_DETAILS_URL}/${api_key}/details`
+  const url     = `${__key_details_url}/${api_key}/details`
 
   return http.get<luarmor_key_details_response>(url, build_headers())
 }
@@ -74,7 +74,7 @@ async function fetch_key_details(): Promise<luarmor_key_details_response> {
  * @returns {Promise<string>} Loader script content
  */
 async function fetch_loader_script(project_id: string): Promise<string> {
-  const url = `${LOADER_SCRIPT_BASE_URL}/${project_id}.lua`
+  const url = `${__loader_script_base_url}/${project_id}.lua`
   return http.get_text(url)
 }
 
@@ -85,7 +85,7 @@ async function fetch_loader_script(project_id: string): Promise<string> {
  */
 async function upsert_project_record(record: luarmor_project_record): Promise<void> {
   await db.update_one<luarmor_project_record>(
-    COLLECTION,
+    __collection,
     { project_id: record.project_id },
     record,
     true

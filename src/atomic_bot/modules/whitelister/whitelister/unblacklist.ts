@@ -3,8 +3,8 @@ import { Command }                                                            fr
 import { delete_user_from_project, get_user_by_discord, unban_user }        from "../../../infrastructure/api/luarmor"
 import { component }                                                          from "@shared/utils"
 
-const ALLOWED_ROLE_ID = "1277272542914281512"
-const PROJECT_ID      = "6958841b2d9e5e049a24a23e376e0d77"
+const __allowed_role_id = "1277272542914281512"
+const __project_id      = "6958841b2d9e5e049a24a23e376e0d77"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -28,7 +28,7 @@ export const command: Command = {
 
     const member = interaction.member as GuildMember
 
-    if (!member || !member.roles || !member.roles.cache.has(ALLOWED_ROLE_ID)) {
+    if (!member || !member.roles || !member.roles.cache.has(__allowed_role_id)) {
       await interaction.reply({
         content  : "You don't have permission to use this command",
         ephemeral: true,
@@ -48,7 +48,7 @@ export const command: Command = {
 
     await interaction.deferReply({ ephemeral: true })
 
-    const user_data = await get_user_by_discord(user.id, PROJECT_ID)
+    const user_data = await get_user_by_discord(user.id, __project_id)
 
     if (!user_data.success || !user_data.data) {
       await interaction.editReply({
@@ -71,7 +71,7 @@ export const command: Command = {
       return
     }
 
-    const unban_result = await unban_user(user_data.data.unban_token, PROJECT_ID)
+    const unban_result = await unban_user(user_data.data.unban_token, __project_id)
 
     if (!unban_result.success) {
       await interaction.editReply({

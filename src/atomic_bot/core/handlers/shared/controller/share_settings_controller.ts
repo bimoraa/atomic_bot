@@ -13,17 +13,17 @@ import { log_error }            from "@shared/utils/error_logger"
 import { Cache }                from "@shared/utils/cache"
 import * as random              from "@shared/utils/random"
 
-const SETTINGS_COLLECTION    = "rod_settings"
-const SETTINGS_CHANNEL_ID    = "1444073420030476309"
-const FORUM_CHANNEL_ID       = "1444080629162578001"
-const THREAD_PARENT_ID       = "1468393418869968936"
-const SHARE_SETTINGS_ROLE_ID = "1398313779380617459"
-const ROD_LIST_COLLECTION    = "rod_settings_rods"
-const SKIN_LIST_COLLECTION   = "rod_settings_skins"
-const FORUM_TAG_POPULAR       = "Most Popular"
-const MOST_POPULAR_MIN_LIKES  = 10
-const FORUM_STICKY_COLLECTION = "rod_settings_forum_sticky"
-const FORUM_THREAD_STICKY_COLLECTION = "rod_settings_forum_thread_sticky"
+const __settings_collection    = "rod_settings"
+const __settings_channel_id    = "1444073420030476309"
+const __forum_channel_id       = "1444080629162578001"
+const __thread_parent_id       = "1468393418869968936"
+const __share_settings_role_id = "1398313779380617459"
+const __rod_list_collection    = "rod_settings_rods"
+const __skin_list_collection   = "rod_settings_skins"
+const __forum_tag_popular       = "Most Popular"
+const __most_popular_min_likes  = 10
+const __forum_sticky_collection = "rod_settings_forum_sticky"
+const __forum_thread_sticky_collection = "rod_settings_forum_thread_sticky"
 const sticky_lock             = new Set<string>()
 
 export interface rod_settings_record {
@@ -91,7 +91,7 @@ interface pending_settings_entry {
 const search_cache  = new Cache<search_cache_entry>(5 * 60 * 1000, 1000, 60 * 1000, "share_settings_search")
 const pending_cache = new Cache<pending_settings_entry>(10 * 60 * 1000, 1000, 60 * 1000, "share_settings_pending")
 
-const DEFAULT_ROD_LIST = [
+const __default_rod_list = [
   "Diamond Rod",
   "Element Rod",
   "Ghostfinn Rod",
@@ -101,7 +101,7 @@ const DEFAULT_ROD_LIST = [
   "Hazmat Rod",
 ]
 
-const DEFAULT_SKIN_LIST = [
+const __default_skin_list = [
   "1x1x1x1 Ban Hammer",
   "Binary Edge",
   "Blackhole Sword",
@@ -126,7 +126,7 @@ const DEFAULT_SKIN_LIST = [
  */
 export function can_use_share_settings(member: GuildMember | null): boolean {
   if (!member) return false
-  return member.roles.cache.has(SHARE_SETTINGS_ROLE_ID)
+  return member.roles.cache.has(__share_settings_role_id)
 }
 
 /**
@@ -187,12 +187,12 @@ export function update_pending_payload(token: string, payload: Partial<share_set
  */
 export async function list_rod_options(client: Client): Promise<string[]> {
   try {
-    const stored = await db.find_one<{ values: string[] }>(ROD_LIST_COLLECTION, { key: "rods" })
-    const combined = [...DEFAULT_ROD_LIST, ...(stored?.values || [])]
+    const stored = await db.find_one<{ values: string[] }>(__rod_list_collection, { key: "rods" })
+    const combined = [...__default_rod_list, ...(stored?.values || [])]
     return Array.from(new Set(combined)).filter(Boolean)
   } catch (error) {
     await log_error(client, error as Error, "share_settings_rod_list", {})
-    return DEFAULT_ROD_LIST
+    return __default_rod_list
   }
 }
 
@@ -203,12 +203,12 @@ export async function list_rod_options(client: Client): Promise<string[]> {
  */
 export async function list_skin_options(client: Client): Promise<string[]> {
   try {
-    const stored = await db.find_one<{ values: string[] }>(SKIN_LIST_COLLECTION, { key: "skins" })
-    const combined = [...DEFAULT_SKIN_LIST, ...(stored?.values || [])]
+    const stored = await db.find_one<{ values: string[] }>(__skin_list_collection, { key: "skins" })
+    const combined = [...__default_skin_list, ...(stored?.values || [])]
     return Array.from(new Set(combined)).filter(Boolean)
   } catch (error) {
     await log_error(client, error as Error, "share_settings_skin_list", {})
-    return DEFAULT_SKIN_LIST
+    return __default_skin_list
   }
 }
 
@@ -222,7 +222,7 @@ export async function add_rod_option(client: Client, rod_name: string): Promise<
   try {
     const list = await list_rod_options(client)
     const updated = Array.from(new Set([...list, rod_name])).filter(Boolean)
-    await db.update_one(ROD_LIST_COLLECTION, { key: "rods" }, { key: "rods", values: updated }, true)
+    await db.update_one(__rod_list_collection, { key: "rods" }, { key: "rods", values: updated }, true)
     return true
   } catch (error) {
     await log_error(client, error as Error, "share_settings_add_rod", {
@@ -242,7 +242,7 @@ export async function add_skin_option(client: Client, skin_name: string): Promis
   try {
     const list = await list_skin_options(client)
     const updated = Array.from(new Set([...list, skin_name])).filter(Boolean)
-    await db.update_one(SKIN_LIST_COLLECTION, { key: "skins" }, { key: "skins", values: updated }, true)
+    await db.update_one(__skin_list_collection, { key: "skins" }, { key: "skins", values: updated }, true)
     return true
   } catch (error) {
     await log_error(client, error as Error, "share_settings_add_skin", {
@@ -257,7 +257,7 @@ export async function add_skin_option(client: Client, skin_name: string): Promis
  * @returns {string} Channel ID
  */
 export function get_settings_channel_id(): string {
-  return SETTINGS_CHANNEL_ID
+  return __settings_channel_id
 }
 
 /**
@@ -273,10 +273,10 @@ export async function send_settings_message(
   payload: message_payload
 ): Promise<{ channel_id: string; message_id: string } | null> {
   try {
-    const channel = await client.channels.fetch(SETTINGS_CHANNEL_ID).catch(() => null)
+    const channel = await client.channels.fetch(__settings_channel_id).catch(() => null)
     if (!channel) {
       await log_error(client, new Error("Settings channel not found"), "share_settings_channel_missing", {
-        channel_id : SETTINGS_CHANNEL_ID,
+        channel_id : __settings_channel_id,
       })
       return null
     }
@@ -317,13 +317,13 @@ export async function send_settings_message(
     }
 
     await log_error(client, new Error("Settings channel not text based"), "share_settings_post", {
-      channel_id : SETTINGS_CHANNEL_ID,
+      channel_id : __settings_channel_id,
       type       : channel.type,
     })
     return null
   } catch (error) {
     await log_error(client, error as Error, "share_settings_post", {
-      channel_id : SETTINGS_CHANNEL_ID,
+      channel_id : __settings_channel_id,
     })
     return null
   }
@@ -334,7 +334,7 @@ export async function send_settings_message(
  * @returns {string} Channel ID
  */
 export function get_forum_channel_id(): string {
-  return FORUM_CHANNEL_ID
+  return __forum_channel_id
 }
 
 /**
@@ -414,7 +414,7 @@ function build_tag_names(record: rod_settings_record): string[] {
  */
 function is_most_popular(record: rod_settings_record): boolean {
   const average = record.star_count > 0 ? record.star_total / record.star_count : 0
-  return record.star_count >= MOST_POPULAR_MIN_LIKES && average >= 4.5
+  return record.star_count >= __most_popular_min_likes && average >= 4.5
 }
 
 /**
@@ -468,7 +468,7 @@ function build_applied_tags(record: rod_settings_record, tag_map: Map<string, st
   const tag_ids: string[] = []
   const rod_id  = tag_map.get(record.rod_name.toLowerCase())
   const skin_id = tag_map.get((record.rod_skin ? record.rod_skin : "No Skin").toLowerCase())
-  const pop_id  = tag_map.get(FORUM_TAG_POPULAR.toLowerCase())
+  const pop_id  = tag_map.get(__forum_tag_popular.toLowerCase())
 
   if (rod_id) tag_ids.push(rod_id)
   if (skin_id) tag_ids.push(skin_id)
@@ -548,7 +548,7 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
 
     if (!settings_link) return
 
-    const previous = await db.find_one<{ key: string; message_id?: string }>(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id })
+    const previous = await db.find_one<{ key: string; message_id?: string }>(__forum_thread_sticky_collection, { key: thread_id })
 
     const payload = build_forum_thread_sticky_message(record, settings_link)
     if (previous?.message_id) {
@@ -564,7 +564,7 @@ export async function update_forum_thread_sticky(client: Client, thread_id: stri
       return
     }
 
-    await db.update_one(FORUM_THREAD_STICKY_COLLECTION, { key: thread_id }, {
+    await db.update_one(__forum_thread_sticky_collection, { key: thread_id }, {
       key        : thread_id,
       message_id : String(result.id),
     }, true)
@@ -588,15 +588,15 @@ export async function update_forum_sticky_message(client: Client, record: rod_se
   if (!settings_link) return
 
   try {
-    const forum_channel = await client.channels.fetch(FORUM_CHANNEL_ID).catch(() => null)
+    const forum_channel = await client.channels.fetch(__forum_channel_id).catch(() => null)
     if (!forum_channel || forum_channel.type !== ChannelType.GuildForum) {
       await log_error(client, new Error("Forum channel not found"), "share_settings_forum_sticky", {
-        channel_id : FORUM_CHANNEL_ID,
+        channel_id : __forum_channel_id,
       })
       return
     }
 
-    const previous = await db.find_one<{ key: string; thread_id?: string }>(FORUM_STICKY_COLLECTION, { key: "latest" })
+    const previous = await db.find_one<{ key: string; thread_id?: string }>(__forum_sticky_collection, { key: "latest" })
     if (previous?.thread_id) {
       const old_thread = await client.channels.fetch(previous.thread_id).catch(() => null)
       if (old_thread && old_thread.isThread()) {
@@ -625,16 +625,16 @@ export async function update_forum_sticky_message(client: Client, record: rod_se
     }
 
     await pin_forum_message(client, thread.id, String(result.id))
-    await db.update_one(FORUM_STICKY_COLLECTION, { key: "latest" }, {
+    await db.update_one(__forum_sticky_collection, { key: "latest" }, {
       key        : "latest",
       thread_id  : thread.id,
       message_id : String(result.id),
-      channel_id : FORUM_CHANNEL_ID,
+      channel_id : __forum_channel_id,
       created_at : Date.now(),
     }, true)
   } catch (error) {
     await log_error(client, error as Error, "share_settings_forum_sticky", {
-      channel_id : FORUM_CHANNEL_ID,
+      channel_id : __forum_channel_id,
     })
   }
 }
@@ -646,7 +646,7 @@ export async function update_forum_sticky_message(client: Client, record: rod_se
  */
 export async function cleanup_forum_sticky_thread(client: Client): Promise<void> {
   try {
-    const previous = await db.find_one<{ key: string; thread_id?: string }>(FORUM_STICKY_COLLECTION, { key: "latest" })
+    const previous = await db.find_one<{ key: string; thread_id?: string }>(__forum_sticky_collection, { key: "latest" })
     if (!previous?.thread_id) return
 
     const old_thread = await client.channels.fetch(previous.thread_id).catch(() => null)
@@ -654,7 +654,7 @@ export async function cleanup_forum_sticky_thread(client: Client): Promise<void>
       await old_thread.delete().catch(() => {})
     }
 
-    await db.delete_one(FORUM_STICKY_COLLECTION, { key: "latest" })
+    await db.delete_one(__forum_sticky_collection, { key: "latest" })
   } catch (error) {
     await log_error(client, error as Error, "share_settings_forum_sticky_cleanup", {})
   }
@@ -796,10 +796,10 @@ export async function ensure_publisher_thread(
   }
 
   try {
-    const channel = await client.channels.fetch(THREAD_PARENT_ID).catch(() => null)
+    const channel = await client.channels.fetch(__thread_parent_id).catch(() => null)
     if (!channel) {
       await log_error(client, new Error("Publisher thread parent not found"), "share_settings_thread_parent", {
-        parent_id : THREAD_PARENT_ID,
+        parent_id : __thread_parent_id,
       })
       return {}
     }
@@ -838,13 +838,13 @@ export async function ensure_publisher_thread(
     }
 
     await log_error(client, new Error("Unsupported thread parent channel"), "share_settings_thread_parent", {
-      parent_id : THREAD_PARENT_ID,
+      parent_id : __thread_parent_id,
       type      : channel.type,
     })
     return {}
   } catch (error) {
     await log_error(client, error as Error, "share_settings_thread_create", {
-      parent_id    : THREAD_PARENT_ID,
+      parent_id    : __thread_parent_id,
       publisher_id : record.publisher_id,
     })
     return {}
@@ -870,16 +870,16 @@ export async function ensure_forum_post(
   }
 
   try {
-    const channel = await client.channels.fetch(FORUM_CHANNEL_ID).catch(() => null)
+    const channel = await client.channels.fetch(__forum_channel_id).catch(() => null)
     if (!channel || channel.type !== ChannelType.GuildForum) {
       await log_error(client, new Error("Forum channel not found"), "share_settings_forum_parent", {
-        channel_id : FORUM_CHANNEL_ID,
+        channel_id : __forum_channel_id,
       })
       return {}
     }
 
     const forum = channel as ForumChannel
-    const required_tags = [...build_tag_names(record), FORUM_TAG_POPULAR]
+    const required_tags = [...build_tag_names(record), __forum_tag_popular]
     const tag_map = await ensure_forum_tags(client, forum, required_tags)
     const applied_tags = build_applied_tags(record, tag_map)
     const thread = await forum.threads.create({
@@ -901,7 +901,7 @@ export async function ensure_forum_post(
       })
       return {
         forum_thread_id  : thread.id,
-        forum_channel_id : FORUM_CHANNEL_ID,
+        forum_channel_id : __forum_channel_id,
       }
     }
 
@@ -910,11 +910,11 @@ export async function ensure_forum_post(
     return {
       forum_thread_id  : thread.id,
       forum_message_id : String(result.id),
-      forum_channel_id : FORUM_CHANNEL_ID,
+      forum_channel_id : __forum_channel_id,
     }
   } catch (error) {
     await log_error(client, error as Error, "share_settings_forum_create", {
-      channel_id   : FORUM_CHANNEL_ID,
+      channel_id   : __forum_channel_id,
       settings_id  : record.settings_id,
       publisher_id : record.publisher_id,
     })
@@ -939,9 +939,9 @@ export async function update_forum_message(client: Client, record: rod_settings_
         await channel.setName(expected_name).catch(() => {})
       }
 
-      const forum = await client.channels.fetch(FORUM_CHANNEL_ID).catch(() => null)
+      const forum = await client.channels.fetch(__forum_channel_id).catch(() => null)
       if (forum && forum.type === ChannelType.GuildForum) {
-        const required_tags = [...build_tag_names(record), FORUM_TAG_POPULAR]
+        const required_tags = [...build_tag_names(record), __forum_tag_popular]
         const tag_map = await ensure_forum_tags(client, forum as ForumChannel, required_tags)
         const applied_tags = build_applied_tags(record, tag_map)
         if ("setAppliedTags" in channel) {
@@ -1276,7 +1276,7 @@ export async function create_settings_record(client: Client, input: share_settin
       updated_at         : now,
     }
 
-    await db.insert_one<rod_settings_record>(SETTINGS_COLLECTION, record)
+    await db.insert_one<rod_settings_record>(__settings_collection, record)
     return record
   } catch (error) {
     await log_error(client, error as Error, "share_settings_create", {})
@@ -1306,7 +1306,7 @@ export async function update_settings_record(
       updated_at : Date.now(),
     }
 
-    await db.update_one<rod_settings_record>(SETTINGS_COLLECTION, { settings_id: settings_id }, updated, true)
+    await db.update_one<rod_settings_record>(__settings_collection, { settings_id: settings_id }, updated, true)
     return updated
   } catch (error) {
     await log_error(client, error as Error, "share_settings_update", {
@@ -1324,7 +1324,7 @@ export async function update_settings_record(
  */
 export async function get_settings_record(client: Client, settings_id: string): Promise<rod_settings_record | null> {
   try {
-    return await db.find_one<rod_settings_record>(SETTINGS_COLLECTION, { settings_id: settings_id })
+    return await db.find_one<rod_settings_record>(__settings_collection, { settings_id: settings_id })
   } catch (error) {
     await log_error(client, error as Error, "share_settings_get", {
       settings_id : settings_id,
@@ -1340,7 +1340,7 @@ export async function get_settings_record(client: Client, settings_id: string): 
  */
 export async function list_settings_records(client: Client): Promise<rod_settings_record[]> {
   try {
-    return await db.find_many<rod_settings_record>(SETTINGS_COLLECTION, {})
+    return await db.find_many<rod_settings_record>(__settings_collection, {})
   } catch (error) {
     await log_error(client, error as Error, "share_settings_list", {})
     return []
@@ -1355,7 +1355,7 @@ export async function list_settings_records(client: Client): Promise<rod_setting
  */
 export async function get_settings_by_forum_thread_id(client: Client, thread_id: string): Promise<rod_settings_record | null> {
   try {
-    return await db.find_one<rod_settings_record>(SETTINGS_COLLECTION, { forum_thread_id: thread_id })
+    return await db.find_one<rod_settings_record>(__settings_collection, { forum_thread_id: thread_id })
   } catch (error) {
     await log_error(client, error as Error, "share_settings_get_by_forum_thread", {
       thread_id : thread_id,
@@ -1372,7 +1372,7 @@ export async function get_settings_by_forum_thread_id(client: Client, thread_id:
  */
 export async function list_settings_by_publisher(client: Client, publisher_id: string): Promise<rod_settings_record[]> {
   try {
-    return await db.find_many<rod_settings_record>(SETTINGS_COLLECTION, { publisher_id: publisher_id })
+    return await db.find_many<rod_settings_record>(__settings_collection, { publisher_id: publisher_id })
   } catch (error) {
     await log_error(client, error as Error, "share_settings_list_by_publisher", {
       publisher_id : publisher_id,
@@ -1392,7 +1392,7 @@ export async function delete_settings_record(client: Client, settings_id: string
     const record = await get_settings_record(client, settings_id)
     if (!record) return null
 
-    await db.delete_one(SETTINGS_COLLECTION, { settings_id: settings_id })
+    await db.delete_one(__settings_collection, { settings_id: settings_id })
     return record
   } catch (error) {
     await log_error(client, error as Error, "share_settings_delete", {

@@ -2,17 +2,17 @@ import { ButtonInteraction, GuildMember } from "discord.js"
 import { load_config } from "@shared/config/loader"
 import { component } from "@shared/utils"
 
-const ROLE_CONFIG = load_config("reaction_roles") as Record<string, string>
+const __role_config = load_config("reaction_roles") as Record<string, string>
 
-const ROLE_MAP: Record<string, string> = {
-  reaction_role_fishit           : ROLE_CONFIG.REACTION_ROLE_FISHIT || "",
-  reaction_role_cdi              : ROLE_CONFIG.REACTION_ROLE_CDI || "",
-  reaction_role_executor_update  : ROLE_CONFIG.REACTION_ROLE_EXECUTOR_UPDATE || "",
-  reaction_role_roblox_update    : ROLE_CONFIG.REACTION_ROLE_ROBLOX_UPDATE || "",
-  reaction_role_giveaway         : ROLE_CONFIG.REACTION_ROLE_GIVEAWAY || "",
+const __role_map: Record<string, string> = {
+  reaction_role_fishit           : __role_config.REACTION_ROLE_FISHIT || "",
+  reaction_role_cdi              : __role_config.REACTION_ROLE_CDI || "",
+  reaction_role_executor_update  : __role_config.REACTION_ROLE_EXECUTOR_UPDATE || "",
+  reaction_role_roblox_update    : __role_config.REACTION_ROLE_ROBLOX_UPDATE || "",
+  reaction_role_giveaway         : __role_config.REACTION_ROLE_GIVEAWAY || "",
 }
 
-const ROLE_NAMES: Record<string, string> = {
+const __role_names: Record<string, string> = {
   reaction_role_fishit           : "Fish It!",
   reaction_role_cdi              : "Car Driving Indonesia",
   reaction_role_executor_update  : "Executor Update",
@@ -22,7 +22,7 @@ const ROLE_NAMES: Record<string, string> = {
 
 export async function handle_reaction_role(interaction: ButtonInteraction): Promise<void> {
   const member  = interaction.member as GuildMember
-  const role_id = ROLE_MAP[interaction.customId]
+  const role_id = __role_map[interaction.customId]
 
   if (!role_id) {
     await interaction.reply({
@@ -33,7 +33,7 @@ export async function handle_reaction_role(interaction: ButtonInteraction): Prom
   }
 
   const role      = interaction.guild?.roles.cache.get(role_id)
-  const role_name = ROLE_NAMES[interaction.customId] || "Unknown Role"
+  const role_name = __role_names[interaction.customId] || "Unknown Role"
 
   if (!role) {
     await interaction.reply({

@@ -8,8 +8,8 @@ import { is_admin }       from "@shared/database/settings/permissions"
 import { component, api } from "@shared/utils"
 import { http, env, logger } from "@shared/utils"
 
-const __log           = logger.create_logger("mass_user_note")
-const FREE_PROJECT_ID = "cd7560b7384fd815dafd993828c40d2b"
+const __log             = logger.create_logger("mass_user_note")
+const __free_project_id = "cd7560b7384fd815dafd993828c40d2b"
 
 function get_api_key(): string {
   return env.required("LUARMOR_API_KEY")
@@ -46,7 +46,7 @@ export const command: Command = {
     const note = interaction.options.getString("note", true)
 
     try {
-      const all_users_url = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users`
+      const all_users_url = `https://api.luarmor.net/v3/projects/${__free_project_id}/users`
       const all_users_res = await http.get<any>(all_users_url, get_headers())
 
       if (!all_users_res.users || !Array.isArray(all_users_res.users)) {
@@ -73,7 +73,7 @@ export const command: Command = {
         const user = users[i]
         
         try {
-          const update_url  = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users`
+          const update_url  = `https://api.luarmor.net/v3/projects/${__free_project_id}/users`
           const update_body = {
             user_key : user.user_key,
             note     : note,

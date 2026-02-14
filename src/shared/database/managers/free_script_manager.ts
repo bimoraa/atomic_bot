@@ -11,10 +11,10 @@ interface free_script_user {
   has_tag    : boolean
 }
 
-const COLLECTION          = "free_script_users"
-const TARGET_GUILD_ID     = "1250337227582472243"
-const FREE_SCRIPT_ROLE_ID = "1347086323575423048"
-const FREE_PROJECT_ID     = "cd7560b7384fd815dafd993828c40d2b"
+const __collection          = "free_script_users"
+const __target_guild_id     = "1250337227582472243"
+const __free_script_role_id = "1347086323575423048"
+const __free_project_id     = "cd7560b7384fd815dafd993828c40d2b"
 
 function get_api_key(): string {
   return process.env.LUARMOR_API_KEY || ""
@@ -28,7 +28,7 @@ function get_headers(): Record<string, string> {
 
 export async function remove_free_script_access(user_id: string): Promise<boolean> {
   try {
-    const delete_url = `https://api.luarmor.net/v3/projects/${FREE_PROJECT_ID}/users/${user_id}`
+    const delete_url = `https://api.luarmor.net/v3/projects/${__free_project_id}/users/${user_id}`
     
     await fetch(delete_url, {
       method  : "DELETE",
@@ -37,7 +37,7 @@ export async function remove_free_script_access(user_id: string): Promise<boolea
     
     console.log(`[ - FREE SCRIPT - ] Unwhitelist API called for ${user_id}`)
 
-    await db.delete_one(COLLECTION, { user_id })
+    await db.delete_one(__collection, { user_id })
     
     console.log(`[ - FREE SCRIPT - ] Removed user ${user_id} from database`)
     
@@ -50,13 +50,13 @@ export async function remove_free_script_access(user_id: string): Promise<boolea
 
 export async function check_free_script_users_tags(client: Client): Promise<void> {
   try {
-    const guild = client.guilds.cache.get(TARGET_GUILD_ID)
+    const guild = client.guilds.cache.get(__target_guild_id)
     if (!guild) {
       console.error("[ - FREE SCRIPT - ] Guild not found")
       return
     }
 
-    const free_users = await db.find_many<free_script_user>(COLLECTION, { guild_id: TARGET_GUILD_ID })
+    const free_users = await db.find_many<free_script_user>(__collection, { guild_id: __target_guild_id })
     
     if (free_users.length === 0) {
       console.log("[ - FREE SCRIPT - ] No free script users to check")
@@ -79,15 +79,15 @@ export async function check_free_script_users_tags(client: Client): Promise<void
         }
 
         const user = member.user
-        const has_tag = user.primaryGuild?.tag && user.primaryGuild.identityGuildId === TARGET_GUILD_ID
+        const has_tag = user.primaryGuild?.tag && user.primaryGuild.identityGuildId === __target_guild_id
 
         if (!has_tag) {
           console.log(`[ - FREE SCRIPT - ] User ${user.username} (${user_data.user_id}) removed server tag, unwhitelisting`)
           
           await remove_free_script_access(user_data.user_id)
           
-          if (member.roles.cache.has(FREE_SCRIPT_ROLE_ID)) {
-            await member.roles.remove(FREE_SCRIPT_ROLE_ID).catch((error) => {
+          if (member.roles.cache.has(__free_script_role_id)) {
+            await member.roles.remove(__free_script_role_id).catch((error) => {
               console.error(`[ - FREE SCRIPT - ] Failed to remove role from ${user.username}:`, error)
             })
           }
@@ -113,7 +113,7 @@ export async function check_free_script_users_tags(client: Client): Promise<void
           removed_count++
         } else if (!user_data.has_tag) {
           await db.update_one(
-            COLLECTION,
+            __collection,
             { user_id: user_data.user_id },
             { has_tag: true }
           )
@@ -132,13 +132,13 @@ export async function check_free_script_users_tags(client: Client): Promise<void
 }
 
 export async function start_free_script_checker(client: Client): Promise<void> {
-  const CHECK_INTERVAL = 30 * 60 * 1000
+  const __check_interval = 30 * 60 * 1000
   
   console.log("[ - FREE SCRIPT - ] Starting free script tag checker (30 min interval)")
   
   setInterval(() => {
     check_free_script_users_tags(client)
-  }, CHECK_INTERVAL)
+  }, __check_interval)
   
   setTimeout(() => {
     check_free_script_users_tags(client)
@@ -147,7 +147,7 @@ export async function start_free_script_checker(client: Client): Promise<void> {
 
 export async function get_all_free_script_users(): Promise<free_script_user[]> {
   try {
-    const users = await db.find_many<free_script_user>(COLLECTION, {})
+    const users = await db.find_many<free_script_user>(__collection, {})
     return users.sort((a, b) => b.created_at - a.created_at)
   } catch (error) {
     console.error("[ - FREE SCRIPT - ] Failed to get free script users:", error)

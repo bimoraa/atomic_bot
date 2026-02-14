@@ -1,8 +1,8 @@
 import { logger, db, time } from "@shared/utils"
 import { get_week_number, get_year } from "@shared/database/trackers/work_tracker"
 
-const WORK_REPORTS_COLLECTION = "work_reports"
-const log                     = logger.create_logger("weekly_work_reset")
+const __work_reports_collection = "work_reports"
+const log                       = logger.create_logger("weekly_work_reset")
 
 interface WorkReport {
   staff_id             : string
@@ -27,7 +27,7 @@ export async function start_weekly_reset_scheduler(): Promise<void> {
       
       log.info(`Checking for weekly reset - Current: Week ${current_week}, Year ${current_year}`)
 
-      const all_reports = await db.find_many<WorkReport>(WORK_REPORTS_COLLECTION, {})
+      const all_reports = await db.find_many<WorkReport>(__work_reports_collection, {})
 
       let reset_count = 0
 
@@ -36,7 +36,7 @@ export async function start_weekly_reset_scheduler(): Promise<void> {
 
         if (needs_reset && (report.total_work_this_week > 0 || report.salary_this_week > 0)) {
           await db.update_one(
-            WORK_REPORTS_COLLECTION,
+            __work_reports_collection,
             { staff_id: report.staff_id },
             {
               ...report,

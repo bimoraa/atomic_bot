@@ -16,7 +16,7 @@ interface AutoReplyConfig {
 }
 
 const channel_cooldowns = new Map<string, number>()
-const COOLDOWN_MS = 15000
+const __cooldown_ms = 15000
 
 function load_auto_reply_configs(): AutoReplyConfig[] {
   try {
@@ -60,7 +60,7 @@ export async function handle_auto_reply(message: Message, client: Client): Promi
   const channel_id  = message.channel.id
   const last_reply  = channel_cooldowns.get(channel_id)
 
-  if (last_reply && now - last_reply < COOLDOWN_MS) {
+  if (last_reply && now - last_reply < __cooldown_ms) {
     return false
   }
 

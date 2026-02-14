@@ -9,8 +9,8 @@ interface voice_interaction {
   timestamp   : number
 }
 
-const COLLECTION            = "voice_interactions"
-const INTERACTION_CACHE_TTL = 30 * 24 * 60 * 60 * 1000
+const __collection            = "voice_interactions"
+const __interaction_cache_ttl = 30 * 24 * 60 * 60 * 1000
 
 /**
  * @param {string} user_id - User who performed action
@@ -26,7 +26,7 @@ export async function track_interaction(
   action_type : string
 ): Promise<void> {
   try {
-    await db.insert_one<voice_interaction>(COLLECTION, {
+    await db.insert_one<voice_interaction>(__collection, {
       user_id,
       target_id,
       guild_id,
@@ -52,9 +52,9 @@ export async function get_suggested_users(
   limit    : number = 25
 ): Promise<string[]> {
   try {
-    const cutoff_time = Date.now() - INTERACTION_CACHE_TTL
+    const cutoff_time = Date.now() - __interaction_cache_ttl
     
-    const interactions = await db.find_many<voice_interaction>(COLLECTION, {
+    const interactions = await db.find_many<voice_interaction>(__collection, {
       user_id,
       guild_id,
     })
@@ -119,7 +119,7 @@ export async function get_suggested_users(
 export async function cleanup_old_interactions(days: number = 30): Promise<void> {
   try {
     const cutoff_time = Date.now() - (days * 24 * 60 * 60 * 1000)
-    const deleted     = await db.delete_many(COLLECTION, {
+    const deleted     = await db.delete_many(__collection, {
       timestamp: { $lt: cutoff_time },
     })
     console.log(`[ - VOICE INTERACTION TRACKER - ] Cleaned up ${deleted} old interactions`)

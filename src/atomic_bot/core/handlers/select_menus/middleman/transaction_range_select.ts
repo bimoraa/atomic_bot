@@ -9,7 +9,7 @@ interface TransactionRange {
   fee          : string
 }
 
-const TRANSACTION_RANGES: Record<string, TransactionRange> = {
+const __transaction_ranges: Record<string, TransactionRange> = {
   "dVzaCndYpO": { id: "dVzaCndYpO", label: "Rp 10.000 – Rp 50.000",   range: "Rp 10.000 – Rp 50.000",   fee: "Rp 1.500" },
   "laf8By4Gtm": { id: "laf8By4Gtm", label: "Rp 50.000 – Rp 100.000",  range: "Rp 50.000 – Rp 100.000",  fee: "Rp 5.000" },
   "1FS1PRT0Ys": { id: "1FS1PRT0Ys", label: "Rp 100.000 – Rp 200.000", range: "Rp 100.000 – Rp 200.000", fee: "Rp 8.000" },
@@ -52,7 +52,7 @@ export async function handle_middleman_transaction_range_select(interaction: Str
   }
 
   const selected_value = interaction.values[0]
-  const range_data     = TRANSACTION_RANGES[selected_value]
+  const range_data     = __transaction_ranges[selected_value]
 
   if (!range_data) {
     await interaction.editReply({ content: "Invalid transaction range selected." })

@@ -6,10 +6,12 @@ import {
   set_ticket,
   save_ticket,
   load_ticket,
+  get_join_claim_cooldown_remaining_ms,
+  activate_join_claim_cooldown,
 } from "./state"
 import { component, api, format } from "../../utils"
 
-const HELPER_ROLE_ID = "1357767950421065981"
+const __helper_role_id = "1357767950421065981"
 
 export async function join_ticket(interaction: ButtonInteraction, ticket_type: string, thread_id: string): Promise<void> {
   await interaction.deferReply({ flags: 32832 } as any)
@@ -21,7 +23,7 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
   }
 
   const member     = interaction.member as GuildMember
-  const is_helper  = member.roles.cache.has(HELPER_ROLE_ID)
+  const is_helper  = member.roles.cache.has(__helper_role_id)
   
   if (ticket_type === "helper") {
     if (!is_admin(member) && !is_staff(member) && !is_helper) {
@@ -40,6 +42,15 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
 
   if (!thread) {
     await interaction.editReply({ content: "Ticket thread not found." })
+    return
+  }
+
+  const cooldown_remaining_ms = get_join_claim_cooldown_remaining_ms(interaction.user.id)
+  if (cooldown_remaining_ms > 0) {
+    const cooldown_remaining_sec = Math.ceil(cooldown_remaining_ms / 1000)
+    await interaction.editReply({
+      content: `Cooldown aktif. Tunggu ${cooldown_remaining_sec} detik sebelum join/claim ticket baru.`,
+    })
     return
   }
 
@@ -81,6 +92,7 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
   }
 
   await thread.members.add(member.id)
+  activate_join_claim_cooldown(interaction.user.id)
 
   data.staff.push(member.id)
   set_ticket(thread_id, data)

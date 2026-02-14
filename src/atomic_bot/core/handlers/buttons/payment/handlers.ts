@@ -3,9 +3,9 @@ import { api, component, time } from "@shared/utils"
 import { create_key_for_project, delete_user_from_project } from "../../../../infrastructure/api/luarmor"
 import { add_work_log } from "@shared/database/trackers/work_tracker"
 
-const ADMIN_ROLE_ID = "1277272542914281512"
-const LOGO_URL = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"
-const LOG_CHANNEL_ID = "1392574025498366061"
+const __admin_role_id   = "1277272542914281512"
+const __logo_url        = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"
+const __log_channel_id  = "1392574025498366061"
 
 function generate_payment_id(): string {
   const random = Math.floor(1000 + Math.random() * 9000)
@@ -87,7 +87,7 @@ function parse_payment_message(message: any): {
 export async function handle_payment_approve(interaction: ButtonInteraction) {
   const member = interaction.member as GuildMember
 
-  if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
+  if (!member.roles.cache.has(__admin_role_id)) {
     await interaction.reply({
       content: "Only admins can approve payments.",
       flags: 64,
@@ -221,7 +221,7 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
               `## <:money:1381580383090380951> | Whitelisted!`,
               `Your payment has been approved and you have been whitelisted!`,
             ],
-            thumbnail: LOGO_URL,
+            thumbnail: __logo_url,
           }),
         ],
       }),
@@ -272,7 +272,7 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
     ],
   })
 
-  await api.send_components_v2(LOG_CHANNEL_ID, api.get_token(), done_message)
+  await api.send_components_v2(__log_channel_id, api.get_token(), done_message)
 
   await api.delete_message(interaction.channelId, interaction.message.id, api.get_token())
 
@@ -282,7 +282,7 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
 export async function handle_payment_reject(interaction: ButtonInteraction) {
   const member = interaction.member as GuildMember
 
-  if (!member.roles.cache.has(ADMIN_ROLE_ID)) {
+  if (!member.roles.cache.has(__admin_role_id)) {
     await interaction.reply({
       content: "Only admins can reject payments.",
       flags: 64,

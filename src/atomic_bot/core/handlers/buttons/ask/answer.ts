@@ -7,8 +7,8 @@ import {
 } from "../../../../modules/staff/staff/ask"
 import { is_staff, is_admin_or_mod } from "@shared/database/settings/permissions"
 
-const ANSWER_LOG_CHANNEL_ID = "1446894637980713090"
-const COLLECTION_NAME       = "answer_stats"
+const __answer_log_channel_id = "1446894637980713090"
+const __collection_name       = "answer_stats"
 
 interface AnswerStat {
   staff_id: string
@@ -29,14 +29,14 @@ async function increment_stat(staff_id: string): Promise<number> {
   const week_key = get_week_key()
   
   await db.update_jsonb_field(
-    COLLECTION_NAME,
+    __collection_name,
     { staff_id },
     "weekly",
     week_key,
     1
   )
 
-  const stat = await db.find_one<AnswerStat>(COLLECTION_NAME, { staff_id })
+  const stat = await db.find_one<AnswerStat>(__collection_name, { staff_id })
   return stat?.weekly?.[week_key] ?? 1
 }
 
@@ -80,7 +80,7 @@ async function log_answer(
   thread_id: string,
   weekly_count: number
 ): Promise<void> {
-  const log_channel = interaction.client.channels.cache.get(ANSWER_LOG_CHANNEL_ID) as TextChannel
+  const log_channel = interaction.client.channels.cache.get(__answer_log_channel_id) as TextChannel
   if (!log_channel) return
 
   const staff        = interaction.member as GuildMember

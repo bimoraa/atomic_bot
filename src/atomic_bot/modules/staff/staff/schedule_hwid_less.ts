@@ -4,10 +4,10 @@ import { update_project_settings } from "../../../infrastructure/api/luarmor"
 import { component, db, logger }   from "@shared/utils"
 
 const __log              = logger.create_logger("schedule_hwid_less")
-const PROJECT_ID         = "6958841b2d9e5e049a24a23e376e0d77"
-const REQUIRED_ROLE_ID   = "1316021423206039596"
-const NOTIFICATION_USER  = "1118453649727823974"
-const COLLECTION         = "hwid_less_schedule"
+const __project_id       = "6958841b2d9e5e049a24a23e376e0d77"
+const __required_role_id = "1316021423206039596"
+const __notification_user= "1118453649727823974"
+const __collection       = "hwid_less_schedule"
 
 interface hwid_less_schedule {
   id?             : any
@@ -52,7 +52,7 @@ export const command: Command = {
     try {
       const member = interaction.member as GuildMember
 
-      if (!member.roles.cache.has(REQUIRED_ROLE_ID)) {
+      if (!member.roles.cache.has(__required_role_id)) {
         await interaction.reply({
           content   : "You do not have permission to use this command.",
           ephemeral : true,
@@ -76,7 +76,7 @@ export const command: Command = {
       }
 
       const existing_schedule = await db.find_one<hwid_less_schedule>(
-        COLLECTION,
+        __collection,
         {
           guild_id : interaction.guildId!,
           enabled  : enabled,
@@ -97,7 +97,7 @@ export const command: Command = {
       }
 
       await db.insert_one<hwid_less_schedule>(
-        COLLECTION,
+        __collection,
         {
           guild_id       : interaction.guildId!,
           channel_id     : interaction.channelId!,
@@ -128,7 +128,7 @@ export const command: Command = {
                 `- Status: **${status}**`,
                 `- Scheduled Time: <t:${scheduled_unix}:F> (<t:${scheduled_unix}:R>)`,
                 `- Scheduled by: <@${interaction.user.id}>`,
-                `- Project \`${PROJECT_ID}\``,
+                `- Project \`${__project_id}\``,
               ]),
             ],
           }),
@@ -207,7 +207,7 @@ async function start_scheduler(client: any): Promise<void> {
       __log.info(`Checking schedules at ${new Date().toISOString()}`)
       
       const schedules = await db.find_many<hwid_less_schedule>(
-        COLLECTION,
+        __collection,
         {
           executed       : false,
           scheduled_time : { $lte: now_seconds },
@@ -220,7 +220,7 @@ async function start_scheduler(client: any): Promise<void> {
         try {
           __log.info(`Executing scheduled HWID-less: ${schedule.enabled}`)
 
-          const result = await update_project_settings(PROJECT_ID, schedule.enabled)
+          const result = await update_project_settings(__project_id, schedule.enabled)
 
           if (result.success) {
             // - USE SAFER FILTER WITH ID - \\
@@ -233,7 +233,7 @@ async function start_scheduler(client: any): Promise<void> {
                 }
 
             await db.update_one(
-              COLLECTION,
+              __collection,
               filter_query,
               { executed: true }
             )
@@ -258,7 +258,7 @@ async function start_scheduler(client: any): Promise<void> {
                           `- Status: **${status}**`,
                           `- Scheduled by: <@${schedule.created_by}>`,
                           `- Executed at: <t:${Math.floor(Date.now() / 1000)}:F>`,
-                          `- Project \`${PROJECT_ID}\``,
+                          `- Project \`${__project_id}\``,
                         ]),
                       ],
                     }),
@@ -272,7 +272,7 @@ async function start_scheduler(client: any): Promise<void> {
             }
 
             try {
-              const notification_user = await client.users.fetch(NOTIFICATION_USER)
+              const notification_user = await client.users.fetch(__notification_user)
               const dm_message        = component.build_message({
                 components: [
                   component.container({
@@ -288,7 +288,7 @@ async function start_scheduler(client: any): Promise<void> {
                         `- Status: **${status}**`,
                         `- Scheduled by: <@${schedule.created_by}>`,
                         `- Executed at: <t:${Math.floor(Date.now() / 1000)}:F>`,
-                        `- Project \`${PROJECT_ID}\``,
+                        `- Project \`${__project_id}\``,
                       ]),
                     ],
                   }),

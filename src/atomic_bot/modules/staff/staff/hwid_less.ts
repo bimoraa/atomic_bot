@@ -3,9 +3,9 @@ import { Command } from "@shared/types/command"
 import { update_project_settings } from "../../../infrastructure/api/luarmor"
 import { component } from "@shared/utils"
 
-const PROJECT_ID         = "6958841b2d9e5e049a24a23e376e0d77"
-const REQUIRED_ROLE_ID   = "1316021423206039596"
-const NOTIFICATION_USER  = "1118453649727823974"
+const __project_id         = "6958841b2d9e5e049a24a23e376e0d77"
+const __required_role_id   = "1316021423206039596"
+const __notification_user  = "1118453649727823974"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -21,7 +21,7 @@ export const command: Command = {
     try {
       const member = interaction.member as GuildMember
 
-      if (!member.roles.cache.has(REQUIRED_ROLE_ID)) {
+      if (!member.roles.cache.has(__required_role_id)) {
         await interaction.reply({
           content: "You do not have permission to use this command.",
           flags: 64,
@@ -33,7 +33,7 @@ export const command: Command = {
 
       const value = interaction.options.getBoolean("value", true)
 
-      const result = await update_project_settings(PROJECT_ID, value)
+      const result = await update_project_settings(__project_id, value)
 
       if (!result.success) {
         const error_message = component.build_message({
@@ -72,7 +72,7 @@ export const command: Command = {
                 "## Details:",
                 `- Status: **${status}**`,
                 `- Updated by: <@${interaction.user.id}>`,
-                `- Project \`${PROJECT_ID}\``,
+                `- Project \`${__project_id}\``,
                 ``,
                 ``,
               ]),
@@ -84,7 +84,7 @@ export const command: Command = {
       await interaction.editReply(success_message)
 
       try {
-        const notification_user = await interaction.client.users.fetch(NOTIFICATION_USER)
+        const notification_user = await interaction.client.users.fetch(__notification_user)
         const dm_message        = component.build_message({
           components: [
             component.container({
@@ -100,7 +100,7 @@ export const command: Command = {
                   `- Status: **${status}**`,
                   `- Updated by: <@${interaction.user.id}> (\`${interaction.user.tag}\`)`,
                   `- Server: **${interaction.guild?.name}**`,
-                  `- Project \`${PROJECT_ID}\``,
+                  `- Project \`${__project_id}\``,
                   ``,
                   ``,
                 ]),

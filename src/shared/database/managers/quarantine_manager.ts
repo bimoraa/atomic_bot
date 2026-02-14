@@ -1,6 +1,6 @@
 import { db } from "../../utils"
 
-const COLLECTION = "quarantined_members"
+const __collection = "quarantined_members"
 
 interface quarantined_member {
   _id?         : any
@@ -38,7 +38,7 @@ export async function add_quarantine(
   const now        = Math.floor(Date.now() / 1000)
   const release_at = now + (days * 24 * 60 * 60)
 
-  await db.insert_one<quarantined_member>(COLLECTION, {
+  await db.insert_one<quarantined_member>(__collection, {
     user_id,
     guild_id,
     quarantine_role_id,
@@ -58,7 +58,7 @@ export async function add_quarantine(
  * @returns Promise<void>
  */
 export async function remove_quarantine(user_id: string, guild_id: string): Promise<void> {
-  await db.delete_one(COLLECTION, { user_id, guild_id })
+  await db.delete_one(__collection, { user_id, guild_id })
 }
 
 /**
@@ -68,7 +68,7 @@ export async function remove_quarantine(user_id: string, guild_id: string): Prom
  * @returns Promise with quarantine data or null
  */
 export async function get_quarantine(user_id: string, guild_id: string): Promise<quarantined_member | null> {
-  return db.find_one<quarantined_member>(COLLECTION, { user_id, guild_id })
+  return db.find_one<quarantined_member>(__collection, { user_id, guild_id })
 }
 
 /**
@@ -88,7 +88,7 @@ export async function is_quarantined(user_id: string, guild_id: string): Promise
  * @returns Promise with array of quarantined members
  */
 export async function get_guild_quarantines(guild_id: string): Promise<quarantined_member[]> {
-  return db.find_many<quarantined_member>(COLLECTION, { guild_id })
+  return db.find_many<quarantined_member>(__collection, { guild_id })
 }
 
 /**
@@ -97,7 +97,7 @@ export async function get_guild_quarantines(guild_id: string): Promise<quarantin
  */
 export async function get_expired_quarantines(): Promise<quarantined_member[]> {
   const now = Math.floor(Date.now() / 1000)
-  return db.find_many<quarantined_member>(COLLECTION, {})
+  return db.find_many<quarantined_member>(__collection, {})
     .then(quarantines => quarantines.filter(q => q.release_at <= now))
 }
 

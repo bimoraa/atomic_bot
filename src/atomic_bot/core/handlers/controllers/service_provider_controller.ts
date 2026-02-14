@@ -3,18 +3,18 @@ import { db, component }         from "@shared/utils"
 import { log_error }             from "@shared/utils/error_logger"
 import * as luarmor              from "../../../infrastructure/api/luarmor"
 
-const RESET_COLLECTION            = "service_provider_resets"
-const USER_CACHE_COLLECTION       = "service_provider_user_cache"
-const HWID_RESET_TRACKER          = "hwid_reset_tracker"
-const HWID_RESET_CACHE            = "hwid_reset_cache"
-const HWID_LESS_STATUS_COLLECTION = "hwid_less_status"
-const HWID_LESS_STATUS_KEY        = "auto_hwid_less"
-const CACHE_DURATION_MS           = 120 * 60 * 1000
-const RESET_CACHE_TTL_MS          = 30000
-const RESET_THRESHOLD             = 100
-const HWID_LESS_DURATION_MS       = 60 * 60 * 1000
-const PROJECT_ID                  = "6958841b2d9e5e049a24a23e376e0d77"
-const NOTIFICATION_USER           = "1118453649727823974"
+const __reset_collection            = "service_provider_resets"
+const __user_cache_collection       = "service_provider_user_cache"
+const __hwid_reset_tracker          = "hwid_reset_tracker"
+const __hwid_reset_cache            = "hwid_reset_cache"
+const __hwid_less_status_collection = "hwid_less_status"
+const __hwid_less_status_key        = "auto_hwid_less"
+const __cache_duration_ms           = 120 * 60 * 1000
+const __reset_cache_ttl_ms          = 30000
+const __reset_threshold             = 100
+const __hwid_less_duration_ms       = 60 * 60 * 1000
+const __project_id                  = "6958841b2d9e5e049a24a23e376e0d77"
+const __notification_user           = "1118453649727823974"
 
 let __auto_hwid_less_lock          = false
 let __auto_disable_timer           : NodeJS.Timeout | null = null
@@ -106,7 +106,7 @@ async function get_cached_user(user_id: string): Promise<luarmor.luarmor_user | 
       return null
     }
 
-    const cached = await db.find_one<cached_user>(USER_CACHE_COLLECTION, { user_id })
+    const cached = await db.find_one<cached_user>(__user_cache_collection, { user_id })
 
     if (!cached) {
       console.log(`[ - SERVICE PROVIDER CACHE - ] Cache miss for user_id: ${user_id}`)
@@ -114,7 +114,7 @@ async function get_cached_user(user_id: string): Promise<luarmor.luarmor_user | 
     }
 
     const now = Date.now()
-    if (now - cached.cached_at > CACHE_DURATION_MS) {
+    if (now - cached.cached_at > __cache_duration_ms) {
       console.log(`[ - SERVICE PROVIDER CACHE - ] Cache expired for user_id: ${user_id} (age: ${Math.floor((now - cached.cached_at) / 1000)}s)`)
       return null
     }
@@ -142,7 +142,7 @@ async function save_cached_user(user_id: string, user_data: luarmor.luarmor_user
 
     const now = Date.now()
     await db.update_one<cached_user>(
-      USER_CACHE_COLLECTION,
+      __user_cache_collection,
       { user_id },
       {
         user_id      : user_id,
@@ -188,12 +188,12 @@ interface hwid_reset_cache_entry {
  */
 async function get_cached_reset_count(): Promise<number | null> {
   try {
-    const cached = await db.find_one<hwid_reset_cache_entry>(HWID_RESET_CACHE, {})
+    const cached = await db.find_one<hwid_reset_cache_entry>(__hwid_reset_cache, {})
 
     if (!cached) return null
 
     const now = Date.now()
-    if (now - cached.cached_at > RESET_CACHE_TTL_MS) {
+    if (now - cached.cached_at > __reset_cache_ttl_ms) {
       return null
     }
 
@@ -210,9 +210,9 @@ async function get_cached_reset_count(): Promise<number | null> {
  */
 async function save_reset_count_cache(reset_count: number): Promise<void> {
   try {
-    await db.delete_many(HWID_RESET_CACHE, {})
+    await db.delete_many(__hwid_reset_cache, {})
 
-    await db.insert_one(HWID_RESET_CACHE, {
+    await db.insert_one(__hwid_reset_cache, {
       reset_count : reset_count,
       cached_at   : Date.now(),
     })
@@ -228,12 +228,12 @@ async function save_reset_count_cache(reset_count: number): Promise<void> {
  */
 async function track_hwid_reset(user_id: string): Promise<void> {
   try {
-    await db.insert_one(HWID_RESET_TRACKER, {
+    await db.insert_one(__hwid_reset_tracker, {
       user_id   : user_id,
       timestamp : Date.now(),
     })
 
-    await db.delete_many(HWID_RESET_CACHE, {})
+    await db.delete_many(__hwid_reset_cache, {})
   } catch (error) {
     console.error("[ - HWID RESET TRACKER - ] Failed to track reset:", error)
   }
@@ -252,11 +252,11 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
 
     if (cached_count !== null) {
       reset_count = cached_count
-      console.log(`[ - HWID RESET TRACKER - ] Using cached reset count: ${reset_count}/${RESET_THRESHOLD}`)
+      console.log(`[ - HWID RESET TRACKER - ] Using cached reset count: ${reset_count}/${__reset_threshold}`)
     } else {
       const one_minute_ago = Date.now() - 60000
 
-      const recent_resets = await db.find_many<hwid_reset_request>(HWID_RESET_TRACKER, {
+      const recent_resets = await db.find_many<hwid_reset_request>(__hwid_reset_tracker, {
         timestamp: { $gte: one_minute_ago },
       })
 
@@ -264,10 +264,10 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
 
       await save_reset_count_cache(reset_count)
 
-      console.log(`[ - HWID RESET TRACKER - ] Resets in last minute: ${reset_count}/${RESET_THRESHOLD}`)
+      console.log(`[ - HWID RESET TRACKER - ] Resets in last minute: ${reset_count}/${__reset_threshold}`)
     }
 
-    if (reset_count >= RESET_THRESHOLD) {
+    if (reset_count >= __reset_threshold) {
       if (__auto_hwid_less_lock) {
         console.log("[ - HWID RESET TRACKER - ] Auto HWID less already processing")
       } else {
@@ -275,9 +275,9 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
 
         try {
           const existing_status = await db.find_one<hwid_less_status>(
-            HWID_LESS_STATUS_COLLECTION,
+            __hwid_less_status_collection,
             {
-              status_key : HWID_LESS_STATUS_KEY,
+              status_key : __hwid_less_status_key,
               enabled    : true,
               expires_at : { $gt: Date.now() },
             }
@@ -293,17 +293,17 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
               schedule_auto_disable(client, existing_status.expires_at)
             }
           } else {
-            const enable_result = await luarmor.update_project_settings(PROJECT_ID, true)
+            const enable_result = await luarmor.update_project_settings(__project_id, true)
 
             if (enable_result.success) {
               const now = Date.now()
-              const expires_at = now + HWID_LESS_DURATION_MS
+              const expires_at = now + __hwid_less_duration_ms
 
               await db.update_one<hwid_less_status>(
-                HWID_LESS_STATUS_COLLECTION,
-                { status_key: HWID_LESS_STATUS_KEY },
+                __hwid_less_status_collection,
+                { status_key: __hwid_less_status_key },
                 {
-                  status_key          : HWID_LESS_STATUS_KEY,
+                  status_key          : __hwid_less_status_key,
                   enabled             : true,
                   enabled_at          : now,
                   expires_at          : expires_at,
@@ -318,7 +318,7 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
               console.log(`[ - HWID RESET TRACKER - ] Auto-enabled HWID less for 1 hour (${reset_count} requests)`)
 
               try {
-                const notification_user = await client.users.fetch(NOTIFICATION_USER)
+                const notification_user = await client.users.fetch(__notification_user)
                 const message = component.build_message({
                   components: [
                     component.container({
@@ -333,7 +333,7 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
                           "## Details:",
                           `- Trigger: **Auto (High Reset Requests)**`,
                           `- Reset Count: **${reset_count} requests in 1 minute**`,
-                          `- Threshold: **${RESET_THRESHOLD} requests/minute**`,
+                          `- Threshold: **${__reset_threshold} requests/minute**`,
                           `- Duration: **1 hour**`,
                           `- Expires: <t:${Math.floor(expires_at / 1000)}:R>`,
                           ``,
@@ -361,7 +361,7 @@ async function check_and_enable_hwid_less(client: Client): Promise<void> {
     }
 
     const old_timestamp = Date.now() - 300000
-    await db.delete_many(HWID_RESET_TRACKER, {
+    await db.delete_many(__hwid_reset_tracker, {
       timestamp: { $lt: old_timestamp },
     })
   } catch (error) {
@@ -399,8 +399,8 @@ function schedule_auto_disable(client: Client, expires_at: number): void {
 async function run_auto_disable(client: Client, expected_expires_at: number): Promise<void> {
   try {
     const status = await db.find_one<hwid_less_status>(
-      HWID_LESS_STATUS_COLLECTION,
-      { status_key: HWID_LESS_STATUS_KEY }
+      __hwid_less_status_collection,
+      { status_key: __hwid_less_status_key }
     )
 
     if (!status || !status.enabled) {
@@ -415,7 +415,7 @@ async function run_auto_disable(client: Client, expected_expires_at: number): Pr
       return
     }
 
-    const disable_result = await luarmor.update_project_settings(PROJECT_ID, false)
+    const disable_result = await luarmor.update_project_settings(__project_id, false)
     if (!disable_result.success) {
       console.error("[ - HWID RESET TRACKER - ] Failed to auto-disable HWID less:", disable_result.error)
       return
@@ -423,9 +423,9 @@ async function run_auto_disable(client: Client, expected_expires_at: number): Pr
 
     const now = Date.now()
     const updated = await db.update_one<hwid_less_status>(
-      HWID_LESS_STATUS_COLLECTION,
+      __hwid_less_status_collection,
       {
-        status_key : HWID_LESS_STATUS_KEY,
+        status_key : __hwid_less_status_key,
         enabled    : true,
         expires_at : expected_expires_at,
       },
@@ -443,7 +443,7 @@ async function run_auto_disable(client: Client, expected_expires_at: number): Pr
     console.log("[ - HWID RESET TRACKER - ] Auto-disabled HWID less after 1 hour")
 
     try {
-      const notification_user = await client.users.fetch(NOTIFICATION_USER)
+      const notification_user = await client.users.fetch(__notification_user)
       const message = component.build_message({
         components: [
           component.container({

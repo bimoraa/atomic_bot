@@ -19,13 +19,13 @@ import {
 import { logger, component, format }    from "../../utils"
 import { track_deleted_message }        from "../../../atomic_bot/infrastructure/cache/snipe"
 
-const log            = logger.create_logger("audit_log")
-const LOG_CHANNEL_ID = "1452086939866894420"
-const OWNER_ID       = "1118453649727823974"
+const log                  = logger.create_logger("audit_log")
+const __log_channel_id     = "1452086939866894420"
+const __owner_id           = "1118453649727823974"
 
 const avatar_cache = new Map<string, string>()
 
-const COLOR = {
+const __color = {
   CREATE : 0x57F287,
   UPDATE : 0xFEE75C,
   DELETE : 0xED4245,
@@ -36,6 +36,8 @@ const COLOR = {
   TIMEOUT: 0xFEE75C,
   INFO   : 0x5865F2,
 }
+
+const color = __color
 
 async function get_avatar_url(user: User): Promise<string> {
   const user_id = user.id
@@ -56,7 +58,7 @@ async function get_avatar_url(user: User): Promise<string> {
 
 async function send_log(client: Client, log_message: any): Promise<void> {
   try {
-    const log_channel = await client.channels.fetch(LOG_CHANNEL_ID) as TextChannel
+    const log_channel = await client.channels.fetch(__log_channel_id) as TextChannel
     if (!log_channel || !log_channel.isTextBased()) return
 
     await log_channel.send({
@@ -104,7 +106,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.UPDATE,
+          accent_color: __color.UPDATE,
           components: [
             component.section({
               content: content_parts.join("\n"),
@@ -121,7 +123,7 @@ export function register_audit_logs(client: Client): void {
   client.on("messageDelete", async (message) => {
     if (!message.guild) return
 
-    const is_log_channel = message.channel.id === LOG_CHANNEL_ID
+    const is_log_channel = message.channel.id === __log_channel_id
 
     if (is_log_channel) {
       let executor_id  = "Unknown"
@@ -136,7 +138,7 @@ export function register_audit_logs(client: Client): void {
         const entry = audit_logs.entries.find((audit) => {
           const audit_channel = (audit.extra as any)?.channel?.id
           const recent        = Date.now() - audit.createdTimestamp < 10000
-          return audit_channel === LOG_CHANNEL_ID && recent
+          return audit_channel === __log_channel_id && recent
         })
 
         if (entry?.executor) {
@@ -146,7 +148,7 @@ export function register_audit_logs(client: Client): void {
       } catch {}
 
       try {
-        const owner_user    = await client.users.fetch(OWNER_ID)
+        const owner_user    = await client.users.fetch(__owner_id)
         const content_text  = message.content?.trim() || "(empty)"
         const created_ts    = message.createdTimestamp ? Math.floor(message.createdTimestamp / 1000) : Math.floor(Date.now() / 1000)
         const deleted_ts    = Math.floor(Date.now() / 1000)
@@ -160,12 +162,12 @@ export function register_audit_logs(client: Client): void {
         const warning_message = component.build_message({
           components: [
             component.container({
-              accent_color: COLOR.DELETE,
+              accent_color: __color.DELETE,
               components: [
                 component.section({
                   content: [
                     "## Audit Log Message Deleted",
-                    `- Channel: <#${LOG_CHANNEL_ID}>`,
+                    `- Channel: <#${__log_channel_id}>`,
                     `- Executor: ${executor_text}`,
                     `- Original Author: ${author_text}`,
                     `- Message ID: ${message.id}`,
@@ -215,7 +217,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.DELETE,
+          accent_color: __color.DELETE,
           components: [
             component.section({
               content: [
@@ -240,7 +242,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.JOIN,
+          accent_color: __color.JOIN,
           components: [
             component.section({
               content: [
@@ -277,7 +279,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.LEAVE,
+          accent_color: __color.LEAVE,
           components: [
             component.section({
               content: [
@@ -327,7 +329,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.section({
                 content: [
@@ -364,7 +366,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.section({
                 content: [
@@ -409,7 +411,7 @@ export function register_audit_logs(client: Client): void {
         const log_message = component.build_message({
           components: [
             component.container({
-              accent_color: COLOR.TIMEOUT,
+              accent_color: __color.TIMEOUT,
               components: [
                 component.section({
                   content: [
@@ -431,7 +433,7 @@ export function register_audit_logs(client: Client): void {
         const log_message = component.build_message({
           components: [
             component.container({
-              accent_color: COLOR.UPDATE,
+              accent_color: __color.UPDATE,
               components: [
                 component.section({
                   content: [
@@ -469,7 +471,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.BAN,
+          accent_color: __color.BAN,
           components: [
             component.section({
               content: [
@@ -506,7 +508,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.UNBAN,
+          accent_color: __color.UNBAN,
           components: [
             component.section({
               content: [
@@ -530,7 +532,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.CREATE,
+          accent_color: __color.CREATE,
           components: [
             component.text([
               "### Channel Created",
@@ -551,7 +553,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.DELETE,
+          accent_color: __color.DELETE,
           components: [
             component.text([
               "### Channel Deleted",
@@ -573,7 +575,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.text([
                 "### Channel Renamed",
@@ -594,7 +596,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.CREATE,
+          accent_color: __color.CREATE,
           components: [
             component.text([
               "### Role Created",
@@ -613,7 +615,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.DELETE,
+          accent_color: __color.DELETE,
           components: [
             component.text([
               "### Role Deleted",
@@ -632,7 +634,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.text([
                 "### Role Renamed",
@@ -656,7 +658,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.DELETE,
+          accent_color: __color.DELETE,
           components: [
             component.text([
               "### Bulk Message Delete",
@@ -680,7 +682,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.JOIN,
+            accent_color: __color.JOIN,
             components: [
               component.section({
                 content: [
@@ -702,7 +704,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.LEAVE,
+            accent_color: __color.LEAVE,
             components: [
               component.section({
                 content: [
@@ -724,7 +726,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.section({
                 content: [
@@ -749,7 +751,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.section({
                 content: [
@@ -773,7 +775,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.section({
                 content: [
@@ -796,7 +798,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.CREATE,
+          accent_color: __color.CREATE,
           components: [
             component.text([
               "### Emoji Created",
@@ -815,7 +817,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.DELETE,
+          accent_color: __color.DELETE,
           components: [
             component.text([
               "### Emoji Deleted",
@@ -835,7 +837,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.text([
                 "### Emoji Renamed",
@@ -855,7 +857,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.CREATE,
+          accent_color: __color.CREATE,
           components: [
             component.text([
               "### Sticker Created",
@@ -874,7 +876,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.DELETE,
+          accent_color: __color.DELETE,
           components: [
             component.text([
               "### Sticker Deleted",
@@ -894,7 +896,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.text([
                 "### Sticker Renamed",
@@ -914,7 +916,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.CREATE,
+          accent_color: __color.CREATE,
           components: [
             component.text([
               "### Invite Created",
@@ -936,7 +938,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.DELETE,
+          accent_color: __color.DELETE,
           components: [
             component.text([
               "### Invite Deleted",
@@ -955,7 +957,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.CREATE,
+          accent_color: __color.CREATE,
           components: [
             component.text([
               "### Thread Created",
@@ -975,7 +977,7 @@ export function register_audit_logs(client: Client): void {
     const log_message = component.build_message({
       components: [
         component.container({
-          accent_color: COLOR.DELETE,
+          accent_color: __color.DELETE,
           components: [
             component.text([
               "### Thread Deleted",
@@ -995,7 +997,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.text([
                 "### Thread Renamed",
@@ -1015,7 +1017,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.text([
                 "### Thread Archive Status",
@@ -1034,7 +1036,7 @@ export function register_audit_logs(client: Client): void {
       const log_message = component.build_message({
         components: [
           component.container({
-            accent_color: COLOR.UPDATE,
+            accent_color: __color.UPDATE,
             components: [
               component.text([
                 "### Thread Lock Status",

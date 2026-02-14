@@ -9,12 +9,12 @@ import { add_work_log }                   from "@shared/database/trackers/work_t
 
 const payment_cfg             = load_config<{ submit_channel_id: string }>("payment")
 const payment_channel_id      = payment_cfg.submit_channel_id
-const ALLOWED_PARENT_CHANNEL  = "1250446131993903114"
-const LOGO_URL                = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"
-const LOG_CHANNEL_ID          = "1392574025498366061"
-const WHITELIST_PROJECT_ID    = "6958841b2d9e5e049a24a23e376e0d77"
-const BOT_USER_ID             = "1118453649727823974"
-const MAX_WHITELIST_RETRIES   = 3
+const __allowed_parent_channel  = "1250446131993903114"
+const __logo_url                = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"
+const __log_channel_id          = "1392574025498366061"
+const __whitelist_project_id    = "6958841b2d9e5e049a24a23e376e0d77"
+const __bot_user_id             = "1118453649727823974"
+const __max_whitelist_retries   = 3
 
 /**
  * Sleep for specified milliseconds.
@@ -139,13 +139,13 @@ async function auto_approve_payment(
   const message_link = `https://discord.com/channels/${interaction.guildId}/${payment_channel_id}/${pending_message_id}`
   const whitelist_note = `AUTO-WHITELISTED by submit-payment - at ${time.full_date_time(time.now())}`
 
-  await delete_user_from_project(WHITELIST_PROJECT_ID, customer_id)
+  await delete_user_from_project(__whitelist_project_id, customer_id)
 
   let whitelist_result: any = null
   let retry_count = 0
   let last_error: Error | null = null
 
-  while (retry_count < MAX_WHITELIST_RETRIES) {
+  while (retry_count < __max_whitelist_retries) {
     try {
       if (retry_count > 0) {
         const retry_delay = Math.pow(2, retry_count) * 1000
@@ -157,7 +157,7 @@ async function auto_approve_payment(
               components: [
                 component.text([
                   "## <:rbx:1447976733050667061> | New Payment",
-                  `> Retrying whitelist (Attempt ${retry_count + 1}/${MAX_WHITELIST_RETRIES})...`,
+                  `> Retrying whitelist (Attempt ${retry_count + 1}/${__max_whitelist_retries})...`,
                   "",
                   `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
                   `- <:USERS:1381580388119613511> Customer: <@${customer_id}>`,
@@ -186,7 +186,7 @@ async function auto_approve_payment(
         )
       }
 
-      whitelist_result = await create_key_for_project(WHITELIST_PROJECT_ID, {
+      whitelist_result = await create_key_for_project(__whitelist_project_id, {
         discord_id: customer_id,
         note      : whitelist_note,
       })
@@ -245,7 +245,7 @@ async function auto_approve_payment(
               "## <:money:1381580383090380951> | Whitelisted!",
               "Your payment has been approved and you have been whitelisted!",
             ],
-            thumbnail: LOGO_URL,
+            thumbnail: __logo_url,
           }),
         ],
       }),
@@ -287,7 +287,7 @@ async function auto_approve_payment(
               `- <:OLOCK:1381580385892171816> Time: ${time.full_date_time(timestamp)}`,
               "",
               "### Approval Information",
-              `- <:USERS:1381580388119613511> Approved by: <@${BOT_USER_ID}>`,
+              `- <:USERS:1381580388119613511> Approved by: <@${__bot_user_id}>`,
               `- <:app:1381680319207575552> Payment ID: **${payment_id}**`,
             ]),
             component.divider(2),
@@ -300,7 +300,7 @@ async function auto_approve_payment(
       ],
     })
 
-    await api.send_components_v2(LOG_CHANNEL_ID, api.get_token(), done_message)
+    await api.send_components_v2(__log_channel_id, api.get_token(), done_message)
   } catch (log_err) {
     console.error(`[ - SUBMIT PAYMENT - ] Failed to send log message:`, log_err)
   }
@@ -382,11 +382,11 @@ export const command: Command = {
       const current_channel = interaction.channel
 
       const is_valid_thread = current_channel?.isThread() && 
-        (current_channel as ThreadChannel).parentId === ALLOWED_PARENT_CHANNEL
+        (current_channel as ThreadChannel).parentId === __allowed_parent_channel
 
       if (!is_valid_thread) {
         await interaction.reply({
-          content: `This command can only be used in threads under <#${ALLOWED_PARENT_CHANNEL}>`,
+          content: `This command can only be used in threads under <#${__allowed_parent_channel}>`,
           flags  : MessageFlags.Ephemeral,
         })
         return
@@ -546,7 +546,7 @@ export const command: Command = {
               components: [
                 component.text([
                   "## <:rbx:1447976733050667061> | New Payment",
-                  `> Auto-approval failed after ${MAX_WHITELIST_RETRIES} attempts. Manual approval required.`,
+                  `> Auto-approval failed after ${__max_whitelist_retries} attempts. Manual approval required.`,
                   "",
                   `- <:money:1381580383090380951> Amount: **${formatted_amount}**`,
                   `- <:USERS:1381580388119613511> Customer: <@${customer.id}>`,
@@ -574,7 +574,7 @@ export const command: Command = {
           manual_approval_message
         )
 
-        await interaction.editReply({ content: `Auto-approval failed after ${MAX_WHITELIST_RETRIES} attempts. Payment submitted for manual approval.` })
+        await interaction.editReply({ content: `Auto-approval failed after ${__max_whitelist_retries} attempts. Payment submitted for manual approval.` })
         return
       }
     } catch (err) {

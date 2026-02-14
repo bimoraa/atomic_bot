@@ -14,7 +14,7 @@ interface hwid_less_schedule {
   created_at     : Date
 }
 
-const COLLECTION = "hwid_less_schedule"
+const __collection = "hwid_less_schedule"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -26,7 +26,7 @@ export const command: Command = {
     await interaction.deferReply({ ephemeral: true })
 
     const schedules = await db.find_many_sorted<hwid_less_schedule>(
-      COLLECTION,
+      __collection,
       { guild_id: interaction.guildId! },
       "scheduled_time",
       "ASC"

@@ -9,7 +9,7 @@ interface invite_logger_config {
 
 const config = load_config<invite_logger_config>("invite_logger")
 
-const INVITE_LEADERBOARD_COLLECTION = "invite_leaderboard"
+const __invite_leaderboard_collection = "invite_leaderboard"
 
 interface invite_snapshot {
   code        : string
@@ -168,13 +168,13 @@ async function increment_invite_leaderboard(client: Client, guild: Guild, invite
     const inviter_tag = invite.inviter_tag || "Unknown"
 
     const existing = await db.find_one<{ guild_id: string; inviter_id: string; inviter_tag: string; total_invite: number }>(
-      INVITE_LEADERBOARD_COLLECTION,
+      __invite_leaderboard_collection,
       { guild_id: guild.id, inviter_id: inviter_id }
     )
 
     const next_total = (existing?.total_invite || 0) + 1
     await db.update_one(
-      INVITE_LEADERBOARD_COLLECTION,
+      __invite_leaderboard_collection,
       { guild_id: guild.id, inviter_id: inviter_id },
       { guild_id: guild.id, inviter_id: inviter_id, inviter_tag: inviter_tag, total_invite: next_total },
       true

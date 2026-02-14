@@ -12,14 +12,14 @@ interface RolesMapping {
   [key: string]: string
 }
 
-const PERMISSIONS_DIR = join(__dirname, "../permissions")
-const ROLES_PATH      = join(PERMISSIONS_DIR, "roles.cfg")
+const __permissions_dir = join(__dirname, "../permissions")
+const __roles_path      = join(__permissions_dir, "roles.cfg")
 
 function load_roles_mapping(): RolesMapping {
   return cache.get_or_set("roles_mapping", () => {
-    if (!file.exists(ROLES_PATH)) return {}
+    if (!file.exists(__roles_path)) return {}
     try {
-      return file.read_json<RolesMapping>(ROLES_PATH)
+      return file.read_json<RolesMapping>(__roles_path)
     } catch {
       return {}
     }
@@ -28,7 +28,7 @@ function load_roles_mapping(): RolesMapping {
 
 function load_command_permission(command_name: string): CommandPermission | null {
   return cache.get_or_set(`perm_${command_name}`, () => {
-    const perm_path = join(PERMISSIONS_DIR, `${command_name}.cfg`)
+    const perm_path = join(__permissions_dir, `${command_name}.cfg`)
     if (!file.exists(perm_path)) return null
     try {
       return file.read_json<CommandPermission>(perm_path)

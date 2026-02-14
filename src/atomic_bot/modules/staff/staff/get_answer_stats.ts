@@ -3,7 +3,7 @@ import { Command } from "@shared/types/command"
 import { component, api, db } from "@shared/utils"
 import { staff_role_id } from "@shared/database/settings/permissions"
 
-const COLLECTION_NAME = "answer_stats"
+const __collection_name = "answer_stats"
 
 interface AnswerStat {
   staff_id: string
@@ -22,7 +22,7 @@ function get_week_key(): string {
 
 export async function get_staff_stats(staff_id: string): Promise<AnswerStat | null> {
   if (!db.is_connected()) return null
-  return db.find_one<AnswerStat>(COLLECTION_NAME, { staff_id })
+  return db.find_one<AnswerStat>(__collection_name, { staff_id })
 }
 
 export function build_stats_panel(

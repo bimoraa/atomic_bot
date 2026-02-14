@@ -23,7 +23,7 @@ interface release_quarantine_options {
   user_id  : string
 }
 
-const QUARANTINE_ROLE_ID = "1265318689130024992"
+const __quarantine_role_id = "1265318689130024992"
 
 /**
  * @description Get quarantine role for a guild
@@ -31,8 +31,8 @@ const QUARANTINE_ROLE_ID = "1265318689130024992"
  * @returns Promise<Role | null>
  */
 async function get_quarantine_role(guild: Guild): Promise<Role | null> {
-  const quarantine_role = guild.roles.cache.get(QUARANTINE_ROLE_ID) || 
-                          await guild.roles.fetch(QUARANTINE_ROLE_ID).catch(() => null)
+  const quarantine_role = guild.roles.cache.get(__quarantine_role_id) || 
+                          await guild.roles.fetch(__quarantine_role_id).catch(() => null)
   
   return quarantine_role
 }
