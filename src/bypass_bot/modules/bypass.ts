@@ -2,6 +2,8 @@ import {
   ChatInputCommandInteraction, 
   SlashCommandBuilder,
 } from "discord.js"
+import fs from "fs"
+import path from "path"
 import { Command } from "@shared/types/command"
 import { bypass_link } from "@shared/services/bypass_service"
 import * as component from "@shared/utils/components"
@@ -136,15 +138,19 @@ const bypass_command: Command = {
         return
       }
 
+      const client_id  = interaction.client.user?.id || ""
+      const invite_url = client_id
+        ? `https://discord.com/api/oauth2/authorize?client_id=${client_id}&permissions=0&scope=bot%20applications.commands`
+        : "https://discord.com/oauth2/authorize"
+
       const processing_message = component.build_message({
         components: [
           component.container({
             components: [
-              component.text([
-                "## <a:GTA_Loading:1459707117840629832> Processing...",
-                "",
-                "Bypassing link, please wait...",
-              ]),
+              component.section({
+                content   : "## <a:GTA_Loading:1459707117840629832> - Bypassing Link\nHang on! We're processing your bypass.\n",
+                accessory : component.link_button("Invite BOT", invite_url),
+              }),
             ],
           }),
         ],
@@ -197,17 +203,17 @@ const bypass_command: Command = {
           component.container({
             components: [
               component.section({
-                content   : "## <:checkmark:1417196825110253780> Bypass Completed Successfully\nThe bypass process has finished successfully. Use `/bypass` or send a link to bypass.",
-                thumbnail : "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true",
+                content   : "## <:checkmark:1417196825110253780> - Bypass Completed\nYour bypass was completed successfully. Use /bypass or send a link to start another bypass.\n",
+                accessory : component.thumbnail("attachment://BYPASS.png"),
               }),
             ],
           }),
           component.container({
             components: [
-              component.text(`## <:rbx:1447976733050667061> Desktop Copy:\n\`\`\`\n${result.result}\n\`\`\``),
+              component.text(`## <:rbx:1447976733050667061> - Desktop Copy\n\`\`\`\n${result.result}\n\`\`\``),
               component.divider(2),
               component.section({
-                content   : `Completed in ${result.time}s • Requested by <@${interaction.user.id}>`,
+                content   : `Completed in ${result.time}s • Requested by <@${interaction.user.id}> `,
                 accessory : component.secondary_button(
                   "Mobile Copy",
                   `bypass_mobile_copy:${interaction.user.id}:${interaction.id}`
@@ -215,11 +221,28 @@ const bypass_command: Command = {
               }),
             ],
           }),
+          component.container({
+            components: [
+              component.section({
+                content   : "Want to invite the bot to your server? Click here →",
+                accessory : component.link_button("Invite BOT", invite_url),
+              }),
+            ],
+          }),
         ],
       })
 
+      const bypass_image_path = path.join(process.cwd(), "assets", "images", "BYPASS.png")
+      const has_bypass_image  = fs.existsSync(bypass_image_path)
+      const bypass_image      = has_bypass_image ? fs.readFileSync(bypass_image_path) : undefined
+
       console.log(`[ - BYPASS COMMAND - ] Sending success message...`)
-      const send_result = await api.edit_deferred_reply(interaction, success_message)
+      const send_result = has_bypass_image && bypass_image
+        ? await api.edit_deferred_reply_with_files(interaction, success_message, [{
+          name    : "BYPASS.png",
+          content : bypass_image,
+        }])
+        : await api.edit_deferred_reply(interaction, success_message)
       
       if (send_result.error) {
         console.error(`[ - BYPASS COMMAND - ] Failed to send success message:`, JSON.stringify(send_result))
@@ -230,7 +253,41 @@ const bypass_command: Command = {
 
       // - SEND TO DM - \\
       try {
-        await interaction.user.send(success_message)
+        const dm_success_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.section({
+                  content   : "## <:checkmark:1417196825110253780> - Bypass Completed\nYour bypass was completed successfully. Use /bypass or send a link to start another bypass.\n",
+                  accessory : component.thumbnail("https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"),
+                }),
+              ],
+            }),
+            component.container({
+              components: [
+                component.text(`## <:rbx:1447976733050667061> - Desktop Copy\n\`\`\`\n${result.result}\n\`\`\``),
+                component.divider(2),
+                component.section({
+                  content   : `Completed in ${result.time}s • Requested by <@${interaction.user.id}> `,
+                  accessory : component.secondary_button(
+                    "Mobile Copy",
+                    `bypass_mobile_copy:${interaction.user.id}:${interaction.id}`
+                  ),
+                }),
+              ],
+            }),
+            component.container({
+              components: [
+                component.section({
+                  content   : "Want to invite the bot to your server? Click here →\n",
+                  accessory : component.link_button("Invite BOT", invite_url),
+                }),
+              ],
+            }),
+          ],
+        })
+
+        await interaction.user.send(dm_success_message)
         console.log(`[ - BYPASS COMMAND - ] Sent result to ${interaction.user.tag}'s DM`)
       } catch (dm_error) {
         console.log(`[ - BYPASS COMMAND - ] Could not send DM to ${interaction.user.tag}`)
