@@ -8,8 +8,8 @@ import { Client }      from "discord.js"
 import * as file       from "@shared/utils/file"
 import { log_error }   from "@shared/utils/error_logger"
 
-const SHOWROOM_CFG_PATH = process.env.JKT48_SHOWROOM_CFG_PATH || file.resolve("assets", "jkt48", "jkt48_showroom.cfg")
-const SHOWROOM_WEB_BASE = "https://www.showroom-live.com"
+const __showroom_cfg_path = process.env.JKT48_SHOWROOM_CFG_PATH || file.resolve("assets", "jkt48", "jkt48_showroom.cfg")
+const __showroom_web_base = "https://www.showroom-live.com"
 
 let showroom_sr_id = ""
 
@@ -126,7 +126,7 @@ function get_showroom_headers(): Record<string, string> {
  * @returns {Promise<void>} Void
  */
 async function refresh_showroom_session(): Promise<void> {
-  const response = await axios.get(`${SHOWROOM_WEB_BASE}/`, {
+  const response = await axios.get(`${__showroom_web_base}/`, {
     timeout : 15000,
     headers : {
       "User-Agent" : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
@@ -145,7 +145,7 @@ async function refresh_showroom_session(): Promise<void> {
  * @returns {Promise<any>} Response data
  */
 async function showroom_get(path: string, params: Record<string, any> = {}): Promise<any> {
-  const url = `${SHOWROOM_WEB_BASE}${path}`
+  const url = `${__showroom_web_base}${path}`
   const response = await axios.get(url, {
     timeout : 15000,
     params  : params,
@@ -188,11 +188,11 @@ function normalize_showroom_search(input: string): string {
  */
 async function load_showroom_cfg_members(client: Client): Promise<showroom_member[]> {
   try {
-    if (!file.exists(SHOWROOM_CFG_PATH)) {
+    if (!file.exists(__showroom_cfg_path)) {
       return []
     }
 
-    const payload = file.read_json<showroom_cfg_payload>(SHOWROOM_CFG_PATH)
+    const payload = file.read_json<showroom_cfg_payload>(__showroom_cfg_path)
     const records = [
       payload?.officials || {},
       payload?.members || {},
@@ -216,7 +216,7 @@ async function load_showroom_cfg_members(client: Client): Promise<showroom_membe
     return members
   } catch (error) {
     await log_error(client, error as Error, "showroom_load_cfg_members", {
-      path : SHOWROOM_CFG_PATH,
+      path : __showroom_cfg_path,
     })
     return []
   }
@@ -232,7 +232,7 @@ export async function fetch_showroom_members(client: Client): Promise<showroom_m
     return await load_showroom_cfg_members(client)
   } catch (error) {
     await log_error(client, error as Error, "showroom_fetch_members", {
-      path : SHOWROOM_CFG_PATH,
+      path : __showroom_cfg_path,
     }).catch(() => {})
     console.log("[ - SHOWROOM - ] Config load failed, returning empty array")
     return []

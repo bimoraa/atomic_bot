@@ -3,7 +3,7 @@ import { Command }                                                              
 import { component, db }                                                                    from "@shared/utils"
 import { log_error }                                                                        from "@shared/utils/error_logger"
 
-const GUILD_NOTIFICATION_SETTINGS_COLLECTION = "jkt48_guild_notification_settings"
+const __guild_notification_settings_collection = "jkt48_guild_notification_settings"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -81,7 +81,7 @@ export const command: Command = {
       }
 
       await db.update_one(
-        GUILD_NOTIFICATION_SETTINGS_COLLECTION,
+        __guild_notification_settings_collection,
         { guild_id: interaction.guild.id, platform: platform },
         settings,
         true
@@ -90,13 +90,13 @@ export const command: Command = {
       // - IF BOTH, SAVE FOR IDN AND SHOWROOM SEPARATELY - \\
       if (platform === "both") {
         await db.update_one(
-          GUILD_NOTIFICATION_SETTINGS_COLLECTION,
+          __guild_notification_settings_collection,
           { guild_id: interaction.guild.id, platform: "idn" },
           { ...settings, platform: "idn" },
           true
         )
         await db.update_one(
-          GUILD_NOTIFICATION_SETTINGS_COLLECTION,
+          __guild_notification_settings_collection,
           { guild_id: interaction.guild.id, platform: "showroom" },
           { ...settings, platform: "showroom" },
           true

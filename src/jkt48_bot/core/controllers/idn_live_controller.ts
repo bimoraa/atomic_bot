@@ -6,15 +6,15 @@ import { Cache }          from "@shared/utils/cache"
 import * as idn_live      from "../../infrastructure/api/idn_live"
 import * as showroom_live from "../../infrastructure/api/showroom_live"
 
-const NOTIFICATION_COLLECTION        = "idn_live_notifications"
-const LIVE_STATE_COLLECTION          = "idn_live_state"
-const GUILD_NOTIFICATION_SETTINGS    = "jkt48_guild_notification_settings"
-const HISTORY_API_BASE               = process.env.JKT48_HISTORY_API_BASE || ""
-const IDN_FALLBACK_COOLDOWN_MS       = 30 * 60 * 1000
-const IDN_FALLBACK_RATE_LIMIT_MS     = 5 * 60 * 1000
-const HISTORY_REQUEST_TIMEOUT_MS     = 25000
-const HISTORY_REQUEST_RETRY_COUNT    = 3
-const HISTORY_REQUEST_RETRY_DELAY_MS = 1200
+const __notification_collection        = "idn_live_notifications"
+const __live_state_collection          = "idn_live_state"
+const __guild_notification_settings    = "jkt48_guild_notification_settings"
+const __history_api_base               = process.env.JKT48_HISTORY_API_BASE || ""
+const __idn_fallback_cooldown_ms       = 30 * 60 * 1000
+const __idn_fallback_rate_limit_ms     = 5 * 60 * 1000
+const __history_request_timeout_ms     = 25000
+const __history_request_retry_count    = 3
+const __history_request_retry_delay_ms = 1200
 let __history_base_warned            = false
 let __idn_fallback_disabled_until    = 0
 
@@ -58,21 +58,21 @@ async function axios_get_with_retry(url: string, config: Record<string, any> = {
   let attempt    = 0
   let last_error = null as any
 
-  while (attempt < HISTORY_REQUEST_RETRY_COUNT) {
+  while (attempt < __history_request_retry_count) {
     try {
       return await axios.get(url, {
-        timeout : HISTORY_REQUEST_TIMEOUT_MS,
+        timeout : __history_request_timeout_ms,
         ...config,
       })
     } catch (error) {
       last_error = error
       attempt += 1
 
-      if (!is_retryable_request_error(error) || attempt >= HISTORY_REQUEST_RETRY_COUNT) {
+      if (!is_retryable_request_error(error) || attempt >= __history_request_retry_count) {
         throw error
       }
 
-      const delay_ms = HISTORY_REQUEST_RETRY_DELAY_MS * attempt
+      const delay_ms = __history_request_retry_delay_ms * attempt
       await wait_ms(delay_ms)
     }
   }
@@ -182,12 +182,12 @@ async function fetch_idn_stats_fallback(client: Client, slug: string, uuid: stri
     const expected_status = [401, 403, 404]
 
     if (expected_status.includes(status)) {
-      __idn_fallback_disabled_until = Date.now() + IDN_FALLBACK_COOLDOWN_MS
+      __idn_fallback_disabled_until = Date.now() + __idn_fallback_cooldown_ms
       return {}
     }
 
     if (status === 429) {
-      __idn_fallback_disabled_until = Date.now() + IDN_FALLBACK_RATE_LIMIT_MS
+      __idn_fallback_disabled_until = Date.now() + __idn_fallback_rate_limit_ms
       return {}
     }
 
@@ -304,7 +304,7 @@ async function send_live_channel_notification(client: Client, message: object, p
       guild_id   : string
       channel_id : string
       platform   : string
-    }>(GUILD_NOTIFICATION_SETTINGS, { platform: platform })
+    }>(__guild_notification_settings, { platform: platform })
 
     if (guild_settings.length === 0) {
       console.log(`[ - ${platform.toUpperCase()} LIVE - ] No guilds configured for notifications`)
@@ -453,7 +453,7 @@ function build_live_channel_message(options: {
  * @returns {string} Full URL
  */
 function build_history_url(path: string): string {
-  const base = HISTORY_API_BASE.replace(/\/+$/, "")
+  const base = __history_api_base.replace(/\/+$/, "")
   if (!base) return ""
   return `${base}${path.startsWith("/") ? "" : "/"}${path}`
 }
@@ -469,7 +469,7 @@ async function fetch_showroom_history(client: Client, room_id: number): Promise<
     return {}
   }
 
-  if (!HISTORY_API_BASE) {
+  if (!__history_api_base) {
     if (!__history_base_warned) {
       __history_base_warned = true
       await log_error(client, new Error("History API base not configured"), "showroom_history_config", {
@@ -817,13 +817,13 @@ export async function add_notification(options: { user_id: string; member_name: 
       existing_query.username = username
     }
 
-    let existing = await db.find_one<notification_subscription>(NOTIFICATION_COLLECTION, existing_query)
+    let existing = await db.find_one<notification_subscription>(__notification_collection, existing_query)
     if (!existing && platform === "idn") {
       const fallback_query: Record<string, any> = {
         user_id  : options.user_id,
         username : username,
       }
-      existing = await db.find_one<notification_subscription>(NOTIFICATION_COLLECTION, fallback_query)
+      existing = await db.find_one<notification_subscription>(__notification_collection, fallback_query)
     }
 
     if (existing) {
@@ -833,7 +833,7 @@ export async function add_notification(options: { user_id: string; member_name: 
       }
     }
 
-    await db.insert_one<notification_subscription>(NOTIFICATION_COLLECTION, {
+    await db.insert_one<notification_subscription>(__notification_collection, {
       user_id     : options.user_id,
       member_name : member_name,
       username    : username,
@@ -904,13 +904,13 @@ export async function remove_notification(options: { user_id: string; member_nam
       delete_query.username = username
     }
 
-    let result = await db.delete_one(NOTIFICATION_COLLECTION, delete_query)
+    let result = await db.delete_one(__notification_collection, delete_query)
     if (!result && platform === "idn") {
       const fallback_query: Record<string, any> = {
         user_id  : options.user_id,
         username : username,
       }
-      result = await db.delete_one(NOTIFICATION_COLLECTION, fallback_query)
+      result = await db.delete_one(__notification_collection, fallback_query)
     }
 
     if (!result) {
@@ -949,7 +949,7 @@ export async function get_user_subscriptions(user_id: string, client: Client): P
       console.warn("[ - JKT48 - ] Database not connected, cannot fetch subscriptions")
       return []
     }
-    return await db.find_many<notification_subscription>(NOTIFICATION_COLLECTION, { user_id })
+    return await db.find_many<notification_subscription>(__notification_collection, { user_id })
   } catch (error) {
     console.error("[ - JKT48 - ] Failed to fetch subscriptions:", (error as Error).message)
     await log_error(client, error as Error, "idn_live_get_subscriptions", { user_id }).catch(() => {})
@@ -1135,7 +1135,7 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
     // - CHECK IN-MEMORY CACHE FIRST — AVOIDS DB ON EVERY POLL CYCLE - \\
     if (live_state_cache.get(live_key)) continue
 
-    const existing_state = await db.find_one<live_state_record>(LIVE_STATE_COLLECTION, {
+    const existing_state = await db.find_one<live_state_record>(__live_state_collection, {
       live_key : live_key,
       is_live  : true,
     })
@@ -1144,7 +1144,7 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
       continue
     }
 
-    const legacy_state = await db.find_one<live_state_record>(LIVE_STATE_COLLECTION, {
+    const legacy_state = await db.find_one<live_state_record>(__live_state_collection, {
       slug    : room.slug,
       is_live : true,
     })
@@ -1153,7 +1153,7 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
       continue
     }
 
-    const subscriptions = await db.find_many<notification_subscription>(NOTIFICATION_COLLECTION, {
+    const subscriptions = await db.find_many<notification_subscription>(__notification_collection, {
       username : room.username,
     })
 
@@ -1215,7 +1215,7 @@ async function handle_notify_for_idn(client: Client, live_rooms: idn_live.live_r
       live_key   : live_key,
     }
 
-    await db.insert_one<live_state_record>(LIVE_STATE_COLLECTION, state)
+    await db.insert_one<live_state_record>(__live_state_collection, state)
     live_state_cache.set(live_key, state)
   }
 }
@@ -1232,7 +1232,7 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
 
     if (live_state_cache.get(live_key)) continue
 
-    const existing_state = await db.find_one<live_state_record>(LIVE_STATE_COLLECTION, {
+    const existing_state = await db.find_one<live_state_record>(__live_state_collection, {
       live_key : live_key,
       is_live  : true,
     })
@@ -1241,7 +1241,7 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
       continue
     }
 
-    const subscriptions = await db.find_many<notification_subscription>(NOTIFICATION_COLLECTION, {
+    const subscriptions = await db.find_many<notification_subscription>(__notification_collection, {
       type    : "showroom",
       room_id : room.room_id,
     })
@@ -1300,7 +1300,7 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
       live_key   : live_key,
     }
 
-    await db.insert_one<live_state_record>(LIVE_STATE_COLLECTION, state)
+    await db.insert_one<live_state_record>(__live_state_collection, state)
     live_state_cache.set(live_key, state)
   }
 }
@@ -1311,7 +1311,7 @@ async function handle_notify_for_showroom(client: Client, live_rooms: showroom_l
  * @returns {Promise<void>}
  */
 async function sync_active_idn_history(client: Client): Promise<void> {
-  const active_states = await db.find_many<live_state_record>(LIVE_STATE_COLLECTION, {
+  const active_states = await db.find_many<live_state_record>(__live_state_collection, {
     is_live : true,
     type    : "idn",
   })
@@ -1369,7 +1369,7 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
   const active_key_set = new Set(active_keys)
 
   // - FILTER BY PLATFORM AT DB LEVEL — ELIMINATES REDUNDANT FULL-TABLE SCAN - \\
-  const active_states = await db.find_many<live_state_record>(LIVE_STATE_COLLECTION, {
+  const active_states = await db.find_many<live_state_record>(__live_state_collection, {
     is_live : true,
     type    : platform,
   })
@@ -1427,7 +1427,7 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
       : { slug: state.slug, is_live: true, type: state.type }
 
     live_state_cache.delete(state.live_key)
-    await db.delete_one(LIVE_STATE_COLLECTION, delete_filter)
+    await db.delete_one(__live_state_collection, delete_filter)
     console.log(`[ - ${platform.toUpperCase()} LIVE - ] Stream ended for ${state.username}`)
   }))
 }

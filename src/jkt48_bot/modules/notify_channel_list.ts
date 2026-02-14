@@ -3,7 +3,7 @@ import { Command }                                         from "@shared/types/c
 import { component, db }                                   from "@shared/utils"
 import { log_error }                                       from "@shared/utils/error_logger"
 
-const GUILD_NOTIFICATION_SETTINGS_COLLECTION = "jkt48_guild_notification_settings"
+const __guild_notification_settings_collection = "jkt48_guild_notification_settings"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -28,7 +28,7 @@ export const command: Command = {
         platform   : string
         updated_at : number
         updated_by : string
-      }>(GUILD_NOTIFICATION_SETTINGS_COLLECTION, {
+      }>(__guild_notification_settings_collection, {
         guild_id: interaction.guild.id,
       })
 

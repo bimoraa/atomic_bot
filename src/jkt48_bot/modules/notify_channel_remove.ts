@@ -3,7 +3,7 @@ import { Command }                                                            fr
 import { component, db }                                                      from "@shared/utils"
 import { log_error }                                                          from "@shared/utils/error_logger"
 
-const GUILD_NOTIFICATION_SETTINGS_COLLECTION = "jkt48_guild_notification_settings"
+const __guild_notification_settings_collection = "jkt48_guild_notification_settings"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
@@ -37,11 +37,11 @@ export const command: Command = {
 
       // - REMOVE FROM DATABASE - \\
       if (platform === "both") {
-        await db.delete_many(GUILD_NOTIFICATION_SETTINGS_COLLECTION, {
+        await db.delete_many(__guild_notification_settings_collection, {
           guild_id: interaction.guild.id,
         })
       } else {
-        const result = await db.delete_one(GUILD_NOTIFICATION_SETTINGS_COLLECTION, {
+        const result = await db.delete_one(__guild_notification_settings_collection, {
           guild_id: interaction.guild.id,
           platform: platform,
         })

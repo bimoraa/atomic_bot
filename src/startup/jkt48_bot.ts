@@ -43,8 +43,8 @@ client.commands = new Collection()
 
 let typing_interval: NodeJS.Timeout | null = null
 
-const PERSISTENT_TYPING_CHANNEL_ID  = "1257034070035267636"
-const PERSISTENT_TYPING_INTERVAL_MS = 8000
+const __persistent_typing_channel_id  = "1257034070035267636"
+const __persistent_typing_interval_ms = 8000
 
 /**
  * - START PERSISTENT TYPING - \\
@@ -58,8 +58,8 @@ async function start_persistent_typing(): Promise<void> {
 
   const send_typing = async (): Promise<void> => {
     try {
-      const channel = client.channels.cache.get(PERSISTENT_TYPING_CHANNEL_ID)
-        || await client.channels.fetch(PERSISTENT_TYPING_CHANNEL_ID).catch(() => null)
+      const channel = client.channels.cache.get(__persistent_typing_channel_id)
+        || await client.channels.fetch(__persistent_typing_channel_id).catch(() => null)
 
       if (!channel || !("sendTyping" in channel)) {
         return
@@ -69,7 +69,7 @@ async function start_persistent_typing(): Promise<void> {
     } catch (error) {
       console.error("[ - JKT48 - ] Failed to send typing:", error)
       await log_error(client, error as Error, "persistent_typing_loop_jkt48", {
-        channel_id : PERSISTENT_TYPING_CHANNEL_ID,
+        channel_id : __persistent_typing_channel_id,
       })
     }
   }
@@ -77,7 +77,7 @@ async function start_persistent_typing(): Promise<void> {
   await send_typing()
   typing_interval = setInterval(() => {
     void send_typing()
-  }, PERSISTENT_TYPING_INTERVAL_MS)
+  }, __persistent_typing_interval_ms)
 }
 
 /**

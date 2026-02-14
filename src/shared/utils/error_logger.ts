@@ -6,9 +6,9 @@ import { Cache }                     from "./cache"
 const error_log_channel_id = "1452322637609963530"
 
 // - ERROR PAYLOAD CACHE WITH 24-HOUR PERSISTENCE - \\
-const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
-const error_payload_store  = new Cache<string>(TWENTY_FOUR_HOURS_MS, 10000, 5 * 60 * 1000, 'error_payloads')
-const error_context_count  = new Cache<number>(TWENTY_FOUR_HOURS_MS, 1000, 5 * 60 * 1000, 'error_counts')
+const __twenty_four_hours_ms = 24 * 60 * 60 * 1000
+const error_payload_store    = new Cache<string>(__twenty_four_hours_ms, 10000, 5 * 60 * 1000, 'error_payloads')
+const error_context_count    = new Cache<number>(__twenty_four_hours_ms, 1000, 5 * 60 * 1000, 'error_counts')
 
 function build_error_payload(
   error_id: string,
@@ -36,10 +36,10 @@ export async function log_error(
   try {
     const error_id      = `err_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
     const current_count = (error_context_count.get(context) || 0) + 1
-    error_context_count.set(context, current_count, TWENTY_FOUR_HOURS_MS)
+    error_context_count.set(context, current_count, __twenty_four_hours_ms)
 
     const payload_json = build_error_payload(error_id, context, error, additional_info)
-    error_payload_store.set(error_id, payload_json, TWENTY_FOUR_HOURS_MS)
+    error_payload_store.set(error_id, payload_json, __twenty_four_hours_ms)
 
     const channel = await client.channels.fetch(error_log_channel_id)
     if (!channel?.isTextBased() || !("send" in channel)) return

@@ -2,7 +2,7 @@ import { db, cache } from "."
 
 const is_production = process.env.NODE_ENV === "production"
 
-const GUILD_SETTINGS_TTL = 5 * 60 * 1000 // - 5 minutes - \\
+const __guild_settings_ttl = 5 * 60 * 1000 // - 5 minutes - \\
 
 /**
  * - GENERATE CACHE KEY FOR GUILD SETTINGS - \\
@@ -80,7 +80,7 @@ export async function get_guild_setting(
     )
 
     if (result) {
-      cache.set(cache_key, result, GUILD_SETTINGS_TTL)
+      cache.set(cache_key, result, __guild_settings_ttl)
     }
 
     if (!result || !result.settings) {
@@ -119,7 +119,7 @@ export async function get_all_guild_settings(
     )
 
     if (result) {
-      cache.set(cache_key, result, GUILD_SETTINGS_TTL)
+      cache.set(cache_key, result, __guild_settings_ttl)
     }
 
     return result?.settings || null
