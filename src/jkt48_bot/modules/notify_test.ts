@@ -25,38 +25,35 @@ export const command: Command = {
     await interaction.deferReply({ ephemeral: true })
 
     try {
+      const fail = async (content: string): Promise<void> => {
+        await interaction.editReply({ content: content })
+      }
+
       if (!interaction.guild) {
-        await interaction.editReply({
-          content: "This command can only be used in a server.",
-        })
+        await fail("This command can only be used in a server.")
         return
       }
 
-      const platform = interaction.options.getString("platform", true)
+      const platform       = interaction.options.getString("platform", true)
+      const platform_label = platform === "idn" ? "IDN Live" : "Showroom"
 
-      // - FETCH GUILD SETTINGS - \\
       const setting = await db.find_one<{
         guild_id   : string
         channel_id : string
         platform   : string
       }>(GUILD_NOTIFICATION_SETTINGS_COLLECTION, {
-        guild_id: interaction.guild.id,
-        platform: platform,
+        guild_id : interaction.guild.id,
+        platform : platform,
       })
 
       if (!setting) {
-        await interaction.editReply({
-          content: `No notification channel has been set for ${platform === "idn" ? "IDN Live" : "Showroom"}. Use \`/notify-channel-set\` to configure one.`,
-        })
+        await fail(`No notification channel has been set for ${platform_label}. Use \`/notify-channel-set\` to configure one.`)
         return
       }
 
-      // - SEND TEST MESSAGE TO CHANNEL - \\
       const channel = await interaction.guild.channels.fetch(setting.channel_id).catch(() => null)
       if (!channel || !channel.isTextBased()) {
-        await interaction.editReply({
-          content: `Channel <#${setting.channel_id}> not found or is not a text channel. Please update the settings with \`/notify-channel-set\`.`,
-        })
+        await fail(`Channel <#${setting.channel_id}> not found or is not a text channel. Please update the settings with \`/notify-channel-set\`.`)
         return
       }
 
@@ -71,32 +68,27 @@ export const command: Command = {
           component.container({
             components: [
               component.text([
-                `**Platform:** ${platform === "idn" ? "IDN Live" : "Showroom"}`,
+                `**Platform:** ${platform_label}`,
                 `**Tested by:** ${interaction.user.tag}`,
                 "",
                 "This is a test notification. Live stream notifications will be sent to this channel.",
-              ].join("\n")),
+              ]),
             ],
           }),
         ],
       })
 
       await channel.send(test_message)
-
-      await interaction.editReply({
-        content: `Test notification sent to <#${setting.channel_id}> successfully.`,
-      })
+      await fail(`Test notification sent to <#${setting.channel_id}> successfully.`)
 
       console.log(`[ - JKT48 - ] Test notification sent to guild ${interaction.guild.id} channel ${setting.channel_id} for ${platform}`)
     } catch (error) {
       await log_error(interaction.client, error as Error, "notify_test", {
-        guild_id: interaction.guild?.id,
+        guild_id : interaction.guild?.id,
         user_id : interaction.user.id,
       })
 
-      await interaction.editReply({
-        content: "An error occurred while sending the test notification.",
-      })
+      await interaction.editReply({ content: "An error occurred while sending the test notification." })
     }
   },
 }
