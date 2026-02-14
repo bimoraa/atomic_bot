@@ -297,7 +297,11 @@ client.on("userUpdate", async (old_user, new_user) => {
 client.on("messageCreate", async (message: Message) => {
   if (message.author.bot) return
 
-  if (/\b(rian|ryan)\b/i.test(message.content)) {
+  const normalized_message = message.content
+    .toLowerCase()
+    .replace(/[^a-z]/g, "")
+
+  if (normalized_message.includes("rian") || normalized_message.includes("ryan")) {
     try {
       await message.delete()
     } catch (error) {
