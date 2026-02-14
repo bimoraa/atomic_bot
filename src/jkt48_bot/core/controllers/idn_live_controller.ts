@@ -12,8 +12,73 @@ const GUILD_NOTIFICATION_SETTINGS    = "jkt48_guild_notification_settings"
 const HISTORY_API_BASE               = process.env.JKT48_HISTORY_API_BASE || ""
 const IDN_FALLBACK_COOLDOWN_MS       = 30 * 60 * 1000
 const IDN_FALLBACK_RATE_LIMIT_MS     = 5 * 60 * 1000
+const HISTORY_REQUEST_TIMEOUT_MS     = 25000
+const HISTORY_REQUEST_RETRY_COUNT    = 3
+const HISTORY_REQUEST_RETRY_DELAY_MS = 1200
 let __history_base_warned            = false
 let __idn_fallback_disabled_until    = 0
+
+/**
+ * - WAIT FOR N MILLISECONDS - \\
+ * @param {number} ms - Milliseconds
+ * @returns {Promise<void>} Promise
+ */
+function wait_ms(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * - CHECK RETRYABLE REQUEST ERROR - \\
+ * @param {any} error - Request error
+ * @returns {boolean} Is retryable
+ */
+function is_retryable_request_error(error: any): boolean {
+  const status  = Number(error?.response?.status || 0)
+  const code    = String(error?.code || "").toUpperCase()
+  const message = String(error?.message || "").toLowerCase()
+
+  if ([408, 425, 429, 500, 502, 503, 504].includes(status)) {
+    return true
+  }
+
+  if (["ECONNABORTED", "ETIMEDOUT", "ECONNRESET", "EAI_AGAIN", "ENOTFOUND", "ERR_NETWORK", "ERR_SOCKET_TIMEOUT"].includes(code)) {
+    return true
+  }
+
+  return message.includes("timeout") || message.includes("socket hang up")
+}
+
+/**
+ * - AXIOS GET WITH RETRY - \\
+ * @param {string} url - Request URL
+ * @param {Record<string, any>} config - Axios config
+ * @returns {Promise<any>} Axios response
+ */
+async function axios_get_with_retry(url: string, config: Record<string, any> = {}): Promise<any> {
+  let attempt    = 0
+  let last_error = null as any
+
+  while (attempt < HISTORY_REQUEST_RETRY_COUNT) {
+    try {
+      return await axios.get(url, {
+        timeout : HISTORY_REQUEST_TIMEOUT_MS,
+        ...config,
+      })
+    } catch (error) {
+      last_error = error
+      attempt += 1
+
+      if (!is_retryable_request_error(error) || attempt >= HISTORY_REQUEST_RETRY_COUNT) {
+        throw error
+      }
+
+      const delay_ms = HISTORY_REQUEST_RETRY_DELAY_MS * attempt
+      await wait_ms(delay_ms)
+    }
+  }
+
+  throw last_error as Error
+}
 
 /**
  * - PICK FIRST VALID NUMBER - \\
@@ -87,8 +152,7 @@ async function fetch_idn_stats_fallback(client: Client, slug: string, uuid: stri
   const endpoint = "https://mobile-api.idn.app/v3/profile/livestreams"
 
   try {
-    const response = await axios.get(endpoint, {
-      timeout : 15000,
+    const response = await axios_get_with_retry(endpoint, {
       params  : {
         uuid : uuid,
       },
@@ -426,8 +490,7 @@ async function fetch_showroom_history(client: Client, room_id: number): Promise<
 
   try {
     const recent_url = build_history_url("/recent")
-    const recent_response = await axios.get(recent_url, {
-      timeout : 15000,
+    const recent_response = await axios_get_with_retry(recent_url, {
       params  : {
         type    : "showroom",
         room_id : room_id,
@@ -444,7 +507,7 @@ async function fetch_showroom_history(client: Client, room_id: number): Promise<
     }
 
     const detail_url = build_history_url(`/recent/${recent.data_id}`)
-    const detail_response = await axios.get(detail_url, { timeout: 15000 })
+    const detail_response = await axios_get_with_retry(detail_url)
     const detail = detail_response.data || {}
     const comments = detail?.live_info?.comments
     const viewers = detail?.live_info?.viewers
@@ -542,8 +605,7 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
   }
 
   try {
-    const response = await axios.get(`https://api.idn.app/api/v4/livestream/${slug}`, {
-      timeout : 15000,
+    const response = await axios_get_with_retry(`https://api.idn.app/api/v4/livestream/${slug}`, {
       headers : {
         "User-Agent" : "Android/14/SM-A528B/6.47.4",
         "x-api-key"  : "123f4c4e-6ce1-404d-8786-d17e46d65b5c",
