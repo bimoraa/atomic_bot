@@ -34,6 +34,8 @@ export type guild_setting_key =
   | "rules_channel"
   | "announcements_channel"
   | "bypass_channel"
+  | "bypass_enabled"
+  | "bypass_disabled_reason"
 
 export interface guild_settings_data {
   welcome_channel?: string
@@ -47,6 +49,8 @@ export interface guild_settings_data {
   rules_channel?: string
   announcements_channel?: string
   bypass_channel?: string
+  bypass_enabled?: string
+  bypass_disabled_reason?: string
 }
 
 /**

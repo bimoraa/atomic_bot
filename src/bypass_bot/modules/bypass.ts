@@ -48,7 +48,32 @@ const bypass_command: Command = {
         return
       }
 
-      const allowed_channel_id = await guild_settings.get_guild_setting(guild_id, "bypass_channel")
+      const settings = await guild_settings.get_all_guild_settings(guild_id)
+
+      const bypass_enabled         = settings?.bypass_enabled
+      const bypass_disabled_reason = settings?.bypass_disabled_reason || "No reason provided"
+      const allowed_channel_id     = settings?.bypass_channel || null
+
+      if (bypass_enabled === "false") {
+        const maintenance_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  "## Under Maintenance",
+                  "",
+                  `Reason: ${bypass_disabled_reason}`,
+                ]),
+              ],
+            }),
+          ],
+        })
+
+        maintenance_message.flags = (maintenance_message.flags ?? 0) | 64
+
+        await interaction.reply(maintenance_message)
+        return
+      }
 
       if (!allowed_channel_id) {
         const error_message = component.build_message({
