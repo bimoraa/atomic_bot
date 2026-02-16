@@ -13,4 +13,4 @@ import "./startup/atomic_bot"
 import "./startup/jkt48_bot"
 import "./startup/bypass_bot"
 
-console.log("[ - LAUNCHER - ] All bots started")
+console.info("[ - LAUNCHER - ] All bots started")
