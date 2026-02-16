@@ -48,6 +48,8 @@ const bypass_command: Command = {
         return
       }
 
+      await interaction.deferReply()
+
       const settings = await guild_settings.get_all_guild_settings(guild_id)
 
       const bypass_enabled         = settings?.bypass_enabled
@@ -69,9 +71,7 @@ const bypass_command: Command = {
           ],
         })
 
-        maintenance_message.flags = (maintenance_message.flags ?? 0) | 64
-
-        await interaction.reply(maintenance_message)
+        await api.edit_deferred_reply(interaction, maintenance_message)
         return
       }
 
@@ -90,9 +90,7 @@ const bypass_command: Command = {
           ],
         })
 
-        error_message.flags = (error_message.flags ?? 0) | 64
-
-        await interaction.reply(error_message)
+        await api.edit_deferred_reply(interaction, error_message)
         return
       }
 
@@ -111,9 +109,7 @@ const bypass_command: Command = {
           ],
         })
 
-        error_message.flags = (error_message.flags ?? 0) | 64
-
-        await interaction.reply(error_message)
+        await api.edit_deferred_reply(interaction, error_message)
         return
       }
 
@@ -134,13 +130,9 @@ const bypass_command: Command = {
           ],
         })
 
-        rate_message.flags = (rate_message.flags ?? 0) | 64
-
-        await interaction.reply(rate_message)
+        await api.edit_deferred_reply(interaction, rate_message)
         return
       }
-
-      await interaction.deferReply()
 
       const url = interaction.options.getString("url", true).trim()
 
