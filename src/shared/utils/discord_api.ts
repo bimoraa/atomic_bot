@@ -1,7 +1,8 @@
 import { message_payload } from "./components"
 import { ButtonInteraction, CommandInteraction, StringSelectMenuInteraction, ModalSubmitInteraction } from "discord.js"
 
-const base_url = "https://discord.com/api/v10"
+const base_url             = "https://discord.com/api/v10"
+const __discord_api_timeout = 10000
 
 /**
  * - SAFE JSON PARSE RESPONSE - \\
@@ -171,24 +172,37 @@ export async function edit_deferred_reply(
   interaction: ButtonInteraction | CommandInteraction | ModalSubmitInteraction,
   payload: message_payload
 ): Promise<api_response> {
-  const response = await fetch(
-    `${base_url}/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
+  const controller = new AbortController()
+  const timeout_id = setTimeout(() => controller.abort(), __discord_api_timeout)
+
+  try {
+    const response = await fetch(
+      `${base_url}/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
+      {
+        method  : "PATCH",
+        headers : { "Content-Type": "application/json" },
+        body    : JSON.stringify(payload),
+        signal  : controller.signal,
+      }
+    )
+
+    clearTimeout(timeout_id)
+
+    const data = as_api_response(await safe_parse_response_json(response))
+
+    if (!response.ok) {
+      return { error: true, ...data }
     }
-  )
 
-  const data = as_api_response(await safe_parse_response_json(response))
-
-  if (!response.ok) {
-    return { error: true, ...data }
+    return data
+  } catch (error: any) {
+    clearTimeout(timeout_id)
+    if (error?.name === "AbortError") {
+      console.error(`[ - DISCORD API - ] edit_deferred_reply timed out after ${__discord_api_timeout}ms`)
+      return { error: true, timeout: true }
+    }
+    throw error
   }
-
-  return data
 }
 
 export async function edit_deferred_reply_v2_with_file(
@@ -229,8 +243,10 @@ export async function edit_deferred_reply_with_files(
   payload: message_payload,
   files: file_attachment[]
 ): Promise<api_response> {
-  const FormData = (await import("form-data")).default
-  const form     = new FormData()
+  const FormData   = (await import("form-data")).default
+  const form       = new FormData()
+  const controller = new AbortController()
+  const timeout_id = setTimeout(() => controller.abort(), __discord_api_timeout)
 
   const payload_json = {
     ...payload,
@@ -243,22 +259,34 @@ export async function edit_deferred_reply_with_files(
     form.append(`files[${index}]`, file.content, { filename: file.name })
   })
 
-  const response = await fetch(
-    `${base_url}/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
-    {
-      method: "PATCH",
-      headers: form.getHeaders(),
-      body: form as any,
+  try {
+    const response = await fetch(
+      `${base_url}/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
+      {
+        method  : "PATCH",
+        headers : form.getHeaders(),
+        body    : form as any,
+        signal  : controller.signal,
+      }
+    )
+
+    clearTimeout(timeout_id)
+
+    const data = as_api_response(await safe_parse_response_json(response))
+
+    if (!response.ok) {
+      return { error: true, ...data }
     }
-  )
 
-  const data = as_api_response(await safe_parse_response_json(response))
-
-  if (!response.ok) {
-    return { error: true, ...data }
+    return data
+  } catch (error: any) {
+    clearTimeout(timeout_id)
+    if (error?.name === "AbortError") {
+      console.error(`[ - DISCORD API - ] edit_deferred_reply_with_files timed out after ${__discord_api_timeout}ms`)
+      return { error: true, timeout: true }
+    }
+    throw error
   }
-
-  return data
 }
 
 export async function bulk_delete_messages(

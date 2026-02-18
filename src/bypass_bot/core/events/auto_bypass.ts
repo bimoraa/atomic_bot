@@ -101,6 +101,8 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     }
   }
 
+  let processing_msg: Awaited<ReturnType<typeof message.reply>> | null = null
+
   try {
     const client_id  = message.client.user?.id || ""
     const invite_url = client_id
@@ -130,7 +132,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
       }
     }
 
-    const processing_msg = await message.reply(
+    processing_msg = await message.reply(
       component.build_message({
         components: [
           component.container({
@@ -152,15 +154,18 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     if (result.success && result.result) {
       // - STORE IN DATABASE - \\
       const cache_key = `bypass_result_${message.id}`
-      
-      await db.get_pool().query(
-        `INSERT INTO bypass_cache (key, url, expires_at) 
-         VALUES ($1, $2, NOW() + INTERVAL '5 minutes')
-         ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '5 minutes'`,
-        [cache_key, result.result]
-      )
 
-      console.log(`[ - AUTO BYPASS - ] Stored result with key: ${cache_key}`)
+      try {
+        await db.get_pool().query(
+          `INSERT INTO bypass_cache (key, url, expires_at) 
+           VALUES ($1, $2, NOW() + INTERVAL '5 minutes')
+           ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '5 minutes'`,
+          [cache_key, result.result]
+        )
+        console.log(`[ - AUTO BYPASS - ] Stored result with key: ${cache_key}`)
+      } catch (db_error) {
+        console.error(`[ - AUTO BYPASS - ] Failed to store in database:`, db_error)
+      }
 
       const success_message = component.build_message({
         components: [
@@ -236,6 +241,29 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
       user    : message.author.tag,
       url     : url || "unknown",
     })
+
+    // - ALWAYS UPDATE PROCESSING MESSAGE TO AVOID STUCK STATE - \\
+    if (processing_msg) {
+      try {
+        const stuck_error_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  "## Bypass Failed",
+                  "",
+                  "An unexpected error occurred while processing your request. Please try again.",
+                ]),
+              ],
+            }),
+          ],
+        })
+        await processing_msg.edit(stuck_error_message)
+      } catch (edit_error) {
+        console.error("[ - AUTO BYPASS - ] Failed to edit processing message:", edit_error)
+      }
+    }
+
     return false
   }
 }
