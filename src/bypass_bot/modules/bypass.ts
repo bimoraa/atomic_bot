@@ -175,9 +175,23 @@ const bypass_command: Command = {
 
       await api.edit_deferred_reply(interaction, processing_message)
 
-      const result = await bypass_link(url)
+      const result = await bypass_link(url, async (attempt) => {
+        const retry_message = component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.section({
+                  content   : `## <a:GTA_Loading:1459707117840629832> - Bypassing Link\nHang on! We're processing your bypass. (Retry ${attempt}/3)\n`,
+                  accessory : component.link_button("Invite BOT", invite_url),
+                }),
+              ],
+            }),
+          ],
+        })
+        await api.edit_deferred_reply(interaction, retry_message)
+      })
 
-      console.log(`[ - BYPASS COMMAND - ] Bypass result:`, JSON.stringify(result))
+      console.log(`[ - BYPASS COMMAND - ] Bypass result (attempts: ${result.attempts}):`, JSON.stringify(result))
 
       if (!result.success || !result.result) {
         const error_message = component.build_message({
