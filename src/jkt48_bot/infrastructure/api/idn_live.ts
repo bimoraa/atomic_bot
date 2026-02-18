@@ -24,6 +24,10 @@ const __idn_detail_agent      = "Android/14/SM-A528B/6.47.4"
 const __idn_roster_ttl_ms     = 1000 * 60 * 60 * 6
 
 const detail_cache      = new Map<string, string>()
+const detail_failed_cache = new Map<string, number>()
+const __detail_failed_ttl  = 60 * 1000
+const __detail_retry_max   = 2
+const __detail_retry_delay = 3000
 const roster_cache      = {
   data       : [] as jkt48_member[],
   fetched_at : 0,
@@ -402,28 +406,56 @@ async function fetch_all_idn_lives(client: Client): Promise<any[]> {
  * @returns {Promise<string | null>} Playback URL or null
  */
 async function fetch_live_detail(slug: string, client: Client): Promise<string | null> {
+  if (!slug) return null
+
   if (detail_cache.has(slug)) {
     return detail_cache.get(slug) || null
   }
 
-  try {
-    const response = await axios.get(`${__idn_detail_api}/${slug}`, {
-      timeout : 15000,
-      headers : {
-        "User-Agent" : __idn_detail_agent,
-        "x-api-key"  : __idn_detail_key,
-      },
-    })
-
-    const stream_url = response.data?.data?.playback_url || null
-    if (stream_url) {
-      detail_cache.set(slug, stream_url)
-    }
-    return stream_url
-  } catch (error) {
-    await log_error(client, error as Error, "idn_live_fetch_detail_api", { slug })
+  // - SKIP RECENTLY FAILED SLUGS TO AVOID HAMMERING IDN API - \\
+  const failed_at = detail_failed_cache.get(slug)
+  if (failed_at && (Date.now() - failed_at) < __detail_failed_ttl) {
     return null
   }
+
+  for (let attempt = 1; attempt <= __detail_retry_max; attempt++) {
+    try {
+      const response = await axios.get(`${__idn_detail_api}/${slug}`, {
+        timeout : 20000,
+        headers : {
+          "User-Agent" : __idn_detail_agent,
+          "x-api-key"  : __idn_detail_key,
+        },
+      })
+
+      const stream_url = response.data?.data?.playback_url || null
+      if (stream_url) {
+        detail_cache.set(slug, stream_url)
+        detail_failed_cache.delete(slug)
+      }
+      return stream_url
+
+    } catch (error: any) {
+      const is_timeout = error?.code === "ECONNABORTED" || error?.message?.includes("timeout")
+
+      if (attempt < __detail_retry_max) {
+        console.warn(`[ - IDN LIVE - ] fetch_live_detail attempt ${attempt} failed for ${slug}, retrying...`)
+        await new Promise(resolve => setTimeout(resolve, __detail_retry_delay))
+        continue
+      }
+
+      // - ALL ATTEMPTS EXHAUSTED - \\
+      detail_failed_cache.set(slug, Date.now())
+      if (!is_timeout) {
+        await log_error(client, error as Error, "idn_live_fetch_detail_api", { slug, attempt })
+      } else {
+        console.warn(`[ - IDN LIVE - ] fetch_live_detail timeout for slug: ${slug}`)
+      }
+      return null
+    }
+  }
+
+  return null
 }
 
 /**
@@ -663,28 +695,27 @@ async function fetch_idn_live_data(client: Client): Promise<idn_livestream[]> {
       return username.includes("jkt48") || cfg_usernames.has(username)
     })
 
-    const mapped = await Promise.all(
-      filtered_streams.map(async (stream: any) => {
-        const stream_url = await fetch_live_detail(stream.slug || stream.live_slug || "", client)
-          || stream.playback_url
-          || stream.stream_url
-          || ""
+    const mapped: idn_livestream[] = []
+    for (const stream of filtered_streams) {
+      const stream_url = await fetch_live_detail(stream.slug || stream.live_slug || "", client)
+        || stream.playback_url
+        || stream.stream_url
+        || ""
 
-        return {
-          slug       : stream.slug || stream.live_slug || "",
-          title      : stream.title || "Untitled Stream",
-          image      : stream.image_url || stream.image || "",
-          stream_url : stream_url,
-          view_count : stream.view_count || 0,
-          live_at    : normalize_live_timestamp(stream.live_at),
-          user       : {
-            name     : stream.creator?.name || "Unknown",
-            username : stream.creator?.username || "",
-            avatar   : stream.creator?.image_url || "",
-          },
-        } as idn_livestream
-      })
-    )
+      mapped.push({
+        slug       : stream.slug || stream.live_slug || "",
+        title      : stream.title || "Untitled Stream",
+        image      : stream.image_url || stream.image || "",
+        stream_url : stream_url,
+        view_count : stream.view_count || 0,
+        live_at    : normalize_live_timestamp(stream.live_at),
+        user       : {
+          name     : stream.creator?.name || "Unknown",
+          username : stream.creator?.username || "",
+          avatar   : stream.creator?.image_url || "",
+        },
+      } as idn_livestream)
+    }
 
     const result = mapped.filter((stream) => stream.slug && stream.user?.username)
     live_data_cache.data       = result

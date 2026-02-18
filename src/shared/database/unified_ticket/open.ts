@@ -15,6 +15,7 @@ import {
   generate_ticket_id,
   save_ticket,
   save_ticket_immediate,
+  build_ticket_log_message,
   TicketData,
 } from "./state"
 import { component, time, api, format } from "../../utils"
@@ -253,37 +254,17 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
       
       const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
       if (log_channel) {
-        const log_message = component.build_message({
-          components: [
-            component.container({
-              components: [
-                component.section({
-                  content: [
-                    `## Join Ticket`,
-                    `A ${config.name} Ticket is Opened!`,
-                    ``,
-                    `- **Ticket ID:** ${format.code(ticket_id)}`,
-                    `- **Type:** ${config.name}`,
-                    `- **Opened by:** <@${user_id}>`,
-                    `- **Claimed by:** Not claimed`,
-                  ],
-                  thumbnail: avatar_url,
-                }),
-                component.divider(),
-                component.text([
-                  `**Application Details:**`,
-                  `- **Channel:** ${app_data.channel_links}`,
-                  `- **Platform:** ${app_data.platform}`,
-                  `- **Content Type:** ${app_data.content_type}`,
-                  `- **Frequency:** ${app_data.upload_frequency}`,
-                ]),
-                component.divider(),
-                component.action_row(
-                  component.success_button("Join Ticket", `${config.prefix}_join_${thread.id}`)
-                ),
-              ],
-            }),
-          ],
+        const log_message = build_ticket_log_message({
+          config_name      : config.name,
+          owner_id         : user_id,
+          claimed_by       : null,
+          avatar_url       : avatar_url,
+          description_block: app_data
+            ? `- **Channel:** ${app_data.channel_links}\n- **Platform:** ${app_data.platform}\n- **Content Type:** ${app_data.content_type}\n- **Frequency:** ${app_data.upload_frequency}`
+            : null,
+          staff            : [],
+          open_time        : timestamp,
+          join_button_id   : `${config.prefix}_join_${thread.id}`,
         })
 
         await api.send_components_v2(log_channel.id, token, log_message).then((log_data: any) => {
@@ -440,52 +421,22 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
 
   const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
   if (log_channel) {
-    let log_content = [
-      `## Join Ticket`,
-      `A ${config.name} Ticket is Opened!`,
-      ``,
-      `- **Ticket ID:** ${format.code(ticket_id)}`,
-      `- **Type:** ${config.name}`,
-      `- **Opened by:** <@${user_id}>`,
-    ]
-
-    if (issue_type) {
-      log_content.push(`- **Issue:** ${issue_type}`)
-    }
-
-    log_content.push(`- **Claimed by:** Not claimed`)
-
-    let description_section: any[] = []
+    let description_block: string | null = null
     if (description) {
-      description_section = [
-        component.divider(),
-        component.text([
-          `- **Description:** ${description}`,
-        ]),
-      ]
+      description_block = `- **Description:**\n> ${description}`
+    } else if (issue_type) {
+      description_block = `- **Issue Type:** ${issue_type}`
     }
 
-    const log_message = component.build_message({
-      components: [
-        component.container({
-          components: [
-            component.section({
-              content: log_content,
-              thumbnail: avatar_url,
-            }),
-            ...description_section,
-            component.divider(),
-            component.text([
-              `- **Staff in Ticket:** 0`,
-              `- **Staff Members:** None`,
-            ]),
-            component.divider(),
-            component.action_row(
-              component.success_button("Join Ticket", `${config.prefix}_join_${thread.id}`)
-            ),
-          ],
-        }),
-      ],
+    const log_message = build_ticket_log_message({
+      config_name      : config.name,
+      owner_id         : user_id,
+      claimed_by       : null,
+      avatar_url       : avatar_url,
+      description_block: description_block,
+      staff            : [],
+      open_time        : timestamp,
+      join_button_id   : `${config.prefix}_join_${thread.id}`,
     })
 
     parallel_tasks.push(

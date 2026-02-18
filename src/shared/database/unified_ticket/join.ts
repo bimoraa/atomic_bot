@@ -8,6 +8,7 @@ import {
   load_ticket,
   get_join_claim_cooldown_remaining_ms,
   activate_join_claim_cooldown,
+  build_ticket_log_message,
 } from "./state"
 import { component, api, format } from "../../utils"
 
@@ -107,55 +108,19 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
         const owner      = await guild.members.fetch(data.owner_id).catch(() => null)
         const avatar_url = owner?.displayAvatarURL({ size: 128 }) || format.default_avatar
 
-        const claimed_line = data.claimed_by ? `- **Claimed by:** <@${data.claimed_by}>` : `- **Claimed by:** Not claimed`
+        const description_block = data.description
+          ? `- **Description:**\n> ${data.description}`
+          : data.issue_type ? `- **Issue Type:** ${data.issue_type}` : null
 
-        let log_content = [
-          `## Join Ticket`,
-          `A ${config.name} Ticket is Opened!`,
-          ``,
-          `- **Ticket ID:** ${format.code(data.ticket_id)}`,
-          `- **Type:** ${config.name}`,
-          `- **Opened by:** <@${data.owner_id}>`,
-        ]
-
-        if (data.issue_type) {
-          log_content.push(`- **Issue:** ${data.issue_type}`)
-        }
-
-        log_content.push(claimed_line)
-
-        let description_section: any[] = []
-        if (data.description) {
-          description_section = [
-            component.divider(),
-            component.text([
-              `**Description:**`,
-              `${data.description}`,
-            ]),
-          ]
-        }
-
-        const message = component.build_message({
-          components: [
-            component.container({
-              components: [
-                component.section({
-                  content: log_content,
-                  thumbnail: avatar_url,
-                }),
-                ...description_section,
-                component.divider(),
-                component.text([
-                  `- **Staff in Ticket:** ${staff_mentions.length}`,
-                  `- **Staff Members:** ${staff_mentions.join(" ") || "None"}`,
-                ]),
-                component.divider(),
-                component.action_row(
-                  component.success_button("Join Ticket", `${config.prefix}_join_${thread_id}`)
-                ),
-              ],
-            }),
-          ],
+        const message = build_ticket_log_message({
+          config_name      : config.name,
+          owner_id         : data.owner_id,
+          claimed_by       : data.claimed_by || null,
+          avatar_url       : avatar_url,
+          description_block: description_block,
+          staff            : data.staff,
+          open_time        : data.open_time,
+          join_button_id   : `${config.prefix}_join_${thread_id}`,
         })
 
         await api.edit_components_v2(log_channel.id, log_message_id, api.get_token(), message)

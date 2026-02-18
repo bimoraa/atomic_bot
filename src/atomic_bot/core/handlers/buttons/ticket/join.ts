@@ -11,6 +11,7 @@ import {
 } from "../../controllers/ticket_controller"
 import { is_admin, is_staff } from "@shared/database/settings/permissions"
 import { component, api, format } from "@shared/utils"
+import { build_ticket_log_message } from "@shared/database/unified_ticket/state"
 
 export async function handle(interaction: ButtonInteraction) {
   if (!interaction.customId.startsWith("join_ticket_")) return false
@@ -76,37 +77,17 @@ export async function handle(interaction: ButtonInteraction) {
         const owner      = await guild.members.fetch(owner_id).catch(() => null)
         const avatar_url = owner?.displayAvatarURL({ size: 128 }) || format.default_avatar
 
-        const claimed_by   = ticket_claimed_by.get(thread_id)
-        const claimed_line = claimed_by ? `- **Claimed by:** <@${claimed_by}>` : `- **Claimed by:** Not claimed`
+        const claimed_by = ticket_claimed_by.get(thread_id) || null
 
-        const message = component.build_message({
-          components: [
-            component.container({
-              components: [
-                component.section({
-                  content: [
-                    `## Join Ticket`,
-                    `A Priority Ticket is Opened!`,
-                    ``,
-                    `- **Ticket ID:** ${format.code(ticket_id)}`,
-                    `- **Opened by:** <@${owner_id}>`,
-                    `- **Issue:** ${issue_type}`,
-                    claimed_line,
-                  ],
-                  thumbnail: avatar_url,
-                }),
-                component.divider(),
-                component.text([
-                  `- **Staff in Ticket:** ${staff_mentions.length}`,
-                  `- **Staff Members:** ${staff_mentions.join(" ") || "None"}`,
-                ]),
-                component.divider(),
-                component.action_row(
-                  component.success_button("Join Ticket", `join_ticket_${thread_id}`)
-                ),
-              ],
-            }),
-          ],
+        const message = build_ticket_log_message({
+          config_name      : "Priority",
+          owner_id         : owner_id,
+          claimed_by       : claimed_by,
+          avatar_url       : avatar_url,
+          description_block: issue_type ? `- **Issue:** ${issue_type}` : null,
+          staff            : staff_list,
+          open_time        : Math.floor(Date.now() / 1000),
+          join_button_id   : `join_ticket_${thread_id}`,
         })
 
         await api.edit_components_v2(log_channel.id, log_message_id, api.get_token(), message)

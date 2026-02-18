@@ -1,6 +1,6 @@
 import { GuildMember } from "discord.js"
 import { load_config } from "../../config/loader"
-import { db } from "../../utils"
+import { db, component, format } from "../../utils"
 
 const __tickets_collection = "unified_tickets"
 
@@ -184,6 +184,65 @@ export async function load_ticket(thread_id: string): Promise<boolean> {
 export async function delete_ticket_db(thread_id: string): Promise<void> {
   if (!db.is_connected()) return
   await db.delete_one(__tickets_collection, { thread_id })
+}
+
+export interface TicketLogOptions {
+  config_name       : string
+  owner_id          : string
+  claimed_by?       : string | null
+  avatar_url        : string
+  description_block?: string | null
+  staff             : string[]
+  open_time         : number
+  join_button_id    : string
+}
+
+/**
+ * - BUILD TICKET LOG MESSAGE - \\
+ * @param {TicketLogOptions} opts - Ticket log message options
+ * @returns {component.message_payload} Built message payload
+ */
+export function build_ticket_log_message(opts: TicketLogOptions): component.message_payload {
+  const claimed_text = opts.claimed_by ? `<@${opts.claimed_by}>` : "Not claimed"
+  const staff_text   = opts.staff.length > 0
+    ? opts.staff.map(id => `<@${id}>`).join(" ")
+    : ""
+
+  const info_components: any[] = [
+    component.section({
+      content  : `- **Ticket Type:** ${opts.config_name}\n- **Opened by:** <@${opts.owner_id}>\n- **Claimed by:** ${claimed_text}\n`,
+      thumbnail: opts.avatar_url,
+    }),
+    component.divider(2),
+  ]
+
+  if (opts.description_block) {
+    info_components.push(component.text(opts.description_block))
+    info_components.push(component.divider(2))
+  }
+
+  info_components.push(component.text(`- **Staff in Ticket:** ${staff_text}`))
+
+  return component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text(`## Join Ticket\nA ${opts.config_name} Ticket is Opened!\n`),
+        ],
+      }),
+      component.container({
+        components: info_components,
+      }),
+      component.container({
+        components: [
+          component.section({
+            content  : `Opened at <t:${opts.open_time}:F>`,
+            accessory: component.success_button("Join Ticket", opts.join_button_id),
+          }),
+        ],
+      }),
+    ],
+  })
 }
 
 export async function load_all_tickets(): Promise<void> {
