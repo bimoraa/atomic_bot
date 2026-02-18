@@ -1378,57 +1378,66 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
 
   // - PROCESS ALL ENDED STREAMS IN PARALLEL (HISTORY FETCH + DB OPS) - \\
   await Promise.all(ended_states.map(async (state) => {
-    const ended_at       = Date.now()
-    const history_key    = state.live_key || `${platform}:${state.slug || state.username || state.room_id || "unknown"}`
-    const base_record: live_history_record = {
-      platform      : platform,
-      member_name   : state.member_name || state.username || "Unknown",
-      title         : state.title || "",
-      url           : state.url || "",
-      image         : state.image || "",
-      viewers       : state.viewers || 0,
-      comments      : 0,
-      comment_users : 0,
-      total_gold    : 0,
-      started_at    : state.started_at || ended_at,
-      ended_at      : ended_at,
-      duration_ms   : 0,
-      live_key      : history_key,
+    try {
+      const ended_at       = Date.now()
+      const history_key    = state.live_key || `${platform}:${state.slug || state.username || state.room_id || "unknown"}`
+      const base_record: live_history_record = {
+        platform      : platform,
+        member_name   : state.member_name || state.username || "Unknown",
+        title         : state.title || "",
+        url           : state.url || "",
+        image         : state.image || "",
+        viewers       : state.viewers || 0,
+        comments      : 0,
+        comment_users : 0,
+        total_gold    : 0,
+        started_at    : state.started_at || ended_at,
+        ended_at      : ended_at,
+        duration_ms   : 0,
+        live_key      : history_key,
+      }
+
+      const enrich = platform === "showroom"
+        ? await fetch_showroom_history(client, state.room_id || 0)
+        : await fetch_idn_history(client, state.slug || "")
+
+      const final_started_at = enrich.started_at || base_record.started_at
+      const final_ended_at   = enrich.ended_at   || base_record.ended_at
+
+      const history_record: live_history_record = {
+        ...base_record,
+        comments      : enrich.comments      ?? base_record.comments,
+        comment_users : enrich.comment_users ?? base_record.comment_users,
+        total_gold    : enrich.total_gold    ?? base_record.total_gold,
+        viewers       : enrich.viewers       ?? base_record.viewers,
+        started_at    : final_started_at,
+        ended_at      : final_ended_at,
+        duration_ms   : Math.max(0, final_ended_at - final_started_at),
+      }
+
+      await db.update_one<live_history_record>(
+        "live_history",
+        { live_key: history_key },
+        history_record,
+        true
+      )
+
+      // - USE live_key FOR DELETE — _id IS NEVER STORED IN generic_data JSONB - \\
+      const delete_filter = state.live_key
+        ? { live_key: state.live_key }
+        : { slug: state.slug, is_live: true, type: state.type }
+
+      live_state_cache.delete(state.live_key)
+      await db.delete_one(__live_state_collection, delete_filter)
+      console.log(`[ - ${platform.toUpperCase()} LIVE - ] Stream ended for ${state.username}`)
+    } catch (error) {
+      await log_error(client, error as Error, "cleanup_live_state_item", {
+        platform : platform,
+        slug     : state.slug,
+        username : state.username,
+        live_key : state.live_key,
+      })
     }
-
-    const enrich = platform === "showroom"
-      ? await fetch_showroom_history(client, state.room_id || 0)
-      : await fetch_idn_history(client, state.slug || "")
-
-    const final_started_at = enrich.started_at || base_record.started_at
-    const final_ended_at   = enrich.ended_at   || base_record.ended_at
-
-    const history_record: live_history_record = {
-      ...base_record,
-      comments      : enrich.comments      ?? base_record.comments,
-      comment_users : enrich.comment_users ?? base_record.comment_users,
-      total_gold    : enrich.total_gold    ?? base_record.total_gold,
-      viewers       : enrich.viewers       ?? base_record.viewers,
-      started_at    : final_started_at,
-      ended_at      : final_ended_at,
-      duration_ms   : Math.max(0, final_ended_at - final_started_at),
-    }
-
-    await db.update_one<live_history_record>(
-      "live_history",
-      { live_key: history_key },
-      history_record,
-      true
-    )
-
-    // - USE live_key FOR DELETE — _id IS NEVER STORED IN generic_data JSONB - \\
-    const delete_filter = state.live_key
-      ? { live_key: state.live_key }
-      : { slug: state.slug, is_live: true, type: state.type }
-
-    live_state_cache.delete(state.live_key)
-    await db.delete_one(__live_state_collection, delete_filter)
-    console.log(`[ - ${platform.toUpperCase()} LIVE - ] Stream ended for ${state.username}`)
   }))
 }
 
