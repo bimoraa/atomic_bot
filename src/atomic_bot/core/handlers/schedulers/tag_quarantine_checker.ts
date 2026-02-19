@@ -1,14 +1,14 @@
-import { Client }                     from "discord.js"
-import { logger }                     from "@shared/utils"
-import { get_auto_tag_quarantines }   from "@shared/database/managers/quarantine_manager"
-import { remove_quarantine }          from "@shared/database/managers/quarantine_manager"
-import { component }                  from "@shared/utils"
-import { log_error }                  from "@shared/utils/error_logger"
+import { Client }                                       from "discord.js"
+import { logger }                                       from "@shared/utils"
+import { get_auto_tag_quarantines, remove_quarantine }  from "@shared/database/managers/quarantine_manager"
+import { component }                                    from "@shared/utils"
+import { log_error }                                    from "@shared/utils/error_logger"
 
 const log = logger.create_logger("tag_quarantine_checker")
 
 const __target_guild_id    = "1250337227582472243"
 const __server_tag_log_id  = "1457105102044139597"
+const __quarantine_log_id  = "1474186051366031380"
 const __banned_tags        = new Set(["LYNX", "ENVY", "ʟʏɴx", "HAJI"])
 const __check_interval_ms  = 5 * 60 * 1000
 
@@ -50,26 +50,28 @@ export function start_tag_quarantine_checker(client: Client): void {
 
           log.info(`Released ${user.username} (tag no longer banned)`)
 
-          const log_channel = guild.channels.cache.get(__server_tag_log_id)
-          if (log_channel?.isTextBased()) {
-            const log_msg = component.build_message({
-              components: [
-                component.container({
-                  accent_color : 0x57F287,
-                  components   : [
-                    component.section({
-                      content   : [
-                        `## Auto Release - Banned Server Tag Removed`,
-                        `<@${entry.user_id}> was automatically released from quarantine`,
-                      ],
-                      thumbnail : user.displayAvatarURL({ size: 256 }),
-                    }),
-                  ],
-                }),
-              ],
-            })
-            await log_channel.send(log_msg).catch(() => {})
-          }
+          // - SEND RELEASE LOG TO BOTH CHANNELS - \\
+          const release_msg = component.build_message({
+            components: [
+              component.container({
+                accent_color : 0x57F287,
+                components   : [
+                  component.section({
+                    content   : [
+                      `## Auto Release - Banned Server Tag Removed`,
+                      `<@${entry.user_id}> was automatically released from quarantine`,
+                    ],
+                    thumbnail : user.displayAvatarURL({ size: 256 }),
+                  }),
+                ],
+              }),
+            ],
+          })
+
+          const server_log_ch    = guild.channels.cache.get(__server_tag_log_id)
+          const quarantine_log_ch = guild.channels.cache.get(__quarantine_log_id)
+          if (server_log_ch?.isTextBased())    await server_log_ch.send(release_msg).catch(() => {})
+          if (quarantine_log_ch?.isTextBased()) await quarantine_log_ch.send(release_msg).catch(() => {})
         } catch (member_err) {
           log.error(`Error checking member ${entry.user_id}:`, member_err)
         }

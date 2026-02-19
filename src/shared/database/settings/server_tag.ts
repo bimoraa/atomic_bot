@@ -6,6 +6,9 @@ import {
   remove_quarantine,
   get_quarantine,
   is_quarantined,
+  add_quarantine_history,
+  get_quarantine_history,
+  get_quarantine_count,
 }                                    from "../managers/quarantine_manager"
 
 interface server_tag_user {
@@ -19,6 +22,7 @@ interface server_tag_user {
 const __collection              = "server_tag_users"
 const __target_guild_id         = "1250337227582472243"
 const __server_tag_log_id       = "1457105102044139597"
+const __quarantine_log_id       = "1474186051366031380"
 const __quarantine_role_id      = "1265318689130024992"
 const __auto_tag_quarantine_by  = "AUTO_TAG_GUARD"
 
@@ -72,6 +76,50 @@ async function handle_banned_tag_quarantine(
       3650
     )
 
+    // - RECORD HISTORY AND SEND TO QUARANTINE LOG - \\
+    await add_quarantine_history(new_user.id, guild.id, `Auto-quarantined: using banned server tag (${new_tag})`, __auto_tag_quarantine_by, 3650)
+
+    const total_count   = await get_quarantine_count(new_user.id, guild.id)
+    const history       = await get_quarantine_history(new_user.id, guild.id)
+    const prev_history  = history.slice(1)
+    const history_lines = prev_history.length > 0
+      ? prev_history.map((h, i) => [
+          `**${i + 1}.** <t:${h.quarantined_at}:f>`,
+          `> Reason: ${h.reason}`,
+          `> Duration: ${h.days} days`,
+        ].join("\n"))
+      : ["- No previous quarantine history"]
+
+    const quarantine_log_channel = guild.channels.cache.get(__quarantine_log_id)
+    if (quarantine_log_channel?.isTextBased()) {
+      const q_log_msg = component.build_message({
+        components: [
+          component.container({
+            accent_color : 0xED4245,
+            components   : [
+              component.section({
+                content   : "### Auto Quarantine - Banned Server Tag",
+                thumbnail : new_user.displayAvatarURL({ size: 256 }),
+              }),
+              component.divider(),
+              component.text([
+                `- Member: <@${new_user.id}>`,
+                `- Quarantined by: AUTO_TAG_GUARD`,
+                `- Tag: **${new_tag}**`,
+                `- Total Quarantines: **${total_count}x**`,
+              ]),
+              component.divider(),
+              component.text([
+                `### Riwayat Karantina Sebelumnya`,
+                ...history_lines,
+              ]),
+            ],
+          }),
+        ],
+      })
+      await quarantine_log_channel.send(q_log_msg).catch(() => {})
+    }
+
     console.log(`[ - SERVER TAG GUARD - ] Quarantined ${new_user.username} for tag: ${new_tag}`)
 
     const log_channel = guild.channels.cache.get(__server_tag_log_id)
@@ -109,26 +157,27 @@ async function handle_banned_tag_quarantine(
 
   console.log(`[ - SERVER TAG GUARD - ] Released ${new_user.username} (removed banned tag)`)
 
-  const log_channel = guild.channels.cache.get(__server_tag_log_id)
-  if (log_channel?.isTextBased()) {
-    const log_msg = component.build_message({
-      components: [
-        component.container({
-          accent_color : 0x57F287,
-          components   : [
-            component.section({
-              content   : [
-                `## Auto Release - Banned Server Tag Removed`,
-                `<@${new_user.id}> was automatically released from quarantine`,
-              ],
-              thumbnail : new_user.displayAvatarURL({ size: 256 }),
-            }),
-          ],
-        }),
-      ],
-    })
-    await log_channel.send(log_msg).catch(() => {})
-  }
+  const release_msg = component.build_message({
+    components: [
+      component.container({
+        accent_color : 0x57F287,
+        components   : [
+          component.section({
+            content   : [
+              `## Auto Release - Banned Server Tag Removed`,
+              `<@${new_user.id}> was automatically released from quarantine`,
+            ],
+            thumbnail : new_user.displayAvatarURL({ size: 256 }),
+          }),
+        ],
+      }),
+    ],
+  })
+
+  const server_tag_log_ch    = guild.channels.cache.get(__server_tag_log_id)
+  const quarantine_log_ch    = guild.channels.cache.get(__quarantine_log_id)
+  if (server_tag_log_ch?.isTextBased())    await server_tag_log_ch.send(release_msg).catch(() => {})
+  if (quarantine_log_ch?.isTextBased())    await quarantine_log_ch.send(release_msg).catch(() => {})
 }
 
 export async function check_server_tag_change(
@@ -300,6 +349,42 @@ export async function scan_banned_tags_on_startup(client: Client): Promise<void>
             __auto_tag_quarantine_by,
             3650
           )
+          await add_quarantine_history(user.id, guild.id, `Auto-quarantined on startup: using banned server tag (${cur_tag})`, __auto_tag_quarantine_by, 3650)
+
+          const total_count_s  = await get_quarantine_count(user.id, guild.id)
+          const history_s      = await get_quarantine_history(user.id, guild.id)
+          const prev_s         = history_s.slice(1)
+          const history_lines_s = prev_s.length > 0
+            ? prev_s.map((h, i) => [
+                `**${i + 1}.** <t:${h.quarantined_at}:f>`,
+                `> Reason: ${h.reason}`,
+              ].join("\n"))
+            : ["- No previous quarantine history"]
+
+          const q_log_ch = guild.channels.cache.get(__quarantine_log_id)
+          if (q_log_ch?.isTextBased()) {
+            await q_log_ch.send(component.build_message({
+              components: [
+                component.container({
+                  accent_color : 0xED4245,
+                  components   : [
+                    component.section({
+                      content   : "### Auto Quarantine (Startup Scan)",
+                      thumbnail : user.displayAvatarURL({ size: 256 }),
+                    }),
+                    component.divider(),
+                    component.text([
+                      `- Member: <@${user.id}>`,
+                      `- Tag: **${cur_tag}**`,
+                      `- Total Quarantines: **${total_count_s}x**`,
+                    ]),
+                    component.divider(),
+                    component.text([`### Riwayat Karantina Sebelumnya`, ...history_lines_s]),
+                  ],
+                }),
+              ],
+            })).catch(() => {})
+          }
 
           console.log(`[ - SERVER TAG GUARD - ] Startup quarantine: ${user.username} (${cur_tag})`)
           quarantined++
