@@ -253,6 +253,80 @@ export async function check_server_tag_change(
   }
 }
 
+/**
+ * @description Scan all guild members on startup and quarantine/release based on banned tags
+ * @param client - Discord Client
+ */
+export async function scan_banned_tags_on_startup(client: Client): Promise<void> {
+  try {
+    const guild = client.guilds.cache.get(__target_guild_id)
+    if (!guild) {
+      console.error("[ - SERVER TAG GUARD - ] Target guild not found during startup scan")
+      return
+    }
+
+    console.log("[ - SERVER TAG GUARD - ] Starting startup banned tag scan...")
+
+    await guild.members.fetch()
+
+    let quarantined = 0
+    let released    = 0
+
+    for (const [, member] of guild.members.cache) {
+      try {
+        const user    = member.user
+        const cur_tag = user.primaryGuild?.tag
+
+        const is_using_banned = cur_tag ? __banned_tags.has(cur_tag) : false
+        const quarantine_data = await get_quarantine(user.id, guild.id)
+
+        if (is_using_banned && !quarantine_data) {
+          // - MEMBER HAS BANNED TAG BUT NOT QUARANTINED → QUARANTINE - \\
+          const quarantine_role = guild.roles.cache.get(__quarantine_role_id) ||
+                                  await guild.roles.fetch(__quarantine_role_id).catch(() => null)
+          if (!quarantine_role) continue
+
+          const previous_roles = member.roles.cache
+            .filter(r => r.id !== guild.id)
+            .map(r => r.id)
+
+          await member.roles.set([quarantine_role.id], `Auto-quarantined on startup: banned tag ${cur_tag}`)
+          await add_quarantine(
+            user.id,
+            guild.id,
+            quarantine_role.id,
+            previous_roles,
+            `Auto-quarantined on startup: using banned server tag (${cur_tag})`,
+            __auto_tag_quarantine_by,
+            3650
+          )
+
+          console.log(`[ - SERVER TAG GUARD - ] Startup quarantine: ${user.username} (${cur_tag})`)
+          quarantined++
+
+        } else if (!is_using_banned && quarantine_data?.quarantined_by === __auto_tag_quarantine_by) {
+          // - MEMBER NO LONGER HAS BANNED TAG BUT STILL AUTO-QUARANTINED → RELEASE - \\
+          const valid_roles = quarantine_data.previous_roles.filter(rid => guild.roles.cache.has(rid))
+          await member.roles.set(valid_roles, "Auto-released on startup: no longer using banned server tag")
+          await remove_quarantine(user.id, guild.id)
+
+          console.log(`[ - SERVER TAG GUARD - ] Startup release: ${user.username}`)
+          released++
+        }
+      } catch (member_err) {
+        console.error(`[ - SERVER TAG GUARD - ] Error scanning member ${member.id}:`, member_err)
+      }
+    }
+
+    console.log(`[ - SERVER TAG GUARD - ] Startup scan complete. Quarantined: ${quarantined}, Released: ${released}`)
+  } catch (error) {
+    console.error("[ - SERVER TAG GUARD - ] Startup scan failed:", error)
+    await log_error(client, error as Error, "Scan Banned Tags On Startup", {
+      guild_id: __target_guild_id,
+    }).catch(() => {})
+  }
+}
+
 export async function get_all_tagged_users(guild_id: string): Promise<server_tag_user[]> {
   try {
     const users = await db.find_many<server_tag_user>(__collection, { guild_id })

@@ -13,7 +13,7 @@ import * as tempvoice                                                    from "@
 import { register_audit_logs }                                           from "@shared/database/services/audit_log"
 import { handle_afk_return, handle_afk_mentions }                        from "../atomic_bot/core/handlers/shared/controller/afk_controller"
 import { load_afk_from_db, load_afk_ignored_channels_from_db }           from "../atomic_bot/infrastructure/cache/afk"
-import { check_server_tag_change }                                       from "@shared/database/settings/server_tag"
+import { check_server_tag_change, scan_banned_tags_on_startup }           from "@shared/database/settings/server_tag"
 import { start_free_script_checker }                                     from "@shared/database/managers/free_script_manager"
 import { start_service_provider_cache, stop_service_provider_cache }     from "../atomic_bot/infrastructure/api/service_provider_cache"
 import { db, component }                                                 from "@shared/utils"
@@ -248,6 +248,7 @@ client.once("ready", async () => {
       start_scheduler(client)
       start_weekly_reset_scheduler()
       start_quarantine_scheduler(client)
+      scan_banned_tags_on_startup(client).catch(() => {})
       start_free_script_checker(client)
       start_service_provider_cache(client)
       start_share_settings_forum_scheduler(client)
