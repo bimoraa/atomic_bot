@@ -1,12 +1,16 @@
-import { Client, GuildMember, Guild, Role } from "discord.js"
-import { component, time }                 from "@shared/utils"
-import { log_error }                       from "@shared/utils/error_logger"
-import { 
-  add_quarantine, 
-  remove_quarantine, 
+import { Client, GuildMember, Guild, Role, TextChannel } from "discord.js"
+import { component, time }                               from "@shared/utils"
+import { log_error }                                     from "@shared/utils/error_logger"
+import { is_admin, is_staff }                            from "@shared/database/settings/permissions"
+import {
+  add_quarantine,
+  remove_quarantine,
   get_quarantine,
   is_quarantined,
-}                                          from "@shared/database/managers/quarantine_manager"
+  add_quarantine_history,
+  get_quarantine_history,
+  get_quarantine_count,
+}                                                        from "@shared/database/managers/quarantine_manager"
 
 interface quarantine_member_options {
   client   : Client
@@ -23,7 +27,8 @@ interface release_quarantine_options {
   user_id  : string
 }
 
-const __quarantine_role_id = "1265318689130024992"
+const __quarantine_role_id  = "1265318689130024992"
+const __quarantine_log_id   = "1474186051366031380"
 
 /**
  * @description Get quarantine role for a guild
@@ -46,7 +51,9 @@ export async function quarantine_member(options: quarantine_member_options) {
   const { client, guild, executor, target, days, reason } = options
 
   try {
-    if (!executor.permissions.has("ModerateMembers")) {
+    const executor_is_admin = is_admin(executor) || executor.permissions.has("Administrator")
+
+    if (!executor_is_admin && !is_staff(executor) && !executor.permissions.has("ModerateMembers")) {
       return {
         success : false,
         error   : "You don't have permission to quarantine members.",
@@ -60,7 +67,8 @@ export async function quarantine_member(options: quarantine_member_options) {
       }
     }
 
-    if (executor.roles.highest.position <= target.roles.highest.position) {
+    // - SKIP ROLE HIERARCHY CHECK FOR ADMINS - \\
+    if (!executor_is_admin && executor.roles.highest.position <= target.roles.highest.position) {
       return {
         success : false,
         error   : "You cannot quarantine a member with equal or higher role.",
@@ -111,7 +119,54 @@ export async function quarantine_member(options: quarantine_member_options) {
       days
     )
 
-    const avatar_url = target.user.displayAvatarURL({ size: 512 })
+    // - RECORD HISTORY AND SEND LOG - \\
+    await add_quarantine_history(target.id, guild.id, reason, executor.id, days)
+
+    const avatar_url   = target.user.displayAvatarURL({ size: 512 })
+    const total_count  = await get_quarantine_count(target.id, guild.id)
+    const history     = await get_quarantine_history(target.id, guild.id)
+    const prev_history = history.slice(1)
+
+    const history_lines = prev_history.length > 0
+      ? prev_history.map((h, i) => [
+          `**${i + 1}.** ${time.full_date_time(h.quarantined_at)}`,
+          `> Reason: ${h.reason}`,
+          `> Duration: ${h.days} days`,
+          `> By: <@${h.quarantined_by}>`,
+        ].join("\n"))
+      : ["- No previous quarantine history"]
+
+    const log_channel = guild.channels.cache.get(__quarantine_log_id) as TextChannel | undefined
+    if (log_channel?.isTextBased()) {
+      const log_msg = component.build_message({
+        components: [
+          component.container({
+            accent_color : 0xED4245,
+            components   : [
+              component.section({
+                content   : "### Member Quarantined",
+                thumbnail : avatar_url,
+              }),
+              component.divider(),
+              component.text([
+                `- Member: <@${target.id}>`,
+                `- Quarantined by: <@${executor.id}>`,
+                `- Duration: ${days} days`,
+                `- Release: ${time.relative_time(release_at)} || ${time.full_date_time(release_at)}`,
+                `- Reason: ${reason}`,
+                `- Total Quarantines: **${total_count}x**`,
+              ]),
+              component.divider(),
+              component.text([
+                `### Riwayat Karantina Sebelumnya`,
+                ...history_lines,
+              ]),
+            ],
+          }),
+        ],
+      })
+      await log_channel.send(log_msg).catch(() => {})
+    }
 
     const quarantine_message = component.build_message({
       components: [
