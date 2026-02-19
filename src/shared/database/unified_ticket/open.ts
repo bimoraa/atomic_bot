@@ -220,12 +220,6 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
   set_ticket(thread.id, ticket_data)
   set_user_open_ticket(ticket_type, user_id, thread.id)
 
-  let welcome_content = [
-    `## ${config.name} Ticket`,
-    `Welcome to your ${config.name.toLowerCase()} ticket, <@${user_id}>!`,
-    ``,
-  ]
-
   if (ticket_type === "content_creator" && description) {
     try {
       const app_data = ticket_data.application_data || JSON.parse(description)
@@ -326,48 +320,77 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
       api.edit_deferred_reply(interaction, reply_message)
       return
     } catch {
-      welcome_content.push(`- **Description:** ${description}`)
-      welcome_content.push(``)
-      welcome_content.push(`Our staff will assist you shortly.`)
+      // - CC PARSE FAILED, SEND GENERIC WELCOME - \\
+      const fallback_message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text(`## ${config.name} Ticket\nWelcome to your ${config.name.toLowerCase()} ticket, <@${user_id}> !`),
+            ],
+          }),
+          component.container({
+            components: [
+              component.text(`Our staff will assist you shortly.`),
+            ],
+          }),
+          component.container({
+            components: [
+              component.action_row(
+                component.danger_button("Close Ticket", `${config.prefix}_close`),
+                component.secondary_button("Close with Reason", `${config.prefix}_close_reason`),
+                component.success_button("Claim Ticket", `${config.prefix}_claim`),
+                component.secondary_button("Add Member", `${config.prefix}_add_member`)
+              ),
+            ],
+          }),
+        ],
+      })
+      await api.send_components_v2(thread.id, token, fallback_message)
     }
   }
   
   if (ticket_type !== "content_creator") {
-    if (issue_type) {
-      welcome_content.push(`- **Issue Type:** ${issue_type}`)
-    }
+    // - BUILD INFO LINES - \\
+    const info_lines: string[] = []
+
     if (description) {
-      welcome_content.push(`- **Description:** ${description}`)
-      welcome_content.push(``)
+      info_lines.push(`- Description: \n> ${description}\n`)
+    } else if (issue_type) {
+      info_lines.push(`- Issue Type: ${issue_type}\n`)
     }
 
-    if (config.show_payment_message) {
-      welcome_content.push(`Please tell us which script you want to purchase and your preferred payment method.`)
-    } else {
-      welcome_content.push(`Our staff will assist you shortly.`)
-    }
+    const closing_line = config.show_payment_message
+      ? `Please tell us which script you want to purchase and your preferred payment method.`
+      : `Our staff will assist you shortly.`
+
+    const welcome_message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text(`## ${config.name} Ticket\nWelcome to your ${config.name.toLowerCase()} ticket, <@${user_id}> !`),
+          ],
+        }),
+        component.container({
+          components: [
+            ...(info_lines.length > 0 ? [component.text(info_lines.join("\n")), component.divider(2)] : []),
+            component.text(closing_line),
+          ],
+        }),
+        component.container({
+          components: [
+            component.action_row(
+              component.danger_button("Close Ticket", `${config.prefix}_close`),
+              component.secondary_button("Close with Reason", `${config.prefix}_close_reason`),
+              component.success_button("Claim Ticket", `${config.prefix}_claim`),
+              component.secondary_button("Add Member", `${config.prefix}_add_member`)
+            ),
+          ],
+        }),
+      ],
+    })
+
+    await api.send_components_v2(thread.id, token, welcome_message)
   }
-
-  const welcome_message = component.build_message({
-    components: [
-      component.container({
-        components: [
-          component.section({
-            content: welcome_content,
-            thumbnail: avatar_url,
-          }),
-          component.action_row(
-            component.danger_button("Close Ticket", `${config.prefix}_close`),
-            component.secondary_button("Close with Reason", `${config.prefix}_close_reason`),
-            component.primary_button("Claim Ticket", `${config.prefix}_claim`),
-            component.secondary_button("Add Member", `${config.prefix}_add_member`)
-          ),
-        ],
-      }),
-    ],
-  })
-
-  await api.send_components_v2(thread.id, token, welcome_message)
 
   // - PARALLEL OPERATIONS FOR SPEED - \\
   const parallel_tasks = []
