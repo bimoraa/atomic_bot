@@ -81,6 +81,15 @@ export const command: Command = {
               "19. Mengabaikan atau meremehkan aturan server dengan alasan apa pun.",
               "20. Melakukan aktivitas mencurigakan yang berpotensi membahayakan keamanan server.",
             ]),
+            component.divider(2),
+            component.text([
+              "## Cara Menghilangkan Quarantine",
+              "",
+              "- Ajukan banding dengan menekan tombol **\"Appeal\"**, lalu jelaskan secara jelas dan jujur mengenai situasi yang terjadi.",
+              "- Hapus atau ganti Server Tag yang Anda gunakan jika Server Tag tersebut melanggar atau diblokir oleh Atomic Community.",
+              "",
+              "Tunggu proses peninjauan oleh staff dan patuhi seluruh aturan selama masa karantina.",
+            ]),
           ],
         }),
         component.container({

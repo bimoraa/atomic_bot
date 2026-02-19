@@ -12,13 +12,14 @@ import {
   has_required_role,
   issue_labels,
 } from "./state"
-import { open_ticket } from "./open"
-import { close_ticket } from "./close"
-import { claim_ticket } from "./claim"
-import { join_ticket } from "./join"
-import { reopen_ticket } from "./reopen"
-import { add_member } from "./add_member"
-import { modal } from "../../utils"
+import { open_ticket }                                       from "./open"
+import { close_ticket }                                      from "./close"
+import { claim_ticket }                                      from "./claim"
+import { join_ticket }                                       from "./join"
+import { reopen_ticket }                                     from "./reopen"
+import { add_member }                                        from "./add_member"
+import { modal, component }                                  from "../../utils"
+import { has_used_appeal, mark_appeal_used }                 from "../../database/managers/appeal_quarantine_manager"
 
 export async function handle_ticket_button(interaction: ButtonInteraction): Promise<boolean> {
   const custom_id = interaction.customId
@@ -103,6 +104,33 @@ export async function handle_ticket_button(interaction: ButtonInteraction): Prom
       }
 
       await interaction.deferReply({ flags: 64 })
+
+      // - ONE-TIME APPEAL: BLOCK IF ALREADY USED - \\
+      if (type_key === "appeal_quarantine") {
+        const already_used = await has_used_appeal(interaction.user.id, interaction.guildId!)
+        if (already_used) {
+          await interaction.editReply({
+            ...component.build_message({
+              components: [
+                component.container({
+                  accent_color : 0xED4245,
+                  components   : [
+                    component.text([
+                      "## Appeal Sudah Digunakan",
+                      "Anda hanya dapat mengajukan appeal quarantine **1 kali**.",
+                      "Apabila Anda merasa ada kesalahan, hubungi staff secara langsung.",
+                    ]),
+                  ],
+                }),
+              ],
+            }),
+          })
+          return true
+        }
+
+        await mark_appeal_used(interaction.user.id, interaction.guildId!, "pending")
+      }
+
       await open_ticket({ interaction, ticket_type: type_key })
       return true
     }
