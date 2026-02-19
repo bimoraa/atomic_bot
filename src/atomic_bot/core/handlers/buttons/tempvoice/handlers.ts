@@ -669,8 +669,22 @@ export async function handle_tempvoice_delete(interaction: ButtonInteraction): P
 }
 
 export async function handle_tempvoice_leaderboard(interaction: ButtonInteraction): Promise<void> {
-  const guild_id    = interaction.guildId!
-  const leaderboard = await voice_tracker.get_channel_leaderboard(guild_id, 10)
+  const guild_id = interaction.guildId!
+
+  // - FETCH A WIDER SET TO RECONCILE STALE ENTRIES - \\
+  let leaderboard = await voice_tracker.get_channel_leaderboard(guild_id, 50)
+
+  // - MARK STALE ACTIVE CHANNELS AS DELETED (BOT RESTART DRIFT) - \\
+  const stale_ids = leaderboard
+    .filter(r => !r.deleted_at && !interaction.guild!.channels.cache.has(r.channel_id))
+    .map(r => r.channel_id)
+
+  if (stale_ids.length > 0) {
+    await Promise.all(stale_ids.map(id => voice_tracker.track_channel_deleted(id)))
+    leaderboard = await voice_tracker.get_channel_leaderboard(guild_id, 50)
+  }
+
+  leaderboard = leaderboard.slice(0, 10)
 
   if (leaderboard.length === 0) {
     await interaction.reply({
