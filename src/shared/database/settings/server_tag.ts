@@ -60,11 +60,15 @@ async function handle_banned_tag_quarantine(
       return
     }
 
-    const previous_roles = member.roles.cache
-      .filter(r => r.id !== guild.id)
+    const managed_roles = member.roles.cache
+      .filter(r => r.managed || r.id === guild.id)
       .map(r => r.id)
 
-    await member.roles.set([quarantine_role.id], `Auto-quarantined: banned server tag ${new_tag}`)
+    const previous_roles = member.roles.cache
+      .filter(r => !r.managed && r.id !== guild.id)
+      .map(r => r.id)
+
+    await member.roles.set([...managed_roles, quarantine_role.id], `Auto-quarantined: banned server tag ${new_tag}`)
 
     await add_quarantine(
       new_user.id,
@@ -151,8 +155,12 @@ async function handle_banned_tag_quarantine(
   const quarantine_data = await get_quarantine(new_user.id, guild.id)
   if (!quarantine_data || quarantine_data.quarantined_by !== __auto_tag_quarantine_by) return
 
+  const managed_roles = member.roles.cache
+    .filter(r => r.managed || r.id === guild.id)
+    .map(r => r.id)
+
   const valid_roles = quarantine_data.previous_roles.filter(rid => guild.roles.cache.has(rid))
-  await member.roles.set(valid_roles, "Auto-released: no longer using banned server tag")
+  await member.roles.set([...managed_roles, ...valid_roles], "Auto-released: no longer using banned server tag")
   await remove_quarantine(new_user.id, guild.id)
 
   console.log(`[ - SERVER TAG GUARD - ] Released ${new_user.username} (removed banned tag)`)
@@ -335,11 +343,15 @@ export async function scan_banned_tags_on_startup(client: Client): Promise<void>
                                   await guild.roles.fetch(__quarantine_role_id).catch(() => null)
           if (!quarantine_role) continue
 
-          const previous_roles = member.roles.cache
-            .filter(r => r.id !== guild.id)
+          const managed_roles = member.roles.cache
+            .filter(r => r.managed || r.id === guild.id)
             .map(r => r.id)
 
-          await member.roles.set([quarantine_role.id], `Auto-quarantined on startup: banned tag ${cur_tag}`)
+          const previous_roles = member.roles.cache
+            .filter(r => !r.managed && r.id !== guild.id)
+            .map(r => r.id)
+
+          await member.roles.set([...managed_roles, quarantine_role.id], `Auto-quarantined on startup: banned tag ${cur_tag}`)
           await add_quarantine(
             user.id,
             guild.id,
@@ -391,8 +403,12 @@ export async function scan_banned_tags_on_startup(client: Client): Promise<void>
 
         } else if (!is_using_banned && quarantine_data?.quarantined_by === __auto_tag_quarantine_by) {
           // - MEMBER NO LONGER HAS BANNED TAG BUT STILL AUTO-QUARANTINED → RELEASE - \\
+          const managed_roles = member.roles.cache
+            .filter(r => r.managed || r.id === guild.id)
+            .map(r => r.id)
+
           const valid_roles = quarantine_data.previous_roles.filter(rid => guild.roles.cache.has(rid))
-          await member.roles.set(valid_roles, "Auto-released on startup: no longer using banned server tag")
+          await member.roles.set([...managed_roles, ...valid_roles], "Auto-released on startup: no longer using banned server tag")
           await remove_quarantine(user.id, guild.id)
 
           console.log(`[ - SERVER TAG GUARD - ] Startup release: ${user.username}`)

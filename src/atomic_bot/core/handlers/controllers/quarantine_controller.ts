@@ -75,15 +75,24 @@ export async function quarantine_member(options: quarantine_member_options) {
       }
     }
 
-    if (!target.manageable) {
+    // - FORCE FRESH FETCH TO AVOID STALE CACHE ON MANAGEABLE CHECK - \\
+    const fresh_target = await guild.members.fetch({ user: target.id, force: true }).catch(() => null)
+    if (!fresh_target) {
       return {
         success : false,
-        error   : "I cannot quarantine this member. They may have a higher role than me.",
+        error   : "Could not fetch member data. They may have left the server.",
+      }
+    }
+
+    if (!fresh_target.manageable) {
+      return {
+        success : false,
+        error   : "I cannot quarantine this member. My role must be higher than theirs.",
       }
     }
 
     // - CHECK IF ALREADY QUARANTINED - \\
-    const already_quarantined = await is_quarantined(target.id, guild.id)
+    const already_quarantined = await is_quarantined(fresh_target.id, guild.id)
     if (already_quarantined) {
       return {
         success : false,
@@ -99,18 +108,29 @@ export async function quarantine_member(options: quarantine_member_options) {
       }
     }
 
-    const previous_roles  = target.roles.cache
-      .filter(role => role.id !== guild.id)
+    if (guild.members.me!.roles.highest.position <= quarantine_role.position) {
+      return {
+        success : false,
+        error   : "I cannot assign the quarantine role because it is higher than my highest role.",
+      }
+    }
+
+    const managed_roles = fresh_target.roles.cache
+      .filter(role => role.managed || role.id === guild.id)
+      .map(role => role.id)
+
+    const previous_roles = fresh_target.roles.cache
+      .filter(role => !role.managed && role.id !== guild.id)
       .map(role => role.id)
 
     // - REMOVE ALL ROLES AND ADD QUARANTINE ROLE - \\
-    await target.roles.set([quarantine_role.id], reason)
+    await fresh_target.roles.set([...managed_roles, quarantine_role.id], reason)
 
     const now        = Math.floor(Date.now() / 1000)
     const release_at = now + (days * 24 * 60 * 60)
 
     await add_quarantine(
-      target.id,
+      fresh_target.id,
       guild.id,
       quarantine_role.id,
       previous_roles,
@@ -120,11 +140,11 @@ export async function quarantine_member(options: quarantine_member_options) {
     )
 
     // - RECORD HISTORY AND SEND LOG - \\
-    await add_quarantine_history(target.id, guild.id, reason, executor.id, days)
+    await add_quarantine_history(fresh_target.id, guild.id, reason, executor.id, days)
 
-    const avatar_url   = target.user.displayAvatarURL({ size: 512 })
-    const total_count  = await get_quarantine_count(target.id, guild.id)
-    const history     = await get_quarantine_history(target.id, guild.id)
+    const avatar_url   = fresh_target.user.displayAvatarURL({ size: 512 })
+    const total_count  = await get_quarantine_count(fresh_target.id, guild.id)
+    const history      = await get_quarantine_history(fresh_target.id, guild.id)
     const prev_history = history.slice(1)
 
     const history_lines = prev_history.length > 0
@@ -149,7 +169,7 @@ export async function quarantine_member(options: quarantine_member_options) {
               }),
               component.divider(),
               component.text([
-                `- Member: <@${target.id}>`,
+                `- Member: <@${fresh_target.id}>`,
                 `- Quarantined by: <@${executor.id}>`,
                 `- Duration: ${days} days`,
                 `- Release: ${time.relative_time(release_at)} || ${time.full_date_time(release_at)}`,
@@ -179,7 +199,7 @@ export async function quarantine_member(options: quarantine_member_options) {
             }),
             component.divider(),
             component.text([
-              `- Member: <@${target.id}>`,
+              `- Member: <@${fresh_target.id}>`,
               `- Quarantined by: <@${executor.id}>`,
               `- Duration: ${days} days`,
               `- Release: ${time.relative_time(release_at)} || ${time.full_date_time(release_at)}`,
@@ -190,7 +210,7 @@ export async function quarantine_member(options: quarantine_member_options) {
         component.container({
           components: [
             component.action_row(
-              component.danger_button("Release Early", `quarantine_release:${target.id}`)
+              component.danger_button("Release Early", `quarantine_release:${fresh_target.id}`)
             ),
           ],
         }),
@@ -243,11 +263,15 @@ export async function release_quarantine(options: release_quarantine_options) {
     }
 
     // - RESTORE PREVIOUS ROLES - \\
+    const managed_roles = member.roles.cache
+      .filter(role => role.managed || role.id === guild.id)
+      .map(role => role.id)
+
     const valid_roles = quarantine_data.previous_roles.filter(role_id => 
       guild.roles.cache.has(role_id)
     )
 
-    await member.roles.set(valid_roles, "Released from quarantine")
+    await member.roles.set([...managed_roles, ...valid_roles], "Released from quarantine")
     await remove_quarantine(user_id, guild.id)
 
     return {
