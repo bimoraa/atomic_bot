@@ -1,6 +1,12 @@
 import { Client, User, PartialUser } from "discord.js"
 import { db, component }             from "../../utils"
 import { log_error }                 from "../../utils/error_logger"
+import {
+  add_quarantine,
+  remove_quarantine,
+  get_quarantine,
+  is_quarantined,
+}                                    from "../managers/quarantine_manager"
 
 interface server_tag_user {
   user_id    : string
@@ -10,9 +16,127 @@ interface server_tag_user {
   added_at   : number
 }
 
-const __collection          = "server_tag_users"
-const __target_guild_id     = "1250337227582472243"
-const __server_tag_log_id   = "1457105102044139597"
+const __collection              = "server_tag_users"
+const __target_guild_id         = "1250337227582472243"
+const __server_tag_log_id       = "1457105102044139597"
+const __quarantine_role_id      = "1265318689130024992"
+const __auto_tag_quarantine_by  = "AUTO_TAG_GUARD"
+
+// - TAGS THAT TRIGGER AUTO-QUARANTINE - \\
+const __banned_tags = new Set(["LYNX", "ENVY", "ʟʏɴx", "HAJI"])
+
+/**
+ * @description Auto-quarantine member when they equip a banned server tag, release when removed
+ * @param client   - Discord Client
+ * @param new_user - Updated user
+ * @param old_tag  - Previous primary guild tag
+ * @param new_tag  - New primary guild tag
+ */
+async function handle_banned_tag_quarantine(
+  client   : Client,
+  new_user : User,
+  old_tag  : string | null | undefined,
+  new_tag  : string | null | undefined,
+): Promise<void> {
+  const guild = client.guilds.cache.get(__target_guild_id)
+  if (!guild) return
+
+  const member = await guild.members.fetch(new_user.id).catch(() => null)
+  if (!member) return
+
+  const has_banned_new_tag = new_tag ? __banned_tags.has(new_tag) : false
+  const had_banned_old_tag = old_tag ? __banned_tags.has(old_tag) : false
+
+  // - NEWLY EQUIPPED BANNED TAG → QUARANTINE - \\
+  if (has_banned_new_tag && !had_banned_old_tag) {
+    const already = await is_quarantined(new_user.id, guild.id)
+    if (already) return
+
+    const quarantine_role = guild.roles.cache.get(__quarantine_role_id) ||
+                            await guild.roles.fetch(__quarantine_role_id).catch(() => null)
+    if (!quarantine_role) {
+      console.error("[ - SERVER TAG GUARD - ] Quarantine role not found")
+      return
+    }
+
+    const previous_roles = member.roles.cache
+      .filter(r => r.id !== guild.id)
+      .map(r => r.id)
+
+    await member.roles.set([quarantine_role.id], `Auto-quarantined: banned server tag ${new_tag}`)
+
+    await add_quarantine(
+      new_user.id,
+      guild.id,
+      quarantine_role.id,
+      previous_roles,
+      `Auto-quarantined: using banned server tag (${new_tag})`,
+      __auto_tag_quarantine_by,
+      3650
+    )
+
+    console.log(`[ - SERVER TAG GUARD - ] Quarantined ${new_user.username} for tag: ${new_tag}`)
+
+    const log_channel = guild.channels.cache.get(__server_tag_log_id)
+    if (log_channel?.isTextBased()) {
+      const log_msg = component.build_message({
+        components: [
+          component.container({
+            accent_color : 0xED4245,
+            components   : [
+              component.section({
+                content   : [
+                  `## Auto Quarantine - Banned Server Tag`,
+                  `<@${new_user.id}> was automatically quarantined`,
+                  ``,
+                  `Tag: **${new_tag}**`,
+                ],
+                thumbnail : new_user.displayAvatarURL({ size: 256 }),
+              }),
+            ],
+          }),
+        ],
+      })
+      await log_channel.send(log_msg).catch(() => {})
+    }
+    return
+  }
+
+  // - REMOVED BANNED TAG → RELEASE QUARANTINE - \\
+  if (had_banned_old_tag && !has_banned_new_tag) {
+    const quarantine_data = await get_quarantine(new_user.id, guild.id)
+    if (!quarantine_data || quarantine_data.quarantined_by !== __auto_tag_quarantine_by) return
+
+    const valid_roles = quarantine_data.previous_roles.filter(rid => guild.roles.cache.has(rid))
+    await member.roles.set(valid_roles, "Auto-released: no longer using banned server tag")
+    await remove_quarantine(new_user.id, guild.id)
+
+    console.log(`[ - SERVER TAG GUARD - ] Released ${new_user.username} (removed banned tag)`)
+
+    const log_channel = guild.channels.cache.get(__server_tag_log_id)
+    if (log_channel?.isTextBased()) {
+      const log_msg = component.build_message({
+        components: [
+          component.container({
+            accent_color : 0x57F287,
+            components   : [
+              component.section({
+                content   : [
+                  `## Auto Release - Banned Server Tag Removed`,
+                  `<@${new_user.id}> was automatically released from quarantine`,
+                  ``,
+                  `Previous tag: **${old_tag}**`,
+                ],
+                thumbnail : new_user.displayAvatarURL({ size: 256 }),
+              }),
+            ],
+          }),
+        ],
+      })
+      await log_channel.send(log_msg).catch(() => {})
+    }
+  }
+}
 
 export async function check_server_tag_change(
   client   : Client,
@@ -30,10 +154,13 @@ export async function check_server_tag_change(
     
     const old_tag = old_user.primaryGuild?.tag
     const new_tag = new_user.primaryGuild?.tag
-    
+
     const old_guild_id = old_user.primaryGuild?.identityGuildId
     const new_guild_id = new_user.primaryGuild?.identityGuildId
-    
+
+    // - CHECK IF BANNED TAG WAS EQUIPPED OR REMOVED - \\
+    await handle_banned_tag_quarantine(client, new_user, old_tag, new_tag)
+
     const switched_to_target_guild = (old_guild_id !== __target_guild_id || !old_tag) && new_tag && new_guild_id === __target_guild_id
     
     if (switched_to_target_guild) {
