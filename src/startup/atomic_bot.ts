@@ -26,6 +26,7 @@ import { start_webhook_server, set_bot_ready }                           from ".
 import { start_scheduler }                                               from "../atomic_bot/modules/staff/staff/schedule_hwid_less"
 import { start_weekly_reset_scheduler }                                  from "../atomic_bot/core/handlers/schedulers/weekly_work_reset"
 import { start_quarantine_scheduler }                                    from "../atomic_bot/core/handlers/schedulers/quarantine_release"
+import { start_tag_quarantine_checker }                                  from "../atomic_bot/core/handlers/schedulers/tag_quarantine_checker"
 import { load_middleman_tickets_on_startup }                             from "../atomic_bot/core/handlers/schedulers/load_middleman_tickets"
 import { start_share_settings_forum_scheduler }                          from "../atomic_bot/core/handlers/schedulers/share_settings_forum"
 import * as share_settings                                               from "../atomic_bot/core/handlers/shared/controller/share_settings_controller"
@@ -248,6 +249,7 @@ client.once("ready", async () => {
       start_scheduler(client)
       start_weekly_reset_scheduler()
       start_quarantine_scheduler(client)
+      start_tag_quarantine_checker(client)
       scan_banned_tags_on_startup(client).catch(() => {})
       start_free_script_checker(client)
       start_service_provider_cache(client)
