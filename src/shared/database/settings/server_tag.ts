@@ -27,7 +27,8 @@ const __quarantine_role_id      = "1265318689130024992"
 const __auto_tag_quarantine_by  = "AUTO_TAG_GUARD"
 
 // - TAGS THAT TRIGGER AUTO-QUARANTINE - \\
-const __banned_tags = new Set(["LYNX", "ENVY", "ʟʏɴx", "HAJI"])
+const __banned_tags = new Set(["ENVY", "HAJI"])
+const __auto_release_tags = new Set(["LYNX", "ʟʏɴx"])
 
 /**
  * @description Auto-quarantine member when they equip a banned server tag, release when removed
@@ -45,8 +46,54 @@ async function handle_banned_tag_quarantine(
 
   const member = await guild.members.fetch(new_user.id).catch(() => null)
   if (!member) return
+  const target_guild = guild
+  const target_member = member
 
   const is_using_banned_tag = new_tag ? __banned_tags.has(new_tag) : false
+  const is_using_release_tag = new_tag ? __auto_release_tags.has(new_tag) : false
+
+  async function release_auto_tag_quarantine(reason: string): Promise<void> {
+    const quarantine_data = await get_quarantine(new_user.id, target_guild.id)
+    if (!quarantine_data || quarantine_data.quarantined_by !== __auto_tag_quarantine_by) return
+
+    const managed_roles = target_member.roles.cache
+      .filter(r => r.managed || r.id === target_guild.id)
+      .map(r => r.id)
+
+    const valid_roles = quarantine_data.previous_roles.filter(rid => target_guild.roles.cache.has(rid))
+    await target_member.roles.set([...managed_roles, ...valid_roles], reason)
+    await remove_quarantine(new_user.id, target_guild.id)
+
+    console.log(`[ - SERVER TAG GUARD - ] Released ${new_user.username} (${reason})`)
+
+    const release_msg = component.build_message({
+      components: [
+        component.container({
+          accent_color : 0x57F287,
+          components   : [
+            component.section({
+              content   : [
+                `## Auto Release - Banned Server Tag Removed`,
+                `<@${new_user.id}> was automatically released from quarantine`,
+                `Reason: ${reason}`,
+              ],
+              thumbnail : new_user.displayAvatarURL({ size: 256 }),
+            }),
+          ],
+        }),
+      ],
+    })
+
+    const server_tag_log_ch = target_guild.channels.cache.get(__server_tag_log_id)
+    const quarantine_log_ch = target_guild.channels.cache.get(__quarantine_log_id)
+    if (server_tag_log_ch?.isTextBased()) await server_tag_log_ch.send(release_msg).catch(() => {})
+    if (quarantine_log_ch?.isTextBased()) await quarantine_log_ch.send(release_msg).catch(() => {})
+  }
+
+  if (is_using_release_tag) {
+    await release_auto_tag_quarantine("Auto-released: using whitelisted server tag LYNX")
+    return
+  }
 
   if (is_using_banned_tag) {
     // - ALREADY QUARANTINED, SKIP - \\
@@ -152,40 +199,7 @@ async function handle_banned_tag_quarantine(
   }
 
   // - NOT USING BANNED TAG — CHECK IF AUTO-QUARANTINE SHOULD BE LIFTED - \\
-  const quarantine_data = await get_quarantine(new_user.id, guild.id)
-  if (!quarantine_data || quarantine_data.quarantined_by !== __auto_tag_quarantine_by) return
-
-  const managed_roles = member.roles.cache
-    .filter(r => r.managed || r.id === guild.id)
-    .map(r => r.id)
-
-  const valid_roles = quarantine_data.previous_roles.filter(rid => guild.roles.cache.has(rid))
-  await member.roles.set([...managed_roles, ...valid_roles], "Auto-released: no longer using banned server tag")
-  await remove_quarantine(new_user.id, guild.id)
-
-  console.log(`[ - SERVER TAG GUARD - ] Released ${new_user.username} (removed banned tag)`)
-
-  const release_msg = component.build_message({
-    components: [
-      component.container({
-        accent_color : 0x57F287,
-        components   : [
-          component.section({
-            content   : [
-              `## Auto Release - Banned Server Tag Removed`,
-              `<@${new_user.id}> was automatically released from quarantine`,
-            ],
-            thumbnail : new_user.displayAvatarURL({ size: 256 }),
-          }),
-        ],
-      }),
-    ],
-  })
-
-  const server_tag_log_ch    = guild.channels.cache.get(__server_tag_log_id)
-  const quarantine_log_ch    = guild.channels.cache.get(__quarantine_log_id)
-  if (server_tag_log_ch?.isTextBased())    await server_tag_log_ch.send(release_msg).catch(() => {})
-  if (quarantine_log_ch?.isTextBased())    await quarantine_log_ch.send(release_msg).catch(() => {})
+  await release_auto_tag_quarantine("Auto-released: no longer using banned server tag")
 }
 
 export async function check_server_tag_change(
