@@ -2,6 +2,13 @@
 trigger: always_on
 ---
 
+---
+alwaysApply: true
+---
+
+---
+applyTo: '**'
+---
 ## CODE RULES:
 - Code harus sneak case
 - Code harus rapih
@@ -24,6 +31,8 @@ components[0].components[0].accessory[BASE_TYPE_REQUIRED]: This field is require
 tolong buat function kayak
 
 function dalam shared/controller, kayak kalo command /reminder atau dari /reminder-cancel (yang berkaitan dengan fiturnya) dia ke -> /reminder_controller gitu
+
+tolong utamakan performance di setiap kode yang dibuat, dan tolong buat efisien sebisa mungkin (dari mulai biaya hosting, dan database harus efisien)
 
 
 ---
@@ -76,10 +85,7 @@ kode wajib rapi dan terorganisir
 
 tolong ikuti struktur file/folder yang sudah ada di project
 
---- 
-
-jangan buat dokumentasi.
 
 ---
 
-jangan buat example files. kecuali di folder /guide
+constant harus di lower case, dan kalau lebih dari 1 kata harus pake underscore, contoh: `const __my_constant = "value";`

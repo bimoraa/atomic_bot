@@ -5,8 +5,8 @@ import {
   ActionRowBuilder,
   UserSelectMenuBuilder,
 } from "discord.js"
-import { get_ticket } from "./state"
-import { is_admin, is_staff } from "../settings/permissions"
+import { get_ticket } from "../state"
+import { is_admin, is_staff } from "../../settings/permissions"
 
 const __helper_role_id = "1357767950421065981"
 

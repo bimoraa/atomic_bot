@@ -6,15 +6,15 @@ import {
   remove_user_open_ticket,
   delete_ticket_db,
   load_ticket,
-} from "./state"
-import { component, time, api, format } from "../../utils"
-import * as transcript from "../../utils/transcript"
+}                                                    from "@shared/database/unified_ticket/state"
+import { component, api, format, transcript, time } from "@shared/utils"
+import { log_error }                                from "@shared/utils/error_logger"
 
 interface CloseTicketOptions {
-  thread:    ThreadChannel
-  client:    Client
+  thread: ThreadChannel
+  client: Client
   closed_by: User | "System"
-  reason?:   string
+  reason?: string
 }
 
 export async function close_ticket(options: CloseTicketOptions): Promise<void> {
@@ -36,17 +36,17 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
     return
   }
 
-  const owner_id     = data.owner_id
-  const ticket_id    = data.ticket_id || "Unknown"
-  const claimed_by   = data.claimed_by
-  const open_time    = data.open_time
-  const open_log_id  = data.log_message_id
-  const issue_type   = data.issue_type
-  const description  = data.description
+  const owner_id = data.owner_id
+  const ticket_id = data.ticket_id || "Unknown"
+  const claimed_by = data.claimed_by
+  const open_time = data.open_time
+  const open_log_id = data.log_message_id
+  const issue_type = data.issue_type
+  const description = data.description
 
   // - WEB_URL should point to Next.js web app (Vercel), not bot server - \\
-  const web_url      = process.env.WEB_URL || "https://maxime.vercel.app"
-  const full_url     = web_url.startsWith("http") ? web_url : `https://${web_url}`
+  const web_url = process.env.WEB_URL || "https://maxime.vercel.app"
+  const full_url = web_url.startsWith("http") ? web_url : `https://${web_url}`
 
   if (owner_id) {
     remove_user_open_ticket(data.ticket_type, owner_id)
@@ -55,8 +55,8 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
   delete_ticket(thread.id)
   await delete_ticket_db(thread.id)
 
-  const timestamp     = time.now()
-  const token         = api.get_token()
+  const timestamp = time.now()
+  const token = api.get_token()
   let transcript_id: string | null = null
 
   console.log(`[ - TRANSCRIPT GENERATION - ] Starting for ticket: ${ticket_id}`)
@@ -87,8 +87,9 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
       console.error(`[ - TRANSCRIPT ERROR - ] Ticket: ${ticket_id}`)
       console.error(`[ - TRANSCRIPT ERROR - ] Error:`, error)
       if (error instanceof Error) {
-        console.error(`[ - TRANSCRIPT ERROR - ] Message: ${error.message}`)
-        console.error(`[ - TRANSCRIPT ERROR - ] Stack:`, error.stack)
+        log_error(client, error, "Ticket Transcript Generation", { ticket_id, thread_id: thread.id })
+      } else {
+        log_error(client, new Error(String(error)), "Ticket Transcript Generation", { ticket_id, thread_id: thread.id })
       }
     })
 
@@ -98,7 +99,7 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
   const open_log_channel = client.channels.cache.get(config.log_channel_id) as TextChannel
   if (open_log_channel && open_log_id) {
     parallel_tasks.push(
-      api.delete_message(open_log_channel.id, open_log_id, token).catch(() => {})
+      api.delete_message(open_log_channel.id, open_log_id, token).catch(() => { })
     )
   }
 
@@ -116,7 +117,9 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
     client.channels.fetch(config.closed_log_channel_id)
       .then(async (channel) => {
         if (!channel) {
-          console.error(`[ - TICKET CLOSE LOG ERROR - ] Channel not found: ${config.closed_log_channel_id}`)
+          const err = new Error(`Channel not found: ${config.closed_log_channel_id}`)
+          console.error(`[ - TICKET CLOSE LOG ERROR - ] ${err.message}`)
+          log_error(client, err, "Ticket Close Log", { ticket_id, channel_id: config.closed_log_channel_id })
           return
         }
 
@@ -126,13 +129,13 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
         let owner_avatar = format.default_avatar
         if (owner_id) {
           try {
-            const owner  = await client.users.fetch(owner_id)
+            const owner = await client.users.fetch(owner_id)
             owner_avatar = owner.displayAvatarURL({ size: 128 })
-          } catch {}
+          } catch { }
         }
 
-        const thread_url      = `https://discord.com/channels/${thread.guildId}/${thread.id}`
-        const closed_by_text  = closed_by === "System" ? "System" : `<@${closed_by.id}>`
+        const thread_url = `https://discord.com/channels/${thread.guildId}/${thread.id}`
+        const closed_by_text = closed_by === "System" ? "System" : `<@${closed_by.id}>`
 
         let log_content_1 = [
           `- **Ticket ID:** ${format.code(ticket_id)}`,
@@ -150,7 +153,7 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
           log_content_2.unshift(`- **Issue Type:** ${issue_type}`)
         }
 
-        const transcript_buttons = transcript_id 
+        const transcript_buttons = transcript_id
           ? [component.link_button("View Transcript", `${full_url}/transcript/${transcript_id}`)]
           : []
 
@@ -188,8 +191,9 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
         console.error(`[ - TICKET CLOSE LOG ERROR - ] Ticket: ${ticket_id}`)
         console.error(`[ - TICKET CLOSE LOG ERROR - ] Error details:`, error)
         if (error instanceof Error) {
-          console.error(`[ - TICKET CLOSE LOG ERROR - ] Error message: ${error.message}`)
-          console.error(`[ - TICKET CLOSE LOG ERROR - ] Error stack:`, error.stack)
+          log_error(client, error, "Ticket Close Log", { ticket_id, channel_id: config.closed_log_channel_id })
+        } else {
+          log_error(client, new Error(String(error)), "Ticket Close Log", { ticket_id, channel_id: config.closed_log_channel_id })
         }
       })
   )
@@ -201,7 +205,7 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
         .then(async owner => {
           const dm_channel = await owner.createDM()
           const closed_by_text = closed_by === "System" ? "System" : `<@${closed_by.id}>`
-          const dm_transcript_buttons = transcript_id 
+          const dm_transcript_buttons = transcript_id
             ? [component.link_button("View Transcript", `${full_url}/transcript/${transcript_id}`)]
             : []
 
@@ -233,7 +237,7 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
 
           await api.send_components_v2(dm_channel.id, token, dm_message)
         })
-        .catch(() => {})
+        .catch(() => { })
     )
   }
 
@@ -258,7 +262,7 @@ export async function close_ticket(options: CloseTicketOptions): Promise<void> {
   })
 
   notification_tasks.push(
-    api.send_components_v2(thread.id, token, close_thread_message).catch(() => {})
+    api.send_components_v2(thread.id, token, close_thread_message).catch(() => { })
   )
 
   // - WAIT FOR ALL NOTIFICATIONS - \\

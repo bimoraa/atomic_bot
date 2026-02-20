@@ -271,7 +271,10 @@ export async function release_quarantine(options: release_quarantine_options) {
       guild.roles.cache.has(role_id)
     )
 
-    await member.roles.set([...managed_roles, ...valid_roles], "Released from quarantine")
+    // - REMOVE QUARANTINE ROLE - \\
+    const roles_to_set = [...managed_roles, ...valid_roles].filter(rid => rid !== __quarantine_role_id)
+
+    await member.roles.set(roles_to_set, "Released from quarantine")
     await remove_quarantine(user_id, guild.id)
 
     return {

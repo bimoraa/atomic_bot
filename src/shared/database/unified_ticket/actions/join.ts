@@ -1,5 +1,5 @@
 import { ButtonInteraction, GuildMember, TextChannel, ThreadChannel } from "discord.js"
-import { is_admin, is_staff } from "../settings/permissions"
+import { is_admin, is_staff } from "../../settings/permissions"
 import {
   get_ticket_config,
   get_ticket,
@@ -9,8 +9,9 @@ import {
   get_join_claim_cooldown_remaining_ms,
   activate_join_claim_cooldown,
   build_ticket_log_message,
-} from "./state"
-import { component, api, format } from "../../utils"
+} from "../state"
+import { component, api, format } from "../../../utils"
+import { log_error } from "../../../utils/error_logger"
 
 const __helper_role_id = "1357767950421065981"
 
@@ -23,9 +24,9 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
     return
   }
 
-  const member     = interaction.member as GuildMember
-  const is_helper  = member.roles.cache.has(__helper_role_id)
-  
+  const member = interaction.member as GuildMember
+  const is_helper = member.roles.cache.has(__helper_role_id)
+
   if (ticket_type === "helper") {
     if (!is_admin(member) && !is_staff(member) && !is_helper) {
       await interaction.editReply({ content: "Only staff and helpers can join helper tickets." })
@@ -38,7 +39,7 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
     }
   }
 
-  const guild  = interaction.guild!
+  const guild = interaction.guild!
   const thread = guild.channels.cache.get(thread_id) as ThreadChannel
 
   if (!thread) {
@@ -56,7 +57,7 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
   }
 
   let data = get_ticket(thread_id)
-  
+
   // - FALLBACK: LOAD FROM DATABASE - \\
   if (!data) {
     const loaded = await load_ticket(thread_id)
@@ -92,7 +93,17 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
     return
   }
 
-  await thread.members.add(member.id)
+  try {
+    await thread.members.add(member.id)
+  } catch (error: any) {
+    await log_error(interaction.client, error, "join_ticket", { user: interaction.user.tag, thread: thread_id })
+    const err_msg = error.code === 50001
+      ? "Failed to join thread: The bot is missing access or permissions to add members to this thread."
+      : "Failed to join thread due to an unknown error."
+    await interaction.editReply({ content: err_msg, components: [] })
+    return
+  }
+
   activate_join_claim_cooldown(interaction.user.id)
 
   data.staff.push(member.id)
@@ -105,7 +116,7 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
     const log_channel = guild.channels.cache.get(config.log_channel_id) as TextChannel
     if (log_channel) {
       try {
-        const owner      = await guild.members.fetch(data.owner_id).catch(() => null)
+        const owner = await guild.members.fetch(data.owner_id).catch(() => null)
         const avatar_url = owner?.displayAvatarURL({ size: 128 }) || format.default_avatar
 
         const description_block = data.description
@@ -113,18 +124,18 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
           : data.issue_type ? `- **Issue Type:** ${data.issue_type}` : null
 
         const message = build_ticket_log_message({
-          config_name      : config.name,
-          owner_id         : data.owner_id,
-          claimed_by       : data.claimed_by || null,
-          avatar_url       : avatar_url,
+          config_name: config.name,
+          owner_id: data.owner_id,
+          claimed_by: data.claimed_by || null,
+          avatar_url: avatar_url,
           description_block: description_block,
-          staff            : data.staff,
-          open_time        : data.open_time,
-          join_button_id   : `${config.prefix}_join_${thread_id}`,
+          staff: data.staff,
+          open_time: data.open_time,
+          join_button_id: `${config.prefix}_join_${thread_id}`,
         })
 
         await api.edit_components_v2(log_channel.id, log_message_id, api.get_token(), message)
-      } catch {}
+      } catch { }
     }
   }
 

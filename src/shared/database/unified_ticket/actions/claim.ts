@@ -4,7 +4,7 @@ import {
   ThreadChannel,
   GuildMember,
 } from "discord.js"
-import { is_admin, is_staff } from "../settings/permissions"
+import { is_admin, is_staff }        from "@shared/database/settings/permissions"
 import {
   get_ticket_config,
   get_ticket,
@@ -14,8 +14,8 @@ import {
   get_join_claim_cooldown_remaining_ms,
   activate_join_claim_cooldown,
   build_ticket_log_message,
-} from "./state"
-import { component, api, format } from "../../utils"
+}                                    from "@shared/database/unified_ticket/state"
+import { component, api, format }    from "@shared/utils"
 
 const __helper_role_id = "1357767950421065981"
 
@@ -28,9 +28,9 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
     return
   }
 
-  const member    = interaction.member as GuildMember
+  const member = interaction.member as GuildMember
   const is_helper = member.roles.cache.has(__helper_role_id)
-  
+
   if (ticket_type === "helper") {
     if (!is_admin(member) && !is_staff(member) && !is_helper) {
       await interaction.editReply({ content: "Only staff and helpers can claim helper tickets." })
@@ -60,7 +60,7 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
   }
 
   let data = get_ticket(thread.id)
-  
+
   // - FALLBACK: LOAD FROM DATABASE - \\
   if (!data) {
     const loaded = await load_ticket(thread.id)
@@ -92,11 +92,11 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
 
   // - PARALLEL OPERATIONS - \\
   const parallel_tasks: Promise<any>[] = [
-    thread.send({ content: `<@${interaction.user.id}> has claimed this ticket.` }).catch(() => {})
+    thread.send({ content: `<@${interaction.user.id}> has claimed this ticket.` }).catch(() => { })
   ]
 
   const log_message_id = data.log_message_id
-  const log_channel    = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
+  const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
 
   if (log_message_id && log_channel) {
     const staff_mentions = data.staff.map((id: string) => `<@${id}>`)
@@ -112,20 +112,20 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
             : data.issue_type ? `- **Issue Type:** ${data.issue_type}` : null
 
           const message = build_ticket_log_message({
-            config_name      : config.name,
-            owner_id         : data.owner_id,
-            claimed_by       : interaction.user.id,
-            avatar_url       : avatar_url,
+            config_name: config.name,
+            owner_id: data.owner_id,
+            claimed_by: interaction.user.id,
+            avatar_url: avatar_url,
             description_block: description_block,
-            staff            : data.staff,
-            open_time        : data.open_time,
-            join_button_id   : `${config.prefix}_join_${thread.id}`,
+            staff: data.staff,
+            open_time: data.open_time,
+            join_button_id: `${config.prefix}_join_${thread.id}`,
           })
 
           return api.edit_components_v2(log_channel.id, log_message_id, api.get_token(), message)
         })
-        .catch(() => {})
-      
+        .catch(() => { })
+
       parallel_tasks.push(task_promise)
     }
   }
@@ -133,7 +133,7 @@ export async function claim_ticket(interaction: ButtonInteraction, ticket_type: 
   // - NO AWAIT FOR FASTER RESPONSE - \\\\
   save_ticket(thread.id)
   interaction.editReply({ content: "You have claimed this ticket." })
-  
+
   // - WAIT FOR PARALLEL TASKS IN BACKGROUND - \\\\
-  Promise.allSettled(parallel_tasks).catch(() => {})
+  Promise.allSettled(parallel_tasks).catch(() => { })
 }

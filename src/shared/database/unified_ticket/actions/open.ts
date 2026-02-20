@@ -15,11 +15,12 @@ import {
   generate_ticket_id,
   save_ticket,
   save_ticket_immediate,
+  build_ticket_panel,
   build_ticket_log_message,
   TicketData,
-} from "./state"
-import { component, time, api, format } from "../../utils"
-import type { message_payload } from "../../utils"
+} from "../state"
+import { component, format, time } from "../../../utils"
+import type { message_payload } from "../../../utils"
 import { log_error } from "../../utils/error_logger"
 
 interface OpenTicketOptions {
@@ -89,7 +90,7 @@ async function archive_oldest_threads(channel: TextChannel, limit: number): Prom
       archived_count++
     } catch (error) {
       log_error(channel.client, error as Error, "open_ticket_archive_oldest", {
-        thread_id : thread.id,
+        thread_id: thread.id,
         channel_id: channel.id,
       })
     }
@@ -167,9 +168,9 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
           })
         } catch (retry_error: any) {
           log_error(interaction.client, retry_error as Error, "open_ticket_thread_limit_retry", {
-            channel_id     : ticket_channel.id,
-            ticket_type    : ticket_type,
-            archived_count : archived,
+            channel_id: ticket_channel.id,
+            ticket_type: ticket_type,
+            archived_count: archived,
           })
         }
       }
@@ -180,8 +181,8 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
       }
     } else {
       log_error(interaction.client, error as Error, "open_ticket_create_thread", {
-        channel_id  : ticket_channel.id,
-        ticket_type : ticket_type,
+        channel_id: ticket_channel.id,
+        ticket_type: ticket_type,
       })
       await api.edit_deferred_reply(interaction, build_simple_error_message("Failed to create ticket. Please try again."))
       return
@@ -223,7 +224,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
   if (ticket_type === "content_creator" && description) {
     try {
       const app_data = ticket_data.application_data || JSON.parse(description)
-      
+
       const cc_welcome_message = component.build_message({
         components: [
           component.container({
@@ -243,22 +244,22 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
           }),
         ],
       })
-      
+
       await api.send_components_v2(thread.id, token, cc_welcome_message)
-      
+
       const log_channel = interaction.client.channels.cache.get(config.log_channel_id) as TextChannel
       if (log_channel) {
         const log_message = build_ticket_log_message({
-          config_name      : config.name,
-          owner_id         : user_id,
-          claimed_by       : null,
-          avatar_url       : avatar_url,
+          config_name: config.name,
+          owner_id: user_id,
+          claimed_by: null,
+          avatar_url: avatar_url,
           description_block: app_data
             ? `- **Channel:** ${app_data.channel_links}\n- **Platform:** ${app_data.platform}\n- **Content Type:** ${app_data.content_type}\n- **Frequency:** ${app_data.upload_frequency}`
             : null,
-          staff            : [],
-          open_time        : timestamp,
-          join_button_id   : `${config.prefix}_join_${thread.id}`,
+          staff: [],
+          open_time: timestamp,
+          join_button_id: `${config.prefix}_join_${thread.id}`,
         })
 
         await api.send_components_v2(log_channel.id, token, log_message).then((log_data: any) => {
@@ -269,7 +270,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
               set_ticket(thread.id, data)
             }
           }
-        }).catch(() => {})
+        }).catch(() => { })
       }
 
       interaction.user.createDM()
@@ -297,7 +298,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
           })
           return api.send_components_v2(dm_channel.id, token, dm_message)
         })
-        .catch(() => {})
+        .catch(() => { })
 
       await save_ticket_immediate(thread.id)
 
@@ -348,7 +349,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
       await api.send_components_v2(thread.id, token, fallback_message)
     }
   }
-  
+
   if (ticket_type !== "content_creator") {
     // - BUILD INFO LINES - \\
     const info_lines: string[] = []
@@ -452,14 +453,14 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
     }
 
     const log_message = build_ticket_log_message({
-      config_name      : config.name,
-      owner_id         : user_id,
-      claimed_by       : null,
-      avatar_url       : avatar_url,
+      config_name: config.name,
+      owner_id: user_id,
+      claimed_by: null,
+      avatar_url: avatar_url,
       description_block: description_block,
-      staff            : [],
-      open_time        : timestamp,
-      join_button_id   : `${config.prefix}_join_${thread.id}`,
+      staff: [],
+      open_time: timestamp,
+      join_button_id: `${config.prefix}_join_${thread.id}`,
     })
 
     parallel_tasks.push(
@@ -502,7 +503,7 @@ export async function open_ticket(options: OpenTicketOptions): Promise<void> {
         })
         return api.send_components_v2(dm_channel.id, token, dm_message)
       })
-      .catch(() => {})
+      .catch(() => { })
   )
 
   // - WAIT FOR ALL PARALLEL TASKS - \\

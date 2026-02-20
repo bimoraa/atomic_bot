@@ -61,7 +61,11 @@ async function handle_banned_tag_quarantine(
       .map(r => r.id)
 
     const valid_roles = quarantine_data.previous_roles.filter(rid => target_guild.roles.cache.has(rid))
-    await target_member.roles.set([...managed_roles, ...valid_roles], reason)
+    
+    // - REMOVE QUARANTINE ROLE - \\
+    const roles_to_set = [...managed_roles, ...valid_roles].filter(rid => rid !== __quarantine_role_id)
+
+    await target_member.roles.set(roles_to_set, reason)
     await remove_quarantine(new_user.id, target_guild.id)
 
     console.log(`[ - SERVER TAG GUARD - ] Released ${new_user.username} (${reason})`)
@@ -422,7 +426,11 @@ export async function scan_banned_tags_on_startup(client: Client): Promise<void>
             .map(r => r.id)
 
           const valid_roles = quarantine_data.previous_roles.filter(rid => guild.roles.cache.has(rid))
-          await member.roles.set([...managed_roles, ...valid_roles], "Auto-released on startup: no longer using banned server tag")
+          
+          // - REMOVE QUARANTINE ROLE - \\
+          const roles_to_set = [...managed_roles, ...valid_roles].filter(rid => rid !== __quarantine_role_id)
+
+          await member.roles.set(roles_to_set, "Auto-released on startup: no longer using banned server tag")
           await remove_quarantine(user.id, guild.id)
 
           console.log(`[ - SERVER TAG GUARD - ] Startup release: ${user.username}`)

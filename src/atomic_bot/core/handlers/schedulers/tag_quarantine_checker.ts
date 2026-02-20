@@ -49,7 +49,12 @@ export function start_tag_quarantine_checker(client: Client): void {
             .map(r => r.id)
 
           const valid_roles = entry.previous_roles.filter(rid => guild.roles.cache.has(rid))
-          await member.roles.set([...managed_roles, ...valid_roles], "Auto-released: no longer using banned server tag")
+          
+          // - REMOVE QUARANTINE ROLE - \\
+          const quarantine_role_id = "1265318689130024992"
+          const roles_to_set = [...managed_roles, ...valid_roles].filter(rid => rid !== quarantine_role_id)
+
+          await member.roles.set(roles_to_set, "Auto-released: no longer using banned server tag")
           await remove_quarantine(entry.user_id, guild.id)
 
           log.info(`Released ${user.username} (tag no longer banned)`)
