@@ -9,7 +9,7 @@ const log = logger.create_logger("tag_quarantine_checker")
 const __target_guild_id    = "1250337227582472243"
 const __server_tag_log_id  = "1457105102044139597"
 const __quarantine_log_id  = "1474186051366031380"
-const __banned_tags        = new Set(["LYNX", "ENVY", "ʟʏɴx", "HAJI"])
+const __banned_tags        = new Set(["ENVY", "HAJI"])
 const __check_interval_ms  = 5 * 60 * 1000
 
 /**
