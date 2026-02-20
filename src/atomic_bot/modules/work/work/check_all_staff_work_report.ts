@@ -1,12 +1,11 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from "discord.js"
+import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js"
 import { component } from "@shared/utils"
 import type { Command } from "@shared/types/command"
 
 const check_all_staff_work_report: Command = {
   data: new SlashCommandBuilder()
     .setName("check-all-staff-work-report")
-    .setDescription("Check all staff work reports by year and week")
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
+    .setDescription("Check all staff work reports by year and week"),
 
   execute: async (interaction: ChatInputCommandInteraction) => {
     await interaction.deferReply({ ephemeral: true })
