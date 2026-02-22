@@ -1,7 +1,7 @@
-import { Client }         from "discord.js"
-import { load_config }   from "@shared/config/loader"
+import { Client }                       from "discord.js"
+import { load_config }                  from "@shared/config/loader"
 import { component, api, format, time } from "@shared/utils"
-import { log_error }     from "@shared/utils/error_logger"
+import { log_error }                    from "@shared/utils/error_logger"
 
 const config            = load_config<{ devlog_channel_id: string; priority_role_id: string }>("devlog")
 const devlog_channel_id = config.devlog_channel_id
@@ -19,8 +19,15 @@ interface devlog_options {
   role_ids? : string[]
 }
 
+/**
+ * Formats a multiline string into a list with a specific prefix
+ * @param items The multiline string to format
+ * @param prefix The prefix to add to each line
+ * @returns The formatted list string
+ */
 function format_list(items: string, prefix: string): string {
   if (!items.trim()) return ""
+  
   return items
     .split("\n")
     .filter((line) => line.trim())
@@ -28,6 +35,11 @@ function format_list(items: string, prefix: string): string {
     .join("\n")
 }
 
+/**
+ * Publishes a devlog message to the configured channel
+ * @param options The devlog options containing script details and changelog
+ * @returns Object containing success status and message/error
+ */
 export async function publish_devlog(options: devlog_options) {
   const { client, script, version, added, improved, removed, fixed, role_ids } = options
 
@@ -38,7 +50,7 @@ export async function publish_devlog(options: devlog_options) {
     const fixed_list    = format_list(fixed, "[ ! ]")
 
     const role_mentions = (role_ids && role_ids.length > 0 ? role_ids : [priority_role_id])
-      .map(id => format.role_mention(id))
+      .map((id) => format.role_mention(id))
       .join(" ")
 
     const changelog_components: ReturnType<typeof component.text | typeof component.divider>[] = []
@@ -63,6 +75,7 @@ export async function publish_devlog(options: devlog_options) {
       changelog_components.push(component.divider(2))
     }
 
+    // - REMOVE LAST DIVIDER - \\
     if (changelog_components.length > 0) {
       changelog_components.pop()
     }

@@ -207,7 +207,7 @@ async function fetch_idn_uuid_list(client: Client): Promise<string[]> {
     const uuids = new Set<string>()
 
     for (const record of records) {
-      for (const account of Object.values(record)) {
+      for (const account of Object.values(record) as any[]) {
         if (account?.uuid) {
           uuids.add(account.uuid)
         }
@@ -220,6 +220,39 @@ async function fetch_idn_uuid_list(client: Client): Promise<string[]> {
       path : __idn_cfg_path,
     })
     return []
+  }
+}
+
+/**
+ * - GET IDN UUID BY USERNAME - \\
+ * @param {string} username - IDN username
+ * @returns {string | null} UUID or null
+ */
+export function get_idn_uuid_by_username(username: string): string | null {
+  try {
+    if (!file.exists(__idn_cfg_path)) {
+      return null
+    }
+
+    const payload = file.read_json<idn_cfg_payload>(__idn_cfg_path)
+    const records = [
+      payload?.officials || {},
+      payload?.members || {},
+    ]
+
+    const search = username.toLowerCase().trim()
+
+    for (const record of records) {
+      for (const account of Object.values(record) as any[]) {
+        if (account?.username?.toLowerCase() === search && account?.uuid) {
+          return account.uuid
+        }
+      }
+    }
+
+    return null
+  } catch (error) {
+    return null
   }
 }
 
@@ -332,7 +365,7 @@ async function load_idn_cfg_members(client: Client): Promise<jkt48_member[]> {
     const members: jkt48_member[] = []
 
     for (const record of records) {
-      for (const account of Object.values(record)) {
+      for (const account of Object.values(record) as any[]) {
         if (!account?.username || !account?.name) continue
 
         members.push({

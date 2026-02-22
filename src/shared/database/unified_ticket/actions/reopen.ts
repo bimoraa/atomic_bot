@@ -1,11 +1,10 @@
 import { ButtonInteraction, ThreadChannel, GuildMember } from "discord.js"
-import { is_staff, is_admin } from "../settings/permissions"
+import { is_staff, is_admin } from "../../settings/permissions"
 import {
   get_ticket_config,
-  get_ticket,
   load_ticket,
-} from "./state"
-import { component, api } from "../../utils"
+} from "../state"
+import { component, api } from "../../../utils"
 
 const __helper_role_id = "1357767950421065981"
 

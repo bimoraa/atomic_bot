@@ -597,12 +597,18 @@ async function fetch_showroom_history(client: Client, room_id: number): Promise<
  * - FETCH IDN HISTORY - \\
  * @param {Client} client - Discord client
  * @param {string} slug - IDN live slug
+ * @param {string} [uuid] - IDN creator UUID
  * @returns {Promise<Partial<live_history_record>>} History data
  */
-async function fetch_idn_history(client: Client, slug: string): Promise<Partial<live_history_record>> {
+async function fetch_idn_history(client: Client, slug: string, uuid?: string): Promise<Partial<live_history_record>> {
   if (!slug) {
     return {}
   }
+
+  let detail: any = {}
+  let creator: any = {}
+  let stats: any = {}
+  let fallback_payload: Record<string, any> | null = null
 
   try {
     const response = await axios_get_with_retry(`https://api.idn.app/api/v4/livestream/${slug}`, {
@@ -612,10 +618,20 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
       },
     })
 
-    const detail = response.data?.data || response.data || {}
-    const creator = detail?.creator || {}
-    const stats = detail?.stats || detail?.live_stats || detail?.statistics
+    detail = response.data?.data || response.data || {}
+    creator = detail?.creator || {}
+    stats = detail?.stats || detail?.live_stats || detail?.statistics
+  } catch (error) {
+    await log_error(client, error as Error, "idn_history_fetch", {
+      slug : slug,
+    })
+    
+    if (uuid) {
+      fallback_payload = await fetch_idn_stats_fallback(client, slug, uuid)
+    }
+  }
 
+  try {
     const comments_value = pick_number([
       detail?.comments,
       detail?.comment,
@@ -663,17 +679,15 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
       creator?.total_gold,
     ])
 
-    let fallback_payload: Record<string, any> | null = null
-
-    const should_fetch_fallback = stream_total_gold_value === undefined
+    const should_fetch_fallback = !fallback_payload && (stream_total_gold_value === undefined
       || stream_total_gold_value === null
       || stream_total_gold_value === 0
       || comments_value === undefined
       || comment_users_value === undefined
-      || viewers_value === undefined
+      || viewers_value === undefined)
 
     if (should_fetch_fallback) {
-      fallback_payload = await fetch_idn_stats_fallback(client, slug, String(creator?.uuid || ""))
+      fallback_payload = await fetch_idn_stats_fallback(client, slug, String(creator?.uuid || uuid || ""))
     }
 
     const fallback_stats = fallback_payload?.stats || fallback_payload?.statistics || fallback_payload
@@ -744,7 +758,7 @@ async function fetch_idn_history(client: Client, slug: string): Promise<Partial<
       ended_at      : detail?.end_at ? Number(detail.end_at) * 1000 : undefined,
     }
   } catch (error) {
-    await log_error(client, error as Error, "idn_history_fetch", {
+    await log_error(client, error as Error, "idn_history_metrics_process", {
       slug : slug,
     })
     return {}
@@ -1321,7 +1335,8 @@ async function sync_active_idn_history(client: Client): Promise<void> {
       if (!state.slug) return
 
       const now_ms      = Date.now()
-      const enrich      = await fetch_idn_history(client, state.slug)
+      const uuid        = idn_live.get_idn_uuid_by_username(state.username) || undefined
+      const enrich      = await fetch_idn_history(client, state.slug, uuid)
       const history_key = state.live_key || `idn:${state.slug || state.username || "unknown"}`
       const started_at  = enrich.started_at || state.started_at || now_ms
       const ended_at    = enrich.ended_at || now_ms
@@ -1399,7 +1414,7 @@ async function cleanup_live_state(client: Client, platform: live_platform, activ
 
       const enrich = platform === "showroom"
         ? await fetch_showroom_history(client, state.room_id || 0)
-        : await fetch_idn_history(client, state.slug || "")
+        : await fetch_idn_history(client, state.slug || "", idn_live.get_idn_uuid_by_username(state.username) || undefined)
 
       const final_started_at = enrich.started_at || base_record.started_at
       const final_ended_at   = enrich.ended_at   || base_record.ended_at

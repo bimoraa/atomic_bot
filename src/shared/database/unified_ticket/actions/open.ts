@@ -13,15 +13,13 @@ import {
   set_user_open_ticket,
   remove_user_open_ticket,
   generate_ticket_id,
-  save_ticket,
   save_ticket_immediate,
-  build_ticket_panel,
   build_ticket_log_message,
   TicketData,
 } from "../state"
-import { component, format, time } from "../../../utils"
+import { component, format, time, api } from "../../../utils"
 import type { message_payload } from "../../../utils"
-import { log_error } from "../../utils/error_logger"
+import { log_error } from "../../../utils/error_logger"
 
 interface OpenTicketOptions {
   interaction: ButtonInteraction
