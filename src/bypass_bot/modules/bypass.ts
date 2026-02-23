@@ -188,7 +188,11 @@ const bypass_command: Command = {
             }),
           ],
         })
-        await api.edit_deferred_reply(interaction, retry_message)
+        try {
+          await api.edit_deferred_reply(interaction, retry_message)
+        } catch (err) {
+          console.warn(`[ - BYPASS COMMAND - ] Failed to edit retry message:`, err)
+        }
       })
 
       console.log(`[ - BYPASS COMMAND - ] Bypass result (attempts: ${result.attempts}):`, JSON.stringify(result))
@@ -210,7 +214,11 @@ const bypass_command: Command = {
           ],
         })
 
-        await api.edit_deferred_reply(interaction, error_message)
+        try {
+          await api.edit_deferred_reply(interaction, error_message)
+        } catch (err) {
+          console.warn(`[ - BYPASS COMMAND - ] Failed to send error message:`, err)
+        }
         return
       }
 

@@ -151,20 +151,24 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     console.log(`[ - AUTO BYPASS - ] Processing URL from ${source}: ${url}`)
     const result = await bypass_link(url, async (attempt) => {
       if (!processing_msg) return
-      await processing_msg.edit(
-        component.build_message({
-          components: [
-            component.container({
-              components: [
-                component.section({
-                  content   : `## <a:GTA_Loading:1459707117840629832> - Bypassing Link\nHang on! We're processing your bypass. (Retry ${attempt}/3)\n`,
-                  accessory : component.link_button("Invite BOT", invite_url),
-                }),
-              ],
-            }),
-          ],
-        })
-      )
+      try {
+        await processing_msg.edit(
+          component.build_message({
+            components: [
+              component.container({
+                components: [
+                  component.section({
+                    content   : `## <a:GTA_Loading:1459707117840629832> - Bypassing Link\nHang on! We're processing your bypass. (Retry ${attempt}/3)\n`,
+                    accessory : component.link_button("Invite BOT", invite_url),
+                  }),
+                ],
+              }),
+            ],
+          })
+        )
+      } catch (err) {
+        console.warn(`[ - AUTO BYPASS - ] Failed to edit retry message:`, err)
+      }
     })
 
     if (result.success && result.result) {
@@ -217,8 +221,12 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
         ],
       })
 
-      await processing_msg.edit(success_message)
-      console.log(`[ - AUTO BYPASS - ] Success!`)
+      try {
+        await processing_msg.edit(success_message)
+        console.log(`[ - AUTO BYPASS - ] Success!`)
+      } catch (err) {
+        console.error(`[ - AUTO BYPASS - ] Failed to edit success message:`, err)
+      }
 
       // - SEND TO DM - \\
       try {
@@ -244,8 +252,12 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
         ],
       })
 
-      await processing_msg.edit(error_message)
-      console.log(`[ - AUTO BYPASS - ] Failed: ${result.error}`)
+      try {
+        await processing_msg.edit(error_message)
+        console.log(`[ - AUTO BYPASS - ] Failed: ${result.error}`)
+      } catch (err) {
+        console.error(`[ - AUTO BYPASS - ] Failed to edit error message:`, err)
+      }
     }
 
     return true

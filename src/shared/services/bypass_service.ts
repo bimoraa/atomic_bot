@@ -4,8 +4,9 @@ const __bypass_api_key = process.env.BYPASS_API_KEY || ""
 const __bypass_api_url = process.env.BYPASS_API_URL || ""
 
 // - PERFORMANCE OPTIMIZATION - \\
-const __bypass_timeout  = 60000
-const __bypass_max_retry = 3
+const __bypass_timeout        = 20000
+const __bypass_global_timeout = 45000
+const __bypass_max_retry      = 3
 const __bypass_retry_delay_ms = 2000
 
 interface BypassResponse {
@@ -14,6 +15,7 @@ interface BypassResponse {
   error?   : string
   time?    : number
   attempts?: number
+  is_client_error?: boolean
 }
 
 interface SupportedService {
@@ -52,7 +54,9 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
 
     if (!response.ok) {
       const error_data: any = await response.json().catch(() => ({}))
-      throw new Error(error_data.message || `HTTP ${response.status}`)
+      const err = new Error(error_data.message || `HTTP ${response.status}`)
+      ;(err as any).status = response.status
+      throw err
     }
 
     const data: any    = await response.json()
@@ -70,7 +74,7 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
 
     return {
       success  : false,
-      error    : "No result found in response",
+      error    : data?.message || "No result found in response",
       attempts : attempt,
     }
 
@@ -101,10 +105,14 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
       error_message = message
     }
 
+    const status = error?.status
+    const is_client_error = status >= 400 && status < 500 && status !== 429
+
     return {
       success  : false,
       error    : error_message,
       attempts : attempt,
+      is_client_error,
     }
   }
 }
@@ -118,6 +126,21 @@ export async function bypass_link(
   url: string,
   on_retry?: (attempt: number) => void | Promise<void>
 ): Promise<BypassResponse> {
+  // - RACE AGAINST GLOBAL TIMEOUT TO PREVENT STUCK LOADING STATE - \\
+  const timeout_promise = new Promise<BypassResponse>(resolve =>
+    setTimeout(
+      () => resolve({ success: false, error: "Request timed out - Please try again later.", attempts: 0 }),
+      __bypass_global_timeout
+    )
+  )
+
+  return Promise.race([timeout_promise, _run_bypass_link(url, on_retry)])
+}
+
+async function _run_bypass_link(
+  url: string,
+  on_retry?: (attempt: number) => void | Promise<void>
+): Promise<BypassResponse> {
   let last_result: BypassResponse = { success: false, error: "Unknown error", attempts: 0 }
 
   for (let attempt = 1; attempt <= __bypass_max_retry; attempt++) {
@@ -125,14 +148,20 @@ export async function bypass_link(
 
     if (last_result.success) return last_result
 
-    // - DON'T RETRY ON UNSUPPORTED LINKS - NO POINT - \\
+    // - DON'T RETRY ON UNSUPPORTED LINKS OR CLIENT ERRORS - NO POINT - \\
     const is_unsupported = last_result.error?.toLowerCase().includes("not supported")
       || last_result.error?.toLowerCase().includes("unsupported")
-    if (is_unsupported) return last_result
+    if (is_unsupported || last_result.is_client_error) return last_result
 
     if (attempt < __bypass_max_retry) {
       console.log(`[ - BYPASS - ] Attempt ${attempt} failed, retrying in ${__bypass_retry_delay_ms}ms...`)
-      if (on_retry) await on_retry(attempt + 1)
+      if (on_retry) {
+        try {
+          await on_retry(attempt + 1)
+        } catch (retry_err) {
+          console.warn(`[ - BYPASS - ] Failed to execute on_retry callback:`, retry_err)
+        }
+      }
       await new Promise(resolve => setTimeout(resolve, __bypass_retry_delay_ms))
     }
   }
@@ -140,6 +169,7 @@ export async function bypass_link(
   console.warn(`[ - BYPASS - ] All ${__bypass_max_retry} attempts failed for: ${url}`)
   return last_result
 }
+
 
 /**
  * @returns Promise with list of supported services
