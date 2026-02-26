@@ -5,7 +5,7 @@ import {
 import fs from "fs"
 import path from "path"
 import { Command } from "@shared/types/command"
-import { bypass_link } from "@shared/services/bypass_service"
+import { bypass_link, bypass_max_retry } from "@shared/services/bypass_service"
 import * as component from "@shared/utils/components"
 import { api, cache, db, guild_settings } from "@shared/utils"
 import { check_bypass_rate_limit } from "../core/limits/bypass_rate_limit"
@@ -175,13 +175,15 @@ const bypass_command: Command = {
 
       await api.edit_deferred_reply(interaction, processing_message)
 
-      const result = await bypass_link(url, async (attempt) => {
-        const retry_message = component.build_message({
+      const result = await bypass_link(url, async (attempt, wait_ms) => {
+        const wait_s          = Math.ceil(wait_ms / 1000)
+        const wait_label      = wait_s > 5 ? ` - Rate limited, retrying in ~${wait_s}s...` : ""
+        const retry_message   = component.build_message({
           components: [
             component.container({
               components: [
                 component.section({
-                  content   : `## <a:GTA_Loading:1459707117840629832> - Bypassing Link\nHang on! We're processing your bypass. (Retry ${attempt}/3)\n`,
+                  content   : `## <a:GTA_Loading:1459707117840629832> - Bypassing Link\nHang on! We're processing your bypass. (Retry ${attempt}/${bypass_max_retry}${wait_label})\n`,
                   accessory : component.link_button("Invite BOT", invite_url),
                 }),
               ],

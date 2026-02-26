@@ -5,7 +5,8 @@ const __bypass_api_url         = process.env.BYPASS_API_URL || ""
 
 const __bypass_timeout         = 15000  // - Per-request timeout - \\
 const __bypass_global_timeout  = 90000  // - Max wait across all retries - \\
-const __bypass_max_retry       = 3      // - Fewer retries to reduce API hammering - \\
+export const bypass_max_retry  = 3      // - Fewer retries to reduce API hammering - \\
+const __bypass_max_retry       = bypass_max_retry
 const __bypass_queue_delay_ms  = 6000   // - Delay between queued requests - \\
 const __bypass_base_retry_ms   = 5000   // - Base delay for exponential backoff - \\
 const __bypass_max_retry_ms    = 60000  // - Cap exponential backoff at 60s - \\
@@ -20,6 +21,11 @@ function __set_global_backoff(seconds: number): void {
     __backoff_until = until
     console.warn(`[ - BYPASS - ] Global backoff set for ${seconds}s until ${new Date(until).toISOString()}`)
   }
+}
+
+/** Returns remaining global backoff in ms (0 if not active). */
+function __get_backoff_remaining_ms(): number {
+  return Math.max(0, __backoff_until - Date.now())
 }
 
 // - GLOBAL RATE LIMIT QUEUE - \\
@@ -174,12 +180,12 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
 
 /**
  * @param url      - The URL to bypass
- * @param on_retry - Optional callback fired before each retry with attempt number
+ * @param on_retry - Optional callback fired before each retry with attempt number and estimated total wait ms
  * @returns Promise with bypass result
  */
 export async function bypass_link(
   url: string,
-  on_retry?: (attempt: number) => void | Promise<void>
+  on_retry?: (attempt: number, wait_ms: number) => void | Promise<void>
 ): Promise<BypassResponse> {
   // - RACE AGAINST GLOBAL TIMEOUT TO PREVENT STUCK LOADING STATE - \\
   const timeout_promise = new Promise<BypassResponse>(resolve =>
@@ -194,7 +200,7 @@ export async function bypass_link(
 
 async function _run_bypass_link(
   url: string,
-  on_retry?: (attempt: number) => void | Promise<void>
+  on_retry?: (attempt: number, wait_ms: number) => void | Promise<void>
 ): Promise<BypassResponse> {
   let last_result: BypassResponse = { success: false, error: "Unknown error", attempts: 0 }
 
@@ -217,10 +223,15 @@ async function _run_bypass_link(
       // - ADD UP TO 1s OF JITTER TO SPREAD OUT CONCURRENT RETRIES - \\
       delay += Math.floor(Math.random() * 1000)
 
-      console.log(`[ - BYPASS - ] Attempt ${attempt} failed, retrying in ${delay}ms...`)
+      // - TOTAL WAIT = RETRY DELAY + REMAINING GLOBAL BACKOFF - \\
+      const backoff_remaining = __get_backoff_remaining_ms()
+      const total_wait_ms     = delay + backoff_remaining
+
+      console.log(`[ - BYPASS - ] Attempt ${attempt} failed, retrying in ${total_wait_ms}ms (delay: ${delay}ms, backoff: ${backoff_remaining}ms)...`)
+
       if (on_retry) {
         try {
-          await on_retry(attempt + 1)
+          await on_retry(attempt + 1, total_wait_ms)
         } catch (retry_err) {
           console.warn(`[ - BYPASS - ] Failed to execute on_retry callback:`, retry_err)
         }

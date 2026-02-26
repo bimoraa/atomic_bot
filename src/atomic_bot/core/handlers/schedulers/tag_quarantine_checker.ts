@@ -3,13 +3,13 @@ import { logger }                                       from "@shared/utils"
 import { get_auto_tag_quarantines, remove_quarantine }  from "@shared/database/managers/quarantine_manager"
 import { component }                                    from "@shared/utils"
 import { log_error }                                    from "@shared/utils/error_logger"
+import { get_banned_tags }                              from "@shared/database/settings/server_tag"
 
 const log = logger.create_logger("tag_quarantine_checker")
 
 const __target_guild_id    = "1250337227582472243"
 const __server_tag_log_id  = "1457105102044139597"
 const __quarantine_log_id  = "1474186051366031380"
-const __banned_tags        = new Set(["ENVY", "HAJI"])
 const __check_interval_ms  = 5 * 60 * 1000
 
 /**
@@ -29,6 +29,8 @@ export function start_tag_quarantine_checker(client: Client): void {
 
       log.info(`Checking ${auto_quarantines.length} auto-tag-quarantined members`)
 
+      const banned_tags = await get_banned_tags()
+
       for (const entry of auto_quarantines) {
         try {
           // - FETCH FRESH USER DATA FROM API TO GET CURRENT TAG - \\
@@ -38,8 +40,8 @@ export function start_tag_quarantine_checker(client: Client): void {
           const user    = await client.users.fetch(entry.user_id, { force: true }).catch(() => null)
           if (!user) continue
 
-          const cur_tag         = user.primaryGuild?.tag
-          const still_banned    = cur_tag ? __banned_tags.has(cur_tag) : false
+          const cur_tag      = user.primaryGuild?.tag
+          const still_banned = cur_tag ? banned_tags.has(cur_tag) : false
 
           if (still_banned) continue
 

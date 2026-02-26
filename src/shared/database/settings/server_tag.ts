@@ -26,9 +26,83 @@ const __quarantine_log_id       = "1474186051366031380"
 const __quarantine_role_id      = "1265318689130024992"
 const __auto_tag_quarantine_by  = "AUTO_TAG_GUARD"
 
-// - TAGS THAT TRIGGER AUTO-QUARANTINE - \\
-const __banned_tags = new Set(["ENVY", "HAJI"])
-const __auto_release_tags = new Set(["LYNX", "ʟʏɴx"])
+// - TAGS THAT TRIGGER AUTO-QUARANTINE (DB-BACKED) - \\
+const __blacklist_tags_collection  = "blacklist_tags"
+const __banned_tags_cache_ttl_ms   = 5 * 60 * 1000
+const __auto_release_tags          = new Set(["LYNX", "ʟʏɴx"])
+
+let __banned_tags_cache     : Set<string> | null = null
+let __banned_tags_cache_at  : number             = 0
+
+/**
+ * Load banned tags from DB with in-memory cache.
+ * Falls back to ["HAJI"] if DB is empty.
+ * @returns Cached Set of banned tag strings
+ */
+async function get_banned_tags(): Promise<Set<string>> {
+  const now = Date.now()
+  if (__banned_tags_cache && now - __banned_tags_cache_at < __banned_tags_cache_ttl_ms) {
+    return __banned_tags_cache
+  }
+
+  try {
+    const records = await db.find_many<{ tag: string }>(__blacklist_tags_collection, {})
+    const tags    = records.length > 0 ? records.map(r => r.tag) : ["HAJI"]
+    __banned_tags_cache    = new Set(tags)
+    __banned_tags_cache_at = now
+    return __banned_tags_cache
+  } catch {
+    return __banned_tags_cache ?? new Set(["HAJI"])
+  }
+}
+
+function __invalidate_banned_tags_cache(): void {
+  __banned_tags_cache    = null
+  __banned_tags_cache_at = 0
+}
+
+/**
+ * Add a tag to the banned list.
+ * @param tag - Tag string to ban (auto-uppercased)
+ * @returns True if added, false if already existed
+ */
+export async function add_banned_tag(tag: string): Promise<boolean> {
+  const upper = tag.toUpperCase()
+  const existing = await db.find_one<{ tag: string }>(__blacklist_tags_collection, { tag: upper })
+  if (existing) return false
+  await db.insert_one(__blacklist_tags_collection, { tag: upper })
+  __invalidate_banned_tags_cache()
+  return true
+}
+
+/**
+ * Remove a tag from the banned list.
+ * @param tag - Tag string to remove (auto-uppercased)
+ * @returns True if removed, false if not found
+ */
+export async function remove_banned_tag(tag: string): Promise<boolean> {
+  const upper = tag.toUpperCase()
+  const existing = await db.find_one<{ tag: string }>(__blacklist_tags_collection, { tag: upper })
+  if (!existing) return false
+  await db.delete_one(__blacklist_tags_collection, { tag: upper })
+  __invalidate_banned_tags_cache()
+  return true
+}
+
+/**
+ * Get all currently banned tags from DB.
+ * @returns Array of banned tag strings
+ */
+export async function list_banned_tags(): Promise<string[]> {
+  try {
+    const records = await db.find_many<{ tag: string }>(__blacklist_tags_collection, {})
+    return records.map(r => r.tag)
+  } catch {
+    return []
+  }
+}
+
+export { get_banned_tags }
 
 /**
  * @description Auto-quarantine member when they equip a banned server tag, release when removed
@@ -49,7 +123,8 @@ async function handle_banned_tag_quarantine(
   const target_guild = guild
   const target_member = member
 
-  const is_using_banned_tag = new_tag ? __banned_tags.has(new_tag) : false
+  const banned_set          = await get_banned_tags()
+  const is_using_banned_tag  = new_tag ? banned_set.has(new_tag) : false
   const is_using_release_tag = new_tag ? __auto_release_tags.has(new_tag) : false
 
   async function release_auto_tag_quarantine(reason: string): Promise<void> {
@@ -344,15 +419,16 @@ export async function scan_banned_tags_on_startup(client: Client): Promise<void>
 
     await guild.members.fetch()
 
-    let quarantined = 0
-    let released    = 0
+    const banned_tags  = await get_banned_tags()
+    let quarantined    = 0
+    let released       = 0
 
     for (const [, member] of guild.members.cache) {
       try {
         const user    = member.user
         const cur_tag = user.primaryGuild?.tag
 
-        const is_using_banned = cur_tag ? __banned_tags.has(cur_tag) : false
+        const is_using_banned = cur_tag ? banned_tags.has(cur_tag) : false
         const quarantine_data = await get_quarantine(user.id, guild.id)
 
         if (is_using_banned && !quarantine_data) {
