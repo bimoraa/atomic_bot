@@ -1,15 +1,28 @@
 // - BYPASS LINK SERVICE - \\
 
-const __bypass_api_key = process.env.BYPASS_API_KEY || ""
-const __bypass_api_url = process.env.BYPASS_API_URL || ""
+const __bypass_api_key         = process.env.BYPASS_API_KEY || ""
+const __bypass_api_url         = process.env.BYPASS_API_URL || ""
 
-// - PERFORMANCE OPTIMIZATION - \
-const __bypass_timeout = 20000
-const __bypass_global_timeout = 60000 // Increased from 45000 to allow more retries
-const __bypass_max_retry = 4     // Increased from 3
-const __bypass_retry_delay_ms = 3000  // Increased from 2000
+const __bypass_timeout         = 15000  // - Per-request timeout - \\
+const __bypass_global_timeout  = 90000  // - Max wait across all retries - \\
+const __bypass_max_retry       = 3      // - Fewer retries to reduce API hammering - \\
+const __bypass_queue_delay_ms  = 6000   // - Delay between queued requests - \\
+const __bypass_base_retry_ms   = 5000   // - Base delay for exponential backoff - \\
+const __bypass_max_retry_ms    = 60000  // - Cap exponential backoff at 60s - \\
+const __bypass_default_backoff = 30     // - Default backoff seconds on 429 - \\
 
-// - GLOBAL RATE LIMIT QUEUE - \
+// - GLOBAL BACKOFF: pause entire queue when rate limited - \\
+let __backoff_until: number = 0
+
+function __set_global_backoff(seconds: number): void {
+  const until = Date.now() + seconds * 1000
+  if (until > __backoff_until) {
+    __backoff_until = until
+    console.warn(`[ - BYPASS - ] Global backoff set for ${seconds}s until ${new Date(until).toISOString()}`)
+  }
+}
+
+// - GLOBAL RATE LIMIT QUEUE - \\
 let __bypass_queue: Promise<void> = Promise.resolve()
 async function __enqueue_bypass<T>(task: () => Promise<T>): Promise<T> {
   const current = __bypass_queue
@@ -19,11 +32,18 @@ async function __enqueue_bypass<T>(task: () => Promise<T>): Promise<T> {
   })
 
   await current
+
+  // - HONOUR GLOBAL BACKOFF BEFORE FIRING THE NEXT REQUEST - \\
+  const backoff_wait = __backoff_until - Date.now()
+  if (backoff_wait > 0) {
+    console.log(`[ - BYPASS - ] Respecting global backoff, waiting ${backoff_wait}ms...`)
+    await new Promise(resolve => setTimeout(resolve, backoff_wait))
+  }
+
   try {
     return await task()
   } finally {
-    // Wait an additional 2.5 seconds after each request to avoid hitting IP rate limits
-    setTimeout(resolve_next, 2500)
+    setTimeout(resolve_next, __bypass_queue_delay_ms)
   }
 }
 
@@ -115,6 +135,11 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
     if (message.includes("HTTP 5")) {
       console.warn(`[ - BYPASS - ] External API Error (attempt ${attempt}):`, message)
     } else if (message.includes("HTTP 429")) {
+      // - TRIGGER GLOBAL BACKOFF SO NO MORE QUEUED REQUESTS FIRE - \\
+      const backoff_s = (error?.retry_after && !isNaN(error.retry_after))
+        ? Math.max(error.retry_after, __bypass_default_backoff)
+        : __bypass_default_backoff
+      __set_global_backoff(backoff_s)
       console.warn(`[ - BYPASS - ] Rate Limit (attempt ${attempt}):`, message)
     } else {
       console.error(`[ - BYPASS - ] Error (attempt ${attempt}):`, message || error)
@@ -184,10 +209,13 @@ async function _run_bypass_link(
     if (is_unsupported || last_result.is_client_error) return last_result
 
     if (attempt < __bypass_max_retry) {
-      let delay = __bypass_retry_delay_ms
+      // - EXPONENTIAL BACKOFF WITH JITTER - \\
+      let delay = Math.min(__bypass_base_retry_ms * Math.pow(2, attempt - 1), __bypass_max_retry_ms)
       if (last_result.retry_after && !isNaN(last_result.retry_after)) {
         delay = Math.max(delay, last_result.retry_after * 1000)
       }
+      // - ADD UP TO 1s OF JITTER TO SPREAD OUT CONCURRENT RETRIES - \\
+      delay += Math.floor(Math.random() * 1000)
 
       console.log(`[ - BYPASS - ] Attempt ${attempt} failed, retrying in ${delay}ms...`)
       if (on_retry) {

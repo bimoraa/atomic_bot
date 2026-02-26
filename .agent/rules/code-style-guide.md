@@ -2,7 +2,6 @@
 trigger: always_on
 ---
 
-
 ## CODE RULES:
 - Code harus sneak case
 - Code harus rapih
