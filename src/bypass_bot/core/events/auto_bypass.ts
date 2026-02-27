@@ -295,6 +295,13 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
 
     return true
   } catch (error) {
+    // - DISCORD DM RATE LIMIT: SKIP LOG_ERROR, NOT A BOT BUG - \\
+    const err_code = (error as any)?.code
+    if (err_code === 340002 || err_code === 50007) {
+      console.warn(`[ - AUTO BYPASS - ] DM restricted for ${message.author.tag} (code: ${err_code}), skipping.`)
+      return false
+    }
+
     console.error("[ - AUTO BYPASS - ] Error:", error)
     await log_error(message.client, error as Error, "Auto Bypass", {
       channel : message.channelId,
