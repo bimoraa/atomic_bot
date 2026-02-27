@@ -42,6 +42,16 @@ function extract_url_from_message(message: Message): string | null {
  * @returns {Promise<boolean>} True if message was handled
  */
 export async function handle_auto_bypass(message: Message): Promise<boolean> {
+  // - FETCH PARTIAL MESSAGE/CHANNEL TO GET CONTENT - \\
+  if (message.partial) {
+    try {
+      message = await message.fetch()
+    } catch (err) {
+      console.error(`[ - AUTO BYPASS - ] Failed to fetch partial message:`, err)
+      return false
+    }
+  }
+
   const is_dm    = message.channel.isDMBased()
   const guild_id = message.guildId
 
@@ -76,6 +86,26 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   
   if (!url) {
     console.warn(`[ - AUTO BYPASS - ] No URL found in message`)
+
+    // - NOTIFY USER IN DM THAT NO URL WAS DETECTED - \\
+    if (is_dm) {
+      await message.reply(
+        component.build_message({
+          components: [
+            component.container({
+              components: [
+                component.text([
+                  "## No URL Detected",
+                  "",
+                  "Please send a valid URL to bypass (e.g. `https://example.com/...`).",
+                ]),
+              ],
+            }),
+          ],
+        })
+      ).catch((err: unknown) => console.error(`[ - AUTO BYPASS - ] Failed to reply no-url in DM:`, err))
+    }
+
     return false
   }
 
@@ -149,8 +179,9 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
 
     const source = is_dm ? "DM" : "Channel"
     console.warn(`[ - AUTO BYPASS - ] Processing URL from ${source}: ${url}`)
-    const result = await bypass_link(url, async (attempt) => {
-      if (!processing_msg) return
+    const result = await bypass_link(url, async (attempt, _wait_ms, is_processing) => {
+      // - SKIP RETRY MESSAGE IF SERVER IS STILL PROCESSING - \\
+      if (!processing_msg || is_processing) return
       try {
         await processing_msg.edit(
           component.build_message({

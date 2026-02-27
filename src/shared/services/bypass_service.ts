@@ -261,7 +261,7 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
  */
 export async function bypass_link(
   url: string,
-  on_retry?: (attempt: number, wait_ms: number) => void | Promise<void>
+  on_retry?: (attempt: number, wait_ms: number, is_processing: boolean) => void | Promise<void>
 ): Promise<BypassResponse> {
   console.warn(`[ - BYPASS - ] Starting bypass_link for URL: ${url}`)
   // - RACE AGAINST GLOBAL TIMEOUT TO PREVENT STUCK LOADING STATE - \\
@@ -281,7 +281,7 @@ export async function bypass_link(
 
 async function _run_bypass_link(
   url: string,
-  on_retry?: (attempt: number, wait_ms: number) => void | Promise<void>
+  on_retry?: (attempt: number, wait_ms: number, is_processing: boolean) => void | Promise<void>
 ): Promise<BypassResponse> {
   let last_result: BypassResponse = { success: false, error: "Unknown error", attempts: 0 }
 
@@ -324,7 +324,7 @@ async function _run_bypass_link(
       if (on_retry) {
         try {
           console.warn(`[ - BYPASS - ] Executing on_retry callback for attempt ${attempt + 1}`)
-          await on_retry(attempt + 1, total_wait_ms)
+          await on_retry(attempt + 1, total_wait_ms, last_result.api_code === "TASK_ALREADY_PROCESSING")
           console.warn(`[ - BYPASS - ] Finished on_retry callback for attempt ${attempt + 1}`)
         } catch (retry_err) {
           console.warn(`[ - BYPASS - ] Failed to execute on_retry callback:`, retry_err)

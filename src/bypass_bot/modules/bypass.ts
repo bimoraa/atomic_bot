@@ -175,7 +175,10 @@ const bypass_command: Command = {
 
       await api.edit_deferred_reply(interaction, processing_message)
 
-      const result = await bypass_link(url, async (attempt, wait_ms) => {
+      const result = await bypass_link(url, async (attempt, wait_ms, is_processing) => {
+        // - SKIP RETRY MESSAGE IF SERVER IS STILL PROCESSING - \\
+        if (is_processing) return
+
         const wait_s          = Math.ceil(wait_ms / 1000)
         const wait_label      = wait_s > 5 ? ` - Rate limited, retrying in ~${wait_s}s...` : ""
         const retry_message   = component.build_message({
