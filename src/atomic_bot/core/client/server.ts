@@ -270,117 +270,144 @@ export function start_webhook_server(client: Client): void {
     }
   })
 
-  // - BACKGROUND REFRESH FLAG TO PREVENT CONCURRENT FETCHES - \\
-  let credits_refreshing = false
+  // - IN-MEMORY HOT CACHE — PRIMARY STORE, NO DB LOOKUP LATENCY - \\
+  type credits_member = { id: string; username: string; avatar_url: string }
+  type credits_cache  = { supporters: credits_member[]; staff: credits_member[]; updated_at: number }
+
+  let credits_mem_cache  : credits_cache | null = null
+  let credits_refreshing : boolean              = false
+  let credits_refresh_promise: Promise<void> | null = null
+
+  const role_supporter = "1357767950421065981"
+  const role_staff     = "1264915024707588208"
+  const cdn            = "https://cdn.discordapp.com"
+  const two_hours      = 2 * 60 * 60 * 1000
+
+  type raw_member = {
+    user  : { id: string; username: string; global_name?: string; avatar?: string }
+    nick ?: string
+    avatar?: string
+    roles  : string[]
+  }
+
+  const get_member_avatar = (m: raw_member): string => {
+    if (m.avatar) {
+      const ext = m.avatar.startsWith("a_") ? "gif" : "png"
+      return `${cdn}/guilds/${main_guild_id}/users/${m.user.id}/avatars/${m.avatar}.${ext}?size=64`
+    }
+    if (m.user.avatar) {
+      const ext = m.user.avatar.startsWith("a_") ? "gif" : "png"
+      return `${cdn}/avatars/${m.user.id}/${m.user.avatar}.${ext}?size=64`
+    }
+    return `${cdn}/embed/avatars/${Number(BigInt(m.user.id) >> BigInt(22)) % 6}.png`
+  }
 
   /**
-   * Fetches all guild members via REST pagination and saves to DB cache.
-   * Runs in background — never blocks the HTTP response.
+   * Fetches all guild members via REST pagination.
+   * Updates in-memory cache immediately, then persists to DB.
+   * Returns a promise that resolves when in-memory cache is updated.
    * @param client - Discord client
    */
   async function refresh_credits_cache(client: Client): Promise<void> {
-    if (credits_refreshing) return
-    credits_refreshing = true
+    if (credits_refreshing) return credits_refresh_promise ?? undefined
+    credits_refreshing      = true
+    credits_refresh_promise = (async () => {
+      try {
+        console.info("[ - API CREDITS MEMBERS - ] Refresh started")
+        const all: raw_member[] = []
+        let   after             = ""
 
-    const role_supporter = "1357767950421065981"
-    const role_staff     = "1264915024707588208"
-    const cdn            = "https://cdn.discordapp.com"
+        while (true) {
+          const query = after ? `?limit=1000&after=${after}` : "?limit=1000"
+          const page  = await (client as any).rest.get(`/guilds/${main_guild_id}/members${query}`) as raw_member[]
 
-    type raw_member = {
-      user  : { id: string; username: string; global_name?: string; avatar?: string }
-      nick ?: string
-      avatar?: string
-      roles  : string[]
-    }
+          all.push(...page)
+          if (page.length < 1000) break
+          after = page[page.length - 1]!.user.id
+        }
 
-    const get_avatar = (m: raw_member): string => {
-      if (m.avatar) {
-        const ext = m.avatar.startsWith("a_") ? "gif" : "png"
-        return `${cdn}/guilds/${main_guild_id}/users/${m.user.id}/avatars/${m.avatar}.${ext}?size=64`
-      }
-      if (m.user.avatar) {
-        const ext = m.user.avatar.startsWith("a_") ? "gif" : "png"
-        return `${cdn}/avatars/${m.user.id}/${m.user.avatar}.${ext}?size=64`
-      }
-      return `${cdn}/embed/avatars/${Number(BigInt(m.user.id) >> BigInt(22)) % 6}.png`
-    }
+        const to_member = (m: raw_member): credits_member => ({
+          id         : m.user.id,
+          username   : m.nick ?? m.user.global_name ?? m.user.username,
+          avatar_url : get_member_avatar(m),
+        })
 
-    try {
-      console.info("[ - API CREDITS MEMBERS - ] Background refresh started")
-      const all: raw_member[] = []
-      let   after             = ""
+        const supporters = all.filter(m => m.roles.includes(role_supporter)).map(to_member)
+        const staff      = all.filter(m => m.roles.includes(role_staff)).map(to_member)
 
-      while (true) {
-        const query = after ? `?limit=1000&after=${after}` : "?limit=1000"
-        const page  = await (client as any).rest.get(`/guilds/${main_guild_id}/members${query}`) as raw_member[]
+        // - UPDATE IN-MEMORY CACHE FIRST (INSTANT ACCESS FOR NEXT REQUEST) - \\
+        credits_mem_cache = { supporters, staff, updated_at: Date.now() }
+        console.info(`[ - API CREDITS MEMBERS - ] In-memory updated: ${supporters.length} supporters, ${staff.length} staff`)
 
-        all.push(...page)
-        if (page.length < 1000) break
-        after = page[page.length - 1]!.user.id
-      }
-
-      const to_member = (m: raw_member) => ({
-        id         : m.user.id,
-        username   : m.nick ?? m.user.global_name ?? m.user.username,
-        avatar_url : get_avatar(m),
-      })
-
-      const supporters = all.filter(m => m.roles.includes(role_supporter)).map(to_member)
-      const staff      = all.filter(m => m.roles.includes(role_staff)).map(to_member)
-
-      if (supporters.length > 0 || staff.length > 0) {
-        await database.update_one(
+        // - PERSIST TO DB IN BACKGROUND (BEST EFFORT FOR RESTART SURVIVAL) - \\
+        database.update_one(
           "credits_members",
           { id: "cache" },
           { id: "cache", supporters, staff, updated_at: Date.now() },
           true
-        )
-        console.info(`[ - API CREDITS MEMBERS - ] Cache saved: ${supporters.length} supporters, ${staff.length} staff`)
+        ).catch((err) => console.error("[ - API CREDITS MEMBERS - ] DB persist failed:", err))
+      } catch (err) {
+        console.error("[ - API CREDITS MEMBERS - ] Refresh failed:", err)
+      } finally {
+        credits_refreshing      = false
+        credits_refresh_promise = null
       }
-    } catch (err) {
-      console.error("[ - API CREDITS MEMBERS - ] Background refresh failed:", err)
-    } finally {
-      credits_refreshing = false
-    }
+    })()
+
+    return credits_refresh_promise
   }
 
-  // - GET SUPPORTERS AND STAFF — STALE WHILE REVALIDATE - \\
+  // - WARM IN-MEMORY CACHE FROM DB ON STARTUP - \\
+  setImmediate(async () => {
+    try {
+      const db_cached = await Promise.race([
+        database.find_one<credits_cache>("credits_members", { id: "cache" }),
+        new Promise<null>(r => setTimeout(() => r(null), 5000)),
+      ])
+      if (db_cached && Array.isArray(db_cached.supporters) && db_cached.supporters.length > 0) {
+        credits_mem_cache = db_cached
+        console.info(`[ - API CREDITS MEMBERS - ] Warmed from DB: ${db_cached.supporters.length} supporters, ${db_cached.staff.length} staff`)
+      }
+    } catch (err) {
+      console.error("[ - API CREDITS MEMBERS - ] DB warm failed:", err)
+    }
+  })
+
+  // - GET SUPPORTERS AND STAFF — IN-MEMORY FIRST, STALE WHILE REVALIDATE - \\
   /**
    * @route GET /api/credits-members
-   * @description Returns cached data immediately. Triggers background refresh when stale (> 2hr).
-   *              First cold-start returns empty and triggers background fetch.
+   * @description Serves from in-memory cache instantly. On cold-start awaits refresh (max 30s).
+   *              Triggers background refresh when stale (> 2hr) or force_refresh=1.
    * @returns JSON { supporters: member[], staff: member[] }
    */
   app.get("/api/credits-members", async (req: Request, res: Response) => {
     const force_refresh = req.query.refresh === "1"
-    const two_hours     = 2 * 60 * 60 * 1000
-
-    // - TIMEOUT WRAPPER TO PREVENT HANGING WHEN DB IS SLOW - \\
-    const db_timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000))
 
     try {
-      const cached = await Promise.race([
-        database.find_one<{ supporters: any[]; staff: any[]; updated_at: number }>(
-          "credits_members",
-          { id: "cache" }
-        ),
-        db_timeout,
-      ])
+      const is_stale = !credits_mem_cache?.updated_at || (Date.now() - credits_mem_cache.updated_at) > two_hours
+      const has_data = credits_mem_cache && credits_mem_cache.supporters.length > 0
 
-      const has_data = cached && Array.isArray(cached.supporters) && cached.supporters.length > 0
-      const is_stale = !cached?.updated_at || (Date.now() - cached.updated_at) > two_hours
-
-      // - TRIGGER BACKGROUND REFRESH IF STALE OR FORCED - \\
-      if ((is_stale || force_refresh) && discord_client?.isReady()) {
-        refresh_credits_cache(discord_client).catch(() => {})
+      // - SERVE FROM MEMORY IF FRESH - \\
+      if (has_data && !force_refresh) {
+        if (is_stale && discord_client?.isReady()) {
+          refresh_credits_cache(discord_client).catch(() => {})
+        }
+        console.info(`[ - API CREDITS MEMBERS - ] Serving memory cache: ${credits_mem_cache!.supporters.length} supporters, ${credits_mem_cache!.staff.length} staff`)
+        return res.status(200).json({ supporters: credits_mem_cache!.supporters, staff: credits_mem_cache!.staff })
       }
 
-      if (has_data) {
-        console.info(`[ - API CREDITS MEMBERS - ] Serving cache (stale=${is_stale}): ${cached!.supporters.length} supporters, ${cached!.staff.length} staff`)
-        return res.status(200).json({ supporters: cached!.supporters, staff: cached!.staff })
+      // - COLD START OR FORCE REFRESH: AWAIT REFRESH WITH 30s TIMEOUT - \\
+      if (discord_client?.isReady()) {
+        const refresh_timeout = new Promise<void>(r => setTimeout(r, 30000))
+        await Promise.race([refresh_credits_cache(discord_client), refresh_timeout])
       }
 
-      // - NO CACHE YET OR DB TIMEOUT — RETURN EMPTY, BACKGROUND FETCH RUNNING - \\
+      if (credits_mem_cache && credits_mem_cache.supporters.length > 0) {
+        console.info(`[ - API CREDITS MEMBERS - ] Serving after refresh: ${credits_mem_cache.supporters.length} supporters, ${credits_mem_cache.staff.length} staff`)
+        return res.status(200).json({ supporters: credits_mem_cache.supporters, staff: credits_mem_cache.staff })
+      }
+
+      // - BOT NOT READY OR REFRESH STILL IN FLIGHT - \\
       return res.status(200).json({ supporters: [], staff: [], loading: true })
     } catch (err) {
       console.error("[ - API CREDITS MEMBERS - ] Error:", err)

@@ -419,30 +419,26 @@ export default function CreditsPage() {
         const is_retry = attempts > 0
         const url      = is_retry ? '/api/discord-role-members?refresh=1' : '/api/discord-role-members'
 
-        try {
-          const res  = await fetch(url)
-          const data = await res.json()
+        const res  = await fetch(url)
+        const data = await res.json()
 
-          const supporters_raw: role_member[] = Array.isArray(data.supporters) ? data.supporters : []
-          const staff_raw     : role_member[] = Array.isArray(data.staff)      ? data.staff      : []
+        const supporters_raw: role_member[] = Array.isArray(data.supporters) ? data.supporters : []
+        const staff_raw     : role_member[] = Array.isArray(data.staff)      ? data.staff      : []
 
-          // - BOT CACHE STILL WARMING UP — RETRY AFTER DELAY (MAX 3 ATTEMPTS) - \\
-          if (data.loading && attempts < 3) {
-            await new Promise(r => setTimeout(r, 6000))
-            return fetch_members(attempts + 1)
-          }
-
-          set_supporters(supporters_raw)
-          set_staff(staff_raw)
-          set_members_fetched(true)
-        } catch {
-          // silent
-        } finally {
-          if (attempts === 0 || attempts >= 3) set_members_loading(false)
+        // - BOT CACHE STILL WARMING UP — RETRY AFTER DELAY (MAX 3 ATTEMPTS) - \\
+        if (data.loading && attempts < 3) {
+          await new Promise(r => setTimeout(r, 6000))
+          return fetch_members(attempts + 1)
         }
+
+        set_supporters(supporters_raw)
+        set_staff(staff_raw)
+        set_members_fetched(true)
       }
 
       fetch_members()
+        .catch(() => {})
+        .finally(() => set_members_loading(false))
     }
   }, [active_tab, members_fetched])
 

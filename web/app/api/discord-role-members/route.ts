@@ -25,7 +25,7 @@ let __cache: cache_entry | null = null
 async function fetch_from_bot(force_refresh: boolean): Promise<{ supporters: discord_member[]; staff: discord_member[]; loading?: boolean }> {
   const url        = `${__bot_url}/api/credits-members${force_refresh ? '?refresh=1' : ''}`
   const controller = new AbortController()
-  const timeout_id = setTimeout(() => controller.abort(), 15000)
+  const timeout_id = setTimeout(() => controller.abort(), 35000) // 35s — bot cold-start refresh can take up to 30s
 
   try {
     const res = await fetch(url, { signal: controller.signal, cache: 'no-store' })
