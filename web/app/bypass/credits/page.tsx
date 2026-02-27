@@ -219,7 +219,7 @@ function MemberDetailPanel({
 
               <div className="px-5">
                 {/* - AVATAR OVERLAPPING BANNER - \\ */}
-                <div className="-mt-8 mb-3">
+                <div className="relative z-10 -mt-8 mb-3">
                   <Image
                     src       = {data.avatar}
                     alt       = {data.display_name}
