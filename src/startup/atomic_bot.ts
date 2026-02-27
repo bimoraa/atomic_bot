@@ -18,7 +18,6 @@ import { start_free_script_checker }                                     from "@
 import { start_service_provider_cache, stop_service_provider_cache }     from "../atomic_bot/infrastructure/api/service_provider_cache"
 import { db, component }                                                 from "@shared/utils"
 import { log_error }                                                     from "@shared/utils/error_logger"
-import { override_console }                                              from "@shared/utils/logger"
 import { check_spam }                                                    from "../atomic_bot/infrastructure/cache/anti_spam"
 import { load_reminders_from_db }                                        from "../atomic_bot/modules/reminder/reminder"
 import { start_loa_checker }                                             from "@shared/database/services/loa_checker"
@@ -33,9 +32,6 @@ import { start_share_settings_forum_scheduler }                          from ".
 import * as share_settings                                               from "../atomic_bot/core/handlers/shared/controller/share_settings_controller"
 
 config()
-
-process.env.BOT_NAME = "Atomicals BOT"
-override_console()
 
 const is_dev = process.env.NODE_ENV === "development"
 

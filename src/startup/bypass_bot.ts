@@ -2,7 +2,6 @@ import { Client, Collection, GatewayIntentBits, ActivityType, REST, Routes, Mess
 import { config }                                                                    from "dotenv"
 import { Command }                                                                   from "@shared/types/command"
 import { log_error }                                                                 from "@shared/utils/error_logger"
-import { override_console }                                                          from "@shared/utils/logger"
 import { db }                                                                        from "@shared/utils"
 import { readdirSync }                                                               from "fs"
 import { join }                                                                      from "path"
@@ -11,9 +10,6 @@ import { handle_bypass_mobile_copy }                                            
 import { handle_bypass_support_type_select }                                         from "@bypass/core/select_menus/bypass_support_type_select"
 
 config()
-
-process.env.BOT_NAME = "Bypass BOT"
-override_console()
 
 const is_production = process.env.NODE_ENV === "production"
 if (is_production) {

@@ -2,7 +2,6 @@ import { Client, Collection, GatewayIntentBits, ActivityType, REST, Routes } fro
 import { config }                                                            from "dotenv"
 import { Command }                                                           from "@shared/types/command"
 import { log_error }                                                         from "@shared/utils/error_logger"
-import { override_console }                                                  from "@shared/utils/logger"
 import { db }                                                                from "@shared/utils"
 import { readdirSync }                                                       from "fs"
 import { join }                                                              from "path"
@@ -11,9 +10,6 @@ import { handle_check_on_live_button }                                       fro
 import { handle_history_live_button }                                        from "@jkt48/core/buttons/history_live"
 
 config()
-
-process.env.BOT_NAME = "JKT48 Bot"
-override_console()
 
 const is_production = process.env.NODE_ENV === "production"
 if (is_production) {

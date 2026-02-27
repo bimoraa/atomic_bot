@@ -508,16 +508,6 @@ async function init_tables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_jkt48_guild_settings_platform ON jkt48_guild_notification_settings(platform)
     `)
 
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS bot_logs (
-        id         SERIAL PRIMARY KEY,
-        bot_name   VARCHAR(50),
-        level      VARCHAR(10) NOT NULL,
-        message    TEXT NOT NULL,
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-      )
-    `)
-
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")
