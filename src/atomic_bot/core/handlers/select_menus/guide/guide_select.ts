@@ -59,47 +59,49 @@ export async function handle_guide_select(interaction: StringSelectMenuInteracti
 
   await interaction.deferReply({ flags: 32832 } as any)
 
-  const guide_content = load_guide(selected)
+  try {
+    const guide_content = load_guide(selected)
 
-  if (!guide_content) {
-    await fetch(
-      `https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
-      {
-        method:  "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({
-          flags:   32832,
-          content: "Guide not found.",
-        }),
-      }
-    )
-    return
-  }
-
-  const { cleaned, buttons } = parse_buttons(guide_content)
-
-  guide_buttons.set(selected, buttons)
-
-  const guide_components = parse_guide_to_components(cleaned, selected, buttons)
-
-  const message = {
-    flags:      32832,
-    components: [
-      {
-        type:       17,
-        components: guide_components,
-      },
-    ],
-  }
-
-  await fetch(
-    `https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
-    {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(message),
+    if (!guide_content) {
+      await api.edit_deferred_reply(interaction, component.build_message({
+        components: [
+          component.container({
+            components: [component.text("Guide not found.")],
+          }),
+        ],
+      }))
+      return
     }
-  )
+
+    const { cleaned, buttons }  = parse_buttons(guide_content)
+    guide_buttons.set(selected, buttons)
+    const guide_components      = parse_guide_to_components(cleaned, selected, buttons)
+
+    const result = await api.edit_deferred_reply(interaction, {
+      flags:      32832,
+      components: [{ type: 17, components: guide_components }],
+    } as any)
+
+    if (result.error) {
+      console.error(`[ - GUIDE SELECT - ] Failed to send guide (${selected}):`, result)
+      await api.edit_deferred_reply(interaction, component.build_message({
+        components: [
+          component.container({
+            components: [component.text("Failed to load guide. Please try again.")],
+          }),
+        ],
+      })).catch(() => {})
+    }
+  } catch (err) {
+    console.error(`[ - GUIDE SELECT - ] Unexpected error:`, err)
+    await api.edit_deferred_reply(interaction, component.build_message({
+      components: [
+        component.container({
+          components: [component.text("An unexpected error occurred.")],
+        }),
+      ],
+    })).catch(() => {})
+  }
 }
 
 export async function handle_guide_language_select(interaction: StringSelectMenuInteraction): Promise<void> {
@@ -109,46 +111,48 @@ export async function handle_guide_language_select(interaction: StringSelectMenu
 
   await interaction.deferReply({ flags: 32832 } as any)
 
-  let guide_content = load_guide(guide_file)
-  
-  if (!guide_content) {
-    guide_content = load_guide(guide_type)
-  }
+  try {
+    let guide_content = load_guide(guide_file)
+    if (!guide_content) guide_content = load_guide(guide_type)
 
-  if (!guide_content) {
-    await fetch(
-      `https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
-      {
-        method:  "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ flags: 32832, content: "Guide not found." }),
-      }
-    )
-    return
-  }
-
-  const { cleaned, buttons } = parse_buttons(guide_content)
-
-  guide_buttons.set(guide_file, buttons)
-
-  const guide_components = parse_guide_to_components(cleaned, guide_file, buttons)
-
-  const message = {
-    flags:      32832,
-    components: [
-      {
-        type:       17,
-        components: guide_components,
-      },
-    ],
-  }
-
-  await fetch(
-    `https://discord.com/api/v10/webhooks/${interaction.applicationId}/${interaction.token}/messages/@original`,
-    {
-      method:  "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(message),
+    if (!guide_content) {
+      await api.edit_deferred_reply(interaction, component.build_message({
+        components: [
+          component.container({
+            components: [component.text("Guide not found.")],
+          }),
+        ],
+      }))
+      return
     }
-  )
+
+    const { cleaned, buttons }  = parse_buttons(guide_content)
+    guide_buttons.set(guide_file, buttons)
+    const guide_components      = parse_guide_to_components(cleaned, guide_file, buttons)
+
+    const result = await api.edit_deferred_reply(interaction, {
+      flags:      32832,
+      components: [{ type: 17, components: guide_components }],
+    } as any)
+
+    if (result.error) {
+      console.error(`[ - GUIDE SELECT - ] Failed to send guide lang (${guide_file}):`, result)
+      await api.edit_deferred_reply(interaction, component.build_message({
+        components: [
+          component.container({
+            components: [component.text("Failed to load guide. Please try again.")],
+          }),
+        ],
+      })).catch(() => {})
+    }
+  } catch (err) {
+    console.error(`[ - GUIDE SELECT - ] Unexpected error:`, err)
+    await api.edit_deferred_reply(interaction, component.build_message({
+      components: [
+        component.container({
+          components: [component.text("An unexpected error occurred.")],
+        }),
+      ],
+    })).catch(() => {})
+  }
 }

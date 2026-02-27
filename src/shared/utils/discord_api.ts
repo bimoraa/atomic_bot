@@ -169,7 +169,7 @@ export async function send_components_v2_followup(
 }
 
 export async function edit_deferred_reply(
-  interaction: ButtonInteraction | CommandInteraction | ModalSubmitInteraction,
+  interaction: ButtonInteraction | CommandInteraction | ModalSubmitInteraction | StringSelectMenuInteraction,
   payload: message_payload
 ): Promise<api_response> {
   const controller = new AbortController()
