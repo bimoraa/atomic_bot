@@ -31,17 +31,25 @@ export default function BypassPage() {
   const input_ref                  = useRef<HTMLInputElement>(null)
   const submitted_url              = useRef<string>('')
 
-  // - FETCH BYPASS COUNT AND SUPPORTED SERVICES COUNT ON MOUNT - \\
-  useEffect(() => {
+  // - FETCH REAL BYPASS COUNT FROM DB - \\
+  const refresh_bypass_count = useCallback(() => {
     fetch('/api/bypass-stats')
       .then(r => r.json())
       .then(d => { if (typeof d.count === 'number') set_bypass_count(d.count) })
       .catch(() => {})
+  }, [])
+
+  // - FETCH STATS AND POLL EVERY 30S - \\
+  useEffect(() => {
+    refresh_bypass_count()
     fetch('/api/supported')
       .then(r => r.json())
       .then(d => { if (Array.isArray(d)) set_supported_count(d.length) })
       .catch(() => {})
-  }, [])
+
+    const interval = setInterval(refresh_bypass_count, 30_000)
+    return () => clearInterval(interval)
+  }, [refresh_bypass_count])
 
   // - CORE BYPASS LOGIC, RETURNS PROMISE FOR STATEFUL BUTTON - \\
   const run_bypass = useCallback(async (): Promise<void> => {
@@ -74,13 +82,14 @@ export default function BypassPage() {
         return
       }
 
-      set_bypass_count(c => c + 1)
+      set_bypass_count(c => c + 1)  // - OPTIMISTIC UPDATE - \\
       submitted_url.current = trimmed
       set_state({ status: 'success', result: data.result })
+      refresh_bypass_count()          // - SYNC REAL VALUE FROM DB - \\
     } catch {
       set_state({ status: 'error', message: 'Network error. Please check your connection.' })
     }
-  }, [url])
+  }, [url, refresh_bypass_count])
 
   const handle_submit = useCallback((e: React.FormEvent) => {
     e.preventDefault()
