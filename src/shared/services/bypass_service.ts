@@ -3,7 +3,7 @@
 const __bypass_api_key = process.env.BYPASS_API_KEY || ""
 const __bypass_api_url = process.env.BYPASS_API_URL || ""
 
-const __bypass_timeout        = 15000   // - Per-request timeout - \\
+const __bypass_timeout        = 60000   // - Per-request timeout - \\
 const __bypass_global_timeout = 200000  // - Max wait across all retries (3 × 60s + buffer) - \\
 export const bypass_max_retry = 3       // - Max retries on actual API errors - \\
 const __bypass_max_retry      = bypass_max_retry
@@ -294,8 +294,9 @@ async function _run_bypass_link(
     // - DON'T RETRY ON UNSUPPORTED LINKS OR CLIENT ERRORS - NO POINT - \\
     const is_unsupported = last_result.error?.toLowerCase().includes("not supported")
       || last_result.error?.toLowerCase().includes("unsupported")
-    if (is_unsupported || last_result.is_client_error) {
-      console.warn(`[ - BYPASS - ] _run_bypass_link aborting retries for URL: ${url} (unsupported or client error)`)
+    const is_timeout = last_result.error?.toLowerCase().includes("timeout") || last_result.error?.toLowerCase().includes("aborted")
+    if (is_unsupported || last_result.is_client_error || is_timeout) {
+      console.warn(`[ - BYPASS - ] _run_bypass_link aborting retries for URL: ${url} (unsupported, client error, or timeout)`)
       return last_result
     }
 
