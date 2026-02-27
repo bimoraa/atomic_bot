@@ -270,6 +270,46 @@ export function start_webhook_server(client: Client): void {
     }
   })
 
+  // - GET ALL MEMBERS WITH A SPECIFIC ROLE - \\
+  /**
+   * @route GET /api/role-members/:role_id
+   * @param role_id - Discord role snowflake ID
+   * @returns Array of { id, username, avatar_url } for all members with that role
+   */
+  app.get("/api/role-members/:role_id", async (req: Request, res: Response) => {
+    try {
+      if (!discord_client?.isReady()) {
+        return res.status(503).json({ error: "Bot not ready" })
+      }
+
+      const role_id = req.params.role_id
+      const guild   = discord_client.guilds.cache.get(main_guild_id)
+
+      if (!guild) {
+        return res.status(404).json({ error: "Guild not found" })
+      }
+
+      // - FETCH ALL MEMBERS INTO CACHE FIRST - \\
+      await guild.members.fetch()
+
+      const role = guild.roles.cache.get(role_id)
+      if (!role) {
+        return res.status(404).json({ error: "Role not found" })
+      }
+
+      const members = role.members.map(m => ({
+        id         : m.id,
+        username   : m.displayName ?? m.user.globalName ?? m.user.username,
+        avatar_url : m.displayAvatarURL({ size: 64 }),
+      }))
+
+      res.status(200).json({ members })
+    } catch (err) {
+      console.error("[ - API ROLE MEMBERS - ] Error:", err)
+      res.status(500).json({ error: "Failed to get role members" })
+    }
+  })
+
   app.get("/api/server-info", async (req: Request, res: Response) => {
     try {
       if (!discord_client?.isReady()) {
