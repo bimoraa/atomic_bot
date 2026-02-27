@@ -3,15 +3,18 @@ import { Cache } from "@shared/utils/cache"
 const __rate_limit_window_ms = 30_000
 const __rate_limit_max       = 20
 
+// - DM ANTI-SPAM: 1 REQUEST PER 2 SECONDS PER USER - \\
+const __dm_cooldown_ms = 2_000
+
 type rate_limit_state = {
-  count: number
-  reset_at: number
+  count    : number
+  reset_at : number
 }
 
 type rate_limit_result = {
-  allowed: boolean
-  remaining: number
-  reset_at: number
+  allowed   : boolean
+  remaining : number
+  reset_at  : number
 }
 
 const rate_limit_cache = new Cache<rate_limit_state>(
@@ -19,6 +22,13 @@ const rate_limit_cache = new Cache<rate_limit_state>(
   2000,
   60 * 1000,
   "bypass_rate_limit"
+)
+
+const dm_cooldown_cache = new Cache<number>(
+  __dm_cooldown_ms * 2,
+  500,
+  __dm_cooldown_ms * 4,
+  "bypass_dm_cooldown"
 )
 
 export function check_bypass_rate_limit(guild_id: string): rate_limit_result {
@@ -53,4 +63,22 @@ export function check_bypass_rate_limit(guild_id: string): rate_limit_result {
     remaining : __rate_limit_max - updated.count,
     reset_at  : current.reset_at,
   }
+}
+
+/**
+ * Per-user DM cooldown check. Allows 1 request per 2 seconds.
+ * @param user_id - Discord user ID
+ * @returns { allowed, retry_after_ms } where retry_after_ms is ms until cooldown expires
+ */
+export function check_dm_user_cooldown(user_id: string): { allowed: boolean; retry_after_ms: number } {
+  const now  = Date.now()
+  const key  = `dm_cd:${user_id}`
+  const last = dm_cooldown_cache.get(key)
+
+  if (last !== undefined && now - last < __dm_cooldown_ms) {
+    return { allowed: false, retry_after_ms: __dm_cooldown_ms - (now - last) }
+  }
+
+  dm_cooldown_cache.set(key, now, __dm_cooldown_ms)
+  return { allowed: true, retry_after_ms: 0 }
 }

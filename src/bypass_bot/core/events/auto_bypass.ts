@@ -2,7 +2,7 @@ import { Message } from "discord.js"
 import { bypass_link } from "@shared/services/bypass_service"
 import { component, db, guild_settings } from "@shared/utils"
 import { log_error }                     from "@shared/utils/error_logger"
-import { check_bypass_rate_limit } from "../limits/bypass_rate_limit"
+import { check_bypass_rate_limit, check_dm_user_cooldown } from "../limits/bypass_rate_limit"
 
 /**
  * @param {Message} message - Discord message
@@ -112,6 +112,15 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   }
 
   let processing_msg: Awaited<ReturnType<typeof message.reply>> | null = null
+
+  // - DM ANTI-SPAM: 1 REQUEST PER 2 SECONDS PER USER — SILENT DROP TO AVOID BOT QUARANTINE - \\
+  if (is_dm) {
+    const cooldown = check_dm_user_cooldown(message.author.id)
+    if (!cooldown.allowed) {
+      console.warn(`[ - AUTO BYPASS - ] DM spam drop for ${message.author.id} (retry_after: ${cooldown.retry_after_ms}ms)`)
+      return true
+    }
+  }
 
   try {
     const client_id   = message.client.user?.id || ""
