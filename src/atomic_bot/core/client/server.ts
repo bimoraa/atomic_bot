@@ -270,6 +270,74 @@ export function start_webhook_server(client: Client): void {
     }
   })
 
+  // - GET SUPPORTERS AND STAFF IN ONE PAGINATED FETCH - \\
+  /**
+   * @route GET /api/credits-members
+   * @description Paginates all guild members once and splits into supporter/staff.
+   *              Bypasses makeCache empty collection by reading raw REST roles array.
+   * @returns JSON { supporters: member[], staff: member[] }
+   */
+  app.get("/api/credits-members", async (req: Request, res: Response) => {
+    try {
+      if (!discord_client?.isReady()) {
+        return res.status(503).json({ error: "Bot not ready" })
+      }
+
+      const role_supporter = "1357767950421065981"
+      const role_staff     = "1264915024707588208"
+      const cdn            = "https://cdn.discordapp.com"
+
+      type raw_member = {
+        user  : { id: string; username: string; global_name?: string; avatar?: string }
+        nick  ?: string
+        avatar?: string
+        roles  : string[]
+      }
+
+      const get_avatar = (m: raw_member): string => {
+        if (m.avatar) {
+          const ext = m.avatar.startsWith("a_") ? "gif" : "png"
+          return `${cdn}/guilds/${main_guild_id}/users/${m.user.id}/avatars/${m.avatar}.${ext}?size=64`
+        }
+        if (m.user.avatar) {
+          const ext = m.user.avatar.startsWith("a_") ? "gif" : "png"
+          return `${cdn}/avatars/${m.user.id}/${m.user.avatar}.${ext}?size=64`
+        }
+        return `${cdn}/embed/avatars/${Number(BigInt(m.user.id) >> BigInt(22)) % 6}.png`
+      }
+
+      // - SINGLE PAGINATED PASS OVER ALL MEMBERS - \\
+      const all: raw_member[] = []
+      let   after: string | null = null
+      const limit                = 1000
+
+      while (true) {
+        const query = after ? `?limit=${limit}&after=${after}` : `?limit=${limit}`
+        const page  = await discord_client.rest.get(`/guilds/${main_guild_id}/members${query}`) as raw_member[]
+
+        all.push(...page)
+        if (page.length < limit) break
+        after = page[page.length - 1]!.user.id
+      }
+
+      const to_member = (m: raw_member) => ({
+        id         : m.user.id,
+        username   : m.nick ?? m.user.global_name ?? m.user.username,
+        avatar_url : get_avatar(m),
+      })
+
+      const supporters = all.filter(m => m.roles.includes(role_supporter)).map(to_member)
+      const staff      = all.filter(m => m.roles.includes(role_staff)).map(to_member)
+
+      console.info(`[ - API CREDITS MEMBERS - ] Total: ${all.length} | Supporters: ${supporters.length} | Staff: ${staff.length}`)
+
+      res.status(200).json({ supporters, staff })
+    } catch (err) {
+      console.error("[ - API CREDITS MEMBERS - ] Error:", err)
+      res.status(500).json({ error: "Failed to get credits members" })
+    }
+  })
+
   // - GET ALL MEMBERS WITH A SPECIFIC ROLE - \\
   /**
    * @route GET /api/role-members/:role_id
