@@ -6,17 +6,18 @@ import { cookies } from 'next/headers'
 export default async function TranscriptPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
+  const { id }       = await params
   // - Check authentication - \\
-  const cookie_store = cookies()
+  const cookie_store = await cookies()
   const discord_user = cookie_store.get('discord_user')
   
   if (!discord_user) {
-    redirect(`/login?return_to=/transcript/${params.id}`)
+    redirect(`/login?return_to=/transcript/${id}`)
   }
 
-  const transcript = await get_transcript(params.id)
+  const transcript = await get_transcript(id)
 
   if (!transcript) {
     notFound()

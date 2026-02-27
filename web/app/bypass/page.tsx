@@ -20,7 +20,7 @@ import {
 type bypass_state =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; result: string }
+  | { status: 'success'; result: string; elapsed_ms: number }
   | { status: 'error';   message: string }
 
 export default function BypassPage() {
@@ -87,7 +87,7 @@ export default function BypassPage() {
       }
 
       submitted_url.current = trimmed
-      set_state({ status: 'success', result: data.result })
+      set_state({ status: 'success', result: data.result, elapsed_ms: data.elapsed_ms ?? 0 })
     } catch {
       set_state({ status: 'error', message: 'Network error. Please check your connection.' })
     }
@@ -217,7 +217,13 @@ export default function BypassPage() {
                   <div className="h-1.5 w-1.5 rounded-full bg-foreground" />
                   Direct link
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2.5">
+                  {state.elapsed_ms > 0 && (
+                    <span className="text-xs text-muted-foreground/60 tabular-nums">
+                      {(state.elapsed_ms / 1000).toFixed(2)}s
+                    </span>
+                  )}
+                  <div className="flex items-center gap-1">
                   <button
                     onClick={handle_copy}
                     className="inline-flex items-center gap-1.5 h-7 px-2.5 text-xs rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -232,6 +238,7 @@ export default function BypassPage() {
                     <ExternalLink className="w-3 h-3" />
                     Open
                   </a>
+                  </div>
                 </div>
               </div>
 

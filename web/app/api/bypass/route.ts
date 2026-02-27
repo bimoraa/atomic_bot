@@ -96,6 +96,8 @@ export async function POST(req: NextRequest) {
     }
 
     // - INCREMENT COUNT PER ATTEMPT (BEFORE FETCH) - \\
+    const __request_start = Date.now()
+
     try {
       await increment_bypass_count()
     } catch (err) {
@@ -156,7 +158,7 @@ export async function POST(req: NextRequest) {
 
     console.log(`[ - BYPASS API - ] Success for: ${url}`)
 
-    return NextResponse.json({ success: true, result: data.result })
+    return NextResponse.json({ success: true, result: data.result, elapsed_ms: Date.now() - __request_start })
 
   } catch (error) {
     console.error("[ - BYPASS API - ] Unhandled error:", error)
