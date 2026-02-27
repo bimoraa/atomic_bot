@@ -1,15 +1,62 @@
 // - BYPASS LINK SERVICE - \\
 
+import { get_pool } from "@shared/utils/database"
+
 const __bypass_api_key = process.env.BYPASS_API_KEY || ""
 const __bypass_api_url = process.env.BYPASS_API_URL || ""
 
-const __bypass_timeout        = 60000   // - Per-request timeout - \\
-const __bypass_global_timeout = 200000  // - Max wait across all retries (3 × 60s + buffer) - \\
-export const bypass_max_retry = 3       // - Max retries on actual API errors - \\
-const __bypass_max_retry      = bypass_max_retry
-const __bypass_queue_delay_ms = 6000    // - Delay between queued requests - \\
-const __bypass_retry_ms       = 60000   // - Fixed 60s wait before each retry - \\
-const __bypass_default_backoff = 30     // - Default backoff seconds on 429 - \\
+const __bypass_global_timeout  = 600000  // - Safety net only — 10 min max total wait - \\
+export const bypass_max_retry  = 3
+const __bypass_max_retry       = bypass_max_retry
+const __bypass_retry_ms        = 10000   // - Wait before each retry - \\
+const __bypass_default_backoff = 15      // - Default backoff seconds on 429 - \\
+
+// - URL-BASED RESULT CACHE TTL - \\
+const __url_cache_ttl_minutes = 30
+
+/**
+ * Builds a stable cache key from a URL.
+ * @param url - The URL to hash
+ * @returns Cache key string
+ */
+function __url_cache_key(url: string): string {
+  return `bypass_url_cache_${Buffer.from(url.trim()).toString('base64').replace(/[+/=]/g, '').slice(0, 64)}`
+}
+
+/**
+ * Checks bypass_cache table for a previously bypassed result for this URL.
+ * @param url - The URL to look up
+ * @returns Cached result string or null
+ */
+async function __get_url_cache(url: string): Promise<string | null> {
+  try {
+    const row = await get_pool().query<{ url: string }>(
+      `SELECT url FROM bypass_cache WHERE key = $1 AND expires_at > NOW() LIMIT 1`,
+      [__url_cache_key(url)]
+    )
+    return row.rows[0]?.url ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Stores a bypass result in cache keyed by URL.
+ * @param url    - The original URL
+ * @param result - The bypassed result to cache
+ */
+async function __set_url_cache(url: string, result: string): Promise<void> {
+  try {
+    await get_pool().query(
+      `INSERT INTO bypass_cache (key, url, expires_at)
+       VALUES ($1, $2, NOW() + INTERVAL '${__url_cache_ttl_minutes} minutes')
+       ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '${__url_cache_ttl_minutes} minutes'`,
+      [__url_cache_key(url), result]
+    )
+  } catch (err) {
+    console.error(`[ - BYPASS CACHE - ] Failed to store URL cache:`, err)
+  }
+}
 
 // - SLIDING WINDOW REQUEST TRACKER - \\
 const __request_timestamps: number[] = []
@@ -84,8 +131,8 @@ async function __enqueue_bypass<T>(task: () => Promise<T>): Promise<T> {
     return await task()
   } finally {
     __queue_length--
-    console.warn(`[ - BYPASS - ] Task finished. Resolving next in ${__bypass_queue_delay_ms}ms. Queue length: ${__queue_length}`)
-    setTimeout(resolve_next, __bypass_queue_delay_ms)
+    console.warn(`[ - BYPASS - ] Task finished. Resolving next. Queue length: ${__queue_length}`)
+    resolve_next()
   }
 }
 
@@ -116,17 +163,21 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
   const trimmed_url = url.trim()
   console.warn(`[ - BYPASS - ] Starting attempt ${attempt} for URL: ${trimmed_url}`)
 
+  // - CHECK URL CACHE FIRST (ONLY ON FIRST ATTEMPT) - \\
+  if (attempt === 1) {
+    const cached = await __get_url_cache(trimmed_url)
+    if (cached) {
+      console.warn(`[ - BYPASS - ] Cache hit for URL: ${trimmed_url}`)
+      return { success: true, result: cached, time: 0, attempts: 0 }
+    }
+  }
+
   try {
     const start_time = Date.now()
     const params = new URLSearchParams({ url: trimmed_url })
 
     const response = await __enqueue_bypass(async () => {
       console.warn(`[ - BYPASS - ] Executing fetch for attempt ${attempt} (URL: ${trimmed_url})`)
-      const controller = new AbortController()
-      const timeout_id = setTimeout(() => {
-        console.warn(`[ - BYPASS - ] Fetch timeout triggered for attempt ${attempt} (URL: ${trimmed_url})`)
-        controller.abort()
-      }, __bypass_timeout)
 
       try {
         const fetch_start = Date.now()
@@ -135,11 +186,10 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
         const res = await fetch(`${__bypass_api_url}?${params}`, {
           method: "GET",
           headers: {
-            "x-api-key": __bypass_api_key,
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive",
+            "x-api-key"       : __bypass_api_key,
+            "Accept-Encoding" : "gzip, deflate, br",
+            "Connection"      : "keep-alive",
           },
-          signal: controller.signal,
         })
 
         console.warn(`[ - BYPASS - ] Fetch completed for attempt ${attempt} in ${Date.now() - fetch_start}ms with status: ${res.status} ${res.statusText}`)
@@ -149,8 +199,6 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
       } catch (fetch_err) {
         console.error(`[ - BYPASS - ] Fetch threw an error for attempt ${attempt}:`, fetch_err)
         throw fetch_err
-      } finally {
-        clearTimeout(timeout_id)
       }
     })
 
@@ -187,6 +235,8 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
 
     if (data && data.result) {
       console.warn(`[ - BYPASS - ] Success on attempt ${attempt} in ${process_time}s`)
+      // - STORE IN URL CACHE FOR FUTURE REQUESTS - \\
+      __set_url_cache(trimmed_url, data.result).catch(() => {})
       return {
         success: true,
         result: data.result,
@@ -294,9 +344,8 @@ async function _run_bypass_link(
     // - DON'T RETRY ON UNSUPPORTED LINKS OR CLIENT ERRORS - NO POINT - \\
     const is_unsupported = last_result.error?.toLowerCase().includes("not supported")
       || last_result.error?.toLowerCase().includes("unsupported")
-    const is_timeout = last_result.error?.toLowerCase().includes("timeout") || last_result.error?.toLowerCase().includes("aborted")
-    if (is_unsupported || last_result.is_client_error || is_timeout) {
-      console.warn(`[ - BYPASS - ] _run_bypass_link aborting retries for URL: ${url} (unsupported, client error, or timeout)`)
+    if (is_unsupported || last_result.is_client_error) {
+      console.warn(`[ - BYPASS - ] _run_bypass_link aborting retries for URL: ${url} (unsupported or client error)`)
       return last_result
     }
 
