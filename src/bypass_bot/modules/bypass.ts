@@ -327,14 +327,6 @@ const bypass_command: Command = {
       
       console.warn(`[ - BYPASS COMMAND - ] Success message sent!`)
 
-      // - SILENT DM: only works if user authorized via OAuth "DM when Done" button - \\
-      try {
-        await interaction.user.send(success_message)
-        console.warn(`[ - BYPASS COMMAND - ] DM sent to ${interaction.user.tag}`)
-      } catch {
-        // - USER HAS NOT AUTHORIZED OR DMs DISABLED, SKIP SILENTLY - \\
-      }
-
     } catch (error: any) {
       console.error(`[ - BYPASS COMMAND - ] Error:`, error)
 

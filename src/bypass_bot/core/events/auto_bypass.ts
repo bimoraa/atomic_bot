@@ -265,14 +265,6 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
       } catch (err) {
         console.error(`[ - AUTO BYPASS - ] Failed to edit success message:`, err)
       }
-
-      // - SILENT DM: only works if user authorized via OAuth "DM when Done" button - \\
-      try {
-        await message.author.send(success_message)
-        console.warn(`[ - AUTO BYPASS - ] DM sent to ${message.author.tag}`)
-      } catch {
-        // - USER HAS NOT AUTHORIZED OR DMs DISABLED, SKIP SILENTLY - \\
-      }
     } else {
       const log_text = [
         `[ BYPASS ] - Bypassing Link`,
