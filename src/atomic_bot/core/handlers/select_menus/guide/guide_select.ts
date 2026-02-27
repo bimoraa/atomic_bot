@@ -5,7 +5,7 @@ import fs                                           from "fs"
 import path                                         from "path"
 
 function load_guide(name: string): string | null {
-  const guide_path = path.join(process.cwd(), "src/guide", `${name}.md`)
+  const guide_path = path.join(process.cwd(), "src/atomic_bot/guide", `${name}.md`)
   if (!fs.existsSync(guide_path)) return null
   return fs.readFileSync(guide_path, "utf-8")
 }
