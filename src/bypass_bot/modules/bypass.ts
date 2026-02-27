@@ -197,7 +197,7 @@ const bypass_command: Command = {
         }
       })
 
-      console.log(`[ - BYPASS COMMAND - ] Bypass result (attempts: ${result.attempts}):`, JSON.stringify(result))
+      console.warn(`[ - BYPASS COMMAND - ] Bypass result (attempts: ${result.attempts}):`, JSON.stringify(result))
 
       if (!result.success || !result.result) {
         const error_message = component.build_message({
@@ -234,7 +234,7 @@ const bypass_command: Command = {
            ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '5 minutes'`,
           [cache_key, result.result]
         )
-        console.log(`[ - BYPASS - ] Stored in database with key: ${cache_key}`)
+        console.warn(`[ - BYPASS - ] Stored in database with key: ${cache_key}`)
       } catch (db_error) {
         console.error(`[ - BYPASS - ] Failed to store in database:`, db_error)
       }
@@ -277,7 +277,7 @@ const bypass_command: Command = {
       const has_bypass_image  = fs.existsSync(bypass_image_path)
       const bypass_image      = has_bypass_image ? fs.readFileSync(bypass_image_path) : undefined
 
-      console.log(`[ - BYPASS COMMAND - ] Sending success message...`)
+      console.warn(`[ - BYPASS COMMAND - ] Sending success message...`)
       const send_result = has_bypass_image && bypass_image
         ? await api.edit_deferred_reply_with_files(interaction, success_message, [{
           name    : "BYPASS.png",
@@ -290,7 +290,7 @@ const bypass_command: Command = {
         throw new Error(`Failed to send message: ${JSON.stringify(send_result)}`)
       }
       
-      console.log(`[ - BYPASS COMMAND - ] Success message sent!`)
+      console.warn(`[ - BYPASS COMMAND - ] Success message sent!`)
 
       // - SEND TO DM - \\
       try {
@@ -329,9 +329,9 @@ const bypass_command: Command = {
         })
 
         await interaction.user.send(dm_success_message)
-        console.log(`[ - BYPASS COMMAND - ] Sent result to ${interaction.user.tag}'s DM`)
+        console.warn(`[ - BYPASS COMMAND - ] Sent result to ${interaction.user.tag}'s DM`)
       } catch (dm_error) {
-        console.log(`[ - BYPASS COMMAND - ] Could not send DM to ${interaction.user.tag}`)
+        console.warn(`[ - BYPASS COMMAND - ] Could not send DM to ${interaction.user.tag}`)
       }
 
     } catch (error: any) {

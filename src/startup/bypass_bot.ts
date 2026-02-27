@@ -20,7 +20,7 @@ const bypass_token           = process.env.BYPASS_DISCORD_TOKEN!
 const bypass_client_id       = process.env.BYPASS_CLIENT_ID!
 
 if (!bypass_token || !bypass_client_id) {
-  console.log("[ - BYPASS - ] Token not configured, skipping bypass bot startup")
+  console.warn("[ - BYPASS - ] Token not configured, skipping bypass bot startup")
   process.exit(0)
 }
 
@@ -106,7 +106,7 @@ async function load_bypass_commands(client: Client & { commands: Collection<stri
     }
 
     const command_name = command.data.name
-    console.log(`[ - BYPASS - ] Loaded: ${command_name}`)
+    console.warn(`[ - BYPASS - ] Loaded: ${command_name}`)
     client.commands.set(command_name, command)
     commands_data.push(command.data.toJSON())
   }
@@ -124,13 +124,13 @@ async function register_bypass_commands(commands_data: object[]): Promise<void> 
     body: commands_data,
   })
 
-  console.log(`[ - BYPASS - ] Registered ${commands_data.length} commands`)
+  console.warn(`[ - BYPASS - ] Registered ${commands_data.length} commands`)
 }
 
 // - CLIENT READY EVENT - \\
 client.once("ready", async () => {
-  console.log(`[ - BYPASS - ] Bot logged in as ${client.user?.tag}`)
-  console.log(`[ - BYPASS - ] Serving ${client.guilds.cache.size} guilds`)
+  console.warn(`[ - BYPASS - ] Bot logged in as ${client.user?.tag}`)
+  console.warn(`[ - BYPASS - ] Serving ${client.guilds.cache.size} guilds`)
 
   await start_persistent_typing()
 
@@ -237,7 +237,7 @@ process.on("uncaughtException", (error: Error) => {
 // - LOGIN - \\
 client.login(bypass_token)
   .then(() => {
-    console.log("[ - BYPASS - ] Login successful")
+    console.warn("[ - BYPASS - ] Login successful")
   })
   .catch((error) => {
     console.error("[ - BYPASS - ] Login failed:", error)

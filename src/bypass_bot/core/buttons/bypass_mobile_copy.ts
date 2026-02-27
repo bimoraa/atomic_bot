@@ -42,7 +42,7 @@ export async function handle_bypass_mobile_copy(interaction: ButtonInteraction):
         ephemeral : true,
       })
 
-      console.log(`[ - BYPASS MOBILE COPY - ] Sent mobile copy to user ${interaction.user.id}`)
+      console.warn(`[ - BYPASS MOBILE COPY - ] Sent mobile copy to user ${interaction.user.id}`)
     } catch (db_error) {
       console.error(`[ - BYPASS MOBILE COPY - ] Database error:`, db_error)
       await interaction.reply({

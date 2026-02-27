@@ -45,37 +45,37 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   const is_dm    = message.channel.isDMBased()
   const guild_id = message.guildId
 
-  console.log(`[ - AUTO BYPASS - ] Message received - DM: ${is_dm}, Guild: ${guild_id || "N/A"}, Channel: ${message.channelId}`)
+  console.warn(`[ - AUTO BYPASS - ] Message received - DM: ${is_dm}, Guild: ${guild_id || "N/A"}, Channel: ${message.channelId}`)
 
   if (!is_dm) {
     if (!guild_id) {
-      console.log(`[ - AUTO BYPASS - ] No guild ID, skipping`)
+      console.warn(`[ - AUTO BYPASS - ] No guild ID, skipping`)
       return false
     }
 
     const settings          = await guild_settings.get_all_guild_settings(guild_id)
     const bypass_channel_id = settings?.bypass_channel || null
 
-    console.log(`[ - AUTO BYPASS - ] Bypass channel for guild ${guild_id}: ${bypass_channel_id || "NOT SET"}`)
+    console.warn(`[ - AUTO BYPASS - ] Bypass channel for guild ${guild_id}: ${bypass_channel_id || "NOT SET"}`)
     
     if (!bypass_channel_id) {
-      console.log(`[ - AUTO BYPASS - ] No bypass channel configured for guild ${guild_id}`)
+      console.warn(`[ - AUTO BYPASS - ] No bypass channel configured for guild ${guild_id}`)
       return false
     }
 
     if (message.channelId !== bypass_channel_id) {
-      console.log(`[ - AUTO BYPASS - ] Message not in bypass channel (${message.channelId} !== ${bypass_channel_id})`)
+      console.warn(`[ - AUTO BYPASS - ] Message not in bypass channel (${message.channelId} !== ${bypass_channel_id})`)
       return false
     }
   }
 
   const url = extract_url_from_message(message)
-  console.log(`[ - AUTO BYPASS - ] Extracted URL: ${url || "NONE"}`)
-  console.log(`[ - AUTO BYPASS - ] Message content length: ${message.content?.length || 0}`)
-  console.log(`[ - AUTO BYPASS - ] Message embeds: ${message.embeds.length}`)
+  console.warn(`[ - AUTO BYPASS - ] Extracted URL: ${url || "NONE"}`)
+  console.warn(`[ - AUTO BYPASS - ] Message content length: ${message.content?.length || 0}`)
+  console.warn(`[ - AUTO BYPASS - ] Message embeds: ${message.embeds.length}`)
   
   if (!url) {
-    console.log(`[ - AUTO BYPASS - ] No URL found in message`)
+    console.warn(`[ - AUTO BYPASS - ] No URL found in message`)
     return false
   }
 
@@ -148,7 +148,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     )
 
     const source = is_dm ? "DM" : "Channel"
-    console.log(`[ - AUTO BYPASS - ] Processing URL from ${source}: ${url}`)
+    console.warn(`[ - AUTO BYPASS - ] Processing URL from ${source}: ${url}`)
     const result = await bypass_link(url, async (attempt) => {
       if (!processing_msg) return
       try {
@@ -182,7 +182,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
            ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '5 minutes'`,
           [cache_key, result.result]
         )
-        console.log(`[ - AUTO BYPASS - ] Stored result with key: ${cache_key}`)
+        console.warn(`[ - AUTO BYPASS - ] Stored result with key: ${cache_key}`)
       } catch (db_error) {
         console.error(`[ - AUTO BYPASS - ] Failed to store in database:`, db_error)
       }
@@ -223,7 +223,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
 
       try {
         await processing_msg.edit(success_message)
-        console.log(`[ - AUTO BYPASS - ] Success!`)
+        console.warn(`[ - AUTO BYPASS - ] Success!`)
       } catch (err) {
         console.error(`[ - AUTO BYPASS - ] Failed to edit success message:`, err)
       }
@@ -231,9 +231,9 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
       // - SEND TO DM - \\
       try {
         await message.author.send(success_message)
-        console.log(`[ - AUTO BYPASS - ] Sent result to ${message.author.tag}'s DM`)
+        console.warn(`[ - AUTO BYPASS - ] Sent result to ${message.author.tag}'s DM`)
       } catch (dm_error) {
-        console.log(`[ - AUTO BYPASS - ] Could not send DM to ${message.author.tag}`)
+        console.warn(`[ - AUTO BYPASS - ] Could not send DM to ${message.author.tag}`)
       }
     } else {
       const error_message = component.build_message({
@@ -254,7 +254,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
 
       try {
         await processing_msg.edit(error_message)
-        console.log(`[ - AUTO BYPASS - ] Failed: ${result.error}`)
+        console.warn(`[ - AUTO BYPASS - ] Failed: ${result.error}`)
       } catch (err) {
         console.error(`[ - AUTO BYPASS - ] Failed to edit error message:`, err)
       }

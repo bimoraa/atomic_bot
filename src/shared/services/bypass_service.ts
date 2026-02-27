@@ -59,7 +59,11 @@ function __get_backoff_remaining_ms(): number {
 
 // - GLOBAL RATE LIMIT QUEUE - \\
 let __bypass_queue: Promise<void> = Promise.resolve()
+let __queue_length = 0
+
 async function __enqueue_bypass<T>(task: () => Promise<T>): Promise<T> {
+  __queue_length++
+  console.warn(`[ - BYPASS - ] Enqueuing request. Queue length: ${__queue_length}`)
   const current = __bypass_queue
   let resolve_next!: () => void
   __bypass_queue = new Promise(resolve => {
@@ -71,14 +75,17 @@ async function __enqueue_bypass<T>(task: () => Promise<T>): Promise<T> {
   // - HONOUR GLOBAL BACKOFF BEFORE FIRING THE NEXT REQUEST - \\
   const backoff_wait = __backoff_until - Date.now()
   if (backoff_wait > 0) {
-    console.log(`[ - BYPASS - ] Respecting global backoff, waiting ${backoff_wait}ms...`)
+    console.warn(`[ - BYPASS - ] Respecting global backoff, waiting ${backoff_wait}ms...`)
     await new Promise(resolve => setTimeout(resolve, backoff_wait))
   }
 
   try {
     __record_request()
+    console.warn(`[ - BYPASS - ] Executing task from queue. Queue length: ${__queue_length}`)
     return await task()
   } finally {
+    __queue_length--
+    console.warn(`[ - BYPASS - ] Task finished. Resolving next in ${__bypass_queue_delay_ms}ms. Queue length: ${__queue_length}`)
     setTimeout(resolve_next, __bypass_queue_delay_ms)
   }
 }
@@ -107,17 +114,25 @@ interface SupportedService {
  */
 async function bypass_link_once(url: string, attempt: number): Promise<BypassResponse> {
   const trimmed_url = url.trim()
+  console.warn(`[ - BYPASS - ] Starting attempt ${attempt} for URL: ${trimmed_url}`)
 
   try {
     const start_time = Date.now()
     const params = new URLSearchParams({ url: trimmed_url })
 
     const response = await __enqueue_bypass(async () => {
+      console.warn(`[ - BYPASS - ] Executing fetch for attempt ${attempt} (URL: ${trimmed_url})`)
       const controller = new AbortController()
-      const timeout_id = setTimeout(() => controller.abort(), __bypass_timeout)
+      const timeout_id = setTimeout(() => {
+        console.warn(`[ - BYPASS - ] Fetch timeout triggered for attempt ${attempt} (URL: ${trimmed_url})`)
+        controller.abort()
+      }, __bypass_timeout)
 
       try {
-        return await fetch(`${__bypass_api_url}?${params}`, {
+        const fetch_start = Date.now()
+        console.warn(`[ - BYPASS - ] Requesting: ${__bypass_api_url}?${params}`)
+        
+        const res = await fetch(`${__bypass_api_url}?${params}`, {
           method: "GET",
           headers: {
             "x-api-key": __bypass_api_key,
@@ -126,13 +141,32 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
           },
           signal: controller.signal,
         })
+        
+        console.warn(`[ - BYPASS - ] Fetch completed for attempt ${attempt} in ${Date.now() - fetch_start}ms with status: ${res.status} ${res.statusText}`)
+        console.warn(`[ - BYPASS - ] Response Headers:`, Object.fromEntries(res.headers.entries()))
+        
+        return res
+      } catch (fetch_err) {
+        console.error(`[ - BYPASS - ] Fetch threw an error for attempt ${attempt}:`, fetch_err)
+        throw fetch_err
       } finally {
         clearTimeout(timeout_id)
       }
     })
 
     if (!response.ok) {
-      const error_data: any = await response.json().catch(() => ({}))
+      console.warn(`[ - BYPASS - ] Response not OK for attempt ${attempt}: ${response.status} ${response.statusText}`)
+      const error_text = await response.text().catch(() => "")
+      console.warn(`[ - BYPASS - ] Error Response Body:`, error_text)
+      
+      let error_data: any = {}
+      try {
+          error_data = JSON.parse(error_text)
+      } catch (e) {
+          error_data = { message: error_text }
+      }
+
+      console.warn(`[ - BYPASS - ] Error data parsed:`, error_data)
       const err = new Error(error_data.message || `HTTP ${response.status}`)
         ; (err as any).status = response.status
 
@@ -145,10 +179,11 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
     }
 
     const data: any = await response.json()
+    console.warn(`[ - BYPASS - ] Response data for attempt ${attempt}:`, JSON.stringify(data).substring(0, 500)) // Increased log length
     const process_time = ((Date.now() - start_time) / 1000).toFixed(2)
 
     if (data && data.result) {
-      console.log(`[ - BYPASS - ] Success on attempt ${attempt} in ${process_time}s`)
+      console.warn(`[ - BYPASS - ] Success on attempt ${attempt} in ${process_time}s`)
       return {
         success: true,
         result: data.result,
@@ -217,15 +252,21 @@ export async function bypass_link(
   url: string,
   on_retry?: (attempt: number, wait_ms: number) => void | Promise<void>
 ): Promise<BypassResponse> {
+  console.warn(`[ - BYPASS - ] Starting bypass_link for URL: ${url}`)
   // - RACE AGAINST GLOBAL TIMEOUT TO PREVENT STUCK LOADING STATE - \\
   const timeout_promise = new Promise<BypassResponse>(resolve =>
     setTimeout(
-      () => resolve({ success: false, error: "Request timed out - Please try again later.", attempts: 0 }),
+      () => {
+        console.warn(`[ - BYPASS - ] Global timeout (${__bypass_global_timeout}ms) hit for URL: ${url}`)
+        resolve({ success: false, error: "Request timed out - Please try again later.", attempts: 0 })
+      },
       __bypass_global_timeout
     )
   )
 
-  return Promise.race([timeout_promise, _run_bypass_link(url, on_retry)])
+  const result = await Promise.race([timeout_promise, _run_bypass_link(url, on_retry)])
+  console.warn(`[ - BYPASS - ] bypass_link finished for URL: ${url} with success: ${result.success}`)
+  return result
 }
 
 async function _run_bypass_link(
@@ -235,14 +276,19 @@ async function _run_bypass_link(
   let last_result: BypassResponse = { success: false, error: "Unknown error", attempts: 0 }
 
   for (let attempt = 1; attempt <= __bypass_max_retry; attempt++) {
+    console.warn(`[ - BYPASS - ] _run_bypass_link loop starting attempt ${attempt} for URL: ${url}`)
     last_result = await bypass_link_once(url, attempt)
+    console.warn(`[ - BYPASS - ] _run_bypass_link loop finished attempt ${attempt} for URL: ${url} with success: ${last_result.success}`)
 
     if (last_result.success) return last_result
 
     // - DON'T RETRY ON UNSUPPORTED LINKS OR CLIENT ERRORS - NO POINT - \\
     const is_unsupported = last_result.error?.toLowerCase().includes("not supported")
       || last_result.error?.toLowerCase().includes("unsupported")
-    if (is_unsupported || last_result.is_client_error) return last_result
+    if (is_unsupported || last_result.is_client_error) {
+      console.warn(`[ - BYPASS - ] _run_bypass_link aborting retries for URL: ${url} (unsupported or client error)`)
+      return last_result
+    }
 
     if (attempt < __bypass_max_retry) {
       // - EXPONENTIAL BACKOFF WITH JITTER - \\
@@ -257,16 +303,20 @@ async function _run_bypass_link(
       const backoff_remaining = __get_backoff_remaining_ms()
       const total_wait_ms     = delay + backoff_remaining
 
-      console.log(`[ - BYPASS - ] Attempt ${attempt} failed, retrying in ${total_wait_ms}ms (delay: ${delay}ms, backoff: ${backoff_remaining}ms)...`)
+      console.warn(`[ - BYPASS - ] Attempt ${attempt} failed, retrying in ${total_wait_ms}ms (delay: ${delay}ms, backoff: ${backoff_remaining}ms)...`)
 
       if (on_retry) {
         try {
+          console.warn(`[ - BYPASS - ] Executing on_retry callback for attempt ${attempt + 1}`)
           await on_retry(attempt + 1, total_wait_ms)
+          console.warn(`[ - BYPASS - ] Finished on_retry callback for attempt ${attempt + 1}`)
         } catch (retry_err) {
           console.warn(`[ - BYPASS - ] Failed to execute on_retry callback:`, retry_err)
         }
       }
+      console.warn(`[ - BYPASS - ] Waiting ${delay}ms before next attempt...`)
       await new Promise(resolve => setTimeout(resolve, delay))
+      console.warn(`[ - BYPASS - ] Wait finished, proceeding to next attempt...`)
     }
   }
 
