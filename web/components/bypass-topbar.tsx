@@ -3,7 +3,7 @@
 import { FloatingDock }                                    from '@/components/ui/floating-dock'
 import { IconLink, IconList, IconBrandDiscord } from '@tabler/icons-react'
 
-const __discord_url = process.env.NEXT_PUBLIC_DISCORD_URL || 'https://discord.gg/atomic'
+const __discord_url = process.env.NEXT_PUBLIC_DISCORD_URL || 'https://discord.gg/getsades'
 
 const __dock_items = [
   {
