@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { FileText, Home, Settings, LogOut, ChevronLeft, Menu, X } from 'lucide-react'
+import { FileText, Home, Settings, LogOut, ChevronLeft, Menu, X, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,7 +12,7 @@ interface dashboard_sidebar_props {
     username: string
     avatar?: string
   }
-  active_page?: 'transcripts' | 'home' | 'settings'
+  active_page?: 'transcripts' | 'home' | 'settings' | 'bypass'
 }
 
 export function DashboardSidebar({ user, active_page = 'transcripts' }: dashboard_sidebar_props) {
@@ -21,9 +21,10 @@ export function DashboardSidebar({ user, active_page = 'transcripts' }: dashboar
   const [mobile_open, set_mobile_open] = useState(false)
 
   const nav_items = [
-    { id: 'home', label: 'Home', icon: Home, href: '/' },
+    { id: 'home',        label: 'Home',        icon: Home,    href: '/' },
     { id: 'transcripts', label: 'Transcripts', icon: FileText, href: '/dashboard' },
-    { id: 'settings', label: 'Settings', icon: Settings, href: '/dashboard/settings' },
+    { id: 'bypass',      label: 'Bypass',      icon: Link2,   href: '/bypass' },
+    { id: 'settings',    label: 'Settings',    icon: Settings, href: '/dashboard/settings' },
   ]
 
   const handle_logout = () => {
