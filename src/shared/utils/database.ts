@@ -508,6 +508,19 @@ async function init_tables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_jkt48_guild_settings_platform ON jkt48_guild_notification_settings(platform)
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bypass_stats (
+        id          SERIAL PRIMARY KEY,
+        total_count BIGINT NOT NULL DEFAULT 87000,
+        updated_at  TIMESTAMPTZ DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      INSERT INTO bypass_stats (total_count)
+      SELECT 87000 WHERE NOT EXISTS (SELECT 1 FROM bypass_stats)
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")
@@ -1203,6 +1216,22 @@ function convert_row_to_object<T>(row: any): T {
 export async function raw_query<T = any>(query: string, values: any[] = []): Promise<T[]> {
   const result = await get_pool().query(query, values)
   return result.rows as T[]
+}
+
+/**
+ * - INCREMENT TOTAL BYPASS COUNT - \\
+ * @returns Updated total count
+ */
+export async function increment_bypass_count(): Promise<number> {
+  try {
+    const result = await get_pool().query(
+      `UPDATE bypass_stats SET total_count = total_count + 1, updated_at = NOW() RETURNING total_count`
+    )
+    return Number(result.rows[0]?.total_count ?? 0)
+  } catch (error) {
+    console.error(`[ - BYPASS STATS - ] Failed to increment count:`, error)
+    return 0
+  }
 }
 
 /**

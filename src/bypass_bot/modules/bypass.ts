@@ -267,6 +267,9 @@ const bypass_command: Command = {
         console.error(`[ - BYPASS - ] Failed to store in database:`, db_error)
       }
 
+      // - INCREMENT GLOBAL BYPASS COUNTER - \\
+      db.increment_bypass_count().catch(err => console.error(`[ - BYPASS - ] Failed to increment bypass count:`, err))
+
       const success_message = component.build_message({
         components: [
           component.container({

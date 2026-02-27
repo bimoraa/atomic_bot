@@ -218,6 +218,9 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
         console.error(`[ - AUTO BYPASS - ] Failed to store in database:`, db_error)
       }
 
+      // - INCREMENT GLOBAL BYPASS COUNTER - \\
+      db.increment_bypass_count().catch(err => console.error(`[ - AUTO BYPASS - ] Failed to increment bypass count:`, err))
+
       const success_message = component.build_message({
         components: [
           component.container({
