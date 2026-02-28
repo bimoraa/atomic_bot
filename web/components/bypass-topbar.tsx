@@ -4,7 +4,7 @@ import { FloatingDock }                                                         
 import { IconLink, IconList, IconBrandDiscord, IconRobot, IconHeart } from '@tabler/icons-react'
 
 const __discord_url    = process.env.NEXT_PUBLIC_DISCORD_URL    || 'https://discord.gg/getsades'
-const __bot_invite_url = 'https://discord.com/oauth2/authorize?client_id=1476977037070696612&permissions=8&integration_type=0&scope=bot'
+const __bot_invite_url = 'https://discord.com/oauth2/authorize?client_id=1476977037070696612&permissions=4503599694556160&integration_type=0&scope=bot'
 
 const __dock_items = [
   {

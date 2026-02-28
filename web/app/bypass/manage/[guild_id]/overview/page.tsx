@@ -82,7 +82,7 @@ const __guild_icon_url = (id: string, icon: string) =>
   `https://cdn.discordapp.com/icons/${id}/${icon}.webp?size=64`
 
 const __invite_url =
-  'https://discord.com/oauth2/authorize?client_id=1476977037070696612&permissions=8&integration_type=0&scope=bot'
+  'https://discord.com/oauth2/authorize?client_id=1476977037070696612&permissions=4503599694556160&integration_type=0&scope=bot'
 
 // - PAGE - \\
 

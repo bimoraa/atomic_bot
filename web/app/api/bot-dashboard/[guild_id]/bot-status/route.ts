@@ -21,7 +21,7 @@ export async function GET(
 
   const bot_url    = process.env.NEXT_PUBLIC_BOT_URL ?? 'http://localhost:3456'
   const invite_url =
-    `https://discord.com/oauth2/authorize?client_id=1476977037070696612&permissions=8&integration_type=0&scope=bot&guild_id=${guild_id}&disable_guild_select=true`
+    `https://discord.com/oauth2/authorize?client_id=1476977037070696612&permissions=4503599694556160&integration_type=0&scope=bot&guild_id=${guild_id}&disable_guild_select=true`
 
   try {
     const response = await fetch(`${bot_url}/api/guild/${guild_id}/status`, {
