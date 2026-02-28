@@ -1,6 +1,7 @@
 import { randomUUID }          from "crypto"
 import { Client, TextChannel } from "discord.js"
 import { db, logger }          from "@shared/utils"
+import { count_voice_time }    from "@shared/controllers/staff_voice_controller"
 
 export interface prodete_entry {
   rank              : number
@@ -9,6 +10,8 @@ export interface prodete_entry {
   msg_count         : number
   claim_count       : number
   answer_count      : number
+  voice_seconds     : number   // raw seconds in voice
+  voice_count       : number   // score contribution (1 pt per 10 min)
   total             : number
   percentage        : string
   channel_breakdown : Record<string, number>   // channel_id -> count
@@ -255,6 +258,7 @@ async function count_thread_messages(
  * Aggregates message counts per channel per user across all tracked channels.
  * Also resolves real channel names from Discord.
  * @param client          Discord client
+ * @param guild_id        Guild the channels belong to
  * @param from_ts         start unix ms
  * @param to_ts           end unix ms
  * @param on_channel_done called when each channel finishes scanning
@@ -262,21 +266,31 @@ async function count_thread_messages(
  */
 async function aggregate_channel_messages(
   client           : Client,
+  guild_id         : string,
   from_ts          : number,
   to_ts            : number,
   on_channel_done ?: (channel_id: string) => void
 ): Promise<{ channel_maps: Map<string, Map<string, number>>; channel_names: Record<string, string> }> {
+  const guild = client.guilds.cache.get(guild_id) ?? await client.guilds.fetch(guild_id)
+
   // - FETCH ALL CHANNELS IN PARALLEL FOR SPEED - \\
   const results = await Promise.allSettled(
     __msg_channels.map(async (channel_id) => {
-      const ch = await client.channels.fetch(channel_id, { force: true, cache: false })
-      if (!ch || !("messages" in ch)) {
+      // - USE GUILD CHANNEL MANAGER FOR FULL CHANNEL OBJECTS (avoids Partial channels) - \\
+      const ch = guild
+        ? await guild.channels.fetch(channel_id, { force: true, cache: false }).catch(() => null)
+        : await client.channels.fetch(channel_id, { force: true, cache: false }).catch(() => null)
+
+      if (!ch || !('messages' in ch)) {
         log.warn(`Channel ${channel_id} not accessible or not a text channel`)
         console.warn(`[ - PRODETE - ] channel ${channel_id}: not accessible`)
         on_channel_done?.(channel_id)
         return { channel_id, name: channel_id, counts: new Map<string, number>() }
       }
-      const real_name = (ch as TextChannel).name
+
+      const real_name = (ch as TextChannel).name ?? channel_id
+      console.log(`[ - PRODETE - ] fetched channel: ${channel_id} -> "${real_name}"`)
+
       const counts    = await count_channel_messages(ch as TextChannel, real_name, from_ts, to_ts)
 
       // - MERGE THREAD MESSAGES INTO SAME channel counts - \\
@@ -467,7 +481,7 @@ export async function build_prodete_report(
   const from_ts    = parse_date_wib_start(from_date)
   const to_ts      = parse_date_wib_start(to_date) + 86400 * 1000 - 1
   const slug       = build_prodete_slug()
-  const __steps    = __msg_channels.length + 2
+  const __steps    = __msg_channels.length + 3
   let   __done     = 0
 
   // - FIRE-AND-FORGET PROGRESS TICK - \\
@@ -483,7 +497,7 @@ export async function build_prodete_report(
 
   // - PARALLEL CHANNEL SCAN — TICK AFTER EACH CHANNEL COMPLETES - \\
   const { channel_maps, channel_names } = await aggregate_channel_messages(
-    client, from_ts, to_ts,
+    client, guild_id, from_ts, to_ts,
     (ch_id) => tick(`Channel scanned (${ch_id})`)
   )
 
@@ -507,6 +521,10 @@ export async function build_prodete_report(
   console.log(`[ - PRODETE - ] ask answers loaded`)
   tick("Ask answers loaded")
 
+  const voice_map = await count_voice_time(from_ts, to_ts)
+  console.log(`[ - PRODETE - ] voice time loaded: ${voice_map.size} users`)
+  tick("Voice time loaded")
+
   // - BUILD TOTAL MAPS FROM BREAKDOWNS - \\
   const claim_map  = new Map<string, number>()
   const answer_map = new Map<string, number>()
@@ -522,6 +540,7 @@ export async function build_prodete_report(
     ...msg_map.keys(),
     ...claim_map.keys(),
     ...answer_map.keys(),
+    ...voice_map.keys(),
   ].filter(id => role_member_ids.has(id)))
 
   const raw: Omit<prodete_entry, "rank" | "percentage">[] = []
@@ -530,7 +549,9 @@ export async function build_prodete_report(
     const msg_count    = msg_map.get(uid)    ?? 0
     const claim_count  = claim_map.get(uid)  ?? 0
     const answer_count = answer_map.get(uid) ?? 0
-    const total        = msg_count + claim_count + answer_count
+    const voice_seconds = voice_map.get(uid) ?? 0
+    const voice_count  = Math.floor(voice_seconds / 600)  // - 1 pt per 10 min in voice - \\
+    const total        = msg_count + claim_count + answer_count + voice_count
 
     if (total === 0) continue
 
@@ -542,6 +563,8 @@ export async function build_prodete_report(
       msg_count,
       claim_count,
       answer_count,
+      voice_seconds,
+      voice_count,
       total,
       channel_breakdown : ch_detail.get(uid)   ?? {},
       ticket_breakdown  : ticket_maps.get(uid) ?? {},

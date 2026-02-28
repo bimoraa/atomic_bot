@@ -538,6 +538,27 @@ async function init_tables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_prodete_reports_slug ON prodete_reports(slug)
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS staff_voice_sessions (
+        id               SERIAL PRIMARY KEY,
+        user_id          VARCHAR(255) NOT NULL,
+        guild_id         VARCHAR(255) NOT NULL,
+        channel_id       VARCHAR(255) NOT NULL,
+        joined_at        BIGINT       NOT NULL,
+        left_at          BIGINT,
+        duration_seconds INTEGER      DEFAULT 0,
+        created_at       TIMESTAMP    DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_staff_voice_sessions_user    ON staff_voice_sessions(user_id)
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_staff_voice_sessions_range   ON staff_voice_sessions(joined_at, left_at)
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")
@@ -792,6 +813,7 @@ function get_table_name(collection: string): string {
     ticket_transcripts: "ticket_transcripts",
     guild_settings: "guild_settings",
     middleman_service_status: "middleman_service_status",
+    staff_voice_sessions    : "staff_voice_sessions",
   }
 
   return table_map[collection] || "generic_data"

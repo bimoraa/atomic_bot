@@ -5,6 +5,8 @@ export interface prodete_entry {
   msg_count         : number
   claim_count       : number
   answer_count      : number
+  voice_seconds     : number
+  voice_count       : number
   total             : number
   percentage        : string
   channel_breakdown : Record<string, number>

@@ -30,6 +30,7 @@ import { start_tag_quarantine_checker }                                  from ".
 import { load_middleman_tickets_on_startup }                             from "../atomic_bot/core/handlers/schedulers/load_middleman_tickets"
 import { start_share_settings_forum_scheduler }                          from "../atomic_bot/core/handlers/schedulers/share_settings_forum"
 import * as share_settings                                               from "../atomic_bot/core/handlers/shared/controller/share_settings_controller"
+import { recover_active_sessions }                                       from "@shared/controllers/staff_voice_controller"
 
 config()
 
@@ -255,6 +256,7 @@ client.once("ready", async () => {
       start_free_script_checker(client)
       start_service_provider_cache(client)
       start_share_settings_forum_scheduler(client)
+      recover_active_sessions(client).catch(() => {})
     }
   } catch (error) {
     console.error("[PostgreSQL] Connection error:", error)

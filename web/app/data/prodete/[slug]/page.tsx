@@ -20,6 +20,16 @@ function pct_bar(pct: string): number {
   return Math.min(100, parseFloat(pct))
 }
 
+// - FORMAT SECONDS TO "Xh Ym" OR "Ym" - \\
+function format_voice(seconds: number): string {
+  if (seconds <= 0) return '0m'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  if (h > 0 && m > 0) return `${h}h ${m}m`
+  if (h > 0)          return `${h}h`
+  return `${m}m`
+}
+
 function ch_label(id: string, names: Record<string, string>): string {
   return names[id] ?? id
 }
@@ -58,7 +68,7 @@ function DetailSheet({
         </SheetHeader>
 
         {/* - SUMMARY ROW - \\ */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-4 gap-2 mb-3">
           {[
             { label: 'Total', val: entry.total },
             { label: 'Pesan', val: entry.msg_count },
@@ -70,6 +80,17 @@ function DetailSheet({
               <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
             </div>
           ))}
+        </div>
+
+        {/* - VOICE TIME STAT - \ */}
+        <div className="rounded-lg border border-border bg-card p-3 flex items-center justify-between mb-6">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Voice Time</p>
+          <p className="text-sm font-semibold tabular-nums">
+            {format_voice(entry.voice_seconds)}
+            <span className="ml-2 text-xs text-muted-foreground/60 font-normal">
+              ({entry.voice_count} pts)
+            </span>
+          </p>
         </div>
 
         {/* - MESSAGES PER CHANNEL - \\ */}
@@ -309,6 +330,7 @@ export default function ProDetePage({ params }: page_props) {
                   <TableHead className="bg-muted py-2.5 font-medium text-foreground w-24 text-right">Pesan</TableHead>
                   <TableHead className="bg-muted py-2.5 font-medium text-foreground w-20 text-right">Claim</TableHead>
                   <TableHead className="bg-muted py-2.5 font-medium text-foreground w-20 text-right">Ask</TableHead>
+                  <TableHead className="bg-muted py-2.5 font-medium text-foreground w-20 text-right">Voice</TableHead>
                   <TableHead className="bg-muted py-2.5 font-medium text-foreground w-24 text-right">Total</TableHead>
                   <TableHead className="bg-muted py-2.5 font-medium text-foreground w-36">%</TableHead>
                   <TableHead className="bg-muted py-2.5 w-16" />
@@ -337,6 +359,9 @@ export default function ProDetePage({ params }: page_props) {
                     </TableCell>
                     <TableCell className="py-2.5 text-sm text-right tabular-nums text-muted-foreground">
                       {entry.answer_count.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="py-2.5 text-sm text-right tabular-nums text-muted-foreground">
+                      {format_voice(entry.voice_seconds)}
                     </TableCell>
                     <TableCell className="py-2.5 text-sm text-right tabular-nums font-medium">
                       {entry.total.toLocaleString()}
