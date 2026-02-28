@@ -521,6 +521,23 @@ async function init_tables(): Promise<void> {
       SELECT 87000 WHERE NOT EXISTS (SELECT 1 FROM bypass_stats)
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS prodete_reports (
+        id           SERIAL PRIMARY KEY,
+        slug         VARCHAR(50)  NOT NULL UNIQUE,
+        from_date    VARCHAR(20)  NOT NULL,
+        to_date      VARCHAR(20)  NOT NULL,
+        entries      JSONB        NOT NULL,
+        generated_by VARCHAR(255) NOT NULL,
+        generated_at BIGINT       NOT NULL,
+        created_at   TIMESTAMP    DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_prodete_reports_slug ON prodete_reports(slug)
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")
