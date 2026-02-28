@@ -17,7 +17,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 }                                                  from '@/components/ui/alert-dialog'
 import { Loader2, ArrowLeft, FlaskConical,
-         Bot }                                     from 'lucide-react'
+         Bot, RefreshCw }                          from 'lucide-react'
 import { ManageContext }                           from './context'
 import type { discord_user, guild_info }           from './context'
 
@@ -39,6 +39,7 @@ export default function ManageLayout({ children }: { children: React.ReactNode }
   const [mobile_open, set_mobile]      = useState(false)
   const [bot_in_guild, set_bot]        = useState(true)
   const [invite_url, set_invite]       = useState('')
+  const [checking_bot, set_checking]   = useState(false)
 
   // - AUTH + GUILD CHECK - \\
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function ManageLayout({ children }: { children: React.ReactNode }
 
   // - BOT STATUS CHECK - \\
   const check_bot = useCallback(async () => {
+    set_checking(true)
     try {
       const r = await fetch(`/api/bot-dashboard/${guild_id}/bot-status`)
       if (!r.ok) return
@@ -74,12 +76,29 @@ export default function ManageLayout({ children }: { children: React.ReactNode }
       set_invite(data.invite_url ?? '')
     } catch {
       // - non-critical, assume bot is present - \\
+    } finally {
+      set_checking(false)
     }
   }, [guild_id])
 
   useEffect(() => {
     if (!loading_auth) check_bot()
   }, [loading_auth, check_bot])
+
+  // - AUTO-POLL WHILE BOT NOT IN GUILD - \\
+  useEffect(() => {
+    if (loading_auth || bot_in_guild) return
+    const interval = setInterval(check_bot, 6000)
+    return () => clearInterval(interval)
+  }, [loading_auth, bot_in_guild, check_bot])
+
+  // - RE-CHECK ON TAB FOCUS WHEN DIALOG OPEN - \\
+  useEffect(() => {
+    if (loading_auth || bot_in_guild) return
+    const on_visible = () => { if (document.visibilityState === 'visible') check_bot() }
+    document.addEventListener('visibilitychange', on_visible)
+    return () => document.removeEventListener('visibilitychange', on_visible)
+  }, [loading_auth, bot_in_guild, check_bot])
 
   const nav_items = [
     { name: 'Dashboard', link: '/bypass/dashboard' },
@@ -223,18 +242,35 @@ export default function ManageLayout({ children }: { children: React.ReactNode }
               </AlertDialogDescription>
               <ol className="text-muted-foreground mt-4 flex list-decimal flex-col gap-2 pl-6 text-sm">
                 <li>Click <strong>Invite Bot</strong> below</li>
-                <li>Select <strong>{guild?.name ?? 'your server'}</strong> in the Discord invite flow</li>
+                <li>The server <strong>{guild?.name ?? 'your server'}</strong> will be pre-selected</li>
                 <li>Authorize the requested permissions</li>
                 <li>Return here — the dashboard will unlock automatically</li>
               </ol>
+              {checking_bot && (
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Checking bot status...
+                </div>
+              )}
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => router.push('/bypass/dashboard')}>
                 Go Back
               </AlertDialogCancel>
+              <button
+                onClick={check_bot}
+                disabled={checking_bot}
+                className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm border border-border bg-muted/60 text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${checking_bot ? 'animate-spin' : ''}`} />
+                Check Again
+              </button>
               <AlertDialogAction
                 className="bg-sky-600 text-white hover:bg-sky-700 focus-visible:ring-sky-600 dark:bg-sky-500 dark:hover:bg-sky-600 dark:focus-visible:ring-sky-500"
-                onClick={() => window.open(invite_url, '_blank')}
+                onClick={() => {
+                  window.open(invite_url, '_blank')
+                  setTimeout(check_bot, 3000)
+                }}
               >
                 Invite Bot
               </AlertDialogAction>
