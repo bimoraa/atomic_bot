@@ -16,7 +16,6 @@ import {
 import { Check, ChevronsUpDown, Hash,
          Loader2, Shield, X,
          CheckIcon, XIcon }              from 'lucide-react'
-import { Switch }                        from '@/components/ui/switch'
 import { cn }                            from '@/lib/utils'
 
 // - TYPES - \\
@@ -322,21 +321,30 @@ function AccessTab({ guild_id }: { guild_id: string }) {
           <p className="text-xs text-muted-foreground">Allow members to use the bypass command</p>
         </div>
 
-        <div className="relative inline-grid h-7 grid-cols-[1fr_1fr] items-center text-sm font-medium">
-          <Switch
-            checked={enabled}
-            onCheckedChange={toggle_enabled}
-            disabled={saving}
-            className="peer absolute inset-0 h-7 w-14 data-[state=unchecked]:bg-input/50 [&>span]:z-10 [&>span]:size-6 [&>span]:transition-transform [&>span]:duration-300 [&>span]:ease-[cubic-bezier(0.16,1,0.3,1)] [&>span]:data-[state=checked]:!translate-x-7 [&>span]:data-[state=unchecked]:!translate-x-0"
-            aria-label="Toggle bypass enabled"
-          />
-          <span className="pointer-events-none relative ml-0.5 flex min-w-8 items-center justify-center text-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] peer-data-[state=checked]:invisible peer-data-[state=unchecked]:translate-x-6 peer-data-[state=unchecked]:rtl:-translate-x-6">
-            <XIcon className="size-4" aria-hidden="true" />
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label="Toggle bypass enabled"
+          disabled={saving}
+          onClick={() => toggle_enabled(!enabled)}
+          className={cn(
+            'relative inline-flex h-7 w-14 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+            enabled ? 'bg-primary' : 'bg-input/60'
+          )}
+        >
+          <span
+            className={cn(
+              'pointer-events-none relative inline-flex h-6 w-6 items-center justify-center rounded-full bg-background shadow-lg ring-0 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              enabled ? 'translate-x-7' : 'translate-x-0'
+            )}
+          >
+            {enabled
+              ? <CheckIcon className="size-3.5 text-primary" aria-hidden="true" />
+              : <XIcon     className="size-3.5 text-muted-foreground" aria-hidden="true" />
+            }
           </span>
-          <span className="peer-data-[state=checked]:text-background pointer-events-none relative flex min-w-8 items-center justify-center text-center transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] peer-data-[state=checked]:-translate-x-full peer-data-[state=unchecked]:invisible peer-data-[state=checked]:rtl:translate-x-full">
-            <CheckIcon className="size-4" aria-hidden="true" />
-          </span>
-        </div>
+        </button>
       </div>
 
       <div className="border-t border-border" />
