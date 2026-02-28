@@ -36,8 +36,10 @@ const __msg_channels: readonly string[] = [
 // - TICKET TYPES TO COUNT CLAIMS FROM - \\
 const __ticket_types: readonly string[] = ["priority", "helper"]
 
-const __discord_epoch    = BigInt(1420070400000)
-const __max_iter_channel = 200 // - ~20000 messages per channel max - \\
+const __discord_epoch        = BigInt(1420070400000)
+const __max_iter_channel     = 50          // - ~5000 messages per channel max - \\
+const __channel_timeout_ms   = 25_000      // - 25s hard cap per channel - \\
+const __iter_delay_ms        = 100         // - rate limit safety delay - \\
 
 const log = logger.create_logger("prodete")
 
@@ -111,8 +113,14 @@ async function count_channel_messages(
   let after_id   = ts_to_snowflake(from_ts - 1)
   let done       = false
   let iterations = 0
+  const deadline = Date.now() + __channel_timeout_ms
 
   while (!done && iterations < __max_iter_channel) {
+    if (Date.now() > deadline) {
+      log.warn(`Channel ${channel.id}: hit ${__channel_timeout_ms}ms timeout at iter ${iterations}`)
+      break
+    }
+
     const batch = await channel.messages.fetch({ limit: 100, after: after_id, cache: false })
 
     if (batch.size === 0) break
@@ -133,8 +141,7 @@ async function count_channel_messages(
 
     iterations++
 
-    // - RATE LIMIT SAFETY DELAY - \\
-    await new Promise(r => setTimeout(r, 300))
+    await new Promise(r => setTimeout(r, __iter_delay_ms))
   }
 
   return counts
@@ -154,23 +161,28 @@ async function aggregate_channel_messages(
 ): Promise<Map<string, number>> {
   const totals = new Map<string, number>()
 
-  for (const channel_id of __msg_channels) {
-    try {
+  // - FETCH ALL CHANNELS IN PARALLEL FOR SPEED - \\
+  const results = await Promise.allSettled(
+    __msg_channels.map(async (channel_id) => {
       const ch = await client.channels.fetch(channel_id, { force: false, cache: true })
       if (!ch || !("messages" in ch)) {
         log.warn(`Channel ${channel_id} not accessible or not a text channel`)
-        continue
+        return null
       }
-
       const counts = await count_channel_messages(ch as TextChannel, from_ts, to_ts)
-
-      for (const [uid, n] of counts) {
-        totals.set(uid, (totals.get(uid) ?? 0) + n)
-      }
-
       log.info(`Channel ${channel_id}: ${counts.size} active users`)
-    } catch (err) {
-      log.error(`Failed to count channel ${channel_id}: ${(err as Error).message}`)
+      return counts
+    })
+  )
+
+  for (const result of results) {
+    if (result.status === "rejected") {
+      log.error(`Failed to count a channel: ${(result.reason as Error).message}`)
+      continue
+    }
+    if (!result.value) continue
+    for (const [uid, n] of result.value) {
+      totals.set(uid, (totals.get(uid) ?? 0) + n)
     }
   }
 
