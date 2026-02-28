@@ -18,8 +18,5 @@ export * from "./voice"
 // - COMMUNITY MODALS - \\
 export * from "./community"
 
-// - MUSIC MODALS - \\
-export * from "./music"
-
 // - TICKET MODALS - \\
 export * from "./ticket"

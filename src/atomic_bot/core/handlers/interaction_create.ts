@@ -19,7 +19,6 @@ import { handle_reminder_add_new_modal } from "./modals/tools"
 import { handle_script_redeem_modal }    from "./modals/service"
 import { handle_tempvoice_modal }        from "./modals/voice"
 import { handle_review_modal }           from "./modals/community"
-import { handle_music_modal }            from "./modals/music"
 import { handle_middleman_close_reason_modal } from "./modals/ticket"
 import { handle_share_settings_modal }   from "./modals/share_settings"
 import * as review_submit                from "./buttons/review/submit"
@@ -53,12 +52,6 @@ import * as loa_approve                  from "./buttons/loa/approve"
 import * as loa_reject                   from "./buttons/loa/reject"
 import * as loa_end                      from "./buttons/loa/end"
 import * as quarantine_release           from "./buttons/quarantine/release"
-import * as music_pause                  from "./buttons/music/pause"
-import * as music_resume                 from "./buttons/music/resume"
-import * as music_skip                   from "./buttons/music/skip"
-import * as music_stop                   from "./buttons/music/stop"
-import * as music_select                 from "./select_menus/music/music_select"
-import * as music_play_select            from "./select_menus/music/play_select"
 
 import * as payment_method_select        from "./select_menus/stats";
 import * as guide_select                 from "./select_menus/guide";
@@ -189,14 +182,6 @@ export async function handle_interaction(
       if (interaction.customId === "reminder_cancel_select") {
         await reminder_cancel_select.handle_reminder_cancel_select(interaction);
         return;
-      }
-      if (interaction.customId === "music_select") {
-        await music_select.handle_music_select(interaction);
-        return;
-      }
-      if (interaction.customId.startsWith("music_play_select:")) {
-        await music_play_select.handle_music_play_select(interaction)
-        return
       }
       if (interaction.customId === "middleman_transaction_range_select") {
         await middleman_select.handle_middleman_transaction_range_select(interaction)
@@ -451,26 +436,6 @@ export async function handle_interaction(
         await loa_end.handle_loa_end(interaction)
         return
       }
-      if (interaction.customId === "music_pause") {
-        await music_pause.handle_music_pause(interaction)
-        return
-      }
-      if (interaction.customId === "music_resume") {
-        await music_resume.handle_music_resume(interaction)
-        return
-      }
-      if (interaction.customId === "music_skip") {
-        await music_skip.handle_music_skip(interaction)
-        return
-      }
-      if (interaction.customId === "music_stop") {
-        await music_stop.handle_music_stop(interaction)
-        return
-      }
-      if (interaction.customId === "loa_end") {
-        await loa_end.handle_loa_end(interaction)
-        return
-      }
       if (interaction.customId.startsWith("booster_claim_")) {
         await booster_claim.handle(interaction)
         return
@@ -515,10 +480,6 @@ export async function handle_interaction(
       if (await handle_loa_request_modal(interaction)) return
       if (await handle_script_redeem_modal(interaction)) return
       if (await handle_middleman_close_reason_modal(interaction)) return
-      if (interaction.customId.startsWith("music_modal:")) {
-        await handle_music_modal(interaction)
-        return
-      }
       if (await handle_share_settings_modal(interaction)) return
       if (await handle_edit_staff_info_modal(interaction)) return
     } catch (err) {
