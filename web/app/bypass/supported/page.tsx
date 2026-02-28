@@ -6,7 +6,8 @@ import { BypassTopbar }                                         from '@/componen
 import { Tabs }                                                 from '@/components/ui/tabs'
 import DarkVeil                                                 from '@/components/DarkVeil'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Loader2, Search, XCircle }                             from 'lucide-react'
+import { Skeleton }                                             from '@/components/ui/skeleton'
+import { Search, XCircle }                                      from 'lucide-react'
 
 interface supported_service {
   name    : string
@@ -93,6 +94,7 @@ export default function SupportedPage() {
           <div className="flex items-end justify-between gap-4 flex-wrap">
             <div className="space-y-1">
               <h1 className="text-2xl font-bold tracking-tight">Supported Links</h1>
+              {loading && <Skeleton className="h-4 w-36" />}
               {!loading && !error && (
                 <p className="text-sm text-muted-foreground">
                   {active_count} active out of {services.length} services
@@ -101,6 +103,7 @@ export default function SupportedPage() {
             </div>
 
             {/* - SEARCH - \\ */}
+            {loading && <Skeleton className="h-9 w-64 rounded-xl" />}
             {!loading && !error && services.length > 0 && (
               <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2 w-full max-w-xs focus-within:border-foreground/25 transition-colors">
                 <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -124,6 +127,13 @@ export default function SupportedPage() {
           </div>
 
           {/* - TYPE FILTER TABS - \\ */}
+          {loading && (
+            <div className="mt-6 flex gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-16 rounded-lg" />
+              ))}
+            </div>
+          )}
           {!loading && !error && types.length > 1 && (
             <div className="mt-6">
               <Tabs
@@ -138,10 +148,37 @@ export default function SupportedPage() {
           )}
         </div>
 
-        {/* - LOADING STATE - \\ */}
+        {/* - LOADING SKELETON - \\ */}
         {loading && (
-          <div className="flex items-center justify-center py-24">
-            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+          <div className="space-y-3">
+            {/* - TABLE SKELETON - \\ */}
+            <div className="overflow-hidden rounded-xl border border-border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow className="*:border-border [&>:not(:last-child)]:border-r hover:bg-transparent">
+                    <TableHead className="bg-muted py-2.5 w-[180px]"><Skeleton className="h-4 w-16" /></TableHead>
+                    <TableHead className="bg-muted py-2.5 w-[100px]"><Skeleton className="h-4 w-10" /></TableHead>
+                    <TableHead className="bg-muted py-2.5 w-[100px]"><Skeleton className="h-4 w-12" /></TableHead>
+                    <TableHead className="bg-muted py-2.5"><Skeleton className="h-4 w-20" /></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <TableRow key={i} className="*:border-border [&>:not(:last-child)]:border-r">
+                      <TableCell className="py-3"><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell className="py-3"><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell className="py-3"><Skeleton className="h-4 w-14" /></TableCell>
+                      <TableCell className="py-3">
+                        <div className="flex gap-1.5">
+                          <Skeleton className="h-5 w-20 rounded" />
+                          <Skeleton className="h-5 w-16 rounded" />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
 

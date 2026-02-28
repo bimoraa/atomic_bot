@@ -36,7 +36,7 @@ const __dock_items = [
 
 export function BypassTopbar() {
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50">
+    <div className="fixed bottom-4 left-4 md:left-1/2 md:-translate-x-1/2 z-50">
       <FloatingDock items={__dock_items} />
     </div>
   )
