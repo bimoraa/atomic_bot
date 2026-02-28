@@ -2,10 +2,13 @@
 nixPkgs = ['nodejs_20']
 
 [phases.install]
-cmds = ['npm install --legacy-peer-deps']
+cmds = ['npm ci --legacy-peer-deps']
+cacheDirectories = ['node_modules']
 
 [phases.build]
 cmds = ['npm run build']
+dependsOn = ['install']
+cacheDirectories = ['.next/cache']
 
 [start]
 cmd = 'npm start'
