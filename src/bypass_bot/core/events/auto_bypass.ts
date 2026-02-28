@@ -127,7 +127,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     const invite_url   = client_id
       ? `https://discord.com/api/oauth2/authorize?client_id=${client_id}&permissions=0&scope=bot%20applications.commands`
       : "https://discord.com/oauth2/authorize"
-    // - OAUTH USER INSTALL: shows 'Send you direct messages' in auth popup - \\
+
     const dm_auth_url  = client_id
       ? `https://discord.com/oauth2/authorize?client_id=${client_id}&scope=applications.commands&integration_type=1`
       : invite_url

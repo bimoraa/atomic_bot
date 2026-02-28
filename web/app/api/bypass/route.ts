@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse }    from 'next/server'
 import { increment_bypass_count }       from '@/lib/db'
 
-const __bypass_api_key = process.env.BYPASS_API_KEY    || ""
-const __bypass_api_url = process.env.BYPASS_API_URL    || ""
-const __bypass_timeout = 65_000
+const __bypass_api_key     = process.env.BYPASS_API_KEY    || ""
+const __bypass_api_url     = process.env.BYPASS_API_URL    || ""
+const __bypass_refresh_url = __bypass_api_url.replace("/bypass", "/refresh")
+const __bypass_timeout     = 65_000
+const __refresh_interval   = 2_000  // - Poll /v1/refresh every 2s while TASK_ALREADY_PROCESSING - \\
+const __refresh_max_wait   = 55_000 // - Stop polling after 55s total - \\
 
 // - IN-MEMORY RATE LIMITER (per IP, 5 req/min) - \\
 const __rate_map    = new Map<string, { count: number; reset_at: number }>()
@@ -96,33 +99,32 @@ export async function POST(req: NextRequest) {
     }
 
     // - INCREMENT COUNT PER ATTEMPT (BEFORE FETCH) - \\
-    const __request_start = Date.now()
-
-    try {
-      await increment_bypass_count()
-    } catch (err) {
-      console.error('[ - BYPASS STATS - ] Failed to increment count:', err)
-    }
+    increment_bypass_count().catch(err => console.error('[ - BYPASS STATS - ] Failed to increment count:', err))
 
     // - CALL BYPASS API SERVER-SIDE (KEY NEVER EXPOSED TO CLIENT) - \\
-    const params     = new URLSearchParams({ url })
-    const controller = new AbortController()
-    const timeout_id = setTimeout(() => controller.abort(), __bypass_timeout)
+    const params         = new URLSearchParams({ url })
+    const headers        = {
+      "x-api-key"       : __bypass_api_key,
+      "Accept-Encoding" : "gzip, deflate, br",
+      "Connection"      : "keep-alive",
+    }
+    const __request_start = Date.now()
+
+    // - HELPER: ONE FETCH WITH ABORT CONTROLLER - \\
+    const timed_fetch = async (fetch_url: string): Promise<Response> => {
+      const controller = new AbortController()
+      const timeout_id = setTimeout(() => controller.abort(), __bypass_timeout)
+      try {
+        return await fetch(`${fetch_url}?${params}`, { method: "GET", headers, signal: controller.signal })
+      } finally {
+        clearTimeout(timeout_id)
+      }
+    }
 
     let res: Response
-
     try {
-      res = await fetch(`${__bypass_api_url}?${params}`, {
-        method  : "GET",
-        headers : {
-          "x-api-key"       : __bypass_api_key,
-          "Accept-Encoding" : "gzip, deflate, br",
-          "Connection"      : "keep-alive",
-        },
-        signal: controller.signal,
-      })
+      res = await timed_fetch(__bypass_api_url)
     } catch (err: any) {
-      clearTimeout(timeout_id)
       const is_timeout = err?.name === "AbortError"
       console.error("[ - BYPASS API - ] Fetch error:", err)
       return NextResponse.json(
@@ -131,7 +133,45 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    clearTimeout(timeout_id)
+    // - PARSE INITIAL RESPONSE - \\
+    const initial_text = await res.text().catch(() => "")
+    let   initial_data: any = {}
+    try { initial_data = JSON.parse(initial_text) } catch { initial_data = { message: initial_text } }
+
+    const is_processing = (
+      res.status === 429 && initial_data?.code === "TASK_ALREADY_PROCESSING"
+    ) || initial_data?.code === "TASK_ALREADY_PROCESSING"
+
+    // - SUCCESS ON FIRST TRY - \\
+    if (res.ok && initial_data?.result) {
+      console.log(`[ - BYPASS API - ] Success (first try) for: ${url}`)
+      return NextResponse.json({ success: true, result: initial_data.result, elapsed_ms: Date.now() - __request_start })
+    }
+
+    // - TASK QUEUED ON SERVER: POLL /v1/refresh EVERY 2s UNTIL READY - \\
+    if (is_processing) {
+      console.log(`[ - BYPASS API - ] Task processing, polling /v1/refresh for: ${url}`)
+      const poll_deadline = Date.now() + __refresh_max_wait
+
+      while (Date.now() < poll_deadline) {
+        await new Promise(r => setTimeout(r, __refresh_interval))
+
+        try {
+          const poll_res = await timed_fetch(__bypass_refresh_url)
+          if (poll_res.ok) {
+            const poll_data = await poll_res.json().catch(() => null)
+            if (poll_data?.result) {
+              console.log(`[ - BYPASS API - ] Refresh hit for: ${url} in ${Date.now() - __request_start}ms`)
+              return NextResponse.json({ success: true, result: poll_data.result, elapsed_ms: Date.now() - __request_start })
+            }
+          }
+        } catch {
+          // - ignore polling errors, keep waiting - \\
+        }
+      }
+
+      return NextResponse.json({ error: "Bypass timed out. Please try again." }, { status: 504 })
+    }
 
     if (res.status === 429) {
       const retry_after = res.headers.get("retry-after") || "60"
@@ -142,23 +182,19 @@ export async function POST(req: NextRequest) {
     }
 
     if (!res.ok) {
-      const err_text = await res.text().catch(() => "")
-      console.error(`[ - BYPASS API - ] Non-OK response ${res.status}:`, err_text)
+      console.error(`[ - BYPASS API - ] Non-OK response ${res.status}:`, initial_text)
       return NextResponse.json({ error: "Bypass service returned an error." }, { status: 502 })
     }
 
-    const data = await res.json().catch(() => null)
-
-    if (!data?.result) {
+    if (!initial_data?.result) {
       return NextResponse.json(
-        { error: data?.message || "No result returned from bypass service." },
+        { error: initial_data?.message || "No result returned from bypass service." },
         { status: 502 }
       )
     }
 
     console.log(`[ - BYPASS API - ] Success for: ${url}`)
-
-    return NextResponse.json({ success: true, result: data.result, elapsed_ms: Date.now() - __request_start })
+    return NextResponse.json({ success: true, result: initial_data.result, elapsed_ms: Date.now() - __request_start })
 
   } catch (error) {
     console.error("[ - BYPASS API - ] Unhandled error:", error)

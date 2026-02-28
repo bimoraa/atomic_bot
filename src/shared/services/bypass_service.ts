@@ -2,14 +2,17 @@
 
 import { get_pool } from "@shared/utils/database"
 
-const __bypass_api_key = process.env.BYPASS_API_KEY || ""
-const __bypass_api_url = process.env.BYPASS_API_URL || ""
+const __bypass_api_key     = process.env.BYPASS_API_KEY || ""
+const __bypass_api_url     = process.env.BYPASS_API_URL || ""
+const __bypass_refresh_url = process.env.BYPASS_API_URL?.replace("/bypass", "/refresh") || ""
 
-const __bypass_global_timeout  = 600000  // - Safety net only — 10 min max total wait - \\
+const __bypass_global_timeout  = 120000  // - Safety net — 2 min max total wait - \\
 export const bypass_max_retry  = 3
 const __bypass_max_retry       = bypass_max_retry
-const __bypass_retry_ms        = 10000   // - Wait before each retry - \\
+const __bypass_retry_ms        = 5000    // - Wait before each retry - \\
 const __bypass_default_backoff = 15      // - Default backoff seconds on 429 - \\
+const __refresh_interval_ms    = 2000    // - Poll /v1/refresh every 2s - \\
+const __refresh_max_wait_ms    = 55000   // - Max polling window for processing tasks - \\
 
 // - URL-BASED RESULT CACHE TTL - \\
 const __url_cache_ttl_minutes = 30
@@ -173,83 +176,93 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
   }
 
   try {
-    const start_time = Date.now()
-    const params = new URLSearchParams({ url: trimmed_url })
+    const start_time  = Date.now()
+    const params      = new URLSearchParams({ url: trimmed_url })
+    const req_headers = {
+      "x-api-key"       : __bypass_api_key,
+      "Accept-Encoding" : "gzip, deflate, br",
+      "Connection"      : "keep-alive",
+    }
 
-    const response = await __enqueue_bypass(async () => {
-      console.warn(`[ - BYPASS - ] Executing fetch for attempt ${attempt} (URL: ${trimmed_url})`)
-
+    // - HELPER: SINGLE TIMED FETCH - \\
+    const timed_fetch = async (endpoint: string): Promise<Response> => {
+      const ctrl       = new AbortController()
+      const timeout_id = setTimeout(() => ctrl.abort(), 30000)
       try {
-        const fetch_start = Date.now()
-        console.warn(`[ - BYPASS - ] Requesting: ${__bypass_api_url}?${params}`)
-
-        const res = await fetch(`${__bypass_api_url}?${params}`, {
-          method: "GET",
-          headers: {
-            "x-api-key"       : __bypass_api_key,
-            "Accept-Encoding" : "gzip, deflate, br",
-            "Connection"      : "keep-alive",
-          },
-        })
-
-        console.warn(`[ - BYPASS - ] Fetch completed for attempt ${attempt} in ${Date.now() - fetch_start}ms with status: ${res.status} ${res.statusText}`)
-        console.warn(`[ - BYPASS - ] Response Headers:`, Object.fromEntries(res.headers.entries()))
-
-        return res
-      } catch (fetch_err) {
-        console.error(`[ - BYPASS - ] Fetch threw an error for attempt ${attempt}:`, fetch_err)
-        throw fetch_err
+        return await fetch(`${endpoint}?${params}`, { method: "GET", headers: req_headers, signal: ctrl.signal })
+      } finally {
+        clearTimeout(timeout_id)
       }
+    }
+
+    const response = await __enqueue_bypass(() => {
+      console.warn(`[ - BYPASS - ] Requesting: ${__bypass_api_url}?${params}`)
+      return timed_fetch(__bypass_api_url).catch(err => {
+        console.error(`[ - BYPASS - ] Fetch threw an error for attempt ${attempt}:`, err)
+        throw err
+      })
     })
 
-    if (!response.ok) {
-      console.warn(`[ - BYPASS - ] Response not OK for attempt ${attempt}: ${response.status} ${response.statusText}`)
-      const error_text = await response.text().catch(() => "")
-      console.warn(`[ - BYPASS - ] Error Response Body:`, error_text)
+    console.warn(`[ - BYPASS - ] Response status for attempt ${attempt}: ${response.status} ${response.statusText}`)
 
-      let error_data: any = {}
-      try {
-        error_data = JSON.parse(error_text)
-      } catch (e) {
-        error_data = { message: error_text }
+    const resp_text = await response.text().catch(() => "")
+    let   resp_data: any = {}
+    try { resp_data = JSON.parse(resp_text) } catch { resp_data = { message: resp_text } }
+
+    // - TASK QUEUED ON SERVER: POLL /v1/refresh UNTIL RESULT READY - \\
+    const is_processing = (
+      response.status === 429 && resp_data?.code === "TASK_ALREADY_PROCESSING"
+    ) || resp_data?.code === "TASK_ALREADY_PROCESSING"
+
+    if (is_processing) {
+      console.warn(`[ - BYPASS - ] Task already processing for attempt ${attempt}, polling /v1/refresh...`)
+      const poll_deadline = Date.now() + __refresh_max_wait_ms
+
+      while (Date.now() < poll_deadline) {
+        await new Promise(r => setTimeout(r, __refresh_interval_ms))
+
+        try {
+          const poll_res  = await timed_fetch(__bypass_refresh_url)
+          const poll_text = await poll_res.text().catch(() => "")
+          let   poll_data: any = {}
+          try { poll_data = JSON.parse(poll_text) } catch { /* ignore */ }
+
+          if (poll_res.ok && poll_data?.result) {
+            const elapsed = ((Date.now() - start_time) / 1000).toFixed(2)
+            console.warn(`[ - BYPASS - ] Refresh hit for attempt ${attempt} in ${elapsed}s`)
+            __set_url_cache(trimmed_url, poll_data.result).catch(() => {})
+            return { success: true, result: poll_data.result, time: parseFloat(elapsed), attempts: attempt }
+          }
+        } catch (poll_err) {
+          console.warn(`[ - BYPASS - ] Refresh poll error:`, poll_err)
+        }
       }
 
-      console.warn(`[ - BYPASS - ] Error data parsed:`, error_data)
+      return { success: false, error: "Bypass timed out waiting for result.", attempts: attempt }
+    }
 
-      const err_message = error_data.message || error_data.result || `HTTP ${response.status}`
-      const err = new Error(err_message)
-        ; (err as any).status    = response.status
-        ; (err as any).api_code  = error_data.code || ""
+    if (!response.ok) {
+      const err_message = resp_data.message || resp_data.result || `HTTP ${response.status}`
+      const err         = new Error(err_message)
+        ; (err as any).status   = response.status
+        ; (err as any).api_code = resp_data.code || ""
 
       const retry_after = response.headers.get("retry-after") || response.headers.get("Retry-After")
-      if (retry_after) {
-        ; (err as any).retry_after = parseInt(retry_after, 10)
-      }
+      if (retry_after) (err as any).retry_after = parseInt(retry_after, 10)
 
       throw err
     }
 
-    const data: any = await response.json()
-    console.warn(`[ - BYPASS - ] Response data for attempt ${attempt}:`, JSON.stringify(data).substring(0, 500)) // Increased log length
     const process_time = ((Date.now() - start_time) / 1000).toFixed(2)
+    console.warn(`[ - BYPASS - ] Response data for attempt ${attempt}:`, JSON.stringify(resp_data).substring(0, 500))
 
-    if (data && data.result) {
+    if (resp_data?.result) {
       console.warn(`[ - BYPASS - ] Success on attempt ${attempt} in ${process_time}s`)
-      // - STORE IN URL CACHE FOR FUTURE REQUESTS - \\
-      __set_url_cache(trimmed_url, data.result).catch(() => {})
-      return {
-        success: true,
-        result: data.result,
-        time: parseFloat(process_time),
-        attempts: attempt,
-      }
+      __set_url_cache(trimmed_url, resp_data.result).catch(() => {})
+      return { success: true, result: resp_data.result, time: parseFloat(process_time), attempts: attempt }
     }
 
-    return {
-      success: false,
-      error: data?.message || "No result found in response",
-      attempts: attempt,
-    }
+    return { success: false, error: resp_data?.message || "No result found in response", attempts: attempt }
 
   } catch (error: any) {
     const message = typeof error?.message === "string" ? error.message : ""
@@ -259,18 +272,12 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
     if (message.includes("HTTP 5")) {
       console.warn(`[ - BYPASS - ] External API Error (attempt ${attempt}):`, message)
     } else if (message.includes("HTTP 429") || error?.status === 429) {
-      const api_code = error?.api_code as string | undefined
-      if (api_code === "TASK_ALREADY_PROCESSING") {
-        // - URL ALREADY QUEUED ON SERVER SIDE - SKIP GLOBAL BACKOFF - \\
-        console.warn(`[ - BYPASS - ] Task already processing on server (attempt ${attempt}), will retry shortly`)
-      } else {
-        // - TRIGGER GLOBAL BACKOFF SO NO MORE QUEUED REQUESTS FIRE - \\
-        const backoff_s = (error?.retry_after && !isNaN(error.retry_after))
-          ? Math.max(error.retry_after, __bypass_default_backoff)
-          : __bypass_default_backoff
-        __set_global_backoff(backoff_s)
-        console.warn(`[ - BYPASS - ] Rate Limit (attempt ${attempt}):`, message)
-      }
+      // - TRIGGER GLOBAL BACKOFF SO NO MORE QUEUED REQUESTS FIRE - \\
+      const backoff_s = (error?.retry_after && !isNaN(error.retry_after))
+        ? Math.max(error.retry_after, __bypass_default_backoff)
+        : __bypass_default_backoff
+      __set_global_backoff(backoff_s)
+      console.warn(`[ - BYPASS - ] Rate Limit (attempt ${attempt}):`, message)
     } else {
       console.error(`[ - BYPASS - ] Error (attempt ${attempt}):`, message || error)
     }
@@ -346,12 +353,6 @@ async function _run_bypass_link(
       || last_result.error?.toLowerCase().includes("unsupported")
     if (is_unsupported || last_result.is_client_error) {
       console.warn(`[ - BYPASS - ] _run_bypass_link aborting retries for URL: ${url} (unsupported or client error)`)
-      return last_result
-    }
-
-    // - TASK STILL PROCESSING ON SERVER SIDE: NO RETRY, WAIT FOR RESULT NATURALLY - \\
-    if (last_result.api_code === "TASK_ALREADY_PROCESSING") {
-      console.warn(`[ - BYPASS - ] _run_bypass_link aborting retries for URL: ${url} (task already processing on server)`)
       return last_result
     }
 
