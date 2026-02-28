@@ -125,7 +125,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   try {
     const client_id   = message.client.user?.id || ""
     const invite_url   = client_id
-      ? `https://discord.com/api/oauth2/authorize?client_id=${client_id}&permissions=0&scope=bot%20applications.commands`
+      ? `https://discord.com/oauth2/authorize?client_id=${client_id}&permissions=4503599694556160&integration_type=0&scope=bot`
       : "https://discord.com/oauth2/authorize"
 
     const dm_auth_url  = client_id

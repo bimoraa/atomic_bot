@@ -21,7 +21,7 @@ const invite_bot_command: Command = {
       return
     }
 
-    const invite_url = `https://discord.com/api/oauth2/authorize?client_id=${client_id}&permissions=0&scope=bot%20applications.commands`
+    const invite_url = `https://discord.com/oauth2/authorize?client_id=${client_id}&permissions=4503599694556160&integration_type=0&scope=bot`
 
     const message = component.build_message({
       components: [
