@@ -13,11 +13,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Discord client ID not configured' }, { status: 500 })
   }
 
+  const return_to = req.nextUrl.searchParams.get('return_to') || '/transcript'
+
   const discord_auth_url = new URL('https://discord.com/api/oauth2/authorize')
   discord_auth_url.searchParams.set('client_id', client_id)
   discord_auth_url.searchParams.set('redirect_uri', redirect_uri)
   discord_auth_url.searchParams.set('response_type', 'code')
   discord_auth_url.searchParams.set('scope', 'identify guilds')
+  discord_auth_url.searchParams.set('state', return_to)
 
   return NextResponse.redirect(discord_auth_url.toString())
 }

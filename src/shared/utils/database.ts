@@ -1276,6 +1276,25 @@ export async function increment_bypass_count(): Promise<number> {
 }
 
 /**
+ * - RECORD PER-GUILD BYPASS STAT FOR TODAY - \\
+ * @param guild_id - Discord guild ID
+ * @returns Promise<void>
+ */
+export async function record_bypass_guild_stat(guild_id: string): Promise<void> {
+  try {
+    await get_pool().query(
+      `INSERT INTO bypass_guild_stats (guild_id, date, count)
+       VALUES ($1, CURRENT_DATE, 1)
+       ON CONFLICT (guild_id, date) DO UPDATE
+         SET count = bypass_guild_stats.count + 1`,
+      [guild_id]
+    )
+  } catch (error) {
+    console.error(`[ - BYPASS GUILD STATS - ] Failed to record stat for guild ${guild_id}:`, error)
+  }
+}
+
+/**
  * - CLEANUP EXPIRED BYPASS CACHE - \\
  */
 export async function cleanup_expired_bypass_cache(): Promise<void> {
@@ -1286,5 +1305,33 @@ export async function cleanup_expired_bypass_cache(): Promise<void> {
     }
   } catch (error) {
     console.error(`[ - BYPASS CACHE - ] Cleanup failed:`, error)
+  }
+}
+
+// - INSERT BYPASS LOG - \\
+
+interface bypass_log_entry {
+  guild_id   : string
+  user_id    : string
+  user_tag   : string
+  avatar     : string | null
+  url        : string
+  result_url : string | null
+  success    : boolean
+}
+
+/**
+ * @param entry - Bypass event to persist
+ * @returns Promise<void>
+ */
+export async function insert_bypass_log(entry: bypass_log_entry): Promise<void> {
+  try {
+    await get_pool().query(
+      `INSERT INTO bypass_logs (guild_id, user_id, user_tag, avatar, url, result_url, success)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [entry.guild_id, entry.user_id, entry.user_tag, entry.avatar, entry.url, entry.result_url, entry.success]
+    )
+  } catch (error) {
+    console.error(`[ - BYPASS LOG - ] Failed to insert log:`, error)
   }
 }

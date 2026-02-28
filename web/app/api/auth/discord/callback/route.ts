@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const code = searchParams.get('code')
+  const code      = searchParams.get('code')
   const return_to = searchParams.get('state') || '/transcript'
 
   if (!code) {
@@ -15,23 +15,35 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const client_id = process.env.DISCORD_CLIENT_ID
+    const client_id     = process.env.DISCORD_CLIENT_ID
     const client_secret = process.env.DISCORD_CLIENT_SECRET
-    const redirect_uri = `${process.env.NEXT_PUBLIC_WEB_URL}/api/auth/discord/callback`
+    const redirect_uri  = `${process.env.NEXT_PUBLIC_WEB_URL}/api/auth/discord/callback`
+
+    if (!client_id || !client_secret) {
+      console.error('[ - DISCORD AUTH - ] Missing client_id or client_secret — check .env')
+      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_WEB_URL}/login?error=token_failed`)
+    }
 
     // - Exchange code for token - \\
+    console.log('[ - DISCORD AUTH - ] redirect_uri:', redirect_uri)
+    console.log('[ - DISCORD AUTH - ] client_id:', client_id, '| secret length:', client_secret.length)
+    
+    // Switch to passing creds in header, sometimes Discord blocks them in body depending on app config
+    const basic_auth = Buffer.from(`${client_id}:${client_secret}`).toString('base64')
+    
+    const token_params = new URLSearchParams({
+      grant_type    : 'authorization_code',
+      code          : code,
+      redirect_uri  : redirect_uri,
+    })
+    
     const token_response = await fetch('https://discord.com/api/oauth2/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+      method  : 'POST',
+      headers : { 
+        'Content-Type'  : 'application/x-www-form-urlencoded',
+        'Authorization' : `Basic ${basic_auth}`
       },
-      body: new URLSearchParams({
-        client_id: client_id!,
-        client_secret: client_secret!,
-        grant_type: 'authorization_code',
-        code: code,
-        redirect_uri: redirect_uri,
-      }),
+      body    : token_params,
     })
 
     if (!token_response.ok) {
@@ -58,15 +70,23 @@ export async function GET(req: NextRequest) {
     // - Set session cookie - \\
     const response = NextResponse.redirect(`${process.env.NEXT_PUBLIC_WEB_URL}${return_to}`)
     response.cookies.set('discord_user', JSON.stringify({
-      id: user_data.id,
-      username: user_data.username,
-      avatar: user_data.avatar,
-      discriminator: user_data.discriminator,
+      id            : user_data.id,
+      username      : user_data.username,
+      avatar        : user_data.avatar,
+      discriminator : user_data.discriminator,
     }), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      httpOnly : true,
+      secure   : process.env.NODE_ENV === 'production',
+      sameSite : 'lax',
+      maxAge   : 60 * 60 * 24 * 7,
+    })
+
+    // - Store access token for server-side guild fetching - \\
+    response.cookies.set('discord_access_token', token_data.access_token, {
+      httpOnly : true,
+      secure   : process.env.NODE_ENV === 'production',
+      sameSite : 'lax',
+      maxAge   : 60 * 60 * 24 * 7,
     })
 
     return response

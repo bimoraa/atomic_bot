@@ -199,6 +199,13 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     db.increment_bypass_count().catch(err => console.error(`[ - AUTO BYPASS - ] Failed to increment bypass count:`, err))
 
     if (result.success && result.result) {
+      // - RECORD PER-GUILD BYPASS STAT - \\
+      if (message.guildId) {
+        db.record_bypass_guild_stat(message.guildId).catch(
+          err => console.error(`[ - AUTO BYPASS - ] Failed to record guild stat:`, err)
+        )
+      }
+
       // - STORE IN DATABASE - \\
       const cache_key = `bypass_result_${message.id}`
 

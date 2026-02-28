@@ -233,6 +233,17 @@ const bypass_command: Command = {
           console.error(`[ - BYPASS COMMAND - ] Failed to store log:`, db_err)
         }
 
+        // - LOG FAILED BYPASS EVENT - \\
+        db.insert_bypass_log({
+          guild_id,
+          user_id    : interaction.user.id,
+          user_tag   : interaction.user.tag,
+          avatar     : interaction.user.avatar,
+          url,
+          result_url : null,
+          success    : false,
+        }).catch(err => console.error(`[ - BYPASS - ] Failed to insert failure log:`, err))
+
         const error_message = component.build_message({
           components: [
             component.container({
@@ -258,6 +269,20 @@ const bypass_command: Command = {
         }
         return
       }
+
+      // - RECORD PER-GUILD BYPASS STAT - \\
+      db.record_bypass_guild_stat(guild_id).catch(err => console.error(`[ - BYPASS - ] Failed to record guild stat:`, err))
+
+      // - LOG BYPASS EVENT - \\
+      db.insert_bypass_log({
+        guild_id,
+        user_id    : interaction.user.id,
+        user_tag   : interaction.user.tag,
+        avatar     : interaction.user.avatar,
+        url,
+        result_url : result.result ?? null,
+        success    : true,
+      }).catch(err => console.error(`[ - BYPASS - ] Failed to insert log:`, err))
 
       // - STORE RESULT IN DATABASE - \\
       const cache_key = `bypass_result_${interaction.id}`

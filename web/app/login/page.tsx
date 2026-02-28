@@ -9,12 +9,13 @@ import { Loader2, AlertCircle } from 'lucide-react'
 
 function LoginForm() {
   const searchParams = useSearchParams()
-  const error = searchParams.get('error')
+  const error     = searchParams.get('error')
+  const return_to = searchParams.get('return_to') || '/transcript'
   const [is_loading, set_is_loading] = useState(false)
 
   const handle_discord_login = () => {
     set_is_loading(true)
-    window.location.href = '/api/auth/discord'
+    window.location.href = `/api/auth/discord?return_to=${encodeURIComponent(return_to)}`
   }
 
   const get_error_message = (error_code: string) => {
