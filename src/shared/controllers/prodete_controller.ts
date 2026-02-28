@@ -17,14 +17,15 @@ export interface prodete_entry {
 }
 
 export interface prodete_report {
-  slug         : string
-  from_date    : string
-  to_date      : string
-  from_ts      : number
-  to_ts        : number
-  entries      : prodete_entry[]
-  generated_by : string
-  generated_at : number
+  slug          : string
+  from_date     : string
+  to_date       : string
+  from_ts       : number
+  to_ts         : number
+  entries       : prodete_entry[]
+  channel_names : Record<string, string>   // channel_id -> real Discord channel name
+  generated_by  : string
+  generated_at  : number
 }
 
 // - CHANNELS TO COUNT MESSAGES FROM - \\
@@ -44,13 +45,14 @@ const __ticket_types: readonly string[] = ["priority", "helper"]
 const __staff_role_id = "1264915024707588208"
 
 // - HUMAN-READABLE CHANNEL LABELS FOR WEB DISPLAY - \\
-export const channel_labels: Record<string, string> = {
-  "1351969499116736602" : "staff-general",
-  "1398761098852958239" : "mod-chat",
-  "1319275642277199902" : "staff-discussion",
-  "1446809167942910043" : "daily-report",
-  "1291781831775092847" : "admin-chat",
-  "1398318499658600529" : "escalation",
+// - NOTE: these are fallbacks only — real names are fetched from Discord at scan time - \\
+const __channel_label_fallback: Record<string, string> = {
+  "1351969499116736602" : "1351969499116736602",
+  "1398761098852958239" : "1398761098852958239",
+  "1319275642277199902" : "1319275642277199902",
+  "1446809167942910043" : "1446809167942910043",
+  "1291781831775092847" : "1291781831775092847",
+  "1398318499658600529" : "1398318499658600529",
 }
 
 const __discord_epoch        = BigInt(1420070400000)
@@ -116,19 +118,18 @@ function get_week_keys_in_range(from_ts: number, to_ts: number): string[] {
  * Counts messages per user in a single text channel within [from_ts, to_ts].
  * Paginates BACKWARD from to_ts so we can stop the moment we pass from_ts —
  * much faster than forward pagination for bounded date ranges.
- * @param channel    TextChannel to scan
- * @param channel_id channel ID (for logging)
- * @param from_ts    start unix ms inclusive
- * @param to_ts      end unix ms inclusive
+ * @param channel      TextChannel to scan
+ * @param channel_name human-readable name for logging
+ * @param from_ts      start unix ms inclusive
+ * @param to_ts        end unix ms inclusive
  * @returns Map of user_id -> message count
  */
 async function count_channel_messages(
-  channel    : TextChannel,
-  channel_id : string,
-  from_ts    : number,
-  to_ts      : number
+  channel      : TextChannel,
+  channel_name : string,
+  from_ts      : number,
+  to_ts        : number
 ): Promise<Map<string, number>> {
-  const label    = channel_labels[channel_id] ?? channel_id
   const counts   = new Map<string, number>()
   // - START JUST PAST to_ts AND GO BACKWARD - \\
   let before_id  = ts_to_snowflake(to_ts + 1)
@@ -136,18 +137,18 @@ async function count_channel_messages(
   let total_msgs = 0
   const deadline = Date.now() + __channel_timeout_ms
 
-  console.log(`[ - PRODETE - ] #${label}: scan started (range ${new Date(from_ts).toISOString()} → ${new Date(to_ts).toISOString()})`)
+  console.log(`[ - PRODETE - ] #${channel_name}: scan started (${new Date(from_ts).toISOString()} → ${new Date(to_ts).toISOString()})`)
 
   while (iterations < __max_iter_channel) {
     if (Date.now() > deadline) {
-      console.warn(`[ - PRODETE - ] #${label}: timeout after ${iterations} iters, ${total_msgs} msgs counted`)
+      console.warn(`[ - PRODETE - ] #${channel_name}: timeout after ${iterations} iters, ${total_msgs} msgs counted`)
       break
     }
 
     const batch = await channel.messages.fetch({ limit: 100, before: before_id, cache: false })
 
     if (batch.size === 0) {
-      console.log(`[ - PRODETE - ] #${label}: done — empty batch at iter ${iterations}, ${total_msgs} msgs`)
+      console.log(`[ - PRODETE - ] #${channel_name}: done — empty batch at iter ${iterations}, ${total_msgs} msgs`)
       break
     }
 
@@ -157,18 +158,15 @@ async function count_channel_messages(
     let reached_start = false
 
     for (const msg of sorted) {
-      if (msg.createdTimestamp < from_ts) {
-        // - PASSED THE START OF THE RANGE — DONE - \\
-        reached_start = true
-        break
-      }
-      // - MESSAGE IS WITHIN [from_ts, to_ts] — COUNT IT - \\
+      // - SKIP MESSAGES OUTSIDE THE RANGE - \\
+      if (msg.createdTimestamp > to_ts)   continue
+      if (msg.createdTimestamp < from_ts) { reached_start = true; break }
       counts.set(msg.author.id, (counts.get(msg.author.id) ?? 0) + 1)
       total_msgs++
     }
 
     if (reached_start) {
-      console.log(`[ - PRODETE - ] #${label}: done — reached range start at iter ${iterations}, ${total_msgs} msgs`)
+      console.log(`[ - PRODETE - ] #${channel_name}: done — reached range start at iter ${iterations}, ${total_msgs} msgs`)
       break
     }
 
@@ -179,49 +177,52 @@ async function count_channel_messages(
     iterations++
 
     if (iterations % 10 === 0) {
-      console.log(`[ - PRODETE - ] #${label}: iter ${iterations} — ${total_msgs} msgs counted so far`)
+      console.log(`[ - PRODETE - ] #${channel_name}: iter ${iterations} — ${total_msgs} msgs so far`)
     }
 
     if (__iter_delay_ms > 0) await new Promise(r => setTimeout(r, __iter_delay_ms))
   }
 
-  console.log(`[ - PRODETE - ] #${label}: complete — ${counts.size} users, ${total_msgs} total messages`)
+  console.log(`[ - PRODETE - ] #${channel_name}: complete — ${counts.size} users, ${total_msgs} total messages`)
   return counts
 }
 
 /**
  * Aggregates message counts per channel per user across all tracked channels.
+ * Also resolves real channel names from Discord.
  * @param client          Discord client
  * @param from_ts         start unix ms
  * @param to_ts           end unix ms
  * @param on_channel_done called when each channel finishes scanning
- * @returns Map of channel_id -> (user_id -> count)
+ * @returns channel_maps (channel_id → user_id → count) and channel_names (channel_id → name)
  */
 async function aggregate_channel_messages(
   client           : Client,
   from_ts          : number,
   to_ts            : number,
   on_channel_done ?: (channel_id: string) => void
-): Promise<Map<string, Map<string, number>>> {
+): Promise<{ channel_maps: Map<string, Map<string, number>>; channel_names: Record<string, string> }> {
   // - FETCH ALL CHANNELS IN PARALLEL FOR SPEED - \\
   const results = await Promise.allSettled(
     __msg_channels.map(async (channel_id) => {
-      const ch = await client.channels.fetch(channel_id, { force: false, cache: true })
+      const ch = await client.channels.fetch(channel_id, { force: true, cache: false })
       if (!ch || !("messages" in ch)) {
         log.warn(`Channel ${channel_id} not accessible or not a text channel`)
         console.warn(`[ - PRODETE - ] channel ${channel_id}: not accessible`)
         on_channel_done?.(channel_id)
-        return { channel_id, counts: new Map<string, number>() }
+        return { channel_id, name: channel_id, counts: new Map<string, number>() }
       }
-      const counts = await count_channel_messages(ch as TextChannel, channel_id, from_ts, to_ts)
-      const total  = [...counts.values()].reduce((a, b) => a + b, 0)
-      console.log(`[ - PRODETE - ] channel ${channel_labels[channel_id] ?? channel_id}: ${counts.size} users, ${total} messages`)
+      const real_name = (ch as TextChannel).name
+      const counts    = await count_channel_messages(ch as TextChannel, real_name, from_ts, to_ts)
+      const total     = [...counts.values()].reduce((a, b) => a + b, 0)
+      console.log(`[ - PRODETE - ] #${real_name}: ${counts.size} users, ${total} messages`)
       on_channel_done?.(channel_id)
-      return { channel_id, counts }
+      return { channel_id, name: real_name, counts }
     })
   )
 
-  const channel_maps = new Map<string, Map<string, number>>()
+  const channel_maps  = new Map<string, Map<string, number>>()
+  const channel_names : Record<string, string> = {}
 
   for (const result of results) {
     if (result.status === "rejected") {
@@ -230,9 +231,10 @@ async function aggregate_channel_messages(
     }
     if (!result.value) continue
     channel_maps.set(result.value.channel_id, result.value.counts)
+    channel_names[result.value.channel_id] = result.value.name
   }
 
-  return channel_maps
+  return { channel_maps, channel_names }
 }
 
 /**
@@ -408,7 +410,7 @@ export async function build_prodete_report(
   console.log(`[ - PRODETE - ] scanning ${__msg_channels.length} channels in parallel...`)
 
   // - PARALLEL CHANNEL SCAN — TICK AFTER EACH CHANNEL COMPLETES - \\
-  const channel_maps = await aggregate_channel_messages(
+  const { channel_maps, channel_names } = await aggregate_channel_messages(
     client, from_ts, to_ts,
     (ch_id) => tick(`Channel scanned (${ch_id})`)
   )
@@ -492,8 +494,9 @@ export async function build_prodete_report(
     from_ts,
     to_ts,
     entries,
-    generated_by : triggered_by,
-    generated_at : Date.now(),
+    channel_names,
+    generated_by  : triggered_by,
+    generated_at  : Date.now(),
   }
 
   await save_prodete_report(report)
@@ -514,17 +517,19 @@ async function save_prodete_report(report: prodete_report): Promise<void> {
   try {
     const pool = db.get_pool()
     await pool.query(`
-      INSERT INTO prodete_reports (slug, from_date, to_date, entries, generated_by, generated_at)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO prodete_reports (slug, from_date, to_date, entries, channel_names, generated_by, generated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (slug) DO UPDATE SET
-        entries      = EXCLUDED.entries,
-        generated_by = EXCLUDED.generated_by,
-        generated_at = EXCLUDED.generated_at
+        entries       = EXCLUDED.entries,
+        channel_names = EXCLUDED.channel_names,
+        generated_by  = EXCLUDED.generated_by,
+        generated_at  = EXCLUDED.generated_at
     `, [
       report.slug,
       report.from_date,
       report.to_date,
       JSON.stringify(report.entries),
+      JSON.stringify(report.channel_names),
       report.generated_by,
       report.generated_at,
     ])
@@ -546,14 +551,15 @@ export async function get_prodete_report_by_dates(from_date: string, to_date: st
   try {
     const pool   = db.get_pool()
     const result = await pool.query<{
-      slug         : string
-      from_date    : string
-      to_date      : string
-      entries      : prodete_entry[] | string
-      generated_by : string
-      generated_at : string
+      slug          : string
+      from_date     : string
+      to_date       : string
+      entries       : prodete_entry[] | string
+      channel_names : Record<string, string> | string | null
+      generated_by  : string
+      generated_at  : string
     }>(`
-      SELECT slug, from_date, to_date, entries, generated_by, generated_at
+      SELECT slug, from_date, to_date, entries, channel_names, generated_by, generated_at
       FROM prodete_reports
       WHERE from_date = $1 AND to_date = $2
       ORDER BY generated_at DESC
@@ -565,14 +571,15 @@ export async function get_prodete_report_by_dates(from_date: string, to_date: st
     const row = result.rows[0]
 
     return {
-      slug         : row.slug,
-      from_date    : row.from_date,
-      to_date      : row.to_date,
-      from_ts      : parse_date_wib_start(row.from_date),
-      to_ts        : parse_date_wib_start(row.to_date) + 86400 * 1000 - 1,
-      entries      : typeof row.entries === "string" ? JSON.parse(row.entries) : row.entries,
-      generated_by : row.generated_by,
-      generated_at : Number(row.generated_at),
+      slug          : row.slug,
+      from_date     : row.from_date,
+      to_date       : row.to_date,
+      from_ts       : parse_date_wib_start(row.from_date),
+      to_ts         : parse_date_wib_start(row.to_date) + 86400 * 1000 - 1,
+      entries       : typeof row.entries === "string" ? JSON.parse(row.entries) : row.entries,
+      channel_names : row.channel_names == null ? {} : typeof row.channel_names === "string" ? JSON.parse(row.channel_names) : row.channel_names,
+      generated_by  : row.generated_by,
+      generated_at  : Number(row.generated_at),
     }
   } catch (err) {
     log.error(`Failed to get ProDeTe report by dates: ${(err as Error).message}`)
@@ -591,14 +598,15 @@ export async function get_prodete_report(slug: string): Promise<prodete_report |
   try {
     const pool   = db.get_pool()
     const result = await pool.query<{
-      slug         : string
-      from_date    : string
-      to_date      : string
-      entries      : prodete_entry[] | string
-      generated_by : string
-      generated_at : string
+      slug          : string
+      from_date     : string
+      to_date       : string
+      entries       : prodete_entry[] | string
+      channel_names : Record<string, string> | string | null
+      generated_by  : string
+      generated_at  : string
     }>(`
-      SELECT slug, from_date, to_date, entries, generated_by, generated_at
+      SELECT slug, from_date, to_date, entries, channel_names, generated_by, generated_at
       FROM prodete_reports
       WHERE slug = $1
     `, [slug])
@@ -608,14 +616,15 @@ export async function get_prodete_report(slug: string): Promise<prodete_report |
     const row = result.rows[0]
 
     return {
-      slug         : row.slug,
-      from_date    : row.from_date,
-      to_date      : row.to_date,
-      from_ts      : parse_date_wib_start(row.from_date),
-      to_ts        : parse_date_wib_start(row.to_date) + 86400 * 1000 - 1,
-      entries      : typeof row.entries === "string" ? JSON.parse(row.entries) : row.entries,
-      generated_by : row.generated_by,
-      generated_at : Number(row.generated_at),
+      slug          : row.slug,
+      from_date     : row.from_date,
+      to_date       : row.to_date,
+      from_ts       : parse_date_wib_start(row.from_date),
+      to_ts         : parse_date_wib_start(row.to_date) + 86400 * 1000 - 1,
+      entries       : typeof row.entries === "string" ? JSON.parse(row.entries) : row.entries,
+      channel_names : row.channel_names == null ? {} : typeof row.channel_names === "string" ? JSON.parse(row.channel_names) : row.channel_names,
+      generated_by  : row.generated_by,
+      generated_at  : Number(row.generated_at),
     }
   } catch (err) {
     log.error(`Failed to get ProDeTe report: ${(err as Error).message}`)

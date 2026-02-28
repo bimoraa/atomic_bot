@@ -7,7 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle }          from '@/components/ui/sheet'
 import { XCircle, ChevronRight }                                 from 'lucide-react'
 import type { prodete_report, prodete_entry }                    from '@/types/prodete'
-import { channel_labels }                                        from '@/types/prodete'
 
 // - RANK MEDAL COLORS - \\
 function rank_class(rank: number): string {
@@ -21,8 +20,8 @@ function pct_bar(pct: string): number {
   return Math.min(100, parseFloat(pct))
 }
 
-function ch_label(id: string): string {
-  return channel_labels[id] ?? id
+function ch_label(id: string, names: Record<string, string>): string {
+  return names[id] ?? id
 }
 
 interface page_props {
@@ -34,10 +33,12 @@ function DetailSheet({
   entry,
   open,
   on_close,
+  channel_names,
 }: {
-  entry    : prodete_entry | null
-  open     : boolean
-  on_close : () => void
+  entry         : prodete_entry | null
+  open          : boolean
+  on_close      : () => void
+  channel_names : Record<string, string>
 }) {
   if (!entry) return null
 
@@ -94,7 +95,7 @@ function DetailSheet({
                     return (
                       <TableRow key={ch_id} className="*:border-border [&>:not(:last-child)]:border-r">
                         <TableCell className="py-2 text-xs font-mono text-muted-foreground">
-                          {ch_label(ch_id)}
+                          {ch_label(ch_id, channel_names)}
                         </TableCell>
                         <TableCell className="py-2 text-xs text-right tabular-nums font-medium">
                           {count.toLocaleString()}
@@ -380,9 +381,10 @@ export default function ProDetePage({ params }: page_props) {
 
       {/* - DETAIL DRAWER - \\ */}
       <DetailSheet
-        entry    = {selected_entry}
-        open     = {selected_entry !== null}
-        on_close = {() => set_selected_entry(null)}
+        entry         = {selected_entry}
+        open          = {selected_entry !== null}
+        on_close      = {() => set_selected_entry(null)}
+        channel_names = {report?.channel_names ?? {}}
       />
     </div>
   )

@@ -760,6 +760,8 @@ async function migrate_tables(client: any): Promise<void> {
     await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS whitelisted_at BIGINT`).catch(() => { })
     await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS boost_count INTEGER DEFAULT 0`).catch(() => { })
 
+    await client.query(`ALTER TABLE prodete_reports ADD COLUMN IF NOT EXISTS channel_names JSONB DEFAULT '{}'::jsonb`).catch(() => { })
+
     console.log("[ - POSTGRESQL - ] Table migrations completed")
   } catch (err) {
     console.error("[ - POSTGRESQL - ] Migration error:", (err as Error).message)

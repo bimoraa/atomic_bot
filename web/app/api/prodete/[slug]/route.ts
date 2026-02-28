@@ -23,14 +23,15 @@ export async function GET(
 
   try {
     const result = await client.query<{
-      slug         : string
-      from_date    : string
-      to_date      : string
-      entries      : prodete_entry[] | string
-      generated_by : string
-      generated_at : string
+      slug          : string
+      from_date     : string
+      to_date       : string
+      entries       : prodete_entry[] | string
+      channel_names : Record<string, string> | string | null
+      generated_by  : string
+      generated_at  : string
     }>(`
-      SELECT slug, from_date, to_date, entries, generated_by, generated_at
+      SELECT slug, from_date, to_date, entries, channel_names, generated_by, generated_at
       FROM prodete_reports
       WHERE slug = $1
     `, [slug])
@@ -42,12 +43,13 @@ export async function GET(
     const row = result.rows[0]
 
     return NextResponse.json({
-      slug         : row.slug,
-      from_date    : row.from_date,
-      to_date      : row.to_date,
-      entries      : typeof row.entries === 'string' ? JSON.parse(row.entries) : row.entries,
-      generated_by : row.generated_by,
-      generated_at : Number(row.generated_at),
+      slug          : row.slug,
+      from_date     : row.from_date,
+      to_date       : row.to_date,
+      entries       : typeof row.entries === 'string' ? JSON.parse(row.entries) : row.entries,
+      channel_names : row.channel_names == null ? {} : typeof row.channel_names === 'string' ? JSON.parse(row.channel_names) : row.channel_names,
+      generated_by  : row.generated_by,
+      generated_at  : Number(row.generated_at),
     }, {
       headers: { 'Cache-Control': 'no-store' },
     })
