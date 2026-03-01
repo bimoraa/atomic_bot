@@ -411,7 +411,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
         return
       }
 
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       console.log(`[ - TRANSCRIPT - ] Fetching users from:`, bot_url)
       console.log(`[ - TRANSCRIPT - ] User IDs:`, user_ids)
       
@@ -445,7 +445,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
       const channel_ids = extract_channel_ids(message.content)
       if (channel_ids.length === 0) return
 
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       console.log(`[ - TRANSCRIPT - ] Fetching channels:`, channel_ids)
       
       const cache: Record<string, any> = {}
@@ -474,7 +474,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
 
     // - Fetch author member data for role color - \\
     const fetch_author_member = async () => {
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       try {
         const res = await fetch(`${bot_url}/api/member/${message.author_id}`)
         if (res.ok) {
@@ -499,7 +499,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
   const fetch_member_details = async (user_id: string) => {
     set_loading_user(true)
     try {
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       const res = await fetch(`${bot_url}/api/member/${user_id}`)
       
       if (res.ok) {

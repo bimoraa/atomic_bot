@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     }
 
     // - Fetch transcripts from bot API - \\
-    const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+    const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
     console.log('[ - TRANSCRIPTS API - ] Fetching from:', `${bot_url}/api/transcripts`)
     
     const response = await fetch(`${bot_url}/api/transcripts`, {

@@ -51,7 +51,7 @@ export function UserDialog({ user_id, open, on_close }: UserDialogProps) {
   const fetch_user = async () => {
     set_loading(true)
     try {
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'http://localhost:3456'
+      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       
       const res = await fetch(`${bot_url}/api/member/${user_id}`)
       if (!res.ok) {

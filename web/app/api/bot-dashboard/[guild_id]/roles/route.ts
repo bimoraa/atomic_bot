@@ -27,7 +27,7 @@ export async function GET(
   const authorized = await verify_manage_guild(access_token, guild_id)
   if (!authorized) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const bot_url = process.env.NEXT_PUBLIC_BOT_URL ?? 'http://localhost:3456'
+  const bot_url = process.env.NEXT_PUBLIC_BOT_URL ?? 'https://azure48.xyz'
 
   try {
     const response = await fetch(`${bot_url}/api/guild/${guild_id}/roles`, {

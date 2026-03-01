@@ -1,3 +1,4 @@
+````md
 # Copilot Instructions — atomic_bot
 
 ## Architecture
@@ -10,13 +11,21 @@ Three independent Discord bots sharing a `src/shared/` layer, plus a Next.js das
 | `src/startup/jkt48_bot.ts` | JKT48 live stream notifications |
 | `src/startup/bypass_bot.ts` | Automatic link bypassing |
 
-**Path aliases** (tsconfig): `@shared/*` → `src/shared/*`, `@atomic/*` → `src/atomic_bot/*`, `@jkt48/*` → `src/jkt48_bot/*`, `@bypass/*` → `src/bypass_bot/*`, `@startup/*` → `src/startup/*`
+**Path aliases** (tsconfig):  
+`@shared/*` → `src/shared/*`  
+`@atomic/*` → `src/atomic_bot/*`  
+`@jkt48/*` → `src/jkt48_bot/*`  
+`@bypass/*` → `src/bypass_bot/*`  
+`@startup/*` → `src/startup/*`
+
+---
 
 ## CRITICAL: Discord Cache is Always Empty
 
-`atomic_bot` uses `makeCache: () => new Collection()` — **all `.cache` properties are permanently empty**. Always use REST fetches:
+`atomic_bot` uses `makeCache: () => new Collection()` — **all `.cache` properties are permanently empty**.  
+Always use REST fetches.
 
-```typescript
+```ts
 // WRONG — always returns false/empty
 guild.roles.cache.has(role_id)
 member.roles.cache.filter(...)
@@ -24,7 +33,9 @@ member.roles.cache.filter(...)
 // CORRECT
 const guild_roles = await guild.roles.fetch()
 const member      = await guild.members.fetch(user_id)
-```
+````
+
+---
 
 ## Dev Workflows
 
@@ -44,20 +55,29 @@ cd web && npm run dev
 
 `console.log` is suppressed in production (`NODE_ENV !== "development"`).
 
+---
+
 ## File / Folder Structure
 
-- Commands: `src/atomic_bot/modules/<feature>/<command_name>.ts`
-- Feature business logic (shared across related commands): `src/atomic_bot/core/handlers/controllers/<feature>_controller.ts`
-- DB operations for a feature: `src/shared/database/managers/<feature>_manager.ts`
-- Persistent state (reminders, AFK, tickets, quarantine) **must** be stored in DB so it survives restarts
+* Commands: `src/atomic_bot/modules/<feature>/<command_name>.ts`
+* Feature business logic (shared across related commands):
+  `src/atomic_bot/core/handlers/controllers/<feature>_controller.ts`
+* DB operations for a feature:
+  `src/shared/database/managers/<feature>_manager.ts`
+* Persistent state (reminders, AFK, tickets, quarantine) **must** be stored in DB so it survives restarts
 
-Example: `/reminder` + `/reminder-cancel` → both delegate to `reminder_controller.ts` → which calls `src/shared/database/managers/reminder_manager.ts`
+Example:
+`/reminder` + `/reminder-cancel`
+→ `reminder_controller.ts`
+→ `reminder_manager.ts`
+
+---
 
 ## Database
 
-PostgreSQL via `pg` pool. Use the `db` object from `@shared/utils`:
+PostgreSQL via `pg` pool. Use the `db` object from `@shared/utils`.
 
-```typescript
+```ts
 import { db } from "@shared/utils"
 
 await db.find_one(__collection, { user_id })
@@ -67,13 +87,20 @@ await db.update_one(__collection, { user_id }, { $set: { ... } })
 await db.delete_one(__collection, { user_id, guild_id })
 ```
 
-Module-level collection name uses double-underscore: `const __collection = "reminders"`
+Module-level collection name **must** use double-underscore prefix:
+
+```ts
+const __collection = "reminders"
+```
+
+---
 
 ## Component V2 (Required for All Messages)
 
-Every bot reply **must** use Component V2 via `@shared/utils/components`. `flags: 32768` is set automatically by `build_message`.
+Every bot reply **must** use Component V2 via `@shared/utils/components`.
+`flags: 32768` is set automatically by `build_message`.
 
-```typescript
+```ts
 import { component } from "@shared/utils"
 
 await interaction.reply({
@@ -93,41 +120,83 @@ await interaction.reply({
 })
 ```
 
-Never use plain `content` strings or legacy embeds. No emojis in text/labels — Discord custom emojis only: `<:name:id>`.
+Rules:
 
-**Avoid Component V2 error** (`BASE_TYPE_REQUIRED`): every `section` with an `accessory` must include the accessory object with all required fields.
+* ❌ Never use plain `content`
+* ❌ Never use legacy embeds
+* ❌ No unicode emojis
+* ✅ Discord custom emojis only: `<:name:id>`
+
+**Avoid Component V2 error (`BASE_TYPE_REQUIRED`)**:
+Every `section` that has an `accessory` **must** include the full accessory object with all required fields.
+
+---
 
 ## Error Logging
 
-Every catch block must call `log_error` from `@shared/utils/error_logger`:
+Every `catch` block **must** call `log_error` from `@shared/utils/error_logger`.
 
-```typescript
+```ts
 import { log_error } from "@shared/utils/error_logger"
 
 } catch (err) {
   await log_error(client, err as Error, "Descriptive Context Name", {
     user_id,
-    guild_id: guild.id,
+    guild_id,
   }).catch(() => {})
 }
 ```
 
-## Code Style
+---
 
-- **snake_case** for all identifiers, filenames, and folders — no camelCase
-- **Align** `=`, `:`, `from` vertically within a declaration block
-- **Comments**: `// - comment - \\` (one line, lowercase unless acronym/proper noun)
-- **JSDoc** on every exported function: `@param`, `@returns`, `@description`
-- **Console**: `console.log("[ - TITLE - ] message")`
-- **Constants**: `const __my_constant = "value"` (double-underscore prefix, lowercase)
-- Fix duplicates manually — never via shell scripts
+## Code Style (STRICT)
+
+* **snake_case** for all identifiers, filenames, and folders — no camelCase
+* **Align vertically** within a declaration block:
+
+  * `=`
+  * `:`
+  * `from`
+* **IMPORT ALIGNMENT IS STRICT**
+  `from` **must be vertically aligned** within the same import block
+* **Comments**:
+
+  ```ts
+  // - comment - \\
+  ```
+
+  one line, lowercase unless acronym or proper noun
+* **JSDoc required** on every exported function:
+
+  * `@param`
+  * `@returns`
+  * `@description`
+* **Console**:
+
+  ```ts
+  console.log("[ - TITLE - ] message")
+  ```
+* **Constants**:
+
+  ```ts
+  const __my_constant = "value"
+  ```
+* Fix duplicates **manually** — never via shell scripts
+* Disable auto-formatters that break alignment:
+
+  * Prettier
+  * organizeImports
+
+---
 
 ## Command Interfaces (`src/shared/types/command.ts`)
 
-```typescript
+```ts
 // Slash command
 export interface Command {
-  data         : SlashCommandBuilder | SlashCommandOptionsOnlyBuilder | SlashCommandSubcommandsOnlyBuilder
+  data         : SlashCommandBuilder
+               | SlashCommandOptionsOnlyBuilder
+               | SlashCommandSubcommandsOnlyBuilder
   execute      : (interaction: ChatInputCommandInteraction) => Promise<void>
   autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>
 }
@@ -139,24 +208,35 @@ export interface MessageContextMenuCommand {
 }
 ```
 
-Export the command as `export const command: Command = { ... }`
+Export format **must** be:
+
+```ts
+export const command: Command = { ... }
+```
+
+---
 
 ## Web Dashboard (`web/`)
 
-Next.js 15 + shadcn/ui. Component folders:
+* Next.js 15 + shadcn/ui
+* Dark mode only
+* Use original shadcn colors
+* No excessive gradients
 
-- `web/components/animations/` — animated visual components
-- `web/components/layout/` — navbars, sidebars, docks
-- `web/components/features/` — feature-specific (transcript, users)
-- `web/components/demos/` — demo/example wrappers
-- `web/components/ui/` — shadcn primitives
+Component folders:
 
-Dark mode only. Use shadcn original colors — no excessive gradients.
+* `web/components/animations/`
+* `web/components/layout/`
+* `web/components/features/`
+* `web/components/demos/`
+* `web/components/ui/`
+
+---
 
 ## Pre-completion Checklist
 
-- [ ] Run `npx tsc --noEmit` and confirm zero red errors
-- [ ] All messages use Component V2 (`component.build_message`)
-- [ ] All catch blocks log via `log_error` from `@shared/utils/error_logger`
-- [ ] Persistent features (reminders, AFK, quarantine, tickets) read/write to DB
-- [ ] No `.cache` access on roles/members — use `.fetch()` instead
+* [ ] Run `npx tsc --noEmit` and confirm zero red errors
+* [ ] All messages use Component V2 (`component.build_message`)
+* [ ] All `catch` blocks call `log_error`
+* [ ] Persistent features (reminders, AFK, quarantine, tickets) read/write DB
+* [ ] No `.cache` access on roles/members — use `.fetch()` only
