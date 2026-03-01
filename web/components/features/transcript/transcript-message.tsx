@@ -1,7 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import { Paperclip, Bot, Hash, ChevronDown } from "lucide-react"
+import { Paperclip, Bot, Hash, ChevronDown, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -42,7 +42,9 @@ export interface transcript_message {
 }
 
 export interface TranscriptMessageProps {
-  message: transcript_message
+  message       : transcript_message
+  transcript_id?: string
+  ticket_type  ?: string
 }
 
 // - BASIC MARKDOWN PARSER (for component rendering) - \\
@@ -370,16 +372,15 @@ function render_component(component: any, index: number | string): any {
   return null
 }
 
-export function TranscriptMessage({ message }: TranscriptMessageProps) {
-  const [user_cache, set_user_cache]         = useState<Record<string, any>>({})
-  const [channel_cache, set_channel_cache]   = useState<Record<string, any>>({})
-  const [member_cache, set_member_cache]     = useState<Record<string, any>>({})
-  const [is_loading, set_is_loading]         = useState(true)
-  const [show_user_modal, set_show_user_modal] = useState(false)
-  const [selected_user, set_selected_user]   = useState<any>(null)
-  const [loading_user, set_loading_user]     = useState(false)
-  const [time_str, set_time_str]             = useState<string>('')
-
+export function TranscriptMessage({ message, transcript_id, ticket_type }: TranscriptMessageProps) {
+  const [user_cache, set_user_cache]                 = useState<Record<string, any>>({})
+  const [channel_cache, set_channel_cache]           = useState<Record<string, any>>({})
+  const [member_cache, set_member_cache]             = useState<Record<string, any>>({})
+  const [is_loading, set_is_loading]                 = useState(true)
+  const [show_user_modal, set_show_user_modal]       = useState(false)
+  const [selected_user, set_selected_user]           = useState<any>(null)
+  const [loading_user, set_loading_user]             = useState(false)
+  const [time_str, set_time_str]                     = useState<string>('')
   useEffect(() => {
     const date = new Date(message.timestamp * 1000)
     const formatted = date.toLocaleString('en-US', {
@@ -664,130 +665,184 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
     }
   }
 
+  // - CHECK FOR IMAGE ATTACHMENTS - \\
+  const image_attachments = message.attachments?.filter(a => {
+    const url          = typeof a === 'string' ? a : a.url
+    const content_type = typeof a === 'object' ? a.content_type : ''
+    return content_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url)
+  }) || []
+
+  const non_image_attachments = message.attachments?.filter(a => !image_attachments.includes(a as any)) || []
+
+  // - UNIFIED CARD RENDER - \\
+  if (false) {
+    // - dead code: old image-only card block kept for reference - \\
+    return null
+  }
+
+  // - DETECT STAFF / WHITELISTER / HELPER FOR RIGHT-SIDE LAYOUT - \\
+  const __staff_role_id       = '1264915024707588208'
+  const __whitelister_role_id = '1277272542914281512'
+  const __helper_role_id      = '1357767950421065981'
+  const member_roles          = member_cache[message.author_id]?.roles || []
+  const is_helper_ticket      = ticket_type === 'helper'
+  const is_staff_or_wl        = member_roles.some((role: any) =>
+    role.id === __staff_role_id || role.id === __whitelister_role_id ||
+    (is_helper_ticket && role.id === __helper_role_id)
+  )
+
+  // - COMPUTE CARD MAX WIDTH FROM IMAGE NATURAL SIZE - \\
+  const only_images   = image_attachments.length > 0
+                        && !message.content
+                        && !(message.embeds?.length)
+                        && !(message.components?.length)
+                        && non_image_attachments.length === 0
+  const first_img_w   = only_images && typeof image_attachments[0] === 'object'
+                        ? (image_attachments[0] as transcript_attachment).width ?? null
+                        : null
+  const card_max_w    = first_img_w ? Math.min(first_img_w, 512) : 512
+
   return (
-    <div className="flex gap-2 sm:gap-3 py-4 px-3 sm:px-4 hover:bg-muted/30 transition-colors group border-b border-border/50 last:border-0">
-      <div className="flex-shrink-0 relative">
+    <div className={cn(
+      "py-3 px-3 sm:px-4 hover:bg-muted/5 transition-colors border-b border-border/50 last:border-0 flex",
+      is_staff_or_wl ? "justify-end" : "justify-start"
+    )}>
+      <Card
+        className={cn(
+          'w-full gap-0 py-0 shadow-none overflow-hidden border',
+          is_staff_or_wl ? 'bg-primary/5 border-primary/20' : 'bg-background border-border/40'
+        )}
+        style={{ maxWidth: `${card_max_w}px` }}
+      >
+        {/* - REFERENCED MESSAGE - */}
         {message.referenced_message && (
-          <div className="absolute -top-3 left-4 flex items-start gap-2">
-            <div className="relative">
-              <div className="absolute top-0 left-0 w-6 h-full border-l-2 border-t-2 border-muted-foreground/30 rounded-tl-lg" style={{ height: '2rem' }} />
-              <img
-                src={message.referenced_message.author_avatar}
-                alt={message.referenced_message.author_tag}
-                className="w-4 h-4 rounded-full ml-6 cursor-pointer hover:ring-1 hover:ring-primary transition-all"
-                onClick={() => message.referenced_message && handle_avatar_click(message.referenced_message.author_id)}
+          <div className="flex items-center gap-2 px-4 pt-3 pb-0">
+            <div className="w-4 h-4 border-l-2 border-t-2 border-muted-foreground/30 rounded-tl ml-2 flex-shrink-0" />
+            <img
+              src={message.referenced_message.author_avatar}
+              alt={message.referenced_message.author_tag}
+              className="w-4 h-4 rounded-full cursor-pointer hover:ring-1 hover:ring-primary transition-all flex-shrink-0"
+              onClick={() => message.referenced_message && handle_avatar_click(message.referenced_message.author_id)}
+            />
+            <span className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer truncate" onClick={() => message.referenced_message && handle_avatar_click(message.referenced_message.author_id)}>
+              {message.referenced_message.author_tag.split('#')[0]}
+            </span>
+            <span className="text-xs text-muted-foreground/60 truncate max-w-[200px]">
+              {message.referenced_message.content || 'Replied to a message'}
+            </span>
+          </div>
+        )}
+
+        {/* - CARD HEADER - */}
+        <div className={cn("flex items-center gap-3 px-4 pt-3 pb-2", is_staff_or_wl && "flex-row-reverse")}>
+          <img
+            alt={message.author_tag}
+            className="h-10 w-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-primary transition-all bg-secondary flex-shrink-0"
+            src={message.author_avatar}
+            onClick={() => handle_avatar_click(message.author_id)}
+          />
+          <div className={cn("flex flex-col gap-0.5 min-w-0 flex-1", is_staff_or_wl && "items-end")}>
+            <div className={cn("flex items-center gap-1.5 flex-wrap", is_staff_or_wl && "flex-row-reverse")}>
+              <span 
+                className="font-semibold text-sm leading-none" 
+                style={author_color ? { color: author_color } : undefined}
+              >
+                {message.author_tag.split('#')[0]}
+              </span>
+              {message.is_bot && (
+                <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 h-4 text-[9px] px-1 py-0 rounded-sm inline-flex items-center gap-0.5">
+                  <Bot className="w-2.5 h-2.5" /> BOT
+                </Badge>
+              )}
+              {member_roles.some((role: any) => role.id === __staff_role_id) && (
+                <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white h-4 text-[9px] px-1 py-0 rounded-sm inline-flex items-center">
+                  STAFF
+                </Badge>
+              )}
+              {member_roles.some((role: any) => role.id === __whitelister_role_id) && (
+                <Badge variant="default" className="bg-purple-600 hover:bg-purple-700 h-4 text-[9px] px-1 py-0 rounded-sm inline-flex items-center">
+                  WHITELISTER
+                </Badge>
+              )}
+              {is_helper_ticket && member_roles.some((role: any) => role.id === __helper_role_id) && (
+                <Badge variant="default" className="bg-yellow-600 hover:bg-yellow-700 text-white h-4 text-[9px] px-1 py-0 rounded-sm inline-flex items-center">
+                  HELPER
+                </Badge>
+              )}
+            </div>
+            <span className="text-xs text-muted-foreground">{time_str}</span>
+          </div>
+          <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground w-8 h-8 flex-shrink-0">
+            <MoreHorizontal className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <CardContent className="p-0">
+          {/* - TEXT CONTENT - */}
+          {message.content && (
+            <div className="px-4 pb-3">
+              <div
+                key={`content-${Object.keys(user_cache).length}-${Object.keys(channel_cache).length}`}
+                className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: parse_markdown(message.content) }}
               />
             </div>
-            <div className="flex flex-col -mt-0.5">
-              <span className="text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-                {message.referenced_message.author_tag}
-              </span>
-              <span className="text-xs text-muted-foreground/70 line-clamp-1 max-w-[200px]">
-                {message.referenced_message.content || 'Click to see attachment'}
-              </span>
-            </div>
-          </div>
-        )}
-        <img
-          src={message.author_avatar}
-          alt={message.author_tag}
-          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-          onClick={() => handle_avatar_click(message.author_id)}
-        />
-      </div>
-      <div className="flex-1 min-w-0" style={message.referenced_message ? { marginTop: '2rem' } : undefined}>
-        <div className="flex flex-wrap items-baseline gap-1 sm:gap-2 mb-1">
-          <span 
-            className={cn(
-              "font-semibold text-sm sm:text-base truncate max-w-[150px] sm:max-w-none",
-              !author_color && message.is_bot && "text-blue-500"
-            )}
-            style={author_color ? { color: author_color } : undefined}
-          >
-            {message.author_tag}
-          </span>
-          {message.is_bot && (
-            <Badge variant="default" className="bg-blue-600 hover:bg-blue-700 flex items-center gap-1 text-[10px] sm:text-xs px-1 sm:px-1.5">
-              <Bot className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-              BOT
-            </Badge>
           )}
-          {member_cache[message.author_id]?.roles?.some((role: any) => role.id === '1264915024707588208') && (
-            <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-1 text-[10px] sm:text-xs px-1 sm:px-1.5">
-              STAFF
-            </Badge>
-          )}
-          {member_cache[message.author_id]?.roles?.some((role: any) => role.id === '1277272542914281512') && (
-            <Badge variant="default" className="bg-purple-600 hover:bg-purple-700 flex items-center gap-1 text-[10px] sm:text-xs px-1 sm:px-1.5">
-              WHITELISTER
-            </Badge>
-          )}
-          <span className="text-[10px] sm:text-xs text-muted-foreground">
-            {time_str}
-          </span>
-        </div>
-        {message.content && (
-          <div 
-            key={`content-${Object.keys(user_cache).length}-${Object.keys(channel_cache).length}`}
-            className="text-xs sm:text-sm whitespace-pre-wrap break-words leading-relaxed"
-            dangerouslySetInnerHTML={{ __html: parse_markdown(message.content) }}
-          />
-        )}
-        {message.attachments.length > 0 && (
-          <div className="mt-2 flex flex-col gap-2">
-            {message.attachments.map((attachment, i) => {
-              const url = typeof attachment === 'string' ? attachment : attachment.url
-              const filename = typeof attachment === 'object' && attachment.filename ? attachment.filename : `Attachment ${i + 1}`
-              const content_type = typeof attachment === 'object' ? attachment.content_type : ''
-              
-              const is_image = content_type?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(url)
-              
-              if (is_image) {
+
+          {/* - IMAGE ATTACHMENTS - */}
+          {image_attachments.map((attachment, idx) => {
+            const url = typeof attachment === 'string' ? attachment : attachment.url
+            return (
+              <a key={`img-${idx}`} href={url} target="_blank" rel="noopener noreferrer" className="block relative border-y border-border/40 bg-muted/10 overflow-hidden group">
+                <img
+                  src={url}
+                  alt="Attachment"
+                  className="block w-full h-auto object-contain max-h-[500px]"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <span className="text-white text-xs font-medium bg-black/50 px-3 py-1.5 rounded-full">Click to expand</span>
+                </div>
+              </a>
+            )
+          })}
+
+          {/* - NON-IMAGE ATTACHMENTS - */}
+          {non_image_attachments.length > 0 && (
+            <div className="px-4 py-3 flex flex-col gap-2">
+              {non_image_attachments.map((attachment, i) => {
+                const url      = typeof attachment === 'string' ? attachment : attachment.url
+                const filename = typeof attachment === 'object' && attachment.filename ? attachment.filename : `Attachment ${i + 1}`
                 return (
-                  <a
-                    key={i}
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 max-w-full sm:max-w-md"
-                  >
-                    <img 
-                      src={url} 
-                      alt={filename}
-                      className="rounded border border-border max-h-60 sm:max-h-96 w-full object-contain hover:opacity-90 transition-opacity"
-                    />
+                  <a key={`file-${i}`} href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:text-blue-400 font-medium hover:underline flex items-center gap-2 p-2 rounded-md hover:bg-blue-500/10 transition-colors border border-border/40">
+                    <div className="p-1.5 bg-blue-500/20 rounded">
+                      <Paperclip className="w-4 h-4" />
+                    </div>
+                    <span className="truncate">{filename}</span>
                   </a>
                 )
-              }
-              
-              return (
-                <a
-                  key={i}
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs sm:text-sm text-blue-500 hover:underline flex items-center gap-1"
-                >
-                  <Paperclip className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="truncate">{filename}</span>
-                </a>
-              )
-            })}
-          </div>
-        )}
-        {message.embeds && message.embeds.length > 0 && (
-          <div className="mt-1">
-            {message.embeds.map((embed, i) => render_embed(embed, i))}
-          </div>
-        )}
-        {message.components && message.components.length > 0 && (
-          <div className="mt-1">
-            {message.components.map((component, i) => render_component(component, i))}
-          </div>
-        )}
-      </div>
+              })}
+            </div>
+          )}
 
-      {/* - USER DIALOG - \\ */}
+          {/* - EMBEDS - */}
+          {message.embeds && message.embeds.length > 0 && (
+            <div className="px-4 pb-3">
+              {message.embeds.map((embed, i) => render_embed(embed, i))}
+            </div>
+          )}
+
+          {/* - COMPONENTS V2 - */}
+          {message.components && message.components.length > 0 && (
+            <div className="px-4 pb-3">
+              {message.components.map((component, i) => render_component(component, i))}
+            </div>
+          )}
+        </CardContent>
+
+      </Card>
+
+      {/* - USER DIALOG - */}
       {selected_user && (
         <UserDialog 
           user_id={selected_user.id}

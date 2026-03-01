@@ -7,6 +7,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { AtomicLogo } from '@/components/icons/atomic-logo'
 
 export function TranscriptClientView({ 
@@ -17,6 +19,7 @@ export function TranscriptClientView({
   user_data: any 
 }) {
   const [searchQuery, setSearchQuery] = useState('')
+  const [hide_bot, set_hide_bot]      = useState(false)
 
   const open_date = new Date(transcript.open_time * 1000).toLocaleString('en-US', {
     month: 'short',
@@ -58,6 +61,8 @@ export function TranscriptClientView({
   ];
 
   const filtered_messages = transcript.messages.filter((msg: any) => {
+    if (hide_bot && msg.is_bot) return false
+
     if (!searchQuery) return true;
     
     const search_lower = searchQuery.toLowerCase();
@@ -112,6 +117,20 @@ export function TranscriptClientView({
 
           {/* RIGHT: Actions & Profile */}
           <div className="flex items-center gap-1 sm:gap-3">
+            <div className="hidden sm:flex items-center gap-2">
+              <Checkbox
+                id="hide_bot"
+                checked={hide_bot}
+                onCheckedChange={(v) => set_hide_bot(v === true)}
+                className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 focus-visible:ring-blue-500/20"
+              />
+              <Label htmlFor="hide_bot" className="text-sm text-muted-foreground cursor-pointer select-none whitespace-nowrap">
+                Hide BOT messages
+              </Label>
+            </div>
+
+            <div className="h-4 w-px bg-border/40 mx-1 hidden sm:block"></div>
+
             <Button variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
             </Button>
@@ -136,7 +155,7 @@ export function TranscriptClientView({
         <div className="max-w-4xl mx-auto px-4 w-full">
           
           {/* Mobile search - visible only on small screens */}
-          <div className="w-full md:hidden relative mb-5">
+          <div className="w-full md:hidden relative mb-3">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
               type="search" 
@@ -145,6 +164,18 @@ export function TranscriptClientView({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-muted/50 border-border/50 pl-9 rounded-full h-9 text-sm focus-visible:ring-1 focus-visible:bg-background"
             />
+          </div>
+          {/* Mobile hide bot toggle */}
+          <div className="flex sm:hidden items-center gap-2 mb-5">
+            <Checkbox
+              id="hide_bot_mobile"
+              checked={hide_bot}
+              onCheckedChange={(v) => set_hide_bot(v === true)}
+              className="data-[state=checked]:bg-blue-500 data-[state=checked]:border-blue-500 focus-visible:ring-blue-500/20"
+            />
+            <Label htmlFor="hide_bot_mobile" className="text-sm text-muted-foreground cursor-pointer select-none">
+              Hide BOT messages
+            </Label>
           </div>
 
           {/* STATISTICS CARD - Styled to requested layout */}
@@ -187,7 +218,7 @@ export function TranscriptClientView({
             ) : (
               <div className="flex flex-col">
                 {filtered_messages.map((message: any) => (
-                  <TranscriptMessage key={message.id} message={message} />
+                  <TranscriptMessage key={message.id} message={message} transcript_id={transcript.transcript_id} ticket_type={transcript.ticket_type} />
                 ))}
               </div>
             )}
