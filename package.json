@@ -37,6 +37,7 @@
     "express": "^4.18.2",
     "ffmpeg-static": "^5.2.0",
     "form-data": "^4.0.5",
+    "framer-motion": "^12.34.3",
     "pg": "^8.16.3",
     "play-dl": "^1.9.7",
     "yt-search": "^2.12.1",
