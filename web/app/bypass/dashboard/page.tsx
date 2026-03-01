@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback }    from 'react'
 import { useRouter }                            from 'next/navigation'
-import { BypassFloatingDock }                   from '@/components/bypass-floating-dock'
+import { BypassFloatingDock }                   from '@/components/layout/bypass-floating-dock'
 import { Card, CardContent, CardHeader, CardTitle,
          CardDescription, CardFooter }         from '@/components/ui/card'
 import { Button }                               from '@/components/ui/button'

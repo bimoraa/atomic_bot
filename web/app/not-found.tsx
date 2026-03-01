@@ -3,8 +3,8 @@
 import dynamic from 'next/dynamic'
 import Link    from 'next/link'
 
-const GridScan  = dynamic(() => import('@/components/GridScan').then(m => m.GridScan), { ssr: false })
-const ASCIIText = dynamic(() => import('@/components/ASCIIText'), { ssr: false })
+const GridScan  = dynamic(() => import('@/components/animations/GridScan').then(m => m.GridScan), { ssr: false })
+const ASCIIText = dynamic(() => import('@/components/animations/ASCIIText'), { ssr: false })
 
 export default function NotFound() {
   return (

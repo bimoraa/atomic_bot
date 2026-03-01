@@ -51,10 +51,21 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
   if (cooldown_remaining_ms > 0) {
     const cooldown_remaining_sec = Math.ceil(cooldown_remaining_ms / 1000)
     await interaction.editReply({
-      content: `Cooldown aktif. Tunggu ${cooldown_remaining_sec} detik sebelum join/claim ticket baru.`,
+      ...component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.text([`**Cooldown Active**`, `Please wait **${cooldown_remaining_sec} seconds** before joining or claiming another ticket.`])
+            ]
+          })
+        ]
+      })
     })
     return
   }
+
+  // - ACTIVATE COOLDOWN IMMEDIATELY TO PREVENT RACE CONDITIONS - \\
+  activate_join_claim_cooldown(interaction.user.id)
 
   let data = get_ticket(thread_id)
 
@@ -103,8 +114,6 @@ export async function join_ticket(interaction: ButtonInteraction, ticket_type: s
     await interaction.editReply({ content: err_msg, components: [] })
     return
   }
-
-  activate_join_claim_cooldown(interaction.user.id)
 
   data.staff.push(member.id)
   set_ticket(thread_id, data)

@@ -1,5 +1,5 @@
 import { get_transcript } from '@/lib/db'
-import { TranscriptMessage } from '@/components/transcript-message'
+import { TranscriptMessage } from '@/components/features/transcript/transcript-message'
 import { notFound, redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 

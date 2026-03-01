@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useMemo }                         from 'react'
 import { cn }                                                   from '@/lib/utils'
-import { BypassTopbar }                                         from '@/components/bypass-topbar'
+import { BypassTopbar }                                         from '@/components/layout/bypass-topbar'
 import { Tabs }                                                 from '@/components/ui/tabs'
-import DarkVeil                                                 from '@/components/DarkVeil'
+import DarkVeil                                                 from '@/components/animations/DarkVeil'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Skeleton }                                             from '@/components/ui/skeleton'
 import { Search, XCircle }                                      from 'lucide-react'

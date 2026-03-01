@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter }                         from 'next/navigation'
-import { DashboardSidebar }                  from '@/components/dashboard-sidebar'
+import { DashboardSidebar }                  from '@/components/layout/dashboard-sidebar'
 import { Card, CardContent, CardHeader,
          CardTitle, CardDescription }        from '@/components/ui/card'
 import { Button }                            from '@/components/ui/button'

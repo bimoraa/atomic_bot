@@ -20,14 +20,86 @@ import { reopen_ticket } from "../actions/reopen"
 import { add_member } from "../actions/add_member"
 import { modal, component } from "../../../utils"
 import { has_used_appeal, mark_appeal_used } from "../../../database/managers/appeal_quarantine_manager"
+import { quarantine_member } from "../../../../atomic_bot/core/handlers/controllers/quarantine_controller"
+
+// - PREVENT RACE CONDITIONS FROM FAST CLICKING - \\
+const __interaction_locks = new Set<string>()
 
 export async function handle_ticket_button(interaction: ButtonInteraction): Promise<boolean> {
   const custom_id = interaction.customId
+  // Lock per user across ALL ticket buttons to prevent multi-button spam
+  const lock_key = interaction.user.id
 
-  for (const [type_key, config] of Object.entries(ticket_types)) {
-    const prefix = config.prefix
+  // Check if this specific user is already processing this exact button
+  if (__interaction_locks.has(lock_key)) {
+    
+    // - PUNISHMENT FOR SPAMMING PURCHASE TICKET BUTTONS - \\
+    if (custom_id.startsWith("purchase_")) {
+      try {
+        const guild = interaction.guild!
+        const target_member = interaction.member as GuildMember
+        const bot_member = await guild.members.fetch(interaction.client.user.id)
 
-    if (custom_id === `${prefix}_open`) {
+        const quarantine_result = await quarantine_member({
+          client: interaction.client,
+          guild: guild,
+          executor: bot_member,
+          target: target_member,
+          days: 5 / (24 * 60), // 5 minutes
+          reason: "Bypassing cooldown system"
+        })
+
+        if (quarantine_result.success) {
+          try {
+            await target_member.send(
+              component.build_message({
+                components: [
+                  component.container({
+                    components: [
+                      component.text([
+                        "## Quarantine Notice",
+                        "You have been quarantined for **5 minutes** due to system misuse.",
+                        "**Reason:** Bypassing cooldown system"
+                      ])
+                    ]
+                  })
+                ]
+              })
+            )
+          } catch {}
+        }
+      } catch (error) {
+        console.error("Failed to apply bypass quarantine:", error)
+      }
+    }
+
+    // Acknowledge silently to prevent "interaction failed"
+    try {
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ 
+          ...component.build_message({
+            components: [
+              component.container({
+                components: [
+                  component.text(["**Please slow down!** You are clicking too fast."])
+                ]
+              })
+            ]
+          }), 
+          ephemeral: true 
+        })
+      }
+    } catch {}
+    return true
+  }
+
+  __interaction_locks.add(lock_key)
+
+  try {
+    for (const [type_key, config] of Object.entries(ticket_types)) {
+      const prefix = config.prefix
+
+      if (custom_id === `${prefix}_open`) {
       if (type_key === "helper") {
         const helper_modal = modal.create_modal(
           `${prefix}_issue_modal`,
@@ -187,6 +259,13 @@ export async function handle_ticket_button(interaction: ButtonInteraction): Prom
   }
 
   return false
+  } finally {
+    // Release the memory lock after processing or yielding
+    // Using a timeout to ensure anti-spam holds for at least 2 seconds for visual buttons
+    setTimeout(() => {
+      __interaction_locks.delete(lock_key)
+    }, 2000)
+  }
 }
 
 export async function handle_ticket_modal(interaction: ModalSubmitInteraction): Promise<boolean> {

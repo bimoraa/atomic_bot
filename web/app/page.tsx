@@ -1,7 +1,7 @@
 "use client";
 
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/sidebar-06/app-sidebar";
+import { AppSidebar } from "@/components/layout/sidebar/app-sidebar";
 
 export default function Page() {
   return (

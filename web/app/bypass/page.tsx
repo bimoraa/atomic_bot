@@ -3,10 +3,10 @@
 import { useState, useRef, useCallback, useEffect, useId } from 'react'
 import { Button as StatefulButton } from '@/components/ui/stateful-button'
 import { cn }                       from '@/lib/utils'
-import { BypassTopbar }  from '@/components/bypass-topbar'
-import ShinyText          from '@/components/ShinyText'
-import DarkVeil          from '@/components/DarkVeil'
-import CountUp            from '@/components/CountUp'
+import { BypassTopbar }  from '@/components/layout/bypass-topbar'
+import ShinyText          from '@/components/animations/ShinyText'
+import DarkVeil          from '@/components/animations/DarkVeil'
+import CountUp            from '@/components/animations/CountUp'
 import { FlipWords }      from '@/components/ui/flip-words'
 import {
   Link2,
@@ -140,11 +140,11 @@ export default function BypassPage() {
               <img src="/atomc.svg" alt="Atomic" className="w-9 h-9 shrink-0" />
               Link Bypass
             </h1>
-            <p className="text-muted-foreground text-base font-normal">
+            <div className="text-muted-foreground text-base font-normal">
               Bypass
               <FlipWords words={['Platoboost', 'Linkvertise', 'Hydrogen', 'Pandadevelopment', 'Lockrso']} className="text-foreground font-semibold" />
               with Atomic Bypasser
-            </p>
+            </div>
           </div>
 
           {/* - INPUT FORM - \\ */}

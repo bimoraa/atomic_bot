@@ -3,12 +3,12 @@
 import { useEffect, useState }                    from 'react'
 import { useRouter }                               from 'next/navigation'
 import { format }                                  from 'date-fns'
-import { BypassFloatingDock }                      from '@/components/bypass-floating-dock'
+import { BypassFloatingDock }                      from '@/components/layout/bypass-floating-dock'
 import { Avatar, AvatarFallback, AvatarImage }    from '@/components/ui/avatar'
 import { Button }                                  from '@/components/ui/button'
 import { Badge }                                   from '@/components/ui/badge'
 import { Calendar }                                from '@/components/ui/calendar'
-import { UserDialog }                              from '@/components/user-dialog'
+import { UserDialog }                              from '@/components/features/users/user-dialog'
 import {
   Dialog,
   DialogContent,
