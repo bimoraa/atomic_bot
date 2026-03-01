@@ -412,8 +412,6 @@ export function TranscriptMessage({ message, transcript_id, ticket_type }: Trans
         return
       }
 
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
-      console.log(`[ - TRANSCRIPT - ] Fetching users from:`, bot_url)
       console.log(`[ - TRANSCRIPT - ] User IDs:`, user_ids)
       
       const cache: Record<string, any> = {}
@@ -421,9 +419,7 @@ export function TranscriptMessage({ message, transcript_id, ticket_type }: Trans
       await Promise.all(
         user_ids.map(async (user_id) => {
           try {
-            const url = `${bot_url}/api/user/${user_id}`
-            console.log(`[ - TRANSCRIPT - ] Fetching:`, url)
-            const res = await fetch(url)
+            const res = await fetch(`/api/discord-user/${user_id}`)
             if (res.ok) {
               const data = await res.json()
               console.log(`[ - TRANSCRIPT - ] Got user ${user_id}:`, data.username)
@@ -446,7 +442,6 @@ export function TranscriptMessage({ message, transcript_id, ticket_type }: Trans
       const channel_ids = extract_channel_ids(message.content)
       if (channel_ids.length === 0) return
 
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       console.log(`[ - TRANSCRIPT - ] Fetching channels:`, channel_ids)
       
       const cache: Record<string, any> = {}
@@ -454,8 +449,7 @@ export function TranscriptMessage({ message, transcript_id, ticket_type }: Trans
       await Promise.all(
         channel_ids.map(async (channel_id) => {
           try {
-            const url = `${bot_url}/api/channel/${channel_id}`
-            const res = await fetch(url)
+            const res = await fetch(`/api/discord-channel/${channel_id}`)
             if (res.ok) {
               const data = await res.json()
               console.log(`[ - TRANSCRIPT - ] Got channel ${channel_id}:`, data.name)
@@ -475,7 +469,6 @@ export function TranscriptMessage({ message, transcript_id, ticket_type }: Trans
 
     // - Fetch author member data for role color - \\
     const fetch_author_member = async () => {
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       try {
         const res = await fetch(`/api/discord-member/${message.author_id}`)
         if (res.ok) {
@@ -500,7 +493,6 @@ export function TranscriptMessage({ message, transcript_id, ticket_type }: Trans
   const fetch_member_details = async (user_id: string) => {
     set_loading_user(true)
     try {
-      const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       const res = await fetch(`/api/discord-member/${user_id}`)
       
       if (res.ok) {
