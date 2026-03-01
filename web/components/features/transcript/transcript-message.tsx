@@ -476,7 +476,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
     const fetch_author_member = async () => {
       const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       try {
-        const res = await fetch(`${bot_url}/api/member/${message.author_id}`)
+        const res = await fetch(`/api/discord-member/${message.author_id}`)
         if (res.ok) {
           const data = await res.json()
           set_member_cache({ [message.author_id]: data })
@@ -500,7 +500,7 @@ export function TranscriptMessage({ message }: TranscriptMessageProps) {
     set_loading_user(true)
     try {
       const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
-      const res = await fetch(`${bot_url}/api/member/${user_id}`)
+      const res = await fetch(`/api/discord-member/${user_id}`)
       
       if (res.ok) {
         const data = await res.json()

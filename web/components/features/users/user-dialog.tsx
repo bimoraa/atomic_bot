@@ -53,7 +53,7 @@ export function UserDialog({ user_id, open, on_close }: UserDialogProps) {
     try {
       const bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://azure48.xyz'
       
-      const res = await fetch(`${bot_url}/api/member/${user_id}`)
+      const res = await fetch(`/api/discord-member/${user_id}`)
       if (!res.ok) {
         set_user(null)
         return
