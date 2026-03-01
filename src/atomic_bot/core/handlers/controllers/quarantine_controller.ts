@@ -262,19 +262,22 @@ export async function release_quarantine(options: release_quarantine_options) {
       }
     }
 
-    // - RESTORE PREVIOUS ROLES - \\
-    const managed_roles = member.roles.cache
-      .filter(role => role.managed || role.id === guild.id)
-      .map(role => role.id)
+    // - FETCH GUILD ROLES VIA REST TO BYPASS EMPTY CACHE - \\
+    const guild_roles = await guild.roles.fetch().catch(() => null)
 
-    const valid_roles = quarantine_data.previous_roles.filter(role_id => 
-      guild.roles.cache.has(role_id)
+    // - REMOVE QUARANTINE ROLE FIRST - \\
+    await member.roles.remove(__quarantine_role_id, "Released from quarantine").catch(() => {})
+
+    // - RESTORE PREVIOUS ROLES THAT STILL EXIST - \\
+    const roles_to_restore = quarantine_data.previous_roles.filter(role_id =>
+      role_id !== __quarantine_role_id && (guild_roles?.has(role_id) ?? true)
     )
 
-    // - REMOVE QUARANTINE ROLE - \\
-    const roles_to_set = [...managed_roles, ...valid_roles].filter(rid => rid !== __quarantine_role_id)
+    if (roles_to_restore.length > 0) {
+      await member.roles.add(roles_to_restore, "Restoring roles after quarantine").catch(() => {})
+    }
 
-    await member.roles.set(roles_to_set, "Released from quarantine")
+    // - ALWAYS REMOVE DB RECORD REGARDLESS OF ROLE RESTORE RESULT - \\
     await remove_quarantine(user_id, guild.id)
 
     return {
