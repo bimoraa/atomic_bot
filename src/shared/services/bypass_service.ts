@@ -121,6 +121,14 @@ async function __enqueue_bypass<T>(task: () => Promise<T>): Promise<T> {
 
   await current
 
+  // - IF TASK ABORTED WHILE WAITING IN QUEUE, SKIP IT - \\
+  if ((task as any).aborted) {
+    __queue_length--
+    console.warn(`[ - BYPASS - ] Task aborted while in queue. Queue length: ${__queue_length}`)
+    resolve_next()
+    return Promise.reject(new Error("Queue task aborted"))
+  }
+
   // - HONOUR GLOBAL BACKOFF BEFORE FIRING THE NEXT REQUEST - \\
   const backoff_wait = __backoff_until - Date.now()
   if (backoff_wait > 0) {
@@ -131,11 +139,19 @@ async function __enqueue_bypass<T>(task: () => Promise<T>): Promise<T> {
   try {
     __record_request()
     console.warn(`[ - BYPASS - ] Executing task from queue. Queue length: ${__queue_length}`)
-    return await task()
+    
+    // - EXECUTE TASK BUT DO NOT BLOCK QUEUE INDEFINITELY - \\
+    const task_promise = task()
+    
+    // - RELEASE NEXT ITEM AFTER 1 SECOND TO PREVENT BURSTING - \\
+    setTimeout(() => {
+      resolve_next()
+    }, 1000)
+
+    return await task_promise
   } finally {
     __queue_length--
-    console.warn(`[ - BYPASS - ] Task finished. Resolving next. Queue length: ${__queue_length}`)
-    resolve_next()
+    console.warn(`[ - BYPASS - ] Task finished. Queue length: ${__queue_length}`)
   }
 }
 
@@ -184,13 +200,12 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
       "Connection"      : "keep-alive",
     }
 
-    // - HELPER: PLAIN FETCH, NO ABORT — LET THE SERVER RESPOND IN ITS OWN TIME - \\
-    const timed_fetch = (endpoint: string): Promise<Response> =>
-      fetch(`${endpoint}?${params}`, { method: "GET", headers: req_headers })
-
     const response = await __enqueue_bypass(() => {
       console.warn(`[ - BYPASS - ] Requesting: ${__bypass_api_url}?${params}`)
-      return timed_fetch(__bypass_api_url).catch(err => {
+      return fetch(`${__bypass_api_url}?${params}`, { 
+        method: "GET", 
+        headers: req_headers
+      }).catch(err => {
         console.error(`[ - BYPASS - ] Fetch threw an error for attempt ${attempt}:`, err)
         throw err
       })
@@ -215,7 +230,7 @@ async function bypass_link_once(url: string, attempt: number): Promise<BypassRes
         await new Promise(r => setTimeout(r, __refresh_interval_ms))
 
         try {
-          const poll_res  = await timed_fetch(__bypass_refresh_url)
+          const poll_res  = await fetch(__bypass_refresh_url)
           const poll_text = await poll_res.text().catch(() => "")
           let   poll_data: any = {}
           try { poll_data = JSON.parse(poll_text) } catch { /* ignore */ }
@@ -387,16 +402,16 @@ async function _run_bypass_link(
  */
 export async function get_supported_services(): Promise<SupportedService[]> {
   try {
-    const response = await __enqueue_bypass(() =>
-      fetch(`${__bypass_api_url.replace('/bypass', '/supported')}`, {
+    const response = await __enqueue_bypass(async () => {
+      return await fetch(`${__bypass_api_url.replace('/bypass', '/supported')}`, {
         method: "GET",
         headers: {
           "x-api-key"       : __bypass_api_key,
           "Accept-Encoding" : "gzip, deflate, br",
           "Connection"      : "keep-alive",
-        },
+        }
       })
-    )
+    })
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
