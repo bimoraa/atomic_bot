@@ -27,7 +27,6 @@ RUN mkdir -p /app/assets /app/staff-information
 RUN npm run build:fast
 RUN mkdir -p /app/dist/shared /app/dist/atomic_bot
 RUN cp -r /app/src/shared/config /app/dist/shared/
-RUN cp -r /app/src/shared/sub_commands /app/dist/shared/
 RUN cp -r /app/src/atomic_bot/guide /app/dist/atomic_bot/
 RUN test -f /app/dist/shared/config/roblox_update.cfg
 
