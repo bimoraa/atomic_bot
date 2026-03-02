@@ -1,8 +1,92 @@
-import { Message } from "discord.js"
-import { bypass_link } from "@shared/services/bypass_service"
+import { Message, Client } from "discord.js"
+import { bypass_link }    from "@shared/services/bypass_service"
 import { component, db, guild_settings } from "@shared/utils"
 import { log_error }                     from "@shared/utils/error_logger"
 import { check_bypass_rate_limit, check_dm_user_cooldown } from "../limits/bypass_rate_limit"
+
+const __session_key = (msg_id: string) => `bypass_session_${msg_id}`
+
+/**
+ * @description Persist a processing session to DB so it can be recovered on restart
+ * @param msg_id - Processing message ID
+ * @param channel_id - Channel where the message was sent
+ */
+async function track_bypass_session(msg_id: string, channel_id: string): Promise<void> {
+  if (!db.is_connected()) return
+  await db.get_pool().query(
+    `INSERT INTO bypass_cache (key, url, expires_at)
+     VALUES ($1, $2, NOW() + INTERVAL '2 hours')
+     ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '2 hours'`,
+    [__session_key(msg_id), channel_id]
+  ).catch((err: unknown) => console.error(`[ - AUTO BYPASS - ] Failed to track session:`, err))
+}
+
+/**
+ * @description Remove a processing session from DB when bypass completes
+ * @param msg_id - Processing message ID
+ */
+async function clear_bypass_session(msg_id: string): Promise<void> {
+  if (!db.is_connected()) return
+  await db.get_pool().query(
+    `DELETE FROM bypass_cache WHERE key = $1`,
+    [__session_key(msg_id)]
+  ).catch((err: unknown) => console.error(`[ - AUTO BYPASS - ] Failed to clear session:`, err))
+}
+
+/**
+ * @description On bot startup: find all stuck "Bypassing Link" messages and update them
+ * @param {Client} client - Discord client
+ * @returns {Promise<void>}
+ */
+export async function recover_stuck_bypass_sessions(client: Client): Promise<void> {
+  if (!db.is_connected()) return
+
+  const result = await db.get_pool().query(
+    `SELECT key, url FROM bypass_cache WHERE key LIKE 'bypass_session_%' AND expires_at > NOW()`
+  ).catch(() => null)
+
+  if (!result || result.rows.length === 0) return
+
+  console.warn(`[ - AUTO BYPASS - ] Recovering ${result.rows.length} stuck session(s)...`)
+
+  const stuck_message = component.build_message({
+    components: [
+      component.container({
+        components: [
+          component.text([
+            "## Bot Restarted",
+            "The bot was restarted while processing your bypass.",
+            "Please resend your link to try again.",
+          ]),
+        ],
+      }),
+    ],
+  })
+
+  for (const row of result.rows) {
+    const msg_id     = (row.key as string).replace("bypass_session_", "")
+    const channel_id = row.url as string
+
+    try {
+      const channel = await client.channels.fetch(channel_id).catch(() => null)
+      if (!channel || !channel.isTextBased()) continue
+
+      const msg = await (channel as any).messages.fetch(msg_id).catch(() => null)
+      if (!msg) continue
+
+      await msg.edit(stuck_message).catch(() => {})
+    } catch (err) {
+      console.warn(`[ - AUTO BYPASS - ] Failed to recover session ${msg_id}:`, err)
+    }
+
+    await db.get_pool().query(
+      `DELETE FROM bypass_cache WHERE key = $1`,
+      [row.key]
+    ).catch(() => {})
+  }
+
+  console.warn(`[ - AUTO BYPASS - ] Session recovery complete`)
+}
 
 /**
  * @param {Message} message - Discord message
@@ -170,6 +254,9 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
       })
     )
 
+    // - TRACK SESSION IN DB SO RESTART CAN RECOVER IT - \\
+    await track_bypass_session(processing_msg.id, processing_msg.channelId)
+
     const source = is_dm ? "DM" : "Channel"
     console.warn(`[ - AUTO BYPASS - ] Processing URL from ${source}: ${url}`)
     const result = await bypass_link(url, async (attempt, _wait_ms, is_processing) => {
@@ -274,6 +361,8 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
         console.error(`[ - AUTO BYPASS - ] Failed to edit success message:`, err)
       }
 
+      await clear_bypass_session(processing_msg.id)
+
       // - DM USER ONLY IF REQUEST CAME FROM GUILD (AVOID DOUBLE DM IN DM CONTEXT) - \\
       if (!is_dm) {
         try {
@@ -345,6 +434,8 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
       } catch (err) {
         console.error(`[ - AUTO BYPASS - ] Failed to edit error message:`, err)
       }
+
+      await clear_bypass_session(processing_msg.id)
     }
 
     return true
@@ -420,6 +511,8 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
       } catch (edit_error) {
         console.error("[ - AUTO BYPASS - ] Failed to edit processing message:", edit_error)
       }
+
+      await clear_bypass_session(processing_msg.id)
     }
 
     return false

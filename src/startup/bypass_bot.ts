@@ -5,7 +5,7 @@ import { log_error }                                                            
 import { db }                                                                        from "@shared/utils"
 import { readdirSync }                                                               from "fs"
 import { join }                                                                      from "path"
-import { handle_auto_bypass }                                                        from "@bypass/core/events/auto_bypass"
+import { handle_auto_bypass, recover_stuck_bypass_sessions }                         from "@bypass/core/events/auto_bypass"
 import { handle_bypass_mobile_copy }                                                 from "@bypass/core/buttons/bypass_mobile_copy"
 import { handle_bypass_request_log }                                                 from "@bypass/core/buttons/bypass_request_log"
 import { handle_bypass_support_type_select }                                         from "@bypass/core/select_menus/bypass_support_type_select"
@@ -111,6 +111,9 @@ client.once("ready", async () => {
   try {
     await db.connect()
     setInterval(() => db.cleanup_expired_bypass_cache(), 10 * 60 * 1000)
+
+    // - RECOVER SESSIONS STUCK BEFORE RESTART - \\
+    await recover_stuck_bypass_sessions(client)
   } catch (error) {
     console.error("[ - BYPASS - ] Database connection error:", error)
   }
