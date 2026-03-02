@@ -19,8 +19,9 @@ import * as transcript from "./transcript"
 import * as guild_settings from "./guild_settings"
 import * as db_cache from "./db_cache"
 import * as cache_manager from "./cache_manager"
+import { interactions } from "./interaction_registry"
 
-export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http, db, version, transcript, guild_settings, db_cache, cache_manager }
+export { component, time, api, format, modal, validate, array, async_util, logger, collection, fn, cache, env, file, http, db, version, transcript, guild_settings, db_cache, cache_manager, interactions }
 
 export type {
   button_component,

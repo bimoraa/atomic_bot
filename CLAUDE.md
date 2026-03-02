@@ -59,9 +59,10 @@ cd web && npm run dev
 
 ## File / Folder Structure
 
-* Commands: `src/atomic_bot/modules/<feature>/<command_name>.ts`
+* Commands: `src/atomic_bot/modules/<feature>/commands/<command_name>.ts`
+* Interactions: `src/atomic_bot/modules/<feature>/interactions/<type>/<file>.ts`
 * Feature business logic (shared across related commands):
-  `src/atomic_bot/core/handlers/controllers/<feature>_controller.ts`
+  `src/atomic_bot/modules/<feature>/controller.ts`
 * DB operations for a feature:
   `src/shared/database/managers/<feature>_manager.ts`
 * Persistent state (reminders, AFK, tickets, quarantine) **must** be stored in DB so it survives restarts

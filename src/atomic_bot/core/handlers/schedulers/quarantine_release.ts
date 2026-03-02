@@ -1,7 +1,7 @@
 import { Client }                   from "discord.js"
 import { logger }                   from "@shared/utils"
 import { get_expired_quarantines }  from "@shared/database/managers/quarantine_manager"
-import { release_quarantine }       from "../controllers/quarantine_controller"
+import { release_quarantine }       from "../../../modules/quarantine/controller"
 
 const log = logger.create_logger("quarantine_scheduler")
 

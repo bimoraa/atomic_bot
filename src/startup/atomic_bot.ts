@@ -2,9 +2,8 @@ import { Client, Collection, GatewayIntentBits, ActivityType, Message, Permissio
 import { joinVoiceChannel, VoiceConnection, VoiceConnectionStatus } from "@discordjs/voice"
 import { config }                                                        from "dotenv"
 import { Command }                                                       from "@shared/types/command"
-import { load_commands, register_commands }                              from "../atomic_bot/core/handlers/command_handler"
+import { load_commands, register_commands, load_interactions }                              from "../atomic_bot/core/handlers/command_handler"
 import { load_sub_commands, sub_commands }                               from "../atomic_bot/core/handlers/sub_command_handler"
-import { handle_interaction }                                            from "../atomic_bot/core/handlers/interaction_create"
 import { handle_auto_reply }                                             from "@shared/database/settings/auto_reply"
 import { start_roblox_update_checker }                                   from "@shared/database/services/roblox_update"
 import { load_close_requests }                                           from "../atomic_bot/modules/staff/staff/close_request"
@@ -16,10 +15,10 @@ import { load_afk_from_db, load_afk_ignored_channels_from_db }           from ".
 import { check_server_tag_change, scan_banned_tags_on_startup }           from "@shared/database/settings/server_tag"
 import { start_free_script_checker }                                     from "@shared/database/managers/free_script_manager"
 import { start_service_provider_cache, stop_service_provider_cache }     from "../atomic_bot/infrastructure/api/service_provider_cache"
-import { db, component }                                                 from "@shared/utils"
+import { db, component, interactions }                                   from "@shared/utils"
 import { log_error }                                                     from "@shared/utils/error_logger"
 import { check_spam }                                                    from "../atomic_bot/infrastructure/cache/anti_spam"
-import { load_reminders_from_db }                                        from "../atomic_bot/modules/reminder/reminder"
+import { load_reminders_from_db }                                        from "../atomic_bot/modules/reminder/commands/reminder"
 import { start_loa_checker }                                             from "@shared/database/services/loa_checker"
 import { start_invite_logger }                                           from "@shared/database/services/invite_logger"
 import { start_webhook_server, set_bot_ready, warm_credits_cache_from_db }           from "../atomic_bot/core/client/server"
@@ -263,6 +262,7 @@ client.once("ready", async () => {
 
   try {
     const commands_data = await load_commands(client)
+    await load_interactions()
     const app_id         = client.application!.id
     await register_commands(commands_data, app_id)
     await load_sub_commands()
@@ -291,9 +291,71 @@ client.once("ready", async () => {
   console.log("[Bot] Ready and accepting connections")
 })
 
-client.on("interactionCreate", (interaction) => {
-  handle_interaction(interaction, client);
-});
+client.on("interactionCreate", async (interaction) => {
+  // - DYNAMIC ROUTER FOR ALL COMPONENTS - \\
+  if (interaction.isButton() || interaction.isModalSubmit() || interaction.isStringSelectMenu() || interaction.isUserSelectMenu()) {
+    await interactions.handle_interaction(interaction, client)
+    return
+  }
+
+  // - AUTOCOMPLETE COMMANDS - \\
+  if (interaction.isAutocomplete()) {
+    const command = client.commands.get(interaction.commandName)
+    if (!command?.autocomplete) return
+
+    try {
+      await command.autocomplete(interaction)
+    } catch (error) {
+      await log_error(client, error as Error, `Autocomplete: ${interaction.commandName}`, {
+        user    : interaction.user.tag,
+        guild   : interaction.guild?.name || "DM",
+        channel : interaction.channel?.id,
+      })
+    }
+    return
+  }
+
+  // - CONTEXT MENU COMMANDS - \\
+  if (interaction.isMessageContextMenuCommand()) {
+    const ctx_cmds = (client as any).message_context_menu_commands as Collection<string, any> | undefined
+    const ctx_cmd  = ctx_cmds?.get(interaction.commandName)
+    if (!ctx_cmd) return
+
+    try {
+      await ctx_cmd.execute(interaction)
+    } catch (error) {
+      await log_error(client, error as Error, `ContextMenu: ${interaction.commandName}`, {
+        user : interaction.user.tag,
+        guild: interaction.guild?.name || "DM",
+      })
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: "There was an error executing this command.", ephemeral: true }).catch(() => {})
+      }
+    }
+    return
+  }
+
+  // - SLASH COMMANDS - \\
+  if (interaction.isChatInputCommand()) {
+    const command = client.commands.get(interaction.commandName)
+    if (!command) return
+
+    try {
+      await command.execute(interaction)
+    } catch (error) {
+      console.error("[ - COMMAND - ] Error:", error)
+      await log_error(client, error as Error, `Command: ${interaction.commandName}`, {
+        user    : interaction.user.tag,
+        guild   : interaction.guild?.name || "DM",
+        channel : interaction.channel?.id,
+      })
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: "There was an error executing this command.", ephemeral: true }).catch(() => {})
+      }
+    }
+    return
+  }
+})
 
 client.on("userUpdate", async (old_user, new_user) => {
   await check_server_tag_change(client, old_user, new_user)

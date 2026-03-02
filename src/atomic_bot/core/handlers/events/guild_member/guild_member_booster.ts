@@ -1,7 +1,7 @@
 import { Events, GuildMember, Message, PartialGuildMember } from "discord.js"
 import { client }                    from "@startup/atomic_bot"
 import { load_config }               from "@shared/config/loader"
-import { send_booster_log }          from "../../controllers/booster_controller"
+import { send_booster_log }          from "../../../../modules/booster/controller"
 import * as booster_manager          from "@shared/database/managers/booster_manager"
 import { log_error }                 from "@shared/utils/error_logger"
 
