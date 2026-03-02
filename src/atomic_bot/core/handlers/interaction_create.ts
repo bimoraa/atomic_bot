@@ -19,7 +19,10 @@ import { handle_reminder_add_new_modal } from "./modals/tools"
 import { handle_script_redeem_modal }    from "./modals/service"
 import { handle_tempvoice_modal }        from "./modals/voice"
 import { handle_review_modal }           from "./modals/community"
-import { handle_middleman_close_reason_modal } from "./modals/ticket"
+import {
+  handle_middleman_close_reason_modal,
+  handle_middleman_ticket_details_modal,
+}                                             from "./modals/ticket"
 import { handle_share_settings_modal }   from "./modals/share_settings"
 import * as review_submit                from "./buttons/review/submit"
 import * as ask_staff_button             from "./buttons/ask/ask_staff"
@@ -484,6 +487,7 @@ export async function handle_interaction(
       if (await handle_loa_request_modal(interaction)) return
       if (await handle_script_redeem_modal(interaction)) return
       if (await handle_middleman_close_reason_modal(interaction)) return
+      if (await handle_middleman_ticket_details_modal(interaction)) return
       if (await handle_share_settings_modal(interaction)) return
       if (await handle_edit_staff_info_modal(interaction)) return
     } catch (err) {

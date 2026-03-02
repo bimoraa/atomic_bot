@@ -1,184 +1,113 @@
-## PERATURAN STYLING CODING 1. GENERAL
-
-* Aturan ini **WAJIB** diikuti di seluruh codebase
-* Tidak ada gaya pribadi di luar aturan ini
-* Jika ragu, **ikuti struktur project yang sudah ada**
-* Utamakan:
-
-  * readability
-  * maintainability
-  * scalability
-  * performance
-
+---
+description: Core project rules for atomic_bot — architecture, code style, DB, components, error handling
+alwaysApply: true
 ---
 
-## PERATURAN STYLING CODING 2. NAMING CONVENTION
+# atomic_bot Project Rules
 
-* Gunakan **snake_case**
-* Wajib bahasa Inggris
-* Berlaku untuk:
+## Architecture
 
-  * variable
-  * function
-  * class
-  * file
-  * folder
-* Hindari:
+Three bots share `src/shared/`. Entry points:
+- `src/startup/atomic_bot.ts` — moderation, tickets, payments, reminders
+- `src/startup/jkt48_bot.ts` — JKT48 notifications
+- `src/startup/bypass_bot.ts` — link bypassing
 
-  * singkatan tidak jelas
-  * nama ambigu
-  * campur bahasa
+Path aliases: `@shared/*`, `@atomic/*`, `@jkt48/*`, `@bypass/*`, `@startup/*`
 
-Contoh:
+## File / Folder Structure
+
+- Commands: `src/atomic_bot/modules/<feature>/<command_name>.ts`
+- Business logic: `src/atomic_bot/core/handlers/controllers/<feature>_controller.ts`
+- DB operations: `src/shared/database/managers/<feature>_manager.ts`
+- Persistent state (reminders, AFK, tickets, quarantine) **must** be stored in DB
+
+## CRITICAL: Discord Cache Is Always Empty
+
+`atomic_bot` uses `makeCache: () => new Collection()` — `.cache` is always empty. Always use REST.
 
 ```ts
-user_id
-reminder_controller
-create_reminder
+// WRONG
+guild.roles.cache.has(role_id)
+// CORRECT
+const guild_roles = await guild.roles.fetch()
+const member      = await guild.members.fetch(user_id)
 ```
 
----
-
-## PERATURAN STYLING CODING 3. CONSTANT
-
-* Constant **WAJIB lowercase**
-* Jika lebih dari 1 kata, gunakan underscore
-* Wajib prefix `__`
+## Database
 
 ```ts
-const __max_reminder_limit = 10;
+import { db } from "@shared/utils"
+const __collection = "feature_name"   // double-underscore prefix required
+
+await db.find_one(__collection, { user_id })
+await db.find_many(__collection, {})
+await db.insert_one(__collection, record)
+await db.update_one(__collection, { user_id }, { $set: { ... } })
+await db.delete_one(__collection, { user_id, guild_id })
 ```
 
----
+## Component V2 (Required for ALL Messages)
 
-## PERATURAN STYLING CODING 4. FORMATTING
-
-* Kode harus rapi dan konsisten
-* Operator **WAJIB sejajar**:
-
-  * `=`
-  * `:`
-  * `from`
-* Gunakan indentasi konsisten
-* Tidak ada trailing whitespace
-* Hindari line kosong berlebihan
-
-Contoh:
+Never use plain `content`, legacy embeds, or unicode emojis. Discord custom emojis only: `<:name:id>`.
 
 ```ts
-const user_id        = interaction.user.id;
-const reminder_time = payload.time;
-const message       = payload.message;
+import { component } from "@shared/utils"
+
+await interaction.reply({
+  ...component.build_message({
+    components: [
+      component.container([
+        component.text(["## Title", "Body"]),
+        component.divider(),
+        component.action_row(
+          component.primary_button("Confirm", "btn_confirm"),
+          component.danger_button("Cancel",   "btn_cancel"),
+        ),
+      ]),
+    ],
+  }),
+  ephemeral: true,
+})
 ```
 
----
+Every `section` with an `accessory` must include the full accessory object with all required fields.
 
-## PERATURAN STYLING CODING 5. FILE & FOLDER STRUCTURE
+## Error Logging
 
-* Struktur folder **WAJIB konsisten**
-* Jangan taruh file di folder yang tidak relevan
-* Satu file = satu tanggung jawab utama
-* Hindari file god-object
-
----
-
-## PERATURAN STYLING CODING 6. FUNCTION RULES
-
-* Function harus:
-
-  * pendek
-  * fokus ke satu tujuan
-  * mudah dites
-* Hindari nested logic berlebihan
-* Gunakan early return bila perlu
-* DILARANG logic duplikat
-
----
-
-## PERATURAN STYLING CODING 7. ARCHITECTURE
-
-* Pisahkan dengan jelas:
-
-  * command / handler
-  * controller
-  * service / helper
-* Business logic **DILARANG** di command
-* Controller berbasis fitur
-
-Contoh alur:
-
-```
-command
-→ controller
-→ service / utils
-```
-
----
-
-## PERATURAN STYLING CODING 8. IMPORT & DEPENDENCY
-
-* Import harus terurut:
-
-  1. core / builtin
-  2. external dependency
-  3. internal project
-* Hindari circular dependency
-* Jangan import yang tidak digunakan
-
----
-
-## PERATURAN STYLING CODING 9. COMMENT
-
-* Comment hanya untuk logic penting
-* Jangan menjelaskan hal yang sudah jelas dari kode
-* Format comment **1 baris saja**:
+Every `catch` block must call `log_error`:
 
 ```ts
-// - VALIDATE INPUT - \\
+import { log_error } from "@shared/utils/error_logger"
+
+} catch (err) {
+  await log_error(client, err as Error, "Context Name", { user_id, guild_id }).catch(() => {})
+}
 ```
 
----
+## Code Style (STRICT)
 
-## PERATURAN STYLING CODING 10. TYPE & SAFETY
+- **snake_case** for all identifiers, filenames, folders — no camelCase
+- Vertically align `=`, `:`, and `from` within declaration/import blocks
+- `from` must be vertically aligned within the same import block
+- Comments: `// - comment - \\` (one line, lowercase unless acronym/proper noun)
+- JSDoc required on every exported function: `@param`, `@returns`, `@description`
+- Console: `console.log("[ - TITLE - ] message")`
+- Constants: `const __my_constant = "value"`
+- Never use Prettier or organizeImports (breaks alignment)
 
-* Hindari `any`
-* Gunakan type / interface bila perlu
-* Jangan asumsi data valid
-* Pastikan function contract jelas
-
----
-
-## PERATURAN STYLING CODING 11. PERFORMANCE
-
-* Hindari operasi berat di loop
-* Cache hasil yang sering dipakai
-* Minimalkan alloc object tidak perlu
-* Jangan fetch / query berulang tanpa alasan
-
----
-
-## PERATURAN STYLING CODING 12. DOCUMENTATION
-
-* Setiap function **WAJIB JSDoc**
-* Minimal:
-
-  * `@param`
-  * `@return`
+## Command Interface
 
 ```ts
-/**
- * Create reminder
- * @param user_id string
- * @param message string
- * @return Promise<void>
- */
+export const command: Command = {
+  data   : new SlashCommandBuilder()...,
+  execute: async (interaction) => { ... },
+}
 ```
 
----
+## Pre-completion Checklist
 
-## PERATURAN STYLING CODING 13. FINAL CHECK
-
-* Tidak ada error TypeScript / linter
-* Tidak ada unused code
-* Struktur file sesuai project
-* Kode mudah dibaca tanpa konteks tambahan
+- [ ] `npx tsc --noEmit` — zero errors
+- [ ] All messages use `component.build_message` (Component V2)
+- [ ] All `catch` blocks call `log_error`
+- [ ] Persistent features read/write DB
+- [ ] No `.cache` access on roles/members — use `.fetch()` only

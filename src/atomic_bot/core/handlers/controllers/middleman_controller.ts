@@ -1,5 +1,6 @@
 import {
   UserSelectMenuInteraction,
+  ModalSubmitInteraction,
   TextChannel,
   ChannelType,
   ThreadAutoArchiveDuration,
@@ -35,10 +36,19 @@ const __transaction_ranges: Record<string, TransactionRange> = {
   "PIMLKDohan": { label: "≥ Rp 300.000",            range: "≥ Rp 300.000",            fee: "5% dari total transaksi" },
 }
 
+interface TransactionDetails {
+  penjual  : string
+  pembeli  : string
+  jenis    : string
+  harga    : string
+  fee_oleh : string
+}
+
 interface OpenMiddlemanTicketOptions {
-  interaction : UserSelectMenuInteraction
-  range_id    : string
-  partner_id  : string
+  interaction  : UserSelectMenuInteraction | ModalSubmitInteraction
+  range_id     : string
+  partner_id   : string
+  transaction  : TransactionDetails
 }
 
 interface OpenMiddlemanTicketResult {
@@ -53,7 +63,7 @@ interface OpenMiddlemanTicketResult {
  * @returns {Promise<OpenMiddlemanTicketResult>} - Result of the operation
  */
 export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions): Promise<OpenMiddlemanTicketResult> {
-  const { interaction, range_id, partner_id } = options
+  const { interaction, range_id, partner_id, transaction } = options
 
   const ticket_type = "middleman"
   const config      = get_ticket_config(ticket_type)
@@ -132,40 +142,56 @@ export async function open_middleman_ticket(options: OpenMiddlemanTicketOptions)
     set_ticket(thread.id, ticket_data)
     set_user_open_ticket(ticket_type, user_id, thread.id)
 
+    const __midman_id = "713377329623072822"
+
     const welcome_message = component.build_message({
       components: [
         component.container({
           components: [
-            component.text(`## Ticket Opened\nHalo <@${user_id}> dan <@${partner_id}>`),
+            component.text(`## Middleman Ticket \nHalo <@${user_id}> dan <@${partner_id}>`),
             component.divider(2),
             component.text([
-              `**Detail transaksi:**`,
-              `- Rentang transaksi: ${range_data.range}`,
+              `### Detail transaksi:`,
+              `- Rentang Transaksi: ${range_data.range}`,
               `- Fee Rekber: ${range_data.fee}`,
             ]),
             component.divider(2),
-            component.text(`<@${staff_ids[0]}> dan <@${staff_ids[1]}> akan membantu memproses transaksi ini.`),
+            component.text([
+              ``,
+              `- Penjual : ${transaction.penjual}`,
+              `- Pembeli : ${transaction.pembeli}`,
+              `- Jenis Barang yang Dijual : ${transaction.jenis}`,
+              `- Harga Barang yang Dijual : Rp. ${transaction.harga}`,
+              `- Fee oleh : ${transaction.fee_oleh}`,
+            ]),
+            component.divider(2),
+            component.text(`<@${__midman_id}>  akan membantu memproses transaksi ini.`),
           ],
         }),
         component.container({
           components: [
-            component.text("## Metode Pembayaran\nSilakan pilih metode pembayaran yang tersedia melalui dropdown di bawah."),
+            component.text(`## BACA INI TERLEBIH DAHULU !\nJangan TF dulu sebelum <@${__midman_id}>  respon didalam tiket kamu`),
+          ],
+        }),
+        component.container({
+          components: [
+            component.text("## Metode Pembayaran\nSilakan pilih metode pembayaran yang tersedia melalui dropdown di bawah.\n"),
             component.select_menu("payment_method_select", "Pilih metode pembayaran", [
-              { label: "QRIS", value: "qris", description: "All banks & e-wallets" },
-              { label: "Dana/OVO/GoPay", value: "dana", description: "085763794032 — Daniel Yedija Laowo" },
-              { label: "Bank Jago", value: "bank_jago", description: "107329884762 — Daniel Yedija Laowo" },
-              { label: "Seabank", value: "seabank", description: "901996695987 — Daniel Yedija Laowo" },
-              { label: "BRI", value: "bri", description: "817201005576534 — Daniel Yedija Laowo" },
+              { label: "QRIS",          value: "qris",      description: "All banks & e-wallets" },
+              { label: "Dana/OVO/GoPay", value: "dana",     description: "085763794032 — Daniel Yedija Laowo" },
+              { label: "Bank Jago",     value: "bank_jago", description: "107329884762 — Daniel Yedija Laowo" },
+              { label: "Seabank",       value: "seabank",   description: "901996695987 — Daniel Yedija Laowo" },
+              { label: "BRI",           value: "bri",       description: "817201005576534 — Daniel Yedija Laowo" },
             ]),
           ],
         }),
         component.container({
           components: [
             component.action_row(
-              component.danger_button("Close", `middleman_close:${thread.id}`),
+              component.danger_button("Close",             `middleman_close:${thread.id}`),
               component.secondary_button("Close with Reason", `middleman_close_reason:${thread.id}`),
-              component.secondary_button("Add Member", `middleman_add_member:${thread.id}`),
-              component.success_button("Complete", `middleman_complete:${thread.id}`)
+              component.primary_button("Add Member",       `middleman_add_member:${thread.id}`),
+              component.success_button("Complete",         `middleman_complete:${thread.id}`)
             ),
           ],
         }),
