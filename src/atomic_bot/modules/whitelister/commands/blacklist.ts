@@ -1,3 +1,5 @@
+// - /whitelist blacklist，将用户加入黑名单 - \
+// - /whitelist blacklist command, adds a user to the blacklist - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

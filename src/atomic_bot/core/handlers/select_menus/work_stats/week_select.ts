@@ -1,3 +1,5 @@
+// - 处理工作统计周次选择的菜单 - \
+// - handles the week select menu for work stats - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { api, component } from "@shared/utils"
 import {

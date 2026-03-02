@@ -1,3 +1,5 @@
+// - /setup hwid-control，配置 HWID 控制设置 - \
+// - /setup hwid-control command, configures HWID control settings - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }     from "@shared/types/command"
 import { component }   from "@shared/utils"

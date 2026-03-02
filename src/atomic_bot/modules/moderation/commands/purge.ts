@@ -1,3 +1,5 @@
+// - /purge 斜杠命令，批量删除消息 - \
+// - /purge slash command, bulk deletes messages - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

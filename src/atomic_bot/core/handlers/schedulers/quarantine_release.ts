@@ -1,3 +1,5 @@
+// - 定时检查并自动释放到期的隔离用户 - \
+// - scheduler that auto-releases expired quarantined users - \
 import { Client }                   from "discord.js"
 import { logger }                   from "@shared/utils"
 import { get_expired_quarantines }  from "@shared/database/managers/quarantine_manager"

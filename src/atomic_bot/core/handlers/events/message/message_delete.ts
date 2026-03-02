@@ -1,3 +1,5 @@
+// - 消息被删除时触发，用于 snipe 功能 - \
+// - handles message delete events, mainly for the snipe feature - \
 import { Events, Message, PartialMessage, TextChannel } from "discord.js"
 import { client }                                       from "../../../../../startup/atomic_bot"
 import { component, format, api, db, time }             from "@shared/utils"

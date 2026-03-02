@@ -1,3 +1,5 @@
+// - /ask 斜杠命令，用于在频道提问 - \
+// - /ask slash command, for posting questions in the channel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

@@ -1,3 +1,5 @@
+// - /share-settings delete，删除自己分享的设置 - \
+// - /share-settings delete command, deletes your own shared settings - \
 import {
   AutocompleteInteraction,
   ChatInputCommandInteraction,

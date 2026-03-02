@@ -1,3 +1,5 @@
+// - 支付相关按钮组件的定义和构建 - \
+// - button component definitions for payment - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
 import { component, api, time }           from "@shared/utils"

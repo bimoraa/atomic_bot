@@ -1,3 +1,5 @@
+// - 反应身份组的 CRUD API 路由 - \
+// - reaction roles CRUD API router - \
 import { Router, Request, Response } from "express"
 import * as database                 from "@shared/utils/database"
 

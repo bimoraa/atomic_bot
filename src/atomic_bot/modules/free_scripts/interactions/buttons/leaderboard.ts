@@ -1,3 +1,5 @@
+// - 免费脚本「排行榜」按钮的交互注册 - \
+// - registers the leaderboard button for free scripts - \
 // - 免费脚本排行榜按钮 - \
 // - free script leaderboard button - \
 

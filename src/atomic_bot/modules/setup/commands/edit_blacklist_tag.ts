@@ -1,3 +1,5 @@
+// - /setup edit-blacklist-tag，编辑黑名单标签配置 - \
+// - /setup edit-blacklist-tag command, edits the blacklist tag config - \
 import {
   ChatInputCommandInteraction,
   PermissionFlagsBits,

@@ -1,3 +1,5 @@
+// - /staff set-discount，设置折扣 - \
+// - /staff set-discount command, sets a discount - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

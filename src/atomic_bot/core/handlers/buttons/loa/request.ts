@@ -1,3 +1,5 @@
+// - 处理提交 LOA 请假请求的按钮，弹出 modal - \
+// - handles the LOA request button, opens a modal - \
 import { ButtonInteraction } from "discord.js"
 import { modal }             from "@shared/utils"
 

@@ -1,3 +1,5 @@
+// - 共享设置翻页按钮的交互注册 - \
+// - registers the pagination buttons for share settings - \
 // - 分享设置翻页按钮 - \
 // - share settings pagination button - \
 

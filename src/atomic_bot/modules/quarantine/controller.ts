@@ -1,3 +1,5 @@
+// - 隔离功能的模块控制器 - \
+// - module controller for the quarantine feature - \
 import { Client, GuildMember, Guild, Role, TextChannel } from "discord.js"
 import { component, time }                               from "@shared/utils"
 import { log_error }                                     from "@shared/utils/error_logger"

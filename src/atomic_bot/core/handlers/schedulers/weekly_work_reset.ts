@@ -1,3 +1,5 @@
+// - 每周重置员工工作统计的定时任务 - \
+// - scheduler that resets weekly work stats every week - \
 import { logger, db, time } from "@shared/utils"
 import { get_week_number, get_year } from "@shared/database/trackers/work_tracker"
 

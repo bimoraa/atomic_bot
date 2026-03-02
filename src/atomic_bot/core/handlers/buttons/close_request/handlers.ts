@@ -1,3 +1,5 @@
+// - 处理关单请求相关的按钮，比如确认或取消关单 - \
+// - handles close request buttons, like confirming or cancelling a close request - \
 import { ButtonInteraction, ThreadChannel, GuildMember } from "discord.js"
 import { component, api, db } from "@shared/utils"
 import { get_ticket, ticket_types } from "@shared/database/unified_ticket"

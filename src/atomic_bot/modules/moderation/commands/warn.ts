@@ -1,3 +1,5 @@
+// - /warn 斜杠命令，给用户发警告 - \
+// - /warn slash command, issues a warning to a user - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

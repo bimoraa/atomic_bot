@@ -1,3 +1,5 @@
+// - 处理版本选择菜单 - \
+// - handles the version select menu - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { time, format, component, version } from "@shared/utils"
 

@@ -1,3 +1,5 @@
+// - /whitelist edit，编辑白名单用户信息 - \
+// - /whitelist edit command, edits a whitelisted user's info - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

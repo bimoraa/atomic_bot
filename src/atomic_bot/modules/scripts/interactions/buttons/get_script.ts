@@ -1,3 +1,5 @@
+// - 脚本面板「获取脚本」按钮的交互注册 - \
+// - registers the get script button for the scripts panel - \
 // - 脚本获取按钮 - \
 // - get script button - \
 

@@ -1,3 +1,5 @@
+// - /afk 斜杠命令，设置 AFK 状态 - \
+// - /afk slash command, sets your AFK status - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

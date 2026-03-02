@@ -1,3 +1,5 @@
+// - /staff mass-user-note，批量给用户添加备注 - \
+// - /staff mass-user-note command, adds notes to multiple users at once - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

@@ -1,3 +1,5 @@
+// - 服务提供商功能的模块控制器 - \
+// - module controller for the service provider feature - \
 // - 服务提供商控制器，处理脚本逻辑 - \
 // - service provider controller, handles script logic - \
 

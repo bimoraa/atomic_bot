@@ -1,3 +1,5 @@
+// - /warnings 斜杠命令，查看用户的警告记录 - \
+// - /warnings slash command, shows a user's warning history - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

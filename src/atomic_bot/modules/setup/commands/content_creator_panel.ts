@@ -1,3 +1,5 @@
+// - /setup content-creator-panel，部署内容创作者面板 - \
+// - /setup content-creator-panel command, deploys the content creator panel - \
 import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,

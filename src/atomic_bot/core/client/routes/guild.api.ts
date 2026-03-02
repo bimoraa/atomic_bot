@@ -1,3 +1,5 @@
+// - 服务器信息和审计日志的 API 路由 - \
+// - guild info and audit log API router - \
 import { Router, Request, Response } from "express"
 import { Client, ChannelType }       from "discord.js"
 

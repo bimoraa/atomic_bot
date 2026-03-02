@@ -1,3 +1,5 @@
+// - /afk-mod list，查看当前 AFK 用户列表 - \
+// - /afk-mod list command, shows the current list of AFK users - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"
 import { get_all_afk }                                                 from "../../../infrastructure/cache/afk"
 import { build_simple_message }                                        from "./afk_utils"

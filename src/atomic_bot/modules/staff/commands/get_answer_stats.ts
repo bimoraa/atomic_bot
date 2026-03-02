@@ -1,3 +1,5 @@
+// - /staff get-answer-stats，查看员工回答统计 - \
+// - /staff get-answer-stats command, shows staff answer statistics - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command } from "@shared/types/command"
 import { component, api, db } from "@shared/utils"

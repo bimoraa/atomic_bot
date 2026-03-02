@@ -1,3 +1,5 @@
+// - 处理指南选择菜单的选项 - \
+// - handles the guide select menu selection - \
 import { StringSelectMenuInteraction, TextChannel } from "discord.js"
 import { component, api }                           from "@shared/utils"
 import { guide_buttons, ParsedButton }              from "../../../../modules/setup/commands/guide_panel"

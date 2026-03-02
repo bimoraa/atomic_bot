@@ -1,3 +1,5 @@
+// - 处理共享设置列表翻页的按钮 - \
+// - handles pagination buttons for the share settings list - \
 import { ButtonInteraction } from "discord.js"
 import { log_error }         from "@shared/utils/error_logger"
 import * as share_settings   from "@atomic/core/handlers/shared/controller/share_settings_controller"

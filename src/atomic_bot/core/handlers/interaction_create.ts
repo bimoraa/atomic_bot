@@ -1,3 +1,5 @@
+// - 所有交互的总调度入口，按钮、modal、选择菜单全从这里分发 - \
+// - main interaction dispatcher, all buttons/modals/selects get routed from here - \
 // - 交互路由器的主入口，所有的按钮（Button）、模态框（Modal）、字符串选择菜单（String Select）、用户选择菜单（User Select）、各种类型的交互响应和分发都在这里完成。无论任何交互类型，只要属于 Discord 交互的子类型，例如 Slash Command、Button Interaction、Modal Submit、Select Menu（包括 String Select、User Select、Role Select、Channel Select）、Autocomplete，全部都会经过这个超长的分发路由器来处理。
 // - 主交互调度器作用是为了将所有收到的交互请求根据其类别进行恰当的分流分发，比如说按钮点了哪个 feature 的按钮就会路由到相应模块的 button handler，模态框提交则会去指定的 modal handler，选择菜单会被路由到对应功能的 select handler，甚至包括 complex case seperti 工单系统、提醒系统、middleman、staff tools、脚本面板、temporary voice、统计板块、review、社区内容、人事系统、结算支付、reaction role、各种企业级审批流等功能性的全部细分交互事件，全部都源头在这里分发调度，不会遗漏掉任何一种交互进来就被漏网之鱼。每个功能模块的交互子路由/handler，都必须在这里 import 并挂载，确保 maintainability 和可扩展性。
 // - 可以简单理解为——这是整个 Discord bot 所有基于 Interaction 的指令、交互行为、权限校验、以及各类功能交互的“十字路口”或者总路由，正因为这样代码会变得很长也很繁杂，但是这样处理才能统一管控，便于日后维护和定位各种复杂问题。

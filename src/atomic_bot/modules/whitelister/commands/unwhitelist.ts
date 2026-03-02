@@ -1,3 +1,5 @@
+// - /whitelist unwhitelist，移除用户的白名单权限 - \
+// - /whitelist unwhitelist command, removes a user's whitelist access - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

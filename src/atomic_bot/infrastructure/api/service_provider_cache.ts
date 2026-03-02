@@ -1,3 +1,5 @@
+// - 服务提供商缓存层 - \
+// - service provider cache layer - \
 import { Client } from "discord.js"
 import { db } from "@shared/utils"
 import { log_error } from "@shared/utils/error_logger"

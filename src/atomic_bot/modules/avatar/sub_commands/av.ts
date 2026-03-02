@@ -1,7 +1,9 @@
-import { Message, Client }             from "discord.js"
-import { SubCommand }                  from "../types/sub_command"
-import { component, container_component } from "../utils"
-import { log_error }                   from "../utils/error_logger"
+// - avatar 命令的子命令，查看头像的具体逻辑 - \
+// - avatar sub-command handler, does the actual avatar lookup - \
+import { Client, Message }               from "discord.js"
+import { SubCommand }                  from "@shared/types/sub_command"
+import { component, container_component } from "@shared/utils"
+import { log_error }                   from "@shared/utils/error_logger"
 
 const av_command: SubCommand = {
   name       : "av",

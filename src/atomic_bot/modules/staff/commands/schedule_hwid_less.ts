@@ -1,3 +1,5 @@
+// - /staff schedule-hwid-less，定时开启无 HWID 权限 - \
+// - /staff schedule-hwid-less command, schedules HWID-less access - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }                 from "@shared/types/command"
 import { update_project_settings } from "../../../infrastructure/api/luarmor"

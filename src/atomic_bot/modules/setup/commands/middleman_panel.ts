@@ -1,3 +1,5 @@
+// - /setup middleman-panel，部署中间人面板 - \
+// - /setup middleman-panel command, deploys the middleman panel - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
 import { Command }             from "@shared/types/command"
 import { component, api }      from "@shared/utils"

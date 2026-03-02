@@ -1,3 +1,5 @@
+// - /view-leaderboard 斜杠命令，查看服务器排行榜 - \
+// - /view-leaderboard slash command, shows the server leaderboard - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

@@ -1,3 +1,5 @@
+// - 支付方式统计选择菜单的交互注册 - \
+// - registers the payment method stats select menu interaction - \
 // - 支付方式选择器 - \
 // - payment method select - \
 

@@ -1,3 +1,5 @@
+// - 中间人流程里选择手续费的菜单交互 - \
+// - fee select menu interaction for the middleman flow - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { modal }                        from "@shared/utils"
 

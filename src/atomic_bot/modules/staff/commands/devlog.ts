@@ -1,3 +1,5 @@
+// - /staff devlog，发布开发日志 - \
+// - /staff devlog command, publishes a dev log entry - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

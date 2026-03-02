@@ -1,3 +1,5 @@
+// - 提醒功能的模块控制器 - \
+// - module controller for the reminder feature - \
 import { Client }                                                         from "discord.js"
 import { component, time, db, api }                                      from "@shared/utils"
 import { log_error }                                                     from "@shared/utils/error_logger"

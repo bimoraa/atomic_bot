@@ -1,3 +1,5 @@
+// - 脚本面板「重置 HWID」按钮的交互注册 - \
+// - registers the reset hwid button for the scripts panel - \
 // - 脚本重置HWID按钮 - \
 // - script reset hwid button - \
 

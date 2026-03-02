@@ -1,3 +1,5 @@
+// - 处理 AV 检查器开关按钮 - \
+// - handles the av checker toggle button - \
 import { ButtonInteraction }  from "discord.js"
 import { component, api }     from "@shared/utils"
 import { log_error }          from "@shared/utils/error_logger"

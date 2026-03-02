@@ -1,3 +1,5 @@
+// - 处理开发日志 modal 的提交 - \
+// - handles the devlog modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { publish_devlog }         from "../../controllers/devlog_controller"
 

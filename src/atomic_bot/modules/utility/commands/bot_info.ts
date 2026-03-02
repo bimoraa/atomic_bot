@@ -1,3 +1,5 @@
+// - /bot-info 斜杠命令，查看 bot 信息 - \
+// - /bot-info slash command, shows bot information - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, version as djsVersion } from "discord.js"
 import { Command }  from "@shared/types/command"
 import { component, time } from "@shared/utils"

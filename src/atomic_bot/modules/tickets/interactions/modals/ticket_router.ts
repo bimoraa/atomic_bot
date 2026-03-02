@@ -1,3 +1,5 @@
+// - 票务 modal 路由，根据类型分发到对应处理器 - \
+// - ticket modal router, dispatches to the right handler based on ticket type - \
 import { ModalHandler } from "@shared/types/interaction"
 import { handle_ticket_modal } from "@shared/database/unified_ticket/controllers/ticket_controller"
 import { ModalSubmitInteraction } from "discord.js"

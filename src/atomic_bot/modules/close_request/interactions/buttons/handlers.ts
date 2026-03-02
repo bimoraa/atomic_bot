@@ -1,3 +1,5 @@
+// - 关单请求按钮的交互注册 - \
+// - registers the close request button interactions - \
 // - 关闭请求按钮处理器 - \
 // - close request button handlers - \
 

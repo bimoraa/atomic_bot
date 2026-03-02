@@ -1,3 +1,5 @@
+// - /setup helper-panel，部署帮助面板 - \
+// - /setup helper-panel command, deploys the helper panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

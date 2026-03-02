@@ -1,3 +1,5 @@
+// - /share-settings leaderboard，查看共享设置排行榜 - \
+// - /share-settings leaderboard command, shows the shared settings leaderboard - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

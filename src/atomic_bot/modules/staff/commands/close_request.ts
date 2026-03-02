@@ -1,3 +1,5 @@
+// - /staff close-request，发起关单请求 - \
+// - /staff close-request command, sends a close request for a ticket - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, ThreadChannel, TextChannel, GuildMember } from "discord.js"
 import { Command } from "@shared/types/command"
 import { component, time, api, format, db } from "@shared/utils"

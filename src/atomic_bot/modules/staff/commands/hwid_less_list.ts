@@ -1,3 +1,5 @@
+// - /staff hwid-less-list，查看无 HWID 权限用户列表 - \
+// - /staff hwid-less-list command, shows all users with HWID-less access - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
 import { component, db, logger }                            from "@shared/utils"

@@ -1,3 +1,5 @@
+// - /kick 斜杠命令，踢出用户 - \
+// - /kick slash command, kicks a user - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

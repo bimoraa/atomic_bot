@@ -1,3 +1,5 @@
+// - 处理脚本兑换 modal 的提交 - \
+// - handles the script redeem modal submission - \
 // - 密钥兑换模态框 - \
 // - key redeem modal - \
 

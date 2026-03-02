@@ -1,3 +1,5 @@
+// - /work check-all-staff-report，查看全员工作报告 - \
+// - /work check-all-staff-report command, shows the full staff work report - \
 import { SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js"
 import { component } from "@shared/utils"
 import type { Command } from "@shared/types/command"

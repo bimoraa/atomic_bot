@@ -1,3 +1,5 @@
+// - 处理共享设置 modal 的提交 - \
+// - handles the share settings modal submission - \
 // - 分享设置模态框 - \
 // - share settings modal - \
 

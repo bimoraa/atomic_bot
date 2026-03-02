@@ -1,8 +1,10 @@
-import { Message, Client }                   from "discord.js"
-import { SubCommand }                        from "../types/sub_command"
-import { set_afk, is_ignored_channel }       from "../../atomic_bot/infrastructure/cache/afk"
-import { component }                         from "../utils"
-import { sanitize_afk_reason }               from "../../atomic_bot/modules/utility/commands/afk_utils"
+// - AFK 子命令处理，检测提及 AFK 用户 - \
+// - AFK sub-command handler, detects when AFK users are mentioned - \
+import { Client, Message }                     from "discord.js"
+import { SubCommand }                        from "@shared/types/sub_command"
+import { set_afk, is_ignored_channel }       from "../../../infrastructure/cache/afk"
+import { component }                         from "@shared/utils"
+import { sanitize_afk_reason }               from "../commands/afk_utils"
 
 const afk_command: SubCommand = {
   name       : "afk",

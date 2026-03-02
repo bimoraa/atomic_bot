@@ -1,3 +1,5 @@
+// - 测试用的，手动触发 Roblox 更新通知看看效果 - \
+// - test command, manually fires the roblox update notification to see if it works - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js";
 import { Command } from "@shared/types/command";
 import { test_roblox_update_notification } from "@shared/database/services/roblox_update";

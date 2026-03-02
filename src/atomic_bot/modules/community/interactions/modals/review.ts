@@ -1,3 +1,5 @@
+// - 处理社区评价 modal 提交的注册和逻辑 - \
+// - registers and handles the community review modal submission - \
 // - 评价提交模态框 - \
 // - review submit modal - \
 

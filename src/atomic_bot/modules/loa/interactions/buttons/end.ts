@@ -1,3 +1,5 @@
+// - 结束 LOA 按钮的交互注册 - \
+// - registers the end LOA button interaction - \
 import { ButtonInteraction }            from "discord.js"
 import { end_loa, has_loa_permission } from "../../controller"
 import { ButtonHandler }               from "@shared/types/interaction"

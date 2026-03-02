@@ -1,3 +1,5 @@
+// - /timeout 斜杠命令，给用户禁言 - \
+// - /timeout slash command, mutes a user for a duration - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

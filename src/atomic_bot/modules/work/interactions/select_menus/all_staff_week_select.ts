@@ -1,3 +1,5 @@
+// - 全员工作统计周次选择菜单的交互注册 - \
+// - registers the week select menu for all-staff work stats - \
 // - 全员工作周报选择器 - \
 // - all staff work week select - \
 

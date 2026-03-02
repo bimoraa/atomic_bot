@@ -1,3 +1,5 @@
+// - /setup purchase-panel，部署购买票务面板 - \
+// - /setup purchase-panel command, deploys the purchase ticket panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

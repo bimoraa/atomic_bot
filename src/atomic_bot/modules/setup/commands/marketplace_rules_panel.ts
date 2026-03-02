@@ -1,3 +1,5 @@
+// - /setup marketplace-rules-panel，部署市场规则面板 - \
+// - /setup marketplace-rules-panel command, deploys the marketplace rules panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

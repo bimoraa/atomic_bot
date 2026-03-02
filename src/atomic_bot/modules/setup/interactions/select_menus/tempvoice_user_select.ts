@@ -1,3 +1,5 @@
+// - 临时语音用户选择菜单的交互注册 - \
+// - registers the temp voice user select menu interaction - \
 import { UserSelectMenuInteraction, GuildMember, VoiceChannel } from "discord.js"
 import { UserSelectMenuHandler }                                from "@shared/types/interaction"
 import * as tempvoice from "@shared/database/services/tempvoice"

@@ -1,3 +1,5 @@
+// - 共享设置功能的模块控制器 - \
+// - module controller for the share settings feature - \
 // - 分享设置控制器，管理钓鱼竿设置 - \
 // - share settings controller, manages fishing rod settings - \
 

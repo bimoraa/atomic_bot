@@ -1,3 +1,5 @@
+// - 指南选择菜单的交互注册 - \
+// - registers the guide select menu interaction - \
 import { StringSelectMenuInteraction, TextChannel } from "discord.js"
 import { component, api }                           from "@shared/utils"
 import { guide_buttons, ParsedButton }              from "../../../../modules/setup/commands/guide_panel"

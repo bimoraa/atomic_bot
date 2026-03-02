@@ -1,3 +1,5 @@
+// - 防刷屏的内存缓存，记录用户最近的操作 - \
+// - in-memory anti-spam cache, tracks recent user actions - \
 import { Client, Message, GuildMember, PermissionFlagsBits } from "discord.js"
 import { component, format, time }                          from "@shared/utils"
 import { log_error }                                        from "@shared/utils/error_logger"

@@ -1,3 +1,5 @@
+// - 处理临时语音频道用户管理的选择菜单 - \
+// - handles the user select menu for temp voice channel management - \
 import { UserSelectMenuInteraction, GuildMember, VoiceChannel, StringSelectMenuInteraction } from "discord.js"
 import * as tempvoice                                           from "@shared/database/services/tempvoice"
 import * as voice_interaction                                   from "@shared/database/trackers/voice_interaction_tracker"

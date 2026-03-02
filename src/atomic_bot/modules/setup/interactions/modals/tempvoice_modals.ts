@@ -1,3 +1,5 @@
+// - 临时语音设置 modal 的交互注册和处理 - \
+// - registers and handles temp voice settings modal interactions - \
 import { ModalSubmitInteraction, GuildMember, VoiceChannel } from "discord.js"
 import { ModalHandler }                                      from "@shared/types/interaction"
 import * as tempvoice from "@shared/database/services/tempvoice"

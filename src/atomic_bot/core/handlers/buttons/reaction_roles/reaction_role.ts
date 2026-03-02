@@ -1,3 +1,5 @@
+// - 处理反应身份组按钮，给用户加减角色 - \
+// - handles reaction role buttons, toggles roles for users - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { load_config } from "@shared/config/loader"
 import { component } from "@shared/utils"

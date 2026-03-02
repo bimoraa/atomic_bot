@@ -1,3 +1,5 @@
+// - 加入票务按钮的交互注册 - \
+// - registers the join ticket button interaction - \
 import { ButtonInteraction, GuildMember, TextChannel, ThreadChannel } from "discord.js"
 import {
   ticket_logs,

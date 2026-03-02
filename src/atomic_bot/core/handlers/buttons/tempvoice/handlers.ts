@@ -1,3 +1,5 @@
+// - 处理临时语音频道所有控制按钮 - \
+// - handles all temp voice channel control buttons - \
 import { ButtonInteraction, GuildMember, VoiceChannel, Guild } from "discord.js"
 import * as tempvoice                                          from "@shared/database/services/tempvoice"
 import * as voice_tracker                                      from "@shared/database/trackers/voice_time_tracker"

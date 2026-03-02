@@ -1,3 +1,5 @@
+// - 管理功能的模块控制器 - \
+// - module controller for moderation features - \
 import { Client, GuildMember, User, Guild } from "discord.js"
 import { component }                        from "@shared/utils"
 import { log_error }                        from "@shared/utils/error_logger"

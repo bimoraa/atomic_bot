@@ -1,3 +1,5 @@
+// - 脚本面板「获取角色」按钮的交互注册 - \
+// - registers the get role button for the scripts panel - \
 // - 脚本角色获取按钮 - \
 // - get script role button - \
 

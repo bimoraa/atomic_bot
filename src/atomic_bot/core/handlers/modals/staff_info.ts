@@ -1,3 +1,5 @@
+// - 处理编辑员工信息 modal 的提交 - \
+// - handles the edit staff info modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { log_error }              from "@shared/utils/error_logger"
 

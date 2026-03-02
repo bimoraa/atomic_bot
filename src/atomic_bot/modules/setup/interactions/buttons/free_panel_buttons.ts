@@ -1,3 +1,5 @@
+// - 免费面板按钮的交互注册 - \
+// - registers free panel button interactions - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
 import { component, db }                  from "@shared/utils"

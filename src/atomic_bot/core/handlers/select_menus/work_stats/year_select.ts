@@ -1,3 +1,5 @@
+// - 处理工作统计年份选择的菜单 - \
+// - handles the year select menu for work stats - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { component } from "@shared/utils"
 

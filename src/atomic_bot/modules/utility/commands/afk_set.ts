@@ -1,3 +1,5 @@
+// - /afk set，设置自定义 AFK 消息 - \
+// - /afk set command, sets a custom AFK message - \
 import { ChatInputCommandInteraction, GuildMember, SlashCommandSubcommandBuilder } from "discord.js"
 import { set_afk, is_ignored_channel }                                              from "../../../infrastructure/cache/afk"
 import { build_simple_message, sanitize_afk_reason }                                from "./afk_utils"

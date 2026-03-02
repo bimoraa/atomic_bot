@@ -1,3 +1,5 @@
+// - 处理脚本兑换 Key modal 的提交 - \
+// - handles the script redeem key modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { ModalHandler }           from "@shared/types/interaction"
 import { component }              from "@shared/utils"

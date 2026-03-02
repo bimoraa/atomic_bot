@@ -1,3 +1,5 @@
+// - /setup reaction-panel，部署反应面板 - \
+// - /setup reaction-panel command, deploys the reaction panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

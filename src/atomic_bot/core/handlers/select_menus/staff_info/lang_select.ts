@@ -1,3 +1,5 @@
+// - 处理员工信息语言选择的菜单 - \
+// - handles the language select menu for staff info - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { log_error }                   from "@shared/utils/error_logger"
 

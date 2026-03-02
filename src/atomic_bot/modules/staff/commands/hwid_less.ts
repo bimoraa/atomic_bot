@@ -1,3 +1,5 @@
+// - /staff hwid-less，给用户开无 HWID 权限 - \
+// - /staff hwid-less command, grants a user HWID-less access - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command } from "@shared/types/command"
 import { update_project_settings } from "../../../infrastructure/api/luarmor"

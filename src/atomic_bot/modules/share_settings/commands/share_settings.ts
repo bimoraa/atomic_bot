@@ -1,3 +1,5 @@
+// - /share-settings 斜杠命令，分享游戏设置 - \
+// - /share-settings slash command, shares your in-game settings - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }         from "@shared/types/command"
 import { log_error }       from "@shared/utils/error_logger"

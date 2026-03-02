@@ -1,3 +1,5 @@
+// - 处理点击「联系客服」按钮后弹出 modal 的逻辑 - \
+// - handles the ask staff button, opens a modal - \
 import {
   ButtonInteraction,
   ModalBuilder,

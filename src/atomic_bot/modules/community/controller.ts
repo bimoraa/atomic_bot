@@ -1,3 +1,5 @@
+// - 社区功能的模块控制器 - \
+// - module controller for community features - \
 // - 社区功能控制器，处理评价提交 - \
 // - community controller, handles review submissions - \
 

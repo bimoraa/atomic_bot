@@ -1,3 +1,5 @@
+// - /unquarantine 斜杠命令，解除用户隔离 - \
+// - /unquarantine slash command, removes a user from quarantine - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

@@ -1,3 +1,5 @@
+// - /update-script 斜杠命令，更新脚本版本 - \
+// - /update-script slash command, updates the script version - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
 import { Command }                                                       from "@shared/types/command"
 import { component, http, env, db }                                      from "@shared/utils"

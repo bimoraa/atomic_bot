@@ -1,3 +1,5 @@
+// - 临时语音频道按钮的交互注册和处理 - \
+// - registers and handles temp voice channel button interactions - \
 // - 临时语音频道按钮处理器 - \
 // - temp voice button handlers - \
 

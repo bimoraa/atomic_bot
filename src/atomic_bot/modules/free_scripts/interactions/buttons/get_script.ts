@@ -1,3 +1,5 @@
+// - 免费脚本「获取脚本」按钮的交互注册 - \
+// - registers the get script button for free scripts - \
 // - 免费脚本获取按钮 - \
 // - free script get button - \
 

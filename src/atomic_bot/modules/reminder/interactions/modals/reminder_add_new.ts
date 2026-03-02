@@ -1,3 +1,5 @@
+// - 处理新增提醒 modal 的提交 - \
+// - handles the add new reminder modal submission - \
 // - 新增提醒模态框 - \
 // - add new reminder modal - \
 

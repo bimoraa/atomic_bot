@@ -1,3 +1,5 @@
+// - booster 奖励功能的模块控制器 - \
+// - module controller for the booster reward feature - \
 import { Client }            from "discord.js"
 import { component, api }    from "@shared/utils"
 import { log_error }         from "@shared/utils/error_logger"

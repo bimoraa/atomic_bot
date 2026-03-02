@@ -1,3 +1,5 @@
+// - /ping 斜杠命令，检查 bot 延迟 - \
+// - /ping slash command, checks the bot's latency - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

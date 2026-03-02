@@ -1,3 +1,5 @@
+// - 回答统计选择菜单的交互注册 - \
+// - registers the answer stats select menu interaction - \
 // - 答题统计选择器 - \
 // - answer stats select - \
 

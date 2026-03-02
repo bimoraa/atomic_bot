@@ -1,3 +1,5 @@
+// - 处理联系客服 modal 的提交 - \
+// - handles the ask staff modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { post_question }          from "../../controllers/ask_controller"
 import { ask_channel_id }         from "../../../../modules/ask/commands/ask"

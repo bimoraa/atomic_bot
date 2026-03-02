@@ -1,3 +1,5 @@
+// - /check-messages 斜杠命令，查看用户的消息统计 - \
+// - /check-messages slash command, shows user message stats - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

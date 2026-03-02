@@ -1,3 +1,5 @@
+// - /setup guide-panel，部署指南面板 - \
+// - /setup guide-panel command, deploys the guide panel - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember }  from "discord.js"
 import { Command }                                                        from "@shared/types/command"
 import { is_admin, is_staff }                                             from "@shared/database/settings/permissions"

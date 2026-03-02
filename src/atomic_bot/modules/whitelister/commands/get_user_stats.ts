@@ -1,3 +1,5 @@
+// - /whitelist get-user-stats，查看用户统计数据 - \
+// - /whitelist get-user-stats command, shows user statistics - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

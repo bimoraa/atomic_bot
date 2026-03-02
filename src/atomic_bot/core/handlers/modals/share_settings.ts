@@ -1,3 +1,5 @@
+// - 处理共享设置 modal 的提交 - \
+// - handles the share settings modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { api, component }          from "@shared/utils"
 import { log_error }               from "@shared/utils/error_logger"

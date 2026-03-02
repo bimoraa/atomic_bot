@@ -1,3 +1,5 @@
+// - booster 奖励功能的业务逻辑控制器 - \
+// - business logic controller for the booster reward feature - \
 import { Client }            from "discord.js"
 import { component, api }    from "@shared/utils"
 import { log_error }         from "@shared/utils/error_logger"

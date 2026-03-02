@@ -1,3 +1,5 @@
+// - 中间人流程里选择交易范围的菜单交互 - \
+// - range select menu interaction for the middleman flow - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { component }                   from "@shared/utils"
 import { is_middleman_service_open }   from "@shared/database/managers/middleman_service_manager"

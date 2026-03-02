@@ -1,3 +1,5 @@
+// - /check-user-tag 斜杠命令，检查用户标签 - \
+// - /check-user-tag slash command, checks a user's tags - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, PermissionFlagsBits } from "discord.js"
 import { Command }                                                                           from "@shared/types/command"
 import { get_all_tagged_users, sync_guild_tagged_users }                                     from "@shared/database/settings/server_tag"

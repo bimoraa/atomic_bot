@@ -1,3 +1,5 @@
+// - /afk-mod reset，重置 AFK 相关设置 - \
+// - /afk-mod reset command, resets AFK settings - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"
 import { update_afk_reason }                                           from "../../../infrastructure/cache/afk"
 import { build_simple_message }                                        from "./afk_utils"

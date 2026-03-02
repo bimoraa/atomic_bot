@@ -1,3 +1,5 @@
+// - 脚本面板「兑换 Key」按钮的交互注册 - \
+// - registers the redeem key button for the scripts panel - \
 // - 兑换密钥按钮 - \
 // - redeem key button - \
 

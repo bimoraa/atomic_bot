@@ -1,3 +1,5 @@
+// - 处理编辑规则 modal 的提交 - \
+// - handles the edit rules modal submission - \
 // - 编辑规则模态框 - \
 // - edit rules modal - \
 

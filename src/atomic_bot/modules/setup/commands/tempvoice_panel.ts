@@ -1,3 +1,5 @@
+// - /setup tempvoice-panel，部署临时语音频道面板 - \
+// - /setup tempvoice-panel command, deploys the temp voice panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

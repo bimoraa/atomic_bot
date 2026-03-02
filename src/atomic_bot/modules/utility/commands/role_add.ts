@@ -1,3 +1,5 @@
+// - /role-add 斜杠命令，给用户添加身份组 - \
+// - /role-add slash command, adds a role to a user - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, Role } from "discord.js"
 import { Command }         from "@shared/types/command"
 import { is_admin }        from "@shared/database/settings/permissions"

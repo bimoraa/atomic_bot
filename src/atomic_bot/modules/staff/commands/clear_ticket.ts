@@ -1,3 +1,5 @@
+// - /staff clear-ticket，手动清理票务频道 - \
+// - /staff clear-ticket command, manually clears a ticket channel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

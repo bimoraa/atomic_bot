@@ -1,3 +1,5 @@
+// - 钓鱼链接软封禁命令，自动处理钓鱼消息的用户 - \
+// - phishing softban command, auto-handles users who send phishing links - \
 import {
   ApplicationCommandType,
   ContextMenuCommandBuilder,

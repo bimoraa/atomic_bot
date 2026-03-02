@@ -1,3 +1,5 @@
+// - /dadjoke 斜杠命令，随机获取一个老爸笑话 - \
+// - /dadjoke slash command, gets a random dad joke - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

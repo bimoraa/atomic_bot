@@ -1,3 +1,5 @@
+// - webhook 路由，目前处理 GitHub 的 webhook - \
+// - webhook router, currently handles github webhooks - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
 import { handle_github_webhook }     from "../../../infrastructure/webhooks/github"

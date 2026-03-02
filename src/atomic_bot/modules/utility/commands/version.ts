@@ -1,3 +1,5 @@
+// - /version 斜杠命令，查看脚本版本信息 - \
+// - /version slash command, shows script version information - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command } from "@shared/types/command"
 import { component, version as version_util } from "@shared/utils"

@@ -1,3 +1,5 @@
+// - 支付相关按钮的交互注册 - \
+// - registers payment button interactions - \
 // - 支付审批按钮处理器 - \
 // - payment approve/reject button handlers - \
 

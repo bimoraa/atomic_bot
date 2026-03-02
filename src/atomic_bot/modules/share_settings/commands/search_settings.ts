@@ -1,3 +1,5 @@
+// - /share-settings search，搜索共享设置 - \
+// - /share-settings search command, searches through shared settings - \
 import {
   AutocompleteInteraction,
   ChatInputCommandInteraction,

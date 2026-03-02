@@ -1,3 +1,5 @@
+// - 处理查看提醒列表的按钮 - \
+// - handles the view reminder list button - \
 import { ButtonInteraction }    from "discord.js"
 import { get_reminder_list } from "../../controllers/reminder_controller"
 

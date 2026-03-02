@@ -1,3 +1,5 @@
+// - /setup rules-panel，部署规则面板 - \
+// - /setup rules-panel command, deploys the rules panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

@@ -1,3 +1,5 @@
+// - 处理取消提醒的按钮 - \
+// - handles the cancel reminder button - \
 import { ButtonInteraction }  from "discord.js"
 import { component, time, db } from "@shared/utils"
 

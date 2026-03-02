@@ -1,3 +1,5 @@
+// - 自动回复的 CRUD API 路由，增删改查都在这 - \
+// - auto-responder CRUD API router, all the create/read/update/delete stuff lives here - \
 import { Router, Request, Response } from "express"
 import * as database                 from "@shared/utils/database"
 

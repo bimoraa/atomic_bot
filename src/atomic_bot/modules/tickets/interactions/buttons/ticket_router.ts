@@ -1,3 +1,5 @@
+// - 票务按钮路由，根据类型分发到对应处理器 - \
+// - ticket button router, dispatches to the right handler based on ticket type - \
 import { ButtonHandler } from "@shared/types/interaction"
 import { handle_ticket_button } from "@shared/database/unified_ticket/controllers/ticket_controller"
 import { ButtonInteraction } from "discord.js"

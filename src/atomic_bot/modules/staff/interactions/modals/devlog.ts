@@ -1,3 +1,5 @@
+// - 处理开发日志 modal 的提交 - \
+// - handles the devlog modal submission - \
 // - 开发日志模态框处理器 - \
 // - devlog modal handler - \
 

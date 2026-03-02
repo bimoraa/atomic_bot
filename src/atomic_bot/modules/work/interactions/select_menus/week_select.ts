@@ -1,3 +1,5 @@
+// - 工作统计周次选择菜单的交互注册 - \
+// - registers the week select menu for work stats - \
 // - 工作统计周选择器 - \
 // - work stats week select - \
 

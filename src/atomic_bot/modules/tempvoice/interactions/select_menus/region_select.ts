@@ -1,3 +1,5 @@
+// - 临时语音频道地区选择菜单的交互注册 - \
+// - registers the region select menu for temp voice channels - \
 // - 临时语音地区选择器 - \
 // - temp voice region select - \
 

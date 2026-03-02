@@ -1,7 +1,9 @@
-import { Message, Client } from "discord.js"
-import { SubCommand }      from "../types/sub_command"
-import { component }       from "../utils"
-import * as reputation     from "../database/managers/reputation_manager"
+// - 声誉子命令，处理给用户加减声誉的逻辑 - \
+// - reputation sub-command, handles giving or removing rep from users - \
+import { Client, Message } from "discord.js"
+import { SubCommand }      from "@shared/types/sub_command"
+import { component }       from "@shared/utils"
+import * as reputation     from "@shared/database/managers/reputation_manager"
 
 const rep_command: SubCommand = {
   name       : "rep",

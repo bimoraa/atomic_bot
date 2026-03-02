@@ -1,3 +1,5 @@
+// - 服务器设置的 API 路由 - \
+// - server settings API router - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
 import * as database                 from "@shared/utils/database"

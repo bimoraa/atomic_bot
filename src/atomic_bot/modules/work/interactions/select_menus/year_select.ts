@@ -1,3 +1,5 @@
+// - 工作统计年份选择菜单的交互注册 - \
+// - registers the year select menu for work stats - \
 // - 工作统计年选择器 - \
 // - work stats year select - \
 

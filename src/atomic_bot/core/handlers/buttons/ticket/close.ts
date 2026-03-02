@@ -1,3 +1,5 @@
+// - 处理关闭票务的按钮 - \
+// - handles the close ticket button - \
 import { ButtonInteraction, ThreadChannel } from "discord.js"
 import { close_ticket } from "@shared/database/unified_ticket"
 

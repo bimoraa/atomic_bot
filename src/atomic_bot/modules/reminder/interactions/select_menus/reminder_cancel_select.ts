@@ -1,3 +1,5 @@
+// - 取消提醒选择菜单的交互注册 - \
+// - registers the reminder cancel select menu interaction - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { cancel_reminder }             from "../../controller"
 

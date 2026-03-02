@@ -1,3 +1,5 @@
+// - 统计选择菜单交互的统一导出 - \
+// - barrel export for stats select menu interactions - \
 // - 统计选择菜单汇总 - \
 // - stats select menus index - \
 

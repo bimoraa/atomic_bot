@@ -1,3 +1,5 @@
+// - 共享设置点赞按钮的交互注册 - \
+// - registers the give star button for share settings - \
 // - 分享设置点赞按钮 - \
 // - share settings give star button - \
 

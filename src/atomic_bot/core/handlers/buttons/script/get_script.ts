@@ -1,3 +1,5 @@
+// - 处理脚本面板里「获取脚本」的按钮 - \
+// - handles the get script button in the scripts panel - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { component, api, format, modal } from "@shared/utils"
 import { get_user_script } from "../../controllers/service_provider_controller"

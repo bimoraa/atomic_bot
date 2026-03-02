@@ -1,3 +1,5 @@
+// - 处理脚本面板里「查看排行榜」的按钮 - \
+// - handles the view leaderboard button in the scripts panel - \
 import { ButtonInteraction } from "discord.js"
 import { component, api } from "@shared/utils"
 import { get_execution_leaderboard } from "../../controllers/service_provider_controller"

@@ -1,3 +1,5 @@
+// - 处理旧版反应身份组按钮 - \
+// - handles the legacy reaction role button - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { api } from "@shared/utils"
 

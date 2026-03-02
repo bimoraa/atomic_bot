@@ -1,3 +1,5 @@
+// - 处理中间人票务关闭原因按钮，弹出填写 modal - \
+// - handles the middleman close reason button, opens a modal - \
 import { ButtonInteraction } from "discord.js"
 import { modal } from "@shared/utils"
 import { get_ticket_config } from "@shared/database/unified_ticket"

@@ -1,3 +1,5 @@
+// - booster 领取按钮的交互注册 - \
+// - registers the booster claim button interaction - \
 import { ButtonInteraction } from "discord.js"
 import * as booster_manager  from "@shared/database/managers/booster_manager"
 import { component, api }    from "@shared/utils"

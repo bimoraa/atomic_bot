@@ -1,3 +1,5 @@
+// - 处理脚本面板里「兑换 Key」的按钮，弹出 modal - \
+// - handles the redeem key button in the scripts panel, opens a modal - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import * as luarmor                     from "../../../../infrastructure/api/luarmor"
 import { component, api, format, modal } from "@shared/utils"

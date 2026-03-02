@@ -1,3 +1,5 @@
+// - /quarantine 斜杠命令，隔离用户 - \
+// - /quarantine slash command, puts a user in quarantine - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

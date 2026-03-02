@@ -1,3 +1,5 @@
+// - 新成员加入服务器时触发的事件处理 - \
+// - handles the guild member add event when someone joins - \
 import { Events, GuildMember }      from "discord.js"
 import { client }                   from "../../../../../startup/atomic_bot"
 import { load_config }              from "@shared/config/loader"

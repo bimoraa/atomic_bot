@@ -1,3 +1,5 @@
+// - /staff work-stats，查看员工工作统计 - \
+// - /staff work-stats command, shows staff work statistics - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }        from "@shared/types/command"
 import { member_has_role } from "@shared/utils/discord_api"

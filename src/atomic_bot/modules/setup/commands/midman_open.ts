@@ -1,3 +1,5 @@
+// - /setup midman-open，开启中间人接单 - \
+// - /setup midman-open command, opens middleman order intake - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

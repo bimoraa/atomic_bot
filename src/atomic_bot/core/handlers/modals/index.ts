@@ -1,3 +1,5 @@
+// - modal handler 的统一导出入口 - \
+// - barrel export for all modal handlers - \
 /**
  * @module Modal Handlers
  * @description Centralized modal handler exports organized by feature category

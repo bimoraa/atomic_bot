@@ -1,3 +1,5 @@
+// - /stats 斜杠命令，查看服务器统计数据 - \
+// - /stats slash command, shows server stats - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

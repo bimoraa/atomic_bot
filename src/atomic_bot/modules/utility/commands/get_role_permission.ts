@@ -1,3 +1,5 @@
+// - /get-role-permission 斜杠命令，查看身份组权限 - \
+// - /get-role-permission slash command, shows role permissions - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

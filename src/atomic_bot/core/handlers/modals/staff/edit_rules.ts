@@ -1,3 +1,5 @@
+// - 处理编辑服务器规则 modal 的提交 - \
+// - handles the edit rules modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { component, api, format } from "@shared/utils"
 

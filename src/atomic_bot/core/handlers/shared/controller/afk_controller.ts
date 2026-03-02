@@ -1,3 +1,5 @@
+// - AFK 功能的共享业务逻辑控制器 - \
+// - shared business logic controller for the AFK feature - \
 import { Message, Client } from "discord.js"
 import { remove_afk, get_afk, is_afk, is_ignored_channel } from "../../../../infrastructure/cache/afk"
 import { component } from "@shared/utils"

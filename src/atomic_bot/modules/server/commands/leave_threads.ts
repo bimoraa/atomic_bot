@@ -1,3 +1,5 @@
+// - /leave-threads 斜杠命令，让 bot 退出帖子 - \
+// - /leave-threads slash command, makes the bot leave threads - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

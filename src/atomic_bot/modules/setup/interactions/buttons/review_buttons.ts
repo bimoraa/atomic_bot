@@ -1,3 +1,5 @@
+// - 评价面板按钮的交互注册 - \
+// - registers review panel button interactions - \
 import { ButtonInteraction } from "discord.js"
 import { ButtonHandler }     from "@shared/types/interaction"
 import { modal }             from "@shared/utils"

@@ -1,3 +1,5 @@
+// - 处理查看全员工作统计周次选择的菜单 - \
+// - handles the week select menu for all-staff work stats - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { component, db } from "@shared/utils"
 import { format_salary } from "@shared/database/trackers/work_tracker"

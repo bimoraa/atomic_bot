@@ -1,3 +1,5 @@
+// - 处理 booster 领取奖励的按钮 - \
+// - handles the booster reward claim button - \
 import { ButtonInteraction } from "discord.js"
 import * as booster_manager  from "@shared/database/managers/booster_manager"
 import { component, api }    from "@shared/utils"

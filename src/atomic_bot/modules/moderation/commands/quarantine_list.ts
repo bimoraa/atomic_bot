@@ -1,3 +1,5 @@
+// - /quarantine-list 斜杠命令，查看当前被隔离的用户 - \
+// - /quarantine-list slash command, shows currently quarantined users - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

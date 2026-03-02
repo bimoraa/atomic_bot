@@ -1,3 +1,5 @@
+// - 处理临时语音频道设置 modal 的提交 - \
+// - handles the temp voice settings modal submission - \
 import { ModalSubmitInteraction, GuildMember, VoiceChannel, Guild } from "discord.js"
 import * as tempvoice                                               from "@shared/database/services/tempvoice"
 import { component }                                                from "@shared/utils"

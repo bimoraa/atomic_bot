@@ -1,3 +1,5 @@
+// - 测试用的，手动触发 Roblox 更新通知看看效果 - \
+// - test command, manually fires the roblox update notification to see if it works - \
 // - 测试Roblox更新通知命令 - \
 // - test roblox update notification command - \
 

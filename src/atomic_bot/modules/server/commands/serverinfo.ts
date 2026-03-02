@@ -1,3 +1,5 @@
+// - /serverinfo 斜杠命令，查看服务器信息 - \
+// - /serverinfo slash command, shows server information - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

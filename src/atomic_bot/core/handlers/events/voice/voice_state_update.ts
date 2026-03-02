@@ -1,3 +1,5 @@
+// - 语音状态变化时触发，用于临时语音频道管理 - \
+// - handles voice state update events, used for temp voice management - \
 import { Events, VoiceState } from "discord.js"
 import { client }             from "../../../../../startup/atomic_bot"
 import * as tempvoice         from "@shared/database/services/tempvoice"

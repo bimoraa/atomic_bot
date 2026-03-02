@@ -1,3 +1,5 @@
+// - 处理脚本面板里「获取角色」的按钮 - \
+// - handles the get role button in the scripts panel - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import * as luarmor                     from "../../../../infrastructure/api/luarmor"
 import { component, api, env, format } from "@shared/utils"

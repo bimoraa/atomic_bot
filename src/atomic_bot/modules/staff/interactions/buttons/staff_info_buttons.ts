@@ -1,3 +1,5 @@
+// - 员工信息按钮组件的定义和构建 - \
+// - button component definitions for staff info - \
 import { ButtonInteraction } from "discord.js"
 import { ButtonHandler }     from "@shared/types/interaction"
 import { component, api }   from "@shared/utils"

@@ -1,3 +1,5 @@
+// - 查看提醒列表按钮的交互注册 - \
+// - registers the reminder list button interaction - \
 import { ButtonInteraction }    from "discord.js"
 import { get_reminder_list } from "../../controller"
 import { ButtonHandler }     from "@shared/types/interaction"

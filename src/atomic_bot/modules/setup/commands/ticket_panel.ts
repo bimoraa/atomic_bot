@@ -1,3 +1,5 @@
+// - /setup ticket-panel，部署票务面板 - \
+// - /setup ticket-panel command, deploys the ticket panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

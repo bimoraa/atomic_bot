@@ -1,3 +1,5 @@
+// - /edit-rules 斜杠命令，编辑服务器规则 - \
+// - /edit-rules slash command, edits server rules - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

@@ -1,3 +1,5 @@
+// - 临时语音频道用户管理选择菜单的交互注册 - \
+// - registers the user select menu for temp voice channel management - \
 // - 临时语音用户选择器 - \
 // - temp voice user select - \
 

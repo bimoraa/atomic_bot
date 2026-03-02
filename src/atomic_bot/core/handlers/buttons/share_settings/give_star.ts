@@ -1,3 +1,5 @@
+// - 处理给共享设置点赞的按钮 - \
+// - handles the give star button for share settings - \
 import { ButtonInteraction } from "discord.js"
 import { api }               from "@shared/utils"
 import { log_error }         from "@shared/utils/error_logger"

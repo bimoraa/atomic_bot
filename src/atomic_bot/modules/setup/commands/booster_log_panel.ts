@@ -1,3 +1,5 @@
+// - /setup booster-log-panel，部署 booster 日志面板 - \
+// - /setup booster-log-panel command, deploys the booster log panel - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, ChannelType } from "discord.js"
 import { Command }                                                       from "@shared/types/command"
 import { file }                                                          from "@shared/utils"

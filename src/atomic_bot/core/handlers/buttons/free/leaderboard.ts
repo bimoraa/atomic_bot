@@ -1,3 +1,5 @@
+// - 处理免费脚本面板里「排行榜」的按钮 - \
+// - handles the leaderboard button in the free scripts panel - \
 import { ButtonInteraction, GuildMember }   from "discord.js"
 import { component, api, format }           from "@shared/utils"
 import { http, env, logger }                from "@shared/utils"

@@ -1,3 +1,5 @@
+// - /staff submit-payment，提交支付记录 - \
+// - /staff submit-payment command, submits a payment record - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, TextChannel, ThreadChannel, MessageFlags } from "discord.js"
 import { Command }                        from "@shared/types/command"
 import { is_staff }                       from "@shared/database/settings/permissions"

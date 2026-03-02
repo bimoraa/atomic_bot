@@ -1,3 +1,5 @@
+// - /avatar 斜杠命令，查看用户头像 - \
+// - /avatar slash command, view a user's avatar - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

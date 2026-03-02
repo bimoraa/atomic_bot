@@ -1,3 +1,5 @@
+// - 启动时加载所有中间人票务的定时任务 - \
+// - scheduler that loads all active middleman tickets on startup - \
 import { Client } from "discord.js"
 import { logger } from "@shared/utils"
 import { load_active_tickets } from "@shared/database/managers/middleman_manager"

@@ -1,3 +1,5 @@
+// - /staff setup-staff-information，初始化员工信息面板 - \
+// - /staff setup-staff-information command, sets up the staff info panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

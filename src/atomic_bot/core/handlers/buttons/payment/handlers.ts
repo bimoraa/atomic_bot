@@ -1,3 +1,5 @@
+// - 处理支付相关的所有按钮，比如确认收款、踢人等 - \
+// - handles all payment buttons, like confirming payment and removing access - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { api, component, time } from "@shared/utils"
 import { create_key_for_project, delete_user_from_project } from "../../../../infrastructure/api/luarmor"

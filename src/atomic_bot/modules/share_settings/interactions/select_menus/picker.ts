@@ -1,3 +1,5 @@
+// - 共享设置选择器菜单的交互注册 - \
+// - registers the share settings picker select menu interaction - \
 // - 分享设置钓竿/皮肤选择器 - \
 // - share settings rod/skin picker - \
 

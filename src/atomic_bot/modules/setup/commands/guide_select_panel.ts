@@ -1,3 +1,5 @@
+// - /setup guide-select-panel，部署带选择菜单的指南面板 - \
+// - /setup guide-select-panel command, deploys the guide panel with a select menu - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }                                                       from "@shared/types/command"
 import { is_admin }                                                      from "@shared/database/settings/permissions"

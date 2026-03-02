@@ -1,3 +1,5 @@
+// - 员工功能的模块控制器 - \
+// - module controller for staff features - \
 // - 员工模块控制器，处理开发日志 - \
 // - staff controller, handles devlog publishing - \
 

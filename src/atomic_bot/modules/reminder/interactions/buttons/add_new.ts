@@ -1,3 +1,5 @@
+// - 新增提醒按钮的交互注册 - \
+// - registers the add new reminder button interaction - \
 import { ButtonInteraction } from "discord.js"
 import { modal }             from "@shared/utils"
 import { ButtonHandler }     from "@shared/types/interaction"

@@ -1,3 +1,5 @@
+// - 中间人功能的业务逻辑控制器 - \
+// - business logic controller for the middleman feature - \
 import {
   UserSelectMenuInteraction,
   TextChannel,

@@ -1,3 +1,5 @@
+// - 中间人功能的模块控制器 - \
+// - module controller for the middleman feature - \
 import {
   TextChannel,
   ChannelType,

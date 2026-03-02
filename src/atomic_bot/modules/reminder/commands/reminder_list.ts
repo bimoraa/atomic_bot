@@ -1,3 +1,5 @@
+// - /reminder-list 斜杠命令，查看所有提醒 - \
+// - /reminder-list slash command, shows all your reminders - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
 import { get_reminder_list }                                from "../controller"

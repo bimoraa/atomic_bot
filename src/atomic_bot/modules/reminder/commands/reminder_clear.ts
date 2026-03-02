@@ -1,3 +1,5 @@
+// - /reminder-clear 斜杠命令，清除提醒 - \
+// - /reminder-clear slash command, clears reminders - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
 import { component, format, db }                            from "@shared/utils"

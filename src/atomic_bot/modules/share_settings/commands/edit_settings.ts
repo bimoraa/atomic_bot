@@ -1,3 +1,5 @@
+// - /share-settings edit，编辑自己分享的设置 - \
+// - /share-settings edit command, edits your own shared settings - \
 import {
   AutocompleteInteraction,
   ChatInputCommandInteraction,

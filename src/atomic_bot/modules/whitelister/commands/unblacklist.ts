@@ -1,3 +1,5 @@
+// - /whitelist unblacklist，将用户从黑名单移除 - \
+// - /whitelist unblacklist command, removes a user from the blacklist - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, User } from "discord.js"
 import { Command }          from "@shared/types/command"
 import { member_has_role }  from "@shared/utils/discord_api"

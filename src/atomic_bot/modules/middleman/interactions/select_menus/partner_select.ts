@@ -1,3 +1,5 @@
+// - 中间人流程里选择合作方的菜单交互 - \
+// - partner select menu interaction for the middleman flow - \
 // - 中间人合伙人选择器 - \
 // - middleman partner select - \
 

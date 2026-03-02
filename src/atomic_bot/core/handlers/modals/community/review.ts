@@ -1,3 +1,5 @@
+// - 处理社区评价 modal 的提交 - \
+// - handles the community review modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { submit_review }          from "../../controllers/review_controller"
 

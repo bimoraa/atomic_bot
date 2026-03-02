@@ -1,3 +1,5 @@
+// - 服务器配置功能的模块控制器 - \
+// - module controller for setup/config features - \
 // - 安装设置控制器 - \
 // - setup controller - \
 

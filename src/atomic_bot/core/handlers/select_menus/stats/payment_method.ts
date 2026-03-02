@@ -1,3 +1,5 @@
+// - 处理选择支付方式的统计菜单 - \
+// - handles the payment method stats select menu - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { component, api } from "@shared/utils"
 import { get_ticket } from "@shared/database/unified_ticket"

@@ -1,3 +1,5 @@
+// - /move-channel 斜杠命令，移动频道位置 - \
+// - /move-channel slash command, moves a channel to a different category - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

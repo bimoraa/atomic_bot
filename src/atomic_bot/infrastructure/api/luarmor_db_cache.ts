@@ -1,3 +1,5 @@
+// - Luarmor 数据库缓存层，减少 API 请求次数 - \
+// - luarmor DB cache layer to cut down on API calls - \
 /**
  * - LUARMOR DATABASE CACHE LAYER - \\
  * PostgreSQL caching for Luarmor user data to reduce API calls

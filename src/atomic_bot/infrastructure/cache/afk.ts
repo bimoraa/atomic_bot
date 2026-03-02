@@ -1,3 +1,5 @@
+// - AFK 状态的内存缓存 - \
+// - in-memory cache for AFK status - \
 import { db } from "@shared/utils"
 
 interface AfkData {

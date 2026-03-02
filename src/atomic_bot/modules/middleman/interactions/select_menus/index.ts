@@ -1,3 +1,5 @@
+// - 中间人选择菜单交互的统一导出 - \
+// - barrel export for middleman select menu interactions - \
 // - 中间人选择菜单处理器汇总 - \\
 // - middleman select menu handlers all in one place - \\
 

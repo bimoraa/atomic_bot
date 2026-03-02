@@ -1,3 +1,5 @@
+// - 定时同步共享设置到论坛帖的定时任务 - \
+// - scheduler that syncs share settings to forum posts - \
 import { Client }          from "discord.js"
 import { logger }          from "@shared/utils"
 import { log_error }       from "@shared/utils/error_logger"

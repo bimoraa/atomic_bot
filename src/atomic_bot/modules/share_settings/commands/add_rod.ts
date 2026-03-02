@@ -1,3 +1,5 @@
+// - /share-settings add-rod，添加鱼竿设置分享 - \
+// - /share-settings add-rod command, adds a rod settings entry - \
 import {
   ChatInputCommandInteraction,
   PermissionFlagsBits,

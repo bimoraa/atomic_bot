@@ -1,3 +1,5 @@
+// - 中间人流程里选择买家的菜单交互 - \
+// - buyer select menu interaction for the middleman flow - \
 import { UserSelectMenuInteraction } from "discord.js"
 import { component }                  from "@shared/utils"
 

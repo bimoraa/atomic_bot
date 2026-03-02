@@ -1,3 +1,5 @@
+// - 处理提前结束 LOA 的按钮 - \
+// - handles the end LOA button - \
 import { ButtonInteraction }       from "discord.js"
 import { end_loa, has_loa_permission } from "../../controllers/loa_controller"
 

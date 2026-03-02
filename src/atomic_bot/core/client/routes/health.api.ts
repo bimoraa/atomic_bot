@@ -1,3 +1,5 @@
+// - 健康检查和根路由的 API - \
+// - health check and root API router - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
 

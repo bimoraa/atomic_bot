@@ -1,3 +1,5 @@
+// - ask 回答按钮的交互注册 - \
+// - registers the answer button interaction for ask - \
 // - 回答问题按钮 - \
 // - answer question button - \
 

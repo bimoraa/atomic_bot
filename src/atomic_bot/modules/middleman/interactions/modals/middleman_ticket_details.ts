@@ -1,3 +1,5 @@
+// - 处理中间人票务详情 modal 的提交 - \
+// - handles the middleman ticket details modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { open_middleman_ticket }  from "../../controller"
 import { log_error }              from "@shared/utils/error_logger"

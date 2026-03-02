@@ -1,3 +1,5 @@
+// - 处理「新增提醒」按钮，弹出填写 modal - \
+// - handles the add new reminder button, opens a modal - \
 import { ButtonInteraction } from "discord.js"
 import { modal }             from "@shared/utils"
 

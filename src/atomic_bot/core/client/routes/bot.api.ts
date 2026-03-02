@@ -1,3 +1,5 @@
+// - bot 基本信息和统计数据的 API 路由 - \
+// - bot info and stats API router - \
 import { Router, Request, Response } from "express"
 import { Client, ChannelType }       from "discord.js"
 

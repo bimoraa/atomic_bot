@@ -1,3 +1,5 @@
+// - 处理中间人流程里选择合作方的菜单 - \
+// - handles the partner select menu in the middleman flow - \
 import { UserSelectMenuInteraction } from "discord.js"
 import { open_middleman_ticket } from "../../controllers/middleman_controller"
 import { is_middleman_service_open } from "@shared/database/managers/middleman_service_manager"

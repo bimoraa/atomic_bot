@@ -1,3 +1,5 @@
+// - 处理 ask 频道里回答问题的按钮 - \
+// - handles the answer button in the ask channel - \
 import { ButtonInteraction, TextChannel, GuildMember, ChannelType, ThreadChannel } from "discord.js"
 import { component, api, db } from "@shared/utils"
 import { 

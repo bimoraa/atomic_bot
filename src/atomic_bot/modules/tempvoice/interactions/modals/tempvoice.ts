@@ -1,3 +1,5 @@
+// - 处理临时语音频道设置 modal 的提交 - \
+// - handles the temp voice settings modal submission - \
 // - 临时语音模态框处理器 - \
 // - temp voice modal handler - \
 

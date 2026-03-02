@@ -1,3 +1,5 @@
+// - 处理来自 GitHub 的 webhook 事件 - \
+// - handles incoming github webhook events - \
 import { Client }                      from "discord.js"
 import { api, component, format }      from "@shared/utils"
 import { log_error }                   from "@shared/utils/error_logger"

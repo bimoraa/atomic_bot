@@ -1,3 +1,5 @@
+// - /check-ghost-ping 斜杠命令，检查幽灵 ping - \
+// - /check-ghost-ping slash command, checks for ghost pings - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
 import { component, db, format, time }                      from "@shared/utils"

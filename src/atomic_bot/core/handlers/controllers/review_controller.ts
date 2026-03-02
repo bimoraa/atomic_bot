@@ -1,3 +1,5 @@
+// - 评价功能的业务逻辑控制器 - \
+// - business logic controller for the review feature - \
 import { Client, TextChannel }        from "discord.js"
 import { load_config }                from "@shared/config/loader"
 import { component, time, api }       from "@shared/utils"

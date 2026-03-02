@@ -1,3 +1,5 @@
+// - 工具功能的模块控制器 - \
+// - module controller for utility features - \
 // - 工具模块控制器，处理AFK逻辑 - \
 // - utility controller, handles afk logic - \
 

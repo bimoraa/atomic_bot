@@ -1,3 +1,5 @@
+// - 票务系统的模块控制器 - \
+// - module controller for the ticket system - \
 import { GuildMember }                                from "discord.js"
 import { load_config }                               from "@shared/config/loader"
 import { db }                                        from "@shared/utils"

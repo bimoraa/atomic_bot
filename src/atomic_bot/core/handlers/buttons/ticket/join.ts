@@ -1,3 +1,5 @@
+// - 处理加入票务频道的按钮 - \
+// - handles the join ticket button - \
 import { ButtonInteraction, GuildMember, TextChannel, ThreadChannel } from "discord.js"
 import {
   ticket_logs,

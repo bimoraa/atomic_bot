@@ -1,3 +1,5 @@
+// - /setup midman-close，关闭中间人接单 - \
+// - /setup midman-close command, closes middleman order intake - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

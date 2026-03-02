@@ -1,3 +1,5 @@
+// - 服务器配置功能的业务逻辑控制器 - \
+// - business logic controller for the setup/config feature - \
 import { ChatInputCommandInteraction, GuildMember, ChannelType } from "discord.js"
 import { guild_settings, component } from "@shared/utils"
 import { is_admin } from "@shared/database/settings/permissions"

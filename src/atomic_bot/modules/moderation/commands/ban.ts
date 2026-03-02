@@ -1,3 +1,5 @@
+// - /ban 斜杠命令，封禁用户 - \
+// - /ban slash command, bans a user - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

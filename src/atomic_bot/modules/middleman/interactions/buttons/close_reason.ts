@@ -1,3 +1,5 @@
+// - 中间人关闭原因按钮的交互注册 - \
+// - registers the close reason button for middleman tickets - \
 import { ButtonInteraction } from "discord.js"
 import { modal }             from "@shared/utils"
 import { get_ticket_config } from "@shared/database/unified_ticket"

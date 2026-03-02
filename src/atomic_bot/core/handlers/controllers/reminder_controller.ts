@@ -1,3 +1,5 @@
+// - 提醒功能的业务逻辑控制器 - \
+// - business logic controller for the reminder feature - \
 import { Client, ButtonInteraction, ChatInputCommandInteraction, ModalSubmitInteraction } from "discord.js"
 import { component, format, time, db, api } from "@shared/utils"
 import { log_error }                        from "@shared/utils/error_logger"

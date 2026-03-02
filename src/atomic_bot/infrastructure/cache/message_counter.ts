@@ -1,3 +1,5 @@
+// - 消息计数缓存，用于统计用户发消息数量 - \
+// - message counter cache, tracks how many messages each user sends - \
 import { TextChannel, AnyThreadChannel } from "discord.js"
 import { logger, array } from "@shared/utils"
 

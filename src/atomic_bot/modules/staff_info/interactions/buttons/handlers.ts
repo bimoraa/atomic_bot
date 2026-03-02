@@ -1,3 +1,5 @@
+// - 员工信息按钮交互的注册和处理 - \
+// - registers and handles staff info button interactions - \
 // - 员工信息按钮处理器 - \
 // - staff info button handler - \
 

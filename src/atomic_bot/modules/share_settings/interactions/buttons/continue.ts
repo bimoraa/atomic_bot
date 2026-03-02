@@ -1,3 +1,5 @@
+// - 共享设置「继续」按钮的交互注册 - \
+// - registers the continue button for the share settings flow - \
 // - 分享设置继续按钮 - \
 // - share settings continue button - \
 

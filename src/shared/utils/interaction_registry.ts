@@ -1,3 +1,5 @@
+// - 交互路由器，所有按钮/模态框/选择菜单都在这里分发 - \\
+// - interaction router, all buttons/modals/selects get dispatched from here - \\
 import {
   ButtonInteraction,
   ModalSubmitInteraction,

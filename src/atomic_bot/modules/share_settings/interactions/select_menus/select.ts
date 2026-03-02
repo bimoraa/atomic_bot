@@ -1,3 +1,5 @@
+// - 共享设置主选择菜单的交互注册 - \
+// - registers the main share settings select menu interaction - \
 // - 分享设置选择菜单 - \
 // - share settings select menu - \
 

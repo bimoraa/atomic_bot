@@ -1,3 +1,5 @@
+// - 脚本面板按钮组件的定义 - \
+// - button component definitions for the script panel - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
 import { component, modal }              from "@shared/utils"

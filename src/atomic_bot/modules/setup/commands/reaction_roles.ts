@@ -1,3 +1,5 @@
+// - /setup reaction-roles，配置反应身份组 - \
+// - /setup reaction-roles command, configures reaction roles - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

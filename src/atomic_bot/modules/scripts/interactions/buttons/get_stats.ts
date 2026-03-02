@@ -1,3 +1,5 @@
+// - 脚本面板「查看数据」按钮的交互注册 - \
+// - registers the get stats button for the scripts panel - \
 // - 脚本统计查看按钮 - \
 // - get script stats button - \
 

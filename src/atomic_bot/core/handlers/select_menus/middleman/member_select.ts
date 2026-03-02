@@ -1,3 +1,5 @@
+// - 处理中间人流程里选择成员的菜单 - \
+// - handles the member select menu in the middleman flow - \
 import { UserSelectMenuInteraction, ThreadChannel } from "discord.js"
 
 /**

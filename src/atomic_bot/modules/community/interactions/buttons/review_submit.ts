@@ -1,3 +1,5 @@
+// - 提交评价按钮的交互注册 - \
+// - registers the review submit button interaction - \
 // - 评价提交按钮 - \
 // - review submit button - \
 

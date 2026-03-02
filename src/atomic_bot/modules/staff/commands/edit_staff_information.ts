@@ -1,3 +1,5 @@
+// - /staff edit-staff-information，编辑员工信息 - \
+// - /staff edit-staff-information command, edits a staff member's info - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

@@ -1,3 +1,5 @@
+// - 免费脚本「重置 HWID」按钮的交互注册 - \
+// - registers the reset hwid button for free scripts - \
 // - 免费脚本重置HWID按钮 - \
 // - free script reset hwid button - \
 

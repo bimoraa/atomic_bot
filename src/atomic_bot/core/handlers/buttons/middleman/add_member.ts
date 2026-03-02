@@ -1,3 +1,5 @@
+// - 处理中间人票务里「添加成员」的按钮 - \
+// - handles the add member button in a middleman ticket - \
 import { ButtonInteraction, ThreadChannel } from "discord.js"
 import { component } from "@shared/utils"
 import { get_ticket_config } from "@shared/database/unified_ticket"

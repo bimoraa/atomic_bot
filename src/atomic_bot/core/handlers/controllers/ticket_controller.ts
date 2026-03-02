@@ -1,3 +1,5 @@
+// - 票务系统的业务逻辑控制器 - \
+// - business logic controller for the ticket system - \
 import { GuildMember } from "discord.js"
 import { load_config } from "@shared/config/loader"
 import { db }          from "@shared/utils"

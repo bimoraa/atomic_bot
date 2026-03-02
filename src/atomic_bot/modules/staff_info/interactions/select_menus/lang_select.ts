@@ -1,3 +1,5 @@
+// - 员工信息语言选择菜单的交互注册 - \
+// - registers the language select menu for staff info - \
 // - 员工信息语言选择器 - \
 // - staff info language select - \
 

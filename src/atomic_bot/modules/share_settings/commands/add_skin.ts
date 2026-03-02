@@ -1,3 +1,5 @@
+// - /share-settings add-skin，添加皮肤设置分享 - \
+// - /share-settings add-skin command, adds a skin settings entry - \
 import {
   ChatInputCommandInteraction,
   PermissionFlagsBits,

@@ -1,3 +1,5 @@
+// - /setup free-panel，部署免费脚本面板 - \
+// - /setup free-panel command, deploys the free scripts panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

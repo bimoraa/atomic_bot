@@ -1,3 +1,5 @@
+// - 免费脚本「查看数据」按钮的交互注册 - \
+// - registers the get stats button for free scripts - \
 // - 免费脚本查看统计按钮 - \
 // - free script view stats button - \
 

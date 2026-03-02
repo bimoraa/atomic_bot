@@ -1,3 +1,5 @@
+// - 共享设置功能的共享业务逻辑控制器 - \
+// - shared business logic controller for the share settings feature - \
 import {
   ChannelType,
   Client,

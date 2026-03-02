@@ -1,3 +1,5 @@
+// - Snipe 功能的缓存，记录最近删除的消息 - \
+// - snipe cache, stores recently deleted messages - \
 import { Message, PartialMessage } from "discord.js"
 
 interface DeletedMessage {

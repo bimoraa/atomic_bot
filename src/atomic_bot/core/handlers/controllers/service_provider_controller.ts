@@ -1,3 +1,5 @@
+// - 服务提供商相关的业务逻辑控制器，包括频率限制等 - \
+// - business logic controller for service provider stuff, rate limiting included - \
 import { Client }                from "discord.js"
 import { db, component }         from "@shared/utils"
 import { log_error }             from "@shared/utils/error_logger"

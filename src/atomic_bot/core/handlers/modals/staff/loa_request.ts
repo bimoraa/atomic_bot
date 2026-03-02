@@ -1,3 +1,5 @@
+// - 处理 LOA 申请 modal 的提交 - \
+// - handles the LOA request modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { request_loa }            from "../../controllers/loa_controller"
 import { db }                     from "@shared/utils"

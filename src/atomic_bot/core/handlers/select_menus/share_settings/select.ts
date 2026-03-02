@@ -1,3 +1,5 @@
+// - 处理共享设置主选择菜单 - \
+// - handles the main share settings select menu - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { log_error }                   from "@shared/utils/error_logger"
 import * as share_settings             from "@atomic/core/handlers/shared/controller/share_settings_controller"

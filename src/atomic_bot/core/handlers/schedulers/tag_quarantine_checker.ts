@@ -1,3 +1,5 @@
+// - 定时检查标签隔离状态的定时任务 - \
+// - scheduler that checks tag quarantine status periodically - \
 import { Client }                                       from "discord.js"
 import { logger }                                       from "@shared/utils"
 import { get_auto_tag_quarantines, remove_quarantine }  from "@shared/database/managers/quarantine_manager"

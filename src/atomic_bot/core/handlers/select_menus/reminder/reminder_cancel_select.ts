@@ -1,3 +1,5 @@
+// - 处理取消提醒时选择要取消哪条提醒的菜单 - \
+// - handles the select menu for picking which reminder to cancel - \
 import { StringSelectMenuInteraction } from "discord.js"
 import { cancel_reminder }             from "../../controllers/reminder_controller"
 

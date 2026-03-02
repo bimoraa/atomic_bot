@@ -1,3 +1,5 @@
+// - /staff prodete，处理产品删除相关操作 - \
+// - /staff prodete command, handles product deletion operations - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }                   from "@shared/types/command"
 import { component, format, logger } from "@shared/utils"

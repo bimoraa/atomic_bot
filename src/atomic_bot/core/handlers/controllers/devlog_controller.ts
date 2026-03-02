@@ -1,3 +1,5 @@
+// - 开发日志功能的业务逻辑控制器 - \
+// - business logic controller for the devlog feature - \
 import { Client }                       from "discord.js"
 import { load_config }                  from "@shared/config/loader"
 import { component, api, format, time } from "@shared/utils"

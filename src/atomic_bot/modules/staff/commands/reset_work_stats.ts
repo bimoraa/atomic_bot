@@ -1,3 +1,5 @@
+// - /staff reset-work-stats，重置员工工作统计 - \
+// - /staff reset-work-stats command, resets a staff member's work stats - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
 import { Command } from "@shared/types/command"
 import { component, db } from "@shared/utils"

@@ -1,3 +1,5 @@
+// - 处理脚本面板里「重置 HWID」的按钮 - \
+// - handles the reset hwid button in the scripts panel - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { component, api, format }             from "@shared/utils"
 import { reset_user_hwid }                    from "../../controllers/service_provider_controller"

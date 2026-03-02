@@ -1,3 +1,5 @@
+// - /afk-mod ignore，忽略某频道的 AFK 检测 - \
+// - /afk-mod ignore command, ignores AFK detection for a channel - \
 import { ChatInputCommandInteraction, ChannelType, SlashCommandSubcommandBuilder } from "discord.js"
 import { add_ignored_channel, remove_ignored_channel, is_ignored_channel }          from "../../../infrastructure/cache/afk"
 import { build_simple_message }                                                     from "./afk_utils"

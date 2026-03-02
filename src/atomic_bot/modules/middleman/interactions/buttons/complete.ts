@@ -1,3 +1,5 @@
+// - 中间人交易完成按钮的交互注册 - \
+// - registers the complete transaction button for middleman tickets - \
 import { ButtonInteraction, ThreadChannel, TextChannel } from "discord.js"
 import {
   close_ticket,

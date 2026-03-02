@@ -1,3 +1,5 @@
+// - 处理指南面板里示例按钮的跳转 - \
+// - handles the guide panel example button - \
 import { ButtonInteraction } from "discord.js"
 import { guide_buttons } from "../../../../modules/setup/commands/guide_panel"
 import { api, component } from "@shared/utils"

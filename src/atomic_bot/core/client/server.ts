@@ -1,3 +1,5 @@
+// - Express HTTP 服务器的启动和路由挂载 - \
+// - express HTTP server setup and route mounting - \
 import express                                    from "express"
 import { Client }                                from "discord.js"
 import cors                                      from "cors"

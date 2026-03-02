@@ -1,3 +1,5 @@
+// - AFK 功能的工具函数 - \
+// - utility functions for the AFK feature - \
 import { component } from "@shared/utils"
 
 /**

@@ -1,3 +1,5 @@
+// - 斜杠命令的分发处理器，找到命令然后执行 - \
+// - slash command dispatcher, looks up the command and runs it - \
 import { ApplicationCommandType, Client, Collection, REST, Routes } from "discord.js";
 import { Command, MessageContextMenuCommand }                        from "@shared/types/command";
 import { readdirSync }                                              from "fs";

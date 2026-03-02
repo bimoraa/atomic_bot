@@ -1,3 +1,5 @@
+// - 中间人按钮 handler 的统一导出入口 - \
+// - barrel export for all middleman button handlers - \
 // - MIDDLEMAN BUTTON HANDLERS - \\
 
 export { handle_middleman_close }              from "./close"

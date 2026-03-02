@@ -1,3 +1,5 @@
+// - /afk-mod clear，管理员清除指定用户的 AFK - \
+// - /afk-mod clear command, admin clears a specific user's AFK - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"
 import { remove_afk }                                                  from "../../../infrastructure/cache/afk"
 import { build_simple_message }                                        from "./afk_utils"

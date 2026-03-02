@@ -1,3 +1,5 @@
+// - /whois 斜杠命令，查看用户详细信息 - \
+// - /whois slash command, shows detailed info about a user - \
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from "discord.js"
 import { Command }  from "@shared/types/command"
 import { component } from "@shared/utils"

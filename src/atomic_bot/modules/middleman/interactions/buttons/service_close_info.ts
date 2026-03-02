@@ -1,3 +1,5 @@
+// - 中间人服务关闭信息按钮的交互注册 - \
+// - registers the service close info button for middleman - \
 import { ButtonInteraction } from "discord.js"
 import { api, component }    from "@shared/utils"
 import { ButtonHandler }     from "@shared/types/interaction"

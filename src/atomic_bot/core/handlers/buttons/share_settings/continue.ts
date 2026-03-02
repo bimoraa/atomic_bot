@@ -1,3 +1,5 @@
+// - 处理共享设置流程里「继续」的按钮 - \
+// - handles the continue button in the share settings flow - \
 import { ButtonInteraction } from "discord.js"
 import { modal }             from "@shared/utils"
 import { log_error }         from "@shared/utils/error_logger"

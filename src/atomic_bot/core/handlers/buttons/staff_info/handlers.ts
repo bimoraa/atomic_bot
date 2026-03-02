@@ -1,3 +1,5 @@
+// - 处理员工信息相关的所有按钮 - \
+// - handles all staff info buttons - \
 import { ButtonInteraction } from "discord.js"
 import { log_error } from "@shared/utils/error_logger"
 import { custom_id_to_file_name, get_staff_info_document } from "@shared/utils/staff_info_parser"

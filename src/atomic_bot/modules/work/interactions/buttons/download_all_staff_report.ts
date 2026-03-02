@@ -1,3 +1,5 @@
+// - 下载全员工作报告按钮的交互注册 - \
+// - registers the download all staff report button interaction - \
 // - 下载全员工作报告按钮 - \
 // - download all staff report button - \
 

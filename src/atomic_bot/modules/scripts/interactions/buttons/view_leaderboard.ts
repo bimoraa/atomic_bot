@@ -1,3 +1,5 @@
+// - 脚本面板「查看排行榜」按钮的交互注册 - \
+// - registers the view leaderboard button for the scripts panel - \
 // - 执行排行榜按钮 - \
 // - execution leaderboard button - \
 

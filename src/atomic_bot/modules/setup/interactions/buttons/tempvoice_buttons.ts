@@ -1,3 +1,5 @@
+// - 临时语音面板按钮的交互注册 - \
+// - registers temp voice panel button interactions - \
 import { ButtonInteraction, GuildMember, VoiceChannel } from "discord.js"
 import { ButtonHandler }                                from "@shared/types/interaction"
 import { component, modal }                            from "@shared/utils"

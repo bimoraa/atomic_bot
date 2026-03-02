@@ -1,3 +1,5 @@
+// - 处理临时语音频道选择地区的菜单 - \
+// - handles the region select menu for temp voice channels - \
 import { StringSelectMenuInteraction, GuildMember, VoiceChannel } from "discord.js"
 import * as tempvoice                                              from "@shared/database/services/tempvoice"
 import { component }                                               from "@shared/utils"

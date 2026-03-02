@@ -1,3 +1,5 @@
+// - 处理中间人服务关闭信息的按钮 - \
+// - handles the middleman service close info button - \
 import { ButtonInteraction } from "discord.js"
 import { api, component } from "@shared/utils"
 

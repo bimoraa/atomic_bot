@@ -1,3 +1,5 @@
+// - 处理隔离申诉通过、释放用户的按钮 - \
+// - handles the quarantine release button - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { release_quarantine }             from "../../controllers/quarantine_controller"
 import { component }                      from "@shared/utils"

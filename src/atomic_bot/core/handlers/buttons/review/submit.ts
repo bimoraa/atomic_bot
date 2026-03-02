@@ -1,3 +1,5 @@
+// - 处理提交评价的按钮，弹出评价 modal - \
+// - handles the review submit button, opens a review modal - \
 import { ButtonInteraction } from "discord.js"
 import { modal } from "@shared/utils"
 

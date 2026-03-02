@@ -1,3 +1,5 @@
+// - /whitelist add，给用户添加白名单权限 - \
+// - /whitelist add command, gives a user whitelist access - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

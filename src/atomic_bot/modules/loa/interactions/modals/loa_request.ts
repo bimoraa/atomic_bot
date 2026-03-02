@@ -1,3 +1,5 @@
+// - 处理 LOA 申请 modal 提交的注册和逻辑 - \
+// - registers and handles the LOA request modal submission - \
 // - 请假申请模态框处理器 - \
 // - loa request modal handler - \
 

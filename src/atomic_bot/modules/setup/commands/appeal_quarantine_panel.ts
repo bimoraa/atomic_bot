@@ -1,3 +1,5 @@
+// - /setup appeal-quarantine-panel，部署隔离申诉面板 - \
+// - /setup appeal-quarantine-panel command, deploys the quarantine appeal panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

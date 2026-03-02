@@ -1,3 +1,5 @@
+// - /setup script-price，配置脚本价格 - \
+// - /setup script-price command, configures script pricing - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

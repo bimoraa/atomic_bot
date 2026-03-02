@@ -1,3 +1,5 @@
+// - 用户数据相关的 API 路由 - \
+// - user data API router - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
 import * as database                 from "@shared/utils/database"

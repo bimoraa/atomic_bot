@@ -1,3 +1,5 @@
+// - 处理中间人关闭原因 modal 的提交 - \
+// - handles the middleman close reason modal submission - \
 import { ModalSubmitInteraction, ThreadChannel, TextChannel } from "discord.js"
 import { close_ticket } from "@shared/database/unified_ticket"
 import { cancel_middleman_ticket, get_middleman_ticket } from "@shared/database/managers/middleman_manager"

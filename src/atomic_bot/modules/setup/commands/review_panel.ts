@@ -1,3 +1,5 @@
+// - /setup review-panel，部署评价面板 - \
+// - /setup review-panel command, deploys the review panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

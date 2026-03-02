@@ -1,3 +1,5 @@
+// - 日志相关的 API 路由 - \
+// - logs API router - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
 import * as database                 from "@shared/utils/database"

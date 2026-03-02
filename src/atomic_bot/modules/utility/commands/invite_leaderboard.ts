@@ -1,3 +1,5 @@
+// - /invite-leaderboard 斜杠命令，查看邀请排行榜 - \
+// - /invite-leaderboard slash command, shows the invite leaderboard - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                           from "@shared/types/command"
 import { api, component, db }                                from "@shared/utils"

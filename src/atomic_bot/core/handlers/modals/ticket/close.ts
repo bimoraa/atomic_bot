@@ -1,3 +1,5 @@
+// - 处理关闭票务 modal 的提交 - \
+// - handles the ticket close modal submission - \
 import { ModalSubmitInteraction, ThreadChannel } from "discord.js"
 import { close_ticket } from "@shared/database/unified_ticket"
 

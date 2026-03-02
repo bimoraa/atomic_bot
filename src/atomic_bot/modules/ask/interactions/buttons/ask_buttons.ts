@@ -1,3 +1,5 @@
+// - ask 相关按钮的定义和构建 - \
+// - button definitions and builders for the ask feature - \
 import { ButtonInteraction, TextChannel } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
 import { modal }                          from "@shared/utils"

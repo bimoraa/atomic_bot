@@ -1,3 +1,5 @@
+// - ask staff 按钮的交互注册 - \
+// - registers the ask staff button interaction - \
 // - 提问员工按钮 - \
 // - ask staff button - \
 

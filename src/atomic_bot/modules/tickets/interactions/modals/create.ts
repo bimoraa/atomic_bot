@@ -1,3 +1,5 @@
+// - 处理创建票务 modal 的提交 - \
+// - handles the ticket create modal submission - \
 import { ModalSubmitInteraction, ButtonInteraction } from "discord.js"
 import { open_ticket } from "@shared/database/unified_ticket"
 

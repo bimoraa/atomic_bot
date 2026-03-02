@@ -1,3 +1,5 @@
+// - /softban 斜杠命令，软封禁用户（封后立解） - \
+// - /softban slash command, bans then immediately unbans to delete messages - \
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from "discord.js"
 import { Command }  from "@shared/types/command"
 import { component } from "@shared/utils"

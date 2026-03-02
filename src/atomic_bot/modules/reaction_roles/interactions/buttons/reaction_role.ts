@@ -1,3 +1,5 @@
+// - 反应身份组按钮的交互注册 - \
+// - registers the reaction role button interaction - \
 // - 反应角色按钮处理器 - \
 // - reaction role toggle button handler - \
 

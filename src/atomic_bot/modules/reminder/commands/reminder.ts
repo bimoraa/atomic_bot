@@ -1,3 +1,5 @@
+// - /reminder 斜杠命令，设置提醒 - \
+// - /reminder slash command, sets a reminder - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, Client } from "discord.js"
 import { Command }                                           from "@shared/types/command"
 import { component, time, db, api }                          from "@shared/utils"

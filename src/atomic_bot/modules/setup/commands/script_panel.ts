@@ -1,3 +1,5 @@
+// - /setup script-panel，部署脚本面板 - \
+// - /setup script-panel command, deploys the scripts panel - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

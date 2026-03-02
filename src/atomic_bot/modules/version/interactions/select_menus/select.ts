@@ -1,3 +1,5 @@
+// - 版本选择菜单的交互注册 - \
+// - registers the version select menu interaction - \
 // - 版本平台选择器 - \
 // - version platform select - \
 

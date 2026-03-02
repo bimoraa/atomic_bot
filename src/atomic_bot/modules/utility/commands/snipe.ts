@@ -1,3 +1,5 @@
+// - /snipe 斜杠命令，查看最近删除的消息 - \
+// - /snipe slash command, shows the most recently deleted message - \
 import {
   ChatInputCommandInteraction,
   SlashCommandBuilder,

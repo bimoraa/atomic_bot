@@ -1,3 +1,5 @@
+// - AV 检查器开关按钮的交互注册 - \
+// - registers the av checker toggle button interaction - \
 // - 头像查看器切换按钮 - \
 // - av checker toggle button - \
 

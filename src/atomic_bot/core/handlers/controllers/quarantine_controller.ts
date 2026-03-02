@@ -1,3 +1,5 @@
+// - 隔离功能的业务逻辑控制器 - \
+// - business logic controller for the quarantine feature - \
 import { Client, GuildMember, Guild, Role, TextChannel } from "discord.js"
 import { component, time }                               from "@shared/utils"
 import { log_error }                                     from "@shared/utils/error_logger"

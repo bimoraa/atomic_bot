@@ -1,3 +1,6 @@
+// - 全局错误处理中间件，所有机器人的命令执行过程中的异常、报错都会在这里被统一捕获、通过系统上报并给用户返回友好的错误提示，防止服务崩溃或静默失败 - \\
+// - global error handling middleware, all exceptions and errors during command execution across all bots are uniformly caught here, reported via the system logger, and a graceful error message is returned to the user to prevent service crashes or silent failures - \\
+
 import { log_error }                           from "@shared/utils/error_logger"
 import { component }                           from "@shared/utils"
 import { MiddlewareFunction, MiddlewareContext, NextFunction } from "./runner"

@@ -1,3 +1,5 @@
+// - 处理批准 LOA 请假的按钮 - \
+// - handles the approve LOA button - \
 import { ButtonInteraction }         from "discord.js"
 import { approve_loa, has_loa_permission } from "../../controllers/loa_controller"
 

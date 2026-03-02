@@ -1,3 +1,5 @@
+// - 处理下载全员工作报告的按钮 - \
+// - handles the download all staff work report button - \
 import { ButtonInteraction }            from "discord.js"
 import { db, component }                from "@shared/utils"
 import { format_salary }                from "@shared/database/trackers/work_tracker"
