@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { TranscriptMessage } from '@/components/features/transcript/transcript-message'
+import { TranscriptMessage } from '@/components/features/transcript/transcript_message'
 import { Ticket, User, UserCheck, Clock, CheckCircle2, Search, Bell } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { AtomicLogo } from '@/components/icons/atomic-logo'
+import { AtomicLogo } from '@/components/icons/atomic_logo'
 
 export function TranscriptClientView({ 
   transcript, 

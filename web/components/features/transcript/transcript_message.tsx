@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useState, useEffect } from "react"
-import { UserDialog } from '@/components/features/users/user-dialog'
+import { UserDialog } from '@/components/features/users/user_dialog'
 
 export interface transcript_attachment {
   url: string

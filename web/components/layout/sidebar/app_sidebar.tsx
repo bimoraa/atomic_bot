@@ -57,7 +57,7 @@ import {
 } from "@tabler/icons-react";
 import type React from "react";
 import { useState } from "react";
-import { TeamSwitcher } from "@/components/layout/sidebar/team-switcher";
+import { TeamSwitcher } from "@/components/layout/sidebar/team_switcher";
 
 const data = {
   teams: [

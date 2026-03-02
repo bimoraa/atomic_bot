@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useAnimationFrame, useTransform } from 'motion/react';
-import './ShinyText.css';
+import './shiny_text.css';
 
 interface ShinyTextProps {
   text: string;

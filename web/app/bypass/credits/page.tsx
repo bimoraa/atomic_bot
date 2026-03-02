@@ -6,10 +6,10 @@ import dynamic                                           from 'next/dynamic'
 import { motion, AnimatePresence }                       from 'framer-motion'
 import { IconBrandGithub, IconBrandDiscord, IconX, IconCalendar, IconCrown } from '@tabler/icons-react'
 import { Tabs }                                          from '@/components/ui/tabs'
-import { BypassTopbar }                                  from '@/components/layout/bypass-topbar'
+import { BypassTopbar }                                  from '@/components/layout/bypass_topbar'
 
 // - LAZY LOAD LIGHTRAYS - \\
-const LightRays = dynamic(() => import('@/components/animations/LightRays'), { ssr: false })
+const LightRays = dynamic(() => import('@/components/animations/light_rays'), { ssr: false })
 
 const __credits = [
   {

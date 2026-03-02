@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { gsap } from 'gsap';
-import './PillNav.css';
+import './pill_nav.css';
 
 export type PillNavItem = {
   label: string;

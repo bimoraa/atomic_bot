@@ -11,7 +11,7 @@ import {
 } from 'motion/react';
 import React, { Children, cloneElement, useEffect, useMemo, useRef, useState } from 'react';
 
-import './Dock.css';
+import './dock.css';
 
 export type DockItemData = {
   icon: React.ReactNode;

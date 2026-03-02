@@ -1,7 +1,7 @@
 import { get_transcript } from '@/lib/db'
 import { notFound, redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
-import { TranscriptClientView } from './transcript-client-view'
+import { TranscriptClientView } from './transcript_client_view'
 
 export default async function TranscriptPage({
   params,

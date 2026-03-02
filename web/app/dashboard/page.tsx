@@ -8,10 +8,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Loader2, Search, ExternalLink, FileText, Clock, User, Tag, Filter, Calendar as CalendarIcon, X, MoreHorizontal, Eye, Info } from 'lucide-react'
 import { IconFileText } from '@tabler/icons-react'
-import { DashboardSidebar } from '@/components/layout/dashboard-sidebar'
+import { DashboardSidebar } from '@/components/layout/dashboard_sidebar'
 import { Calendar } from '@/components/ui/calendar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { UserDialog } from '@/components/features/users/user-dialog'
+import { UserDialog } from '@/components/features/users/user_dialog'
 import {
   Dialog,
   DialogContent,

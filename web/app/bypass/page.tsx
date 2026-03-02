@@ -3,10 +3,10 @@
 import { useState, useRef, useCallback, useEffect, useId } from 'react'
 import { Button as StatefulButton } from '@/components/ui/stateful-button'
 import { cn }                       from '@/lib/utils'
-import { BypassTopbar }  from '@/components/layout/bypass-topbar'
-import ShinyText          from '@/components/animations/ShinyText'
-import DarkVeil          from '@/components/animations/DarkVeil'
-import CountUp            from '@/components/animations/CountUp'
+import { BypassTopbar }  from '@/components/layout/bypass_topbar'
+import ShinyText          from '@/components/animations/shiny_text'
+import DarkVeil          from '@/components/animations/dark_veil'
+import CountUp            from '@/components/animations/count_up'
 import { FlipWords }      from '@/components/ui/flip-words'
 import {
   Link2,
