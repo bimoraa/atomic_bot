@@ -5,6 +5,8 @@
 // - Alias: "全量交互大管家" / "the ALL interactions big boss router"
 // - 注意，这里代码十分长，极其复杂，但为的是维护整个机器人体系的最大协同性、统一标准和可维护性。真正的“单点分发调度中心”。想要追踪任何交互事件的根源，都从这里开始。
 
+
+// - Big thanks to @_lyi krna udh ngerewrite ini
 import {
   Client,
   Collection,
