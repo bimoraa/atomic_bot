@@ -11,9 +11,9 @@ interface TransactionRange {
 
 const __transaction_ranges: Record<string, TransactionRange> = {
   "dVzaCndYpO": { id: "dVzaCndYpO", label: "Rp 10.000 – Rp 50.000",   range: "Rp 10.000 – Rp 50.000",   fee: "Rp 1.500" },
-  "laf8By4Gtm": { id: "laf8By4Gtm", label: "Rp 50.000 – Rp 100.000",  range: "Rp 50.000 – Rp 100.000",  fee: "Rp 5.000" },
-  "1FS1PRT0Ys": { id: "1FS1PRT0Ys", label: "Rp 100.000 – Rp 200.000", range: "Rp 100.000 – Rp 200.000", fee: "Rp 8.000" },
-  "WnGoXX4HnQ": { id: "WnGoXX4HnQ", label: "Rp 200.000 – Rp 300.000", range: "Rp 200.000 – Rp 300.000", fee: "Rp 12.000" },
+  "laf8By4Gtm": { id: "laf8By4Gtm", label: "Rp 51.000 – Rp 100.000",  range: "Rp 51.000 – Rp 100.000",  fee: "Rp 5.000" },
+  "1FS1PRT0Ys": { id: "1FS1PRT0Ys", label: "Rp 101.000 – Rp 200.000", range: "Rp 101.000 – Rp 200.000", fee: "Rp 8.000" },
+  "WnGoXX4HnQ": { id: "WnGoXX4HnQ", label: "Rp 201.000 – Rp 300.000", range: "Rp 201.000 – Rp 300.000", fee: "Rp 12.000" },
   "PIMLKDohan": { id: "PIMLKDohan", label: "≥ Rp 300.000",            range: "≥ Rp 300.000",            fee: "5% dari total transaksi" },
 }
 
