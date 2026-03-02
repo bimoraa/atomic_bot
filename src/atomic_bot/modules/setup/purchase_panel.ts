@@ -78,7 +78,7 @@ export const command: Command = {
         component.container({
           components: [
             component.action_row(
-              component.success_button("Purchase Script ( Open a Ticket )", "__purchase_script")
+              component.success_button("Purchase Script ( Open a Ticket )", "purchase_open")
             ),
           ],
         }),
