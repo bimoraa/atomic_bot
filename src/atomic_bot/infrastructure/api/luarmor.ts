@@ -1027,6 +1027,7 @@ export async function link_discord(user_key: string, discord_id: string): Promis
 }
 
 export interface luarmor_script {
+  project_id    : string
   script_name   : string
   script_id     : string
   script_version: string
@@ -1057,18 +1058,16 @@ export async function get_project_scripts(): Promise<luarmor_response<luarmor_sc
     return { success: false, error: "No projects found in API key details" }
   }
 
-  let target_projects = projects
+  const __script_project_ids = [
+    "3caa519b38bfea3ce3c83e5cd7abe5ee",
+    "6958841b2d9e5e049a24a23e376e0d77",
+  ]
 
-  try {
-    const pid = get_project_id()
-    const match = projects.find((p: any) => p.id === pid)
-    if (match) target_projects = [match]
-  } catch {
-    // - LUARMOR_PROJECT_ID not set — use all projects - \\
-  }
+  const target_projects = projects.filter((p: any) => __script_project_ids.includes(p.id))
 
   const scripts: luarmor_script[] = target_projects.flatMap((p: any) =>
     (p.scripts ?? []).map((s: any) => ({
+      project_id    : p.id             ?? "",
       script_name   : s.script_name    ?? "",
       script_id     : s.script_id      ?? "",
       script_version: s.script_version ?? "0000",
@@ -1086,8 +1085,8 @@ export async function get_project_scripts(): Promise<luarmor_response<luarmor_sc
  * @param {string} script    - The raw script content
  * @returns {Promise<luarmor_response<null>>} Response
  */
-export async function update_script(script_id: string, script: string): Promise<luarmor_response<null>> {
-  const url = `${__base_url}/projects/${get_project_id()}/scripts/${script_id}`
+export async function update_script(script_id: string, script: string, project_id: string): Promise<luarmor_response<null>> {
+  const url = `${__base_url}/projects/${project_id}/scripts/${script_id}`
 
   const result = await make_request<any>(url, {
     method : "PUT",

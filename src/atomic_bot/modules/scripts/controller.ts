@@ -196,9 +196,14 @@ export async function perform_script_update(ref_key: string, script_id: string):
   const before         = scripts_before.data?.find((s) => s.script_id === script_id)
   const script_name    = before?.script_name    ?? script_id
   const old_version    = before?.script_version ?? "????"
+  const project_id     = before?.project_id     ?? ""
+
+  if (!project_id) {
+    return { success: false, error: "Could not determine project for this script.", script_name, old_version, new_version: old_version }
+  }
 
   const { content } = await fetch_file_content(ref.url)
-  const result      = await luarmor.update_script(script_id, content)
+  const result      = await luarmor.update_script(script_id, content, project_id)
 
   if (!result.success) {
     return { success: false, error: result.error, script_name, old_version, new_version: old_version }
