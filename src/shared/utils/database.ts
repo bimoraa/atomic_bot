@@ -560,6 +560,43 @@ async function init_tables(): Promise<void> {
     `)
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS staff_applications (
+        id                   SERIAL PRIMARY KEY,
+        uuid                 VARCHAR(36) UNIQUE,
+        discord_id           VARCHAR(255) NOT NULL UNIQUE,
+        discord_username     VARCHAR(255),
+        full_name            VARCHAR(255),
+        dob                  VARCHAR(255),
+        languages            TEXT,
+        communication_skills INTEGER,
+        explanation          TEXT,
+        handle_upset_users   TEXT,
+        handle_uncertainty   TEXT,
+        why_join             TEXT,
+        good_fit             TEXT,
+        other_experience     TEXT,
+        unsure_case          TEXT,
+        working_mic          VARCHAR(50),
+        understand_abuse     VARCHAR(50),
+        additional_questions TEXT,
+        created_at           BIGINT
+      )
+    `)
+
+    await client.query(`
+      ALTER TABLE staff_applications ADD COLUMN IF NOT EXISTS uuid VARCHAR(36)
+    `).catch(() => {})
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_staff_applications_discord_id ON staff_applications(discord_id)
+    `).catch(() => {})
+
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_applications_uuid_unique ON staff_applications(uuid)
+    `).catch(() => {})
+
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS bypass_guild_stats (
         id       BIGSERIAL PRIMARY KEY,
         guild_id TEXT NOT NULL,
@@ -846,6 +883,7 @@ function get_table_name(collection: string): string {
     guild_settings: "guild_settings",
     middleman_service_status: "middleman_service_status",
     staff_voice_sessions    : "staff_voice_sessions",
+    staff_applications     : "staff_applications",
   }
 
   return table_map[collection] || "generic_data"

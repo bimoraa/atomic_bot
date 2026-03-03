@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const code      = searchParams.get('code')
-  const return_to = searchParams.get('state') || '/transcript'
+  const return_to = searchParams.get('state') || '/dashboard'
 
   if (!code) {
     return NextResponse.redirect(`${process.env.NEXT_PUBLIC_WEB_URL}/login?error=no_code`)

@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Discord client ID not configured' }, { status: 500 })
   }
 
-  const return_to = req.nextUrl.searchParams.get('return_to') || '/transcript'
+  const return_to = req.nextUrl.searchParams.get('return_to') || '/dashboard'
 
   const discord_auth_url = new URL('https://discord.com/api/oauth2/authorize')
   discord_auth_url.searchParams.set('client_id', client_id)

@@ -10,7 +10,7 @@ import { Loader2, AlertCircle } from 'lucide-react'
 function LoginForm() {
   const searchParams = useSearchParams()
   const error     = searchParams.get('error')
-  const return_to = searchParams.get('return_to') || '/transcript'
+  const return_to = searchParams.get('callback') || searchParams.get('return_to') || '/dashboard'
   const [is_loading, set_is_loading] = useState(false)
 
   const handle_discord_login = () => {

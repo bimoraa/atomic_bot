@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
-    "lib": [
+    "target": "ES2022",
+    "lib": ["ES2022",
       "dom",
       "dom.iterable",
       "esnext"
@@ -26,6 +26,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@shared/*": [
+        "../src/shared/*"
       ]
     }
   },
