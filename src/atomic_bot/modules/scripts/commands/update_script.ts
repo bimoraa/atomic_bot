@@ -9,10 +9,10 @@ export const command: Command = {
   data: new SlashCommandBuilder()
     .setName("push-script")
     .setDescription("Push a local script file to Luarmor")
-    .addStringOption((option) =>
+    .addAttachmentOption((option) =>
       option
         .setName("file")
-        .setDescription("Path to the local script file to upload")
+        .setDescription("The script file to upload")
         .setRequired(true)
     ) as SlashCommandBuilder,
 
@@ -20,8 +20,8 @@ export const command: Command = {
     await interaction.deferReply({ ephemeral: true })
 
     try {
-      const file_path = interaction.options.getString("file", true)
-      const message   = await build_update_script_message(file_path)
+      const attachment = interaction.options.getAttachment("file", true)
+      const message    = await build_update_script_message(attachment.url, attachment.name)
 
       await interaction.editReply(message as any)
     } catch (err) {
