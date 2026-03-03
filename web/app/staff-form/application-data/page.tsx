@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState }      from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AtomicLogo }               from "@/components/icons/atomic_logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -83,7 +83,7 @@ const faq_items = [
   },
 ]
 
-export default function ApplicationDataPage() {
+function ApplicationDataPageContent() {
   const router        = useRouter()
   const search_params = useSearchParams()
   const uuid          = search_params.get("id")
@@ -358,5 +358,17 @@ export default function ApplicationDataPage() {
         </div>
       </div>
     </section>
+  )
+}
+
+export default function ApplicationDataPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    }>
+      <ApplicationDataPageContent />
+    </Suspense>
   )
 }
