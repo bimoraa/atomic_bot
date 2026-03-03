@@ -96,6 +96,7 @@ import { handle_script_redeem_modal }           from "@atomic/modules/scripts/in
 import { handle_tempvoice_modal }               from "@atomic/modules/tempvoice/interactions/modals/tempvoice"
 import { handle_review_modal }                  from "@atomic/modules/community/interactions/modals/review"
 import { handle_middleman_close_reason_modal }  from "@atomic/modules/middleman/interactions/modals/middleman_close_reason"
+import { handle_middleman_ticket_details_modal } from "@atomic/modules/middleman/interactions/modals/middleman_ticket_details"
 import { handle_share_settings_modal }          from "@atomic/modules/share_settings/interactions/modals/share_settings"
 import { handle_edit_staff_info_modal }         from "@atomic/modules/staff_info/interactions/modals/staff_info"
 
@@ -659,6 +660,7 @@ export async function handle_interaction(
       if (await handle_reminder_add_new_modal(interaction)) return
       if (await handle_loa_request_modal(interaction)) return
       if (await handle_script_redeem_modal(interaction)) return
+      if (await handle_middleman_ticket_details_modal(interaction)) return
       if (await handle_middleman_close_reason_modal(interaction)) return
       if (await handle_share_settings_modal(interaction)) return
       if (await handle_edit_staff_info_modal(interaction)) return
