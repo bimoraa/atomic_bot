@@ -1039,7 +1039,7 @@ export interface luarmor_script {
  * @returns {Promise<luarmor_response<luarmor_script[]>>} Response with script list
  */
 export async function get_project_scripts(): Promise<luarmor_response<luarmor_script[]>> {
-  const url = `${__base_url}/keys/${get_api_key()}`
+  const url = `${__base_url}/keys/${get_api_key()}/details`
 
   const result = await make_request<any>(url, {
     method : "GET",
@@ -1050,20 +1050,32 @@ export async function get_project_scripts(): Promise<luarmor_response<luarmor_sc
     return { success: false, error: result.error?.message || "Failed to fetch API key details" }
   }
 
-  const data = result.data
+  const data     = result.data
+  const projects = data?.projects as any[] | undefined
 
-  const project = data?.projects?.find((p: any) => p.id === get_project_id())
-  if (!project) {
-    return { success: false, error: "Project not found in API key details" }
+  if (!projects?.length) {
+    return { success: false, error: "No projects found in API key details" }
   }
 
-  const scripts: luarmor_script[] = (project.scripts ?? []).map((s: any) => ({
-    script_name   : s.script_name    ?? "",
-    script_id     : s.script_id      ?? "",
-    script_version: s.script_version ?? "0000",
-    ffa           : s.ffa            ?? false,
-    silent        : s.silent         ?? false,
-  }))
+  let target_projects = projects
+
+  try {
+    const pid = get_project_id()
+    const match = projects.find((p: any) => p.id === pid)
+    if (match) target_projects = [match]
+  } catch {
+    // - LUARMOR_PROJECT_ID not set — use all projects - \\
+  }
+
+  const scripts: luarmor_script[] = target_projects.flatMap((p: any) =>
+    (p.scripts ?? []).map((s: any) => ({
+      script_name   : s.script_name    ?? "",
+      script_id     : s.script_id      ?? "",
+      script_version: s.script_version ?? "0000",
+      ffa           : s.ffa            ?? false,
+      silent        : s.silent         ?? false,
+    }))
+  )
 
   return { success: true, data: scripts }
 }
