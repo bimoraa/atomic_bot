@@ -11,8 +11,15 @@ import { build_select_update_message,
  * @param {StringSelectMenuInteraction} interaction - The string select menu interaction
  * @returns {Promise<boolean>} Returns true if handled
  */
+const __allowed_user_id = "1118453649727823974"
+
 export async function handle_script_update_select(interaction: StringSelectMenuInteraction): Promise<boolean> {
   if (!interaction.customId.startsWith("script_update_select:")) return false
+
+  if (interaction.user.id !== __allowed_user_id) {
+    await interaction.reply({ content: "You are not allowed to use this.", ephemeral: true })
+    return true
+  }
 
   const file_path = interaction.customId.split(":")[1] ?? ""
   const script_id = interaction.values[0]
@@ -38,6 +45,11 @@ export async function handle_script_update_select(interaction: StringSelectMenuI
  */
 export async function handle_script_update_btn(interaction: ButtonInteraction): Promise<boolean> {
   if (!interaction.customId.startsWith("script_update_btn:")) return false
+
+  if (interaction.user.id !== __allowed_user_id) {
+    await interaction.reply({ content: "You are not allowed to use this.", ephemeral: true })
+    return true
+  }
 
   const parts     = interaction.customId.split(":")
   const file_path = parts[1] ?? ""

@@ -17,6 +17,11 @@ export const command: Command = {
     ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction) {
+    if (interaction.user.id !== "1118453649727823974") {
+      await interaction.reply({ content: "You are not allowed to use this command.", ephemeral: true })
+      return
+    }
+
     await interaction.deferReply({ ephemeral: true })
 
     try {
