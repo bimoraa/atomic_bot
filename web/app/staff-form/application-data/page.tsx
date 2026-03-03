@@ -22,8 +22,9 @@ interface staff_application {
   full_name            : string
   dob                  : string
   languages            : string[]
-  communication_skills : number
-  explanation          : string
+  past_cs_experience   : string
+  past_staff_experience: string
+  active_other_hub     : string
   handle_upset_users   : string
   handle_uncertainty   : string
   why_join             : string
@@ -243,19 +244,20 @@ function ApplicationDataPageContent() {
                       <div className="grid sm:grid-cols-2 gap-5">
                         <ReadOnlyField label="Full Name" value={application.full_name} />
                         <ReadOnlyField label="Date of Birth" value={dob_display} />
-                        <ReadOnlyField label="Languages" value={application.languages} />
-                        <ReadOnlyField label="Communication Rating" value={`${application.communication_skills} / 10`} />
                       </div>
-                      <ReadOnlyField label="Rating Explanation" value={application.explanation} is_textarea />
                     </div>
 
                     {/* Scenarios */}
                     <div className="flex flex-col gap-5">
                       <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Scenarios</h3>
                       <div className="flex flex-col gap-5">
-                        <ReadOnlyField label="Handling upset users" value={application.handle_upset_users} is_textarea />
-                        <ReadOnlyField label="Handling uncertain situations" value={application.handle_uncertainty} is_textarea />
-                        <ReadOnlyField label="Unsure about a specific case" value={application.unsure_case} is_textarea />
+                        {(application.past_staff_experience === "Yes" || application.active_other_hub === "Yes") && (
+                          <>
+                            <ReadOnlyField label="Handling upset users" value={application.handle_upset_users} is_textarea />
+                            <ReadOnlyField label="Handling uncertain situations" value={application.handle_uncertainty} is_textarea />
+                            <ReadOnlyField label="Unsure about a specific case" value={application.unsure_case} is_textarea />
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -264,9 +266,24 @@ function ApplicationDataPageContent() {
                       <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Experience & Intent</h3>
                       <div className="flex flex-col gap-5">
                         <ReadOnlyField label="Why join the staff team?" value={application.why_join} is_textarea />
-                        <ReadOnlyField label="Why are you a good fit?" value={application.good_fit} is_textarea />
-                        <ReadOnlyField label="Past experience" value={application.other_experience} is_textarea />
                       </div>
+                    </div>
+
+                    {/* Communication */}
+                    <div className="flex flex-col gap-5">
+                      <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">Communication</h3>
+                      <div className="flex flex-col sm:flex-row gap-5">
+                        <ReadOnlyField label="Languages" value={application.languages} />
+                        <ReadOnlyField label="Past CS Experience" value={application.past_cs_experience} />
+                      </div>
+                      {application.past_cs_experience === "Yes" && (
+                        <div className="flex flex-col sm:flex-row gap-5">
+                          <ReadOnlyField label="Past Staff Experience" value={application.past_staff_experience} />
+                          {application.past_staff_experience === "No" && (
+                            <ReadOnlyField label="Active in Another Hub" value={application.active_other_hub} />
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Agreements */}

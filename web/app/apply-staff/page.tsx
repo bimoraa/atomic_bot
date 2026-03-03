@@ -40,7 +40,7 @@ const __translations = {
       agreements: "Before You Go",
       yes: "Yes",
       no: "No",
-      select_rating: "Pick a number",
+      select_option: "Select an option",
       select_languages: "Pick Languages",
       selected: "picked",
       submit: "Send Application",
@@ -64,8 +64,9 @@ const __translations = {
       full_name: "Full Name *",
       dob: "Date of Birth *",
       language_spoken: "Languages You Speak *",
-      rate_skills: "On a scale of 1-10, how good are you at communicating? *",
-      explanation: "Why'd you give yourself that rating? *",
+      past_cs_experience: "Have you ever served a buyer / been customer service before? *",
+      past_staff_experience: "Have you ever been a staff member in another hub/server? *",
+      active_other_hub: "Are you currently active in any other hub besides Atomic? *",
       upset_users: "What do you do when a buyer is angry or upset? *",
       uncertainty: "How do you handle situations where you're not sure what to do? *",
       unsure_case: "If you're stuck on a specific case, what's your move? *",
@@ -91,7 +92,7 @@ const __translations = {
       rule_2_title: "What You'll Be Doing",
       rule_2_desc: "You'll be helping buyers through ticket transactions and handling complaints. The job is making sure buyers are happy and keeping things smooth.",
       rule_3_title: "What We're Looking For",
-      rule_3_desc: "You need to be able to communicate well in Indonesian and English. You also need patience, a calm head, and the ability to handle multiple things at once. Minimum age is 13, and you'll need a mic for the voice interview.",
+      rule_3_desc: "You need to be able to communicate well in Indonesian and English. You also need patience, a calm head, and the ability to handle multiple things at once. Minimum age is 15+, and you'll need a mic for the voice interview.",
       rule_4_title: "What We Expect",
       rule_4_desc: "You'll work together with other teams to keep the community running well. If something goes sideways, escalate it. Always stay professional when talking to people.",
       button: "Got It — Take Me to the Form"
@@ -106,7 +107,7 @@ const __translations = {
       agreements: "Sebelum Lanjut",
       yes: "Ya",
       no: "Tidak",
-      select_rating: "Pilih angka",
+      select_option: "Pilih opsi",
       select_languages: "Pilih Bahasa",
       selected: "dipilih",
       submit: "Kirim Lamaran",
@@ -129,10 +130,11 @@ const __translations = {
     questions: {
       full_name: "Nama Lengkap *",
       dob: "Tanggal Lahir *",
-      language_spoken: "Bahasa yang Kamu Bisa *",
-      rate_skills: "Skala 1-10, seberapa bagus kemampuan komunikasimu? *",
-      explanation: "Kenapa kamu kasih nilai itu ke dirimu sendiri? *",
-      upset_users: "Apa yang kamu lakuin kalau ada buyer yang marah atau kesal? *",
+      language_spoken: "Bahasa yang Dikuasai *",
+      past_cs_experience: "Apakah kamu pernah melayani pembeli / menjadi customer service sebelumnya? *",
+      past_staff_experience: "Apakah kamu pernah menjabat sebagai staff di hub/server lain? *",
+      active_other_hub: "Apakah kamu pernah aktif komunikasi di hub lain selain atomic? *",
+      upset_users: "Apa yang kamu lakukan kalau ada pembeli yang marah atau komplain? *",
       uncertainty: "Gimana cara kamu handle situasi yang kamu nggak tau harus ngapain? *",
       unsure_case: "Kalau kamu bingung sama suatu kasus, kamu bakal ngapain? *",
       why_join: "Kenapa kamu mau gabung tim staf Euphoria? *",
@@ -156,8 +158,8 @@ const __translations = {
       rule_1_desc: "Tulis semua jawaban sendiri. Pakai ChatGPT, Claude, atau AI lainnya buat nulis jawaban = langsung ditolak, tanpa pengecualian.",
       rule_2_title: "Kamu Bakal Ngapain",
       rule_2_desc: "Kamu bakal bantu buyer lewat transaksi tiket dan nangani keluhan. Intinya, pastiin buyer puas dan semuanya berjalan lancar.",
-      rule_3_title: "Yang Kami Cari",
-      rule_3_desc: "Kamu harus bisa komunikasi dengan baik dalam bahasa Indonesia dan Inggris. Butuh sabar, kepala dingin, dan bisa multitasking. Minimal usia 13 tahun, dan butuh mic untuk interview suara.",
+      rule_3_title: "Kriteria yang Kita Cari",
+      rule_3_desc: "Kamu harus bisa komunikasi yang lancar pakai Bahasa Indonesia & Inggris. Sabar, nggak gampang emosi, dan bisa ngerjain beberapa hal sekaligus. Minimal umur 15+ tahun, dan wajib punya mic buat interview suara.",
       rule_4_title: "Yang Kami Harapkan",
       rule_4_desc: "Kamu bakal kerja bareng tim lain buat jaga komunitas tetap berjalan. Kalau ada masalah, escalate. Selalu jaga sikap waktu ngobrol sama orang.",
       button: "Oke Ngerti"
@@ -172,7 +174,7 @@ const __translations = {
       agreements: "继续之前",
       yes: "是",
       no: "否",
-      select_rating: "选个数字",
+      select_option: "请选择",
       select_languages: "选语言",
       selected: "已选",
       submit: "提交申请",
@@ -195,9 +197,10 @@ const __translations = {
     questions: {
       full_name: "全名 *",
       dob: "出生日期 *",
-      language_spoken: "你会的语言 *",
-      rate_skills: "1-10分，你觉得自己沟通能力怎么样？*",
-      explanation: "为什么给自己打这个分？*",
+      language_spoken: "掌握的语言 *",
+      past_cs_experience: "你之前有服务过买家 / 做过客服的经验吗？*",
+      past_staff_experience: "你曾经在其他服务器/团队担任过管理或员工吗？*",
+      active_other_hub: "除了 Atomic，你目前还在其他团队活跃吗？*",
       upset_users: "遇到愤怒或不满的买家，你会怎么做？*",
       uncertainty: "遇到不确定怎么处理的情况，你会怎么应对？*",
       unsure_case: "如果某个案例你完全没头绪，你的下一步是什么？*",
@@ -223,7 +226,7 @@ const __translations = {
       rule_2_title: "你会做什么",
       rule_2_desc: "你会通过工单协助买家处理交易，以及处理投诉。核心工作就是让买家满意、让流程顺畅。",
       rule_3_title: "我们需要什么样的人",
-      rule_3_desc: "你需要能用印尼语和英语顺畅沟通，还要有耐心、沉得住气、能同时处理多件事。最低年龄 13 岁，语音面试需要麦克风。",
+      rule_3_desc: "你需要能用印尼语和英语顺畅沟通，还要有耐心、沉得住气、能同时处理多件事。最低年龄 15+ 岁，语音面试需要麦克风。",
       rule_4_title: "我们的期望",
       rule_4_desc: "你会和其他团队一起维护社区的正常运转。出了问题就上报。和人沟通时要始终保持专业。",
       button: "明白了 — 带我去填表"
@@ -238,7 +241,7 @@ const __translations = {
       agreements: "続ける前に",
       yes: "はい",
       no: "いいえ",
-      select_rating: "数字を選んで",
+      select_option: "選択してください",
       select_languages: "言語を選んで",
       selected: "選択中",
       submit: "応募を送る",
@@ -262,8 +265,9 @@ const __translations = {
       full_name: "氏名 *",
       dob: "生年月日 *",
       language_spoken: "話せる言語 *",
-      rate_skills: "1〜10で、自分のコミュ力どのくらいだと思う？*",
-      explanation: "なんでその点数にしたの？*",
+      past_cs_experience: "購入者の対応やカスタマーサービスの経験はある？*",
+      past_staff_experience: "他のサーバーやコミュニティでスタッフをしたことはある？*",
+      active_other_hub: "現在、Atomic 以外のサーバーで活動してる？*",
       upset_users: "怒ってる・不満そうな購入者に、どう対応する？*",
       uncertainty: "どうすればいいかわからない状況、どうやって対処する？*",
       unsure_case: "特定のケースで完全に迷ったとき、次の一手は？*",
@@ -289,7 +293,7 @@ const __translations = {
       rule_2_title: "何をやるか",
       rule_2_desc: "チケット取引で購入者をサポートしたり、クレーム対応をしたりするよ。大事なのは購入者に満足してもらって、スムーズに進めること。",
       rule_3_title: "求める人物像",
-      rule_3_desc: "インドネシア語と英語でしっかりコミュニケーションが取れる必要があるよ。忍耐力・冷静さ・マルチタスクも大事。年齢は最低13歳、音声面接用のマイクも必要。",
+      rule_3_desc: "インドネシア語と英語でしっかりコミュニケーションが取れる必要があるよ。忍耐力・冷静さ・マルチタスクも大事。年齢は最低 15+ 歳、音声面接用のマイクも必要。",
       rule_4_title: "期待すること",
       rule_4_desc: "他のチームと協力してコミュニティを維持していくよ。問題があればちゃんとエスカレートして。人と話すときは常にプロとして接してね。",
       button: "わかった — フォームに進む"
@@ -318,8 +322,9 @@ export default function StaffApplicationPage() {
     full_name           : "",
     dob                 : undefined as Date | undefined,
     languages           : [] as string[],
-    communication_skills: "10",
-    explanation         : "",
+    past_cs_experience  : "",
+    past_staff_experience: "",
+    active_other_hub    : "",
     handle_upset_users  : "",
     handle_uncertainty  : "",
     why_join            : "",
@@ -428,10 +433,26 @@ export default function StaffApplicationPage() {
     set_submitting(true)
 
     try {
+      const sanitized_data = { ...form_data }
+      
+      if (sanitized_data.past_cs_experience === "No") {
+        sanitized_data.past_staff_experience = ""
+        sanitized_data.active_other_hub = ""
+        sanitized_data.handle_upset_users = ""
+        sanitized_data.handle_uncertainty = ""
+        sanitized_data.unsure_case = ""
+      } else if (sanitized_data.past_staff_experience === "Yes") {
+        sanitized_data.active_other_hub = ""
+      } else if (sanitized_data.past_staff_experience === "No" && sanitized_data.active_other_hub === "No") {
+        sanitized_data.handle_upset_users = ""
+        sanitized_data.handle_uncertainty = ""
+        sanitized_data.unsure_case = ""
+      }
+
       const res  = await fetch("/api/staff-application", {
         method : "POST",
         headers: { "Content-Type": "application/json" },
-        body   : JSON.stringify(form_data)
+        body   : JSON.stringify(sanitized_data)
       })
 
       const data = await res.json()
@@ -488,12 +509,38 @@ export default function StaffApplicationPage() {
             <span className="font-semibold text-sm tracking-tight text-foreground">Atomicals</span>
             <span className="text-xs text-muted-foreground hidden sm:inline">/ Staff Recruitment</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Avatar className="h-7 w-7 border border-border/50">
-              <AvatarImage src={user?.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64` : ""} />
-              <AvatarFallback className="text-xs bg-primary/10 text-primary">{user?.username?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
-            </Avatar>
-            <span className="text-sm text-muted-foreground hidden sm:inline">{user?.username || "User"}</span>
+          <div className="flex items-center gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-muted-foreground hover:text-foreground">
+                  <Languages className="h-4 w-4" />
+                  <span className="text-xs font-medium uppercase">{form_lang.substring(0, 2)}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[150px]">
+                {(Object.keys(__translations) as Array<keyof typeof __translations>).map((lang) => (
+                  <DropdownMenuCheckboxItem
+                    key={lang}
+                    checked={form_lang === lang}
+                    onCheckedChange={() => set_form_lang(lang)}
+                  >
+                    {lang === "English" && "🇬🇧 "}
+                    {lang === "Indonesia" && "🇮🇩 "}
+                    {lang === "Mandarin" && "🇨🇳 "}
+                    {lang === "Japan" && "🇯🇵 "}
+                    {lang}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <div className="flex items-center gap-2">
+              <Avatar className="h-7 w-7 border border-border/50">
+                <AvatarImage src={user?.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64` : ""} />
+                <AvatarFallback className="text-xs bg-primary/10 text-primary">{user?.username?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+              </Avatar>
+              <span className="text-sm text-muted-foreground hidden sm:inline">{user?.username || "User"}</span>
+            </div>
           </div>
         </div>
       </header>
@@ -754,94 +801,114 @@ export default function StaffApplicationPage() {
                         </FieldLabel>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="w-full justify-start h-10 bg-background shadow-xs font-normal">
-                              <Languages className="h-4 w-4" />
-                              {selected_language_labels ? (
-                                <span className="flex items-center gap-2">
-                                  <span>{selected_language_labels}</span>
-                                  <span>{form_data.languages.length} {t.ui.selected}</span>
-                                </span>
-                              ) : (
+                            <Button variant="outline" className="w-full justify-between h-10 bg-background shadow-xs font-normal">
+                              {form_data.languages.length === 0 ? (
                                 <span className="text-muted-foreground">{t.ui.select_languages}</span>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-lg tracking-widest leading-none">{selected_language_labels}</span>
+                                  <span className="text-muted-foreground text-xs font-medium ml-1">
+                                    ({form_data.languages.length} {t.ui.selected})
+                                  </span>
+                                </div>
                               )}
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width] min-w-[--radix-dropdown-menu-trigger-width]">
+                          <DropdownMenuContent className="w-full min-w-[200px] border-border/50">
                             <DropdownMenuLabel>{t.ui.select_languages}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             {__language_options.map((lang) => (
-                              <DropdownMenuCheckboxItem 
-                                key={lang.value} 
+                              <DropdownMenuCheckboxItem
+                                key={lang.value}
                                 checked={form_data.languages.includes(lang.value)}
-                                onCheckedChange={(checked) => handle_language_change(lang.value, checked)}
-                                className="pl-8 flex items-center gap-3 py-2 cursor-pointer"
+                                onCheckedChange={(c) => handle_language_change(lang.value, c)}
                               >
-                                <span>{lang.flag}</span>
-                                <span>{lang.label}</span>
+                                {lang.flag} {lang.label}
                               </DropdownMenuCheckboxItem>
                             ))}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </Field>
-                    </div>
-
-                    <hr className="border-border" />
-
-                    {/* SECTION: COMMUNICATION */}
-                    <div className="flex flex-col gap-5">
-                      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-2">{t.ui.communication}</h3>
 
                       <Field className="gap-1.5">
-                        <FieldLabel className="text-sm text-muted-foreground font-normal">
-                          {t.questions.rate_skills}
+                        <FieldLabel htmlFor="past_cs_experience" className="text-sm text-muted-foreground font-normal">
+                          {t.questions.past_cs_experience}
                         </FieldLabel>
-                        <ShadcnSelect value={form_data.communication_skills} onValueChange={(val) => handle_select("communication_skills", val)}>
+                        <ShadcnSelect required onValueChange={(v) => handle_select("past_cs_experience", v)} value={form_data.past_cs_experience}>
                           <SelectTrigger className="h-10 bg-background shadow-xs">
-                            <SelectValue placeholder={t.ui.select_rating} />
+                            <SelectValue placeholder={t.ui.select_option} />
                           </SelectTrigger>
                           <SelectContent>
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                              <SelectItem key={num} value={num.toString()}>{num}</SelectItem>
-                            ))}
+                            <SelectItem value="Yes">{t.ui.yes}</SelectItem>
+                            <SelectItem value="No">{t.ui.no}</SelectItem>
                           </SelectContent>
                         </ShadcnSelect>
                       </Field>
 
-                      <Field className="gap-1.5">
-                        <FieldLabel htmlFor="explanation" className="text-sm text-muted-foreground font-normal">
-                          {t.questions.explanation}
-                        </FieldLabel>
-                        <Textarea required id="explanation" value={form_data.explanation} onChange={handle_change} className="bg-background min-h-[100px] resize-y shadow-xs" placeholder={t.placeholders.explain} />
-                      </Field>
+                      {form_data.past_cs_experience === "Yes" && (
+                        <div className="flex flex-col gap-5 pt-2">
+                          <Field className="gap-1.5">
+                            <FieldLabel htmlFor="past_staff_experience" className="text-sm text-muted-foreground font-normal">
+                              {t.questions.past_staff_experience}
+                            </FieldLabel>
+                            <ShadcnSelect required onValueChange={(v) => handle_select("past_staff_experience", v)} value={form_data.past_staff_experience}>
+                              <SelectTrigger className="h-10 bg-background shadow-xs">
+                                <SelectValue placeholder={t.ui.select_option} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Yes">{t.ui.yes}</SelectItem>
+                                <SelectItem value="No">{t.ui.no}</SelectItem>
+                              </SelectContent>
+                            </ShadcnSelect>
+                          </Field>
+
+                          {form_data.past_staff_experience === "No" && (
+                            <Field className="gap-1.5">
+                              <FieldLabel htmlFor="active_other_hub" className="text-sm text-muted-foreground font-normal">
+                                {t.questions.active_other_hub}
+                              </FieldLabel>
+                              <ShadcnSelect required onValueChange={(v) => handle_select("active_other_hub", v)} value={form_data.active_other_hub}>
+                                <SelectTrigger className="h-10 bg-background shadow-xs">
+                                  <SelectValue placeholder={t.ui.select_option} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Yes">{t.ui.yes}</SelectItem>
+                                  <SelectItem value="No">{t.ui.no}</SelectItem>
+                                </SelectContent>
+                              </ShadcnSelect>
+                            </Field>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    <hr className="border-border" />
+                    {/* SECTION: SCENARIOS - CONDITIONAL */}
+                    {(form_data.past_staff_experience === "Yes" || form_data.active_other_hub === "Yes") && (
+                      <div className="flex flex-col gap-5 pt-4">
+                        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-2">{t.ui.scenarios}</h3>
 
-                    {/* SECTION: SCENARIOS */}
-                    <div className="flex flex-col gap-5">
-                      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-2">{t.ui.scenarios}</h3>
+                        <Field className="gap-1.5">
+                          <FieldLabel htmlFor="handle_upset_users" className="text-sm text-muted-foreground font-normal">
+                            {t.questions.upset_users}
+                          </FieldLabel>
+                          <Textarea required id="handle_upset_users" value={form_data.handle_upset_users} onChange={handle_change} className="min-h-[100px] bg-background shadow-xs resize-none" placeholder={t.placeholders.upset} />
+                        </Field>
 
-                      <Field className="gap-1.5">
-                        <FieldLabel htmlFor="handle_upset_users" className="text-sm text-muted-foreground font-normal">
-                          {t.questions.upset_users}
-                        </FieldLabel>
-                        <Textarea required id="handle_upset_users" value={form_data.handle_upset_users} onChange={handle_change} className="bg-background min-h-[100px] resize-y shadow-xs" placeholder={t.placeholders.upset} />
-                      </Field>
+                        <Field className="gap-1.5">
+                          <FieldLabel htmlFor="handle_uncertainty" className="text-sm text-muted-foreground font-normal">
+                            {t.questions.uncertainty}
+                          </FieldLabel>
+                          <Textarea required id="handle_uncertainty" value={form_data.handle_uncertainty} onChange={handle_change} className="min-h-[100px] bg-background shadow-xs resize-none" placeholder={t.placeholders.uncertainty} />
+                        </Field>
 
-                      <Field className="gap-1.5">
-                        <FieldLabel htmlFor="handle_uncertainty" className="text-sm text-muted-foreground font-normal">
-                          {t.questions.uncertainty}
-                        </FieldLabel>
-                        <Textarea required id="handle_uncertainty" value={form_data.handle_uncertainty} onChange={handle_change} className="bg-background min-h-[100px] resize-y shadow-xs" placeholder={t.placeholders.uncertainty} />
-                      </Field>
-
-                      <Field className="gap-1.5">
-                        <FieldLabel htmlFor="unsure_case" className="text-sm text-muted-foreground font-normal">
-                          {t.questions.unsure_case}
-                        </FieldLabel>
-                        <Textarea required id="unsure_case" value={form_data.unsure_case} onChange={handle_change} className="bg-background min-h-[100px] resize-y shadow-xs" />
-                      </Field>
-                    </div>
+                        <Field className="gap-1.5">
+                          <FieldLabel htmlFor="unsure_case" className="text-sm text-muted-foreground font-normal">
+                            {t.questions.unsure_case}
+                          </FieldLabel>
+                          <Textarea required id="unsure_case" value={form_data.unsure_case} onChange={handle_change} className="min-h-[100px] bg-background shadow-xs resize-none" />
+                        </Field>
+                      </div>
+                    )}
 
                     <hr className="border-border" />
 

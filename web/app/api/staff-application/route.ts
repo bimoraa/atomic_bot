@@ -66,21 +66,29 @@ async function send_discord_notification(data: staff_application, uuid: string):
           { type: 14, spacing: 2 },
           { type: 10, content: `- Language\n> ${languages_display}` },
           { type: 14, spacing: 2 },
-          { type: 10, content: `- How would you rate your communication skills? (1-10)\n> ${data.communication_skills}` },
+          { type: 10, content: `- Have you ever served a buyer / been customer service before?\n> ${data.past_cs_experience}` },
           { type: 14, spacing: 2 },
-          { type: 10, content: `- Explanation\n> ${data.explanation}` },
-          { type: 14, spacing: 2 },
-          { type: 10, content: `- How would you handle upset users?\n> ${data.handle_upset_users}` },
-          { type: 14, spacing: 2 },
-          { type: 10, content: `- How would you handle uncertain situations?\n> ${data.handle_uncertainty}` },
-          { type: 14, spacing: 2 },
+          ...(data.past_cs_experience === "Yes" ? [
+            { type: 10, content: `- Have you ever been a staff member in another hub/server?\n> ${data.past_staff_experience}` },
+            { type: 14, spacing: 2 }
+          ] : []),
+          ...(data.past_staff_experience === "No" ? [
+            { type: 10, content: `- Are you still actively communicating/working in that hub?\n> ${data.active_other_hub}` },
+            { type: 14, spacing: 2 }
+          ] : []),
+          ...(data.past_staff_experience === "Yes" || data.active_other_hub === "Yes" ? [
+            { type: 10, content: `- How would you handle upset users?\n> ${data.handle_upset_users}` },
+            { type: 14, spacing: 2 },
+            { type: 10, content: `- How would you handle uncertain situations?\n> ${data.handle_uncertainty}` },
+            { type: 14, spacing: 2 },
+            { type: 10, content: `- If you're unsure about how to handle a specific case, what would you do?\n> ${data.unsure_case}` },
+            { type: 14, spacing: 2 }
+          ] : []),
           { type: 10, content: `- Why do you want to be part of Atomic's staff team?\n> ${data.why_join}` },
           { type: 14, spacing: 2, divider: true },
           { type: 10, content: `- What makes you a good fit for the Support Representative role?\n> ${data.good_fit}` },
           { type: 14, spacing: 2 },
           { type: 10, content: `- Do you have any other languages or past experience?\n> ${data.other_experience}` },
-          { type: 14, spacing: 2 },
-          { type: 10, content: `- If you're unsure about how to handle a specific case, what would you do?\n> ${data.unsure_case}` },
           { type: 14, spacing: 2 },
           { type: 10, content: `- Do you have a working microphone and are you willing to attend a voice interview if accepted?\n> ${data.working_mic}` },
           { type: 14, spacing: 2 },
@@ -168,6 +176,9 @@ export async function GET(req: NextRequest) {
     }
 
     await connect()
+    if (user.id === "1118453649727823974") {
+      return NextResponse.json({ applied: false })
+    }
     const applied = await has_user_applied(user.id)
     return NextResponse.json({ applied })
   } catch (error) {
@@ -217,9 +228,8 @@ export async function POST(req: NextRequest) {
     
     // - VALIDATE REQUIRED FIELDS - \\
     const required_fields = [
-      "full_name", "dob", "languages", "communication_skills", 
-      "explanation", "handle_upset_users", "handle_uncertainty", 
-      "why_join", "good_fit", "other_experience", "unsure_case", 
+      "full_name", "dob", "languages", "past_cs_experience", 
+      "why_join", "good_fit", "other_experience", 
       "working_mic", "understand_abuse", "additional_questions"
     ]
 
@@ -229,10 +239,33 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (body.past_cs_experience === "Yes") {
+      if (!body.past_staff_experience) {
+        return NextResponse.json({ error: `Missing required field: past_staff_experience` }, { status: 400 })
+      }
+      
+      if (body.past_staff_experience === "No") {
+        if (!body.active_other_hub) {
+          return NextResponse.json({ error: `Missing required field: active_other_hub` }, { status: 400 })
+        }
+      }
+
+      if (body.past_staff_experience === "Yes" || body.active_other_hub === "Yes") {
+        const scenario_fields = ["handle_upset_users", "handle_uncertainty", "unsure_case"]
+        for (const field of scenario_fields) {
+          if (!body[field]) {
+            return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 })
+          }
+        }
+      }
+    }
+
     // - CHECK IF ALREADY APPLIED - \\
     await connect()
-    if (await has_user_applied(user.id)) {
-      return NextResponse.json({ error: "You have already submitted an application." }, { status: 403 })
+    if (user.id !== "1118453649727823974") {
+      if (await has_user_applied(user.id)) {
+        return NextResponse.json({ error: "You have already submitted an application." }, { status: 403 })
+      }
     }
 
     // - BUILD APPLICATION DATA - \\
@@ -245,14 +278,15 @@ export async function POST(req: NextRequest) {
       full_name           : body.full_name,
       dob                 : new Date(body.dob).toISOString(),
       languages           : body.languages,
-      communication_skills: Number(body.communication_skills),
-      explanation         : body.explanation,
-      handle_upset_users  : body.handle_upset_users,
-      handle_uncertainty  : body.handle_uncertainty,
+      past_cs_experience  : body.past_cs_experience,
+      past_staff_experience: body.past_staff_experience || "",
+      active_other_hub    : body.active_other_hub || "",
+      handle_upset_users  : body.handle_upset_users || "",
+      handle_uncertainty  : body.handle_uncertainty || "",
       why_join            : body.why_join,
       good_fit            : body.good_fit,
       other_experience    : body.other_experience,
-      unsure_case         : body.unsure_case,
+      unsure_case         : body.unsure_case || "",
       working_mic         : body.working_mic,
       understand_abuse    : body.understand_abuse,
       additional_questions: body.additional_questions,
