@@ -1,5 +1,5 @@
-// - /update-script 斜杠命令，更新 Luarmor 脚本 - \
-// - /update-script slash command, updates a luarmor script via Luarmor API - \
+// - /push-script 斜杠命令，上传本地脚本到 Luarmor - \
+// - /push-script slash command, uploads local script file to Luarmor API - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                       from "@shared/types/command"
 import { log_error }                     from "@shared/utils/error_logger"
@@ -7,8 +7,8 @@ import { build_update_script_message }   from "../controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()
-    .setName("update-script")
-    .setDescription("Update a Luarmor script")
+    .setName("push-script")
+    .setDescription("Push a local script file to Luarmor")
     .addStringOption((option) =>
       option
         .setName("file")
