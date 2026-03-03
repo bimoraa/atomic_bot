@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomUUID }                from "crypto"
-import { has_user_applied, submit_application, delete_application, staff_application } from "../../../../src/shared/database/managers/staff_application_manager"
-import { connect }                   from "../../../../src/shared/utils/database"
+import { has_user_applied, submit_application, delete_application, staff_application } from "@/lib/database/managers/staff_application_manager"
+import { connect }                   from "@/lib/utils/database"
 
 const __discord_api        = "https://discord.com/api/v10"
 const __application_channel = "1391997695425515531"

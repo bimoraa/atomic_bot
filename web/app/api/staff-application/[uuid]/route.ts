@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse }      from "next/server"
-import { get_application_by_uuid }        from "../../../../../src/shared/database/managers/staff_application_manager"
-import { connect }                         from "../../../../../src/shared/utils/database"
+import { get_application_by_uuid }        from "@/lib/database/managers/staff_application_manager"
+import { connect }                         from "@/lib/utils/database"
 
 /**
  * @route GET /api/staff-application/[uuid]

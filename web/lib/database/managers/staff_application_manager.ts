@@ -1,0 +1,69 @@
+import * as db             from "@/lib/utils/database"
+import { delete_one }      from "@/lib/utils/database"
+
+export interface staff_application {
+  uuid                 ?: string
+  discord_id           : string
+  full_name            : string
+  dob                  : string
+  discord_username     : string
+  languages            : string[]
+  communication_skills : number
+  explanation          : string
+  handle_upset_users   : string
+  handle_uncertainty   : string
+  why_join             : string
+  good_fit             : string
+  other_experience     : string
+  unsure_case          : string
+  working_mic          : string
+  understand_abuse     : string
+  additional_questions : string
+  created_at           : number
+}
+
+const __collection = "staff_applications"
+
+/**
+ * @description Check if a user has already applied for staff
+ * @param discord_id The user's Discord ID
+ * @returns boolean True if applied, false otherwise
+ */
+export async function has_user_applied(discord_id: string): Promise<boolean> {
+  const application = await db.find_one<staff_application>(__collection, { discord_id })
+  return !!application
+}
+
+/**
+ * @description Submit a new staff application
+ * @param data The staff application data
+ * @returns "ok" on success, "duplicate" if already applied
+ */
+export async function submit_application(data: staff_application): Promise<"ok"> {
+  // - UPSERT: remove any stale record first, then insert fresh - \\
+  await delete_one(__collection, { discord_id: data.discord_id }).catch(() => {})
+  await db.insert_one(__collection, data)
+
+  return "ok"
+}
+
+/**
+ * @description Get a user's staff application by discord_id
+ * @param discord_id The user's Discord ID
+ * @returns The staff application or null
+ */
+export async function get_application(discord_id: string): Promise<staff_application | null> {
+  return await db.find_one<staff_application>(__collection, { discord_id })
+}
+
+export async function get_application_by_uuid(uuid: string): Promise<staff_application | null> {
+  return await db.find_one<staff_application>(__collection, { uuid })
+}
+
+export async function delete_application(discord_id: string): Promise<boolean> {
+  return await delete_one(__collection, { discord_id })
+}
+
+export async function get_all_applications(): Promise<staff_application[]> {
+  return await db.find_many<staff_application>(__collection, {})
+}

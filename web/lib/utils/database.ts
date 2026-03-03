@@ -1,0 +1,1407 @@
+import { Pool } from "pg"
+
+let pool: Pool | null = null
+let connected = false
+
+export async function connect(): Promise<Pool | null> {
+  if (pool) return pool
+
+  const connection_string = process.env.DATABASE_URL
+
+  if (!connection_string) {
+    console.error("[ - POSTGRESQL - ] DATABASE_URL not found in environment variables")
+    return null
+  }
+
+  try {
+    pool = new Pool({
+      connectionString: connection_string,
+      ssl: { rejectUnauthorized: false },
+      max: 20,
+      min: 2,
+      idleTimeoutMillis: 20000,
+      connectionTimeoutMillis: 10000,
+      allowExitOnIdle: false,
+    })
+
+    pool.on('connect', async (client) => {
+      await client.query("SET TIME ZONE 'Asia/Jakarta'")
+    })
+
+    pool.on('error', (err) => {
+      console.error('[ - POSTGRESQL - ] Unexpected pool error:', err.message)
+    })
+
+    const client = await pool.connect()
+
+    await client.query("SET TIME ZONE 'Asia/Jakarta'")
+
+    client.release()
+    connected = true
+
+    console.log("[ - POSTGRESQL - ] Connected to database (UTC+7)")
+    console.log(`[ - POSTGRESQL - ] Connection pool: max=${pool.options.max}, min=${pool.options.min}`)
+
+    await init_tables()
+
+    return pool
+  } catch (err) {
+    console.error("[ - POSTGRESQL - ] Connection failed:", (err as Error).message)
+    console.log("[ - POSTGRESQL - ] Bot will continue without database features")
+    return null
+  }
+}
+
+export function is_connected(): boolean {
+  if (!pool || !connected) return false
+
+  try {
+    return pool.totalCount >= 0
+  } catch {
+    return false
+  }
+}
+
+/**
+ * - GET CONNECTION POOL STATS - \\
+ * @returns {object} Pool statistics
+ */
+export function get_pool_stats() {
+  if (!pool) return null
+
+  return {
+    total: pool.totalCount,
+    idle: pool.idleCount,
+    waiting: pool.waitingCount,
+  }
+}
+
+export async function disconnect(): Promise<void> {
+  if (pool) {
+    await pool.end()
+    pool = null
+    connected = false
+    console.log("[ - POSTGRESQL - ] Disconnected")
+  }
+}
+
+export function get_pool(): Pool {
+  if (!pool) throw new Error("Database not connected")
+  return pool
+}
+
+async function init_tables(): Promise<void> {
+  const client = await get_pool().connect()
+
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS reputation_records (
+        id         SERIAL PRIMARY KEY,
+        user_id    VARCHAR(255) NOT NULL,
+        guild_id   VARCHAR(255) NOT NULL,
+        points     INTEGER DEFAULT 0,
+        given      INTEGER DEFAULT 0,
+        received   INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_id, guild_id)
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS reputation_logs (
+        id         SERIAL PRIMARY KEY,
+        from_id    VARCHAR(255) NOT NULL,
+        to_id      VARCHAR(255) NOT NULL,
+        guild_id   VARCHAR(255) NOT NULL,
+        amount     INTEGER NOT NULL,
+        reason     TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS voice_channel_records (
+        id          SERIAL PRIMARY KEY,
+        user_id     VARCHAR(255) NOT NULL,
+        guild_id    VARCHAR(255) NOT NULL,
+        channel_id  VARCHAR(255) NOT NULL,
+        joined_at   TIMESTAMP NOT NULL,
+        left_at     TIMESTAMP,
+        duration    INTEGER DEFAULT 0
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS server_tag_users (
+        id         SERIAL PRIMARY KEY,
+        user_id    VARCHAR(255) NOT NULL,
+        guild_id   VARCHAR(255) NOT NULL,
+        username   VARCHAR(255),
+        tag        VARCHAR(255),
+        added_at   BIGINT,
+        UNIQUE(user_id, guild_id)
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS free_script_users (
+        id                  SERIAL PRIMARY KEY,
+        user_id             VARCHAR(255) NOT NULL,
+        guild_id            VARCHAR(255),
+        username            VARCHAR(255),
+        user_key            VARCHAR(255),
+        created_at          BIGINT,
+        whitelisted_at      TIMESTAMP DEFAULT NOW(),
+        last_tag_check      TIMESTAMP,
+        has_tag             BOOLEAN DEFAULT TRUE,
+        warning_sent        BOOLEAN DEFAULT FALSE,
+        UNIQUE(user_id)
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hwid_less_schedule (
+        id             SERIAL PRIMARY KEY,
+        guild_id       VARCHAR(255) NOT NULL,
+        channel_id     VARCHAR(255) NOT NULL,
+        scheduled_time BIGINT NOT NULL,
+        enabled        BOOLEAN NOT NULL,
+        created_by     VARCHAR(255) NOT NULL,
+        executed       BOOLEAN DEFAULT FALSE,
+        created_at     BIGINT
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hwid_less_status (
+        id                   SERIAL PRIMARY KEY,
+        status_key           VARCHAR(255) NOT NULL UNIQUE,
+        enabled              BOOLEAN NOT NULL,
+        enabled_at           BIGINT,
+        expires_at           BIGINT,
+        triggered_by         VARCHAR(255),
+        reset_count          INTEGER,
+        disabled_at          BIGINT,
+        disable_notified_at  BIGINT
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS booster_whitelist (
+        id            SERIAL PRIMARY KEY,
+        user_id       VARCHAR(255) NOT NULL,
+        guild_id      VARCHAR(255) NOT NULL,
+        luarmor_key   VARCHAR(255),
+        whitelisted   BOOLEAN DEFAULT FALSE,
+        created_at    TIMESTAMP DEFAULT NOW(),
+        updated_at    TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_id, guild_id)
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bypass_cache (
+        key        VARCHAR(255) PRIMARY KEY,
+        url        TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS work_logs (
+        id          SERIAL PRIMARY KEY,
+        work_id     VARCHAR(255) NOT NULL,
+        staff_id    VARCHAR(255) NOT NULL,
+        staff_name  VARCHAR(255),
+        type        VARCHAR(50),
+        thread_link TEXT,
+        proof_link  TEXT,
+        amount      BIGINT DEFAULT 0,
+        salary      BIGINT DEFAULT 0,
+        week_number INTEGER,
+        year        INTEGER,
+        date        VARCHAR(255),
+        created_at  BIGINT
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS work_reports (
+        id                   SERIAL PRIMARY KEY,
+        staff_id             VARCHAR(255) NOT NULL UNIQUE,
+        staff_name           VARCHAR(255),
+        total_work           INTEGER DEFAULT 0,
+        total_work_this_week INTEGER DEFAULT 0,
+        total_salary         BIGINT DEFAULT 0,
+        salary_this_week     BIGINT DEFAULT 0,
+        week_number          INTEGER,
+        year                 INTEGER,
+        last_work            BIGINT
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS loa_requests (
+        id                SERIAL PRIMARY KEY,
+        message_id        VARCHAR(255),
+        user_id           VARCHAR(255) NOT NULL,
+        user_tag          VARCHAR(255),
+        guild_id          VARCHAR(255) NOT NULL,
+        channel_id        VARCHAR(255),
+        reason            TEXT,
+        type              VARCHAR(255),
+        start_date        BIGINT,
+        end_date          BIGINT,
+        status            VARCHAR(50) DEFAULT 'pending',
+        approved_by       VARCHAR(255),
+        rejected_by       VARCHAR(255),
+        original_nickname VARCHAR(255),
+        created_at        BIGINT
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_loa_requests_message_id ON loa_requests(message_id)
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_loa_requests_status_end_date ON loa_requests(status, end_date)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS answer_stats (
+        id        SERIAL PRIMARY KEY,
+        staff_id  VARCHAR(255) NOT NULL UNIQUE,
+        weekly    JSONB DEFAULT '{}',
+        total     INTEGER DEFAULT 0
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS afk_users (
+        id                 SERIAL PRIMARY KEY,
+        user_id            VARCHAR(255) NOT NULL UNIQUE,
+        reason             TEXT NOT NULL,
+        timestamp          BIGINT NOT NULL,
+        original_nickname  VARCHAR(255),
+        created_at         TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS afk_ignored_channels (
+        id          SERIAL PRIMARY KEY,
+        guild_id    VARCHAR(255) NOT NULL,
+        channel_id  VARCHAR(255) NOT NULL,
+        added_by    VARCHAR(255),
+        added_at    BIGINT NOT NULL,
+        created_at  TIMESTAMP DEFAULT NOW(),
+        UNIQUE (guild_id, channel_id)
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ghost_pings (
+        id         SERIAL PRIMARY KEY,
+        message_id VARCHAR(255) NOT NULL UNIQUE,
+        author_id  VARCHAR(255) NOT NULL,
+        author_tag VARCHAR(255),
+        channel_id VARCHAR(255) NOT NULL,
+        guild_id   VARCHAR(255) NOT NULL,
+        content    TEXT,
+        mentioned  TEXT[] NOT NULL,
+        timestamp  BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ticket_transcripts (
+        id              SERIAL PRIMARY KEY,
+        transcript_id   VARCHAR(255) NOT NULL UNIQUE,
+        ticket_id       VARCHAR(255) NOT NULL,
+        ticket_type     VARCHAR(255) NOT NULL,
+        thread_id       VARCHAR(255) NOT NULL,
+        owner_id        VARCHAR(255) NOT NULL,
+        owner_tag       VARCHAR(255),
+        claimed_by      VARCHAR(255),
+        closed_by       VARCHAR(255),
+        issue_type      VARCHAR(255),
+        description     TEXT,
+        messages        JSONB NOT NULL,
+        open_time       BIGINT NOT NULL,
+        close_time      BIGINT NOT NULL,
+        created_at      TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS warnings (
+        id           SERIAL PRIMARY KEY,
+        warning_id   VARCHAR(255) NOT NULL UNIQUE,
+        guild_id     VARCHAR(255) NOT NULL,
+        user_id      VARCHAR(255) NOT NULL,
+        moderator_id VARCHAR(255) NOT NULL,
+        reason       TEXT,
+        timestamp    BIGINT NOT NULL,
+        created_at   TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_warnings_user ON warnings(guild_id, user_id)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS guild_settings (
+        id         SERIAL PRIMARY KEY,
+        guild_id   VARCHAR(255) NOT NULL UNIQUE,
+        settings   JSONB NOT NULL DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_guild_settings_guild ON guild_settings(guild_id)
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_ghost_pings_mentioned ON ghost_pings USING GIN(mentioned)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS generic_data (
+        id          SERIAL PRIMARY KEY,
+        collection  VARCHAR(255) NOT NULL,
+        data        JSONB NOT NULL,
+        created_at  TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_generic_data_collection ON generic_data(collection)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS service_provider_user_cache (
+        id           SERIAL PRIMARY KEY,
+        user_id      VARCHAR(255) NOT NULL UNIQUE,
+        user_data    JSONB NOT NULL,
+        cached_at    BIGINT NOT NULL,
+        last_updated BIGINT NOT NULL,
+        created_at   TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_service_provider_user_cache_user_id ON service_provider_user_cache(user_id)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hwid_reset_tracker (
+        id         SERIAL PRIMARY KEY,
+        user_id    VARCHAR(255) NOT NULL,
+        timestamp  BIGINT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_hwid_reset_tracker_timestamp ON hwid_reset_tracker(timestamp)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS hwid_reset_cache (
+        id          SERIAL PRIMARY KEY,
+        reset_count INTEGER NOT NULL,
+        cached_at   BIGINT NOT NULL,
+        created_at  TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tempvoice_saved_settings (
+        id                 SERIAL PRIMARY KEY,
+        user_id            VARCHAR(255) NOT NULL UNIQUE,
+        guild_id           VARCHAR(255) NOT NULL,
+        name               VARCHAR(255) NOT NULL,
+        user_limit         INTEGER NOT NULL DEFAULT 0,
+        is_private         BOOLEAN NOT NULL DEFAULT false,
+        trusted_users      TEXT[] DEFAULT '{}',
+        blocked_users      TEXT[] DEFAULT '{}',
+        owner_permissions  TEXT[] DEFAULT '{}',
+        created_at         TIMESTAMP DEFAULT NOW(),
+        updated_at         TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS middleman_transactions (
+        id                SERIAL PRIMARY KEY,
+        ticket_id         VARCHAR(255) NOT NULL,
+        requester_id      VARCHAR(255) NOT NULL,
+        partner_id        VARCHAR(255) NOT NULL,
+        partner_tag       VARCHAR(255),
+        transaction_range VARCHAR(255) NOT NULL,
+        fee               VARCHAR(255) NOT NULL,
+        range_id          VARCHAR(255) NOT NULL,
+        completed_by      VARCHAR(255) NOT NULL,
+        completed_at      BIGINT NOT NULL,
+        thread_id         VARCHAR(255),
+        guild_id          VARCHAR(255),
+        created_at        TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS middleman_tickets (
+        thread_id         VARCHAR(255) PRIMARY KEY,
+        ticket_id         VARCHAR(255) NOT NULL UNIQUE,
+        requester_id      VARCHAR(255) NOT NULL,
+        partner_id        VARCHAR(255) NOT NULL,
+        partner_tag       VARCHAR(255),
+        transaction_range VARCHAR(255) NOT NULL,
+        fee               VARCHAR(255) NOT NULL,
+        range_id          VARCHAR(255) NOT NULL,
+        guild_id          VARCHAR(255) NOT NULL,
+        status            VARCHAR(50) DEFAULT 'open',
+        created_at        BIGINT NOT NULL,
+        updated_at        BIGINT NOT NULL,
+        completed_at      BIGINT,
+        completed_by      VARCHAR(255),
+        close_reason      TEXT
+      )
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS middleman_service_status (
+        id         SERIAL PRIMARY KEY,
+        guild_id   VARCHAR(255) NOT NULL UNIQUE,
+        is_open    BOOLEAN NOT NULL DEFAULT TRUE,
+        updated_at BIGINT NOT NULL,
+        updated_by VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_middleman_service_status_guild ON middleman_service_status(guild_id)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS jkt48_guild_notification_settings (
+        id         SERIAL PRIMARY KEY,
+        guild_id   VARCHAR(255) NOT NULL,
+        channel_id VARCHAR(255) NOT NULL,
+        platform   VARCHAR(50) NOT NULL,
+        updated_at BIGINT NOT NULL,
+        updated_by VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(guild_id, platform)
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_jkt48_guild_settings_platform ON jkt48_guild_notification_settings(platform)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bypass_stats (
+        id          SERIAL PRIMARY KEY,
+        total_count BIGINT NOT NULL DEFAULT 87000,
+        updated_at  TIMESTAMPTZ DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      INSERT INTO bypass_stats (total_count)
+      SELECT 87000 WHERE NOT EXISTS (SELECT 1 FROM bypass_stats)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS prodete_reports (
+        id           SERIAL PRIMARY KEY,
+        slug         VARCHAR(50)  NOT NULL UNIQUE,
+        from_date    VARCHAR(20)  NOT NULL,
+        to_date      VARCHAR(20)  NOT NULL,
+        entries      JSONB        NOT NULL,
+        generated_by VARCHAR(255) NOT NULL,
+        generated_at BIGINT       NOT NULL,
+        created_at   TIMESTAMP    DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_prodete_reports_slug ON prodete_reports(slug)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS staff_voice_sessions (
+        id               SERIAL PRIMARY KEY,
+        user_id          VARCHAR(255) NOT NULL,
+        guild_id         VARCHAR(255) NOT NULL,
+        channel_id       VARCHAR(255) NOT NULL,
+        joined_at        BIGINT       NOT NULL,
+        left_at          BIGINT,
+        duration_seconds INTEGER      DEFAULT 0,
+        created_at       TIMESTAMP    DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_staff_voice_sessions_user    ON staff_voice_sessions(user_id)
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_staff_voice_sessions_range   ON staff_voice_sessions(joined_at, left_at)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS staff_applications (
+        id                   SERIAL PRIMARY KEY,
+        uuid                 VARCHAR(36) UNIQUE,
+        discord_id           VARCHAR(255) NOT NULL UNIQUE,
+        discord_username     VARCHAR(255),
+        full_name            VARCHAR(255),
+        dob                  VARCHAR(255),
+        languages            TEXT,
+        communication_skills INTEGER,
+        explanation          TEXT,
+        handle_upset_users   TEXT,
+        handle_uncertainty   TEXT,
+        why_join             TEXT,
+        good_fit             TEXT,
+        other_experience     TEXT,
+        unsure_case          TEXT,
+        working_mic          VARCHAR(50),
+        understand_abuse     VARCHAR(50),
+        additional_questions TEXT,
+        created_at           BIGINT
+      )
+    `)
+
+    await client.query(`
+      ALTER TABLE staff_applications ADD COLUMN IF NOT EXISTS uuid VARCHAR(36)
+    `).catch(() => {})
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_staff_applications_discord_id ON staff_applications(discord_id)
+    `).catch(() => {})
+
+    await client.query(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_applications_uuid_unique ON staff_applications(uuid)
+    `).catch(() => {})
+
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bypass_guild_stats (
+        id       BIGSERIAL PRIMARY KEY,
+        guild_id TEXT NOT NULL,
+        date     DATE NOT NULL DEFAULT CURRENT_DATE,
+        count    INTEGER NOT NULL DEFAULT 1,
+        UNIQUE(guild_id, date)
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_bypass_guild_stats_guild ON bypass_guild_stats(guild_id, date DESC)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS bypass_logs (
+        id         BIGSERIAL PRIMARY KEY,
+        guild_id   TEXT NOT NULL,
+        user_id    TEXT NOT NULL,
+        user_tag   TEXT NOT NULL,
+        avatar     TEXT,
+        url        TEXT NOT NULL,
+        result_url TEXT,
+        success    BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_bypass_logs_guild ON bypass_logs(guild_id, created_at DESC)
+    `)
+
+    await migrate_tables(client)
+
+    console.log("[ - POSTGRESQL - ] Tables initialized")
+  } finally {
+    client.release()
+  }
+}
+
+async function migrate_tables(client: any): Promise<void> {
+  try {
+    await client.query(`
+      ALTER TABLE server_tag_users 
+      ADD COLUMN IF NOT EXISTS username VARCHAR(255)
+    `)
+
+    await client.query(`
+      DO $$
+      BEGIN
+        BEGIN
+          ALTER TABLE server_tag_users 
+          ALTER COLUMN added_at TYPE BIGINT USING EXTRACT(EPOCH FROM added_at)::BIGINT;
+        EXCEPTION
+          WHEN OTHERS THEN
+            ALTER TABLE server_tag_users 
+            DROP COLUMN IF EXISTS added_at;
+            ALTER TABLE server_tag_users 
+            ADD COLUMN added_at BIGINT;
+        END;
+      END $$;
+    `).catch(() => { })
+
+    await client.query(`
+      DO $$
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns
+        WHERE table_name = 'hwid_less_schedule' AND column_name = 'scheduled_time';
+
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE hwid_less_schedule 
+          ALTER COLUMN scheduled_time TYPE BIGINT
+          USING CASE
+            WHEN pg_typeof(scheduled_time) IN ('timestamp without time zone'::regtype, 'timestamp with time zone'::regtype)
+              THEN EXTRACT(EPOCH FROM scheduled_time)::BIGINT
+            ELSE scheduled_time::BIGINT
+          END;
+        ELSIF col_type IS NULL THEN
+          ALTER TABLE hwid_less_schedule ADD COLUMN scheduled_time BIGINT;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with hwid_less_schedule.scheduled_time: %', SQLERRM;
+      END $$;
+    `).catch(() => { })
+
+    await client.query(`
+      DO $$
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns
+        WHERE table_name = 'hwid_less_schedule' AND column_name = 'created_at';
+
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE hwid_less_schedule ALTER COLUMN created_at DROP DEFAULT;
+          ALTER TABLE hwid_less_schedule 
+          ALTER COLUMN created_at TYPE BIGINT
+          USING CASE
+            WHEN pg_typeof(created_at) IN ('timestamp without time zone'::regtype, 'timestamp with time zone'::regtype)
+              THEN EXTRACT(EPOCH FROM created_at)::BIGINT
+            ELSE created_at::BIGINT
+          END;
+        ELSIF col_type IS NULL THEN
+          ALTER TABLE hwid_less_schedule ADD COLUMN created_at BIGINT;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with hwid_less_schedule.created_at: %', SQLERRM;
+      END $$;
+    `).catch(() => { })
+
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS guild_id`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS total_actions`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS weekly_actions`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS created_at`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports DROP COLUMN IF EXISTS updated_at`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_work INTEGER DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_work_this_week INTEGER DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS total_salary BIGINT DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS salary_this_week BIGINT DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS week_number INTEGER`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS year INTEGER`).catch(() => { })
+    await client.query(`ALTER TABLE work_reports ADD COLUMN IF NOT EXISTS last_work BIGINT`).catch(() => { })
+
+    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS guild_id`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS action`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs DROP COLUMN IF EXISTS details`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS work_id VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS staff_name VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS type VARCHAR(50)`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS thread_link TEXT`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS proof_link TEXT`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS amount INTEGER DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS salary INTEGER DEFAULT 0`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ADD COLUMN IF NOT EXISTS date VARCHAR(255)`).catch(() => { })
+    await client.query(`
+      DO $$
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns
+        WHERE table_name = 'work_logs' AND column_name = 'created_at';
+
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE work_logs ALTER COLUMN created_at DROP DEFAULT;
+          ALTER TABLE work_logs
+          ALTER COLUMN created_at TYPE BIGINT
+          USING CASE
+            WHEN pg_typeof(created_at) IN ('timestamp without time zone'::regtype, 'timestamp with time zone'::regtype)
+              THEN (EXTRACT(EPOCH FROM created_at)::BIGINT * 1000)
+            ELSE created_at::BIGINT
+          END;
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with work_logs.created_at: %', SQLERRM;
+      END $$;
+    `).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ALTER COLUMN week_number DROP NOT NULL`).catch(() => { })
+    await client.query(`ALTER TABLE work_logs ALTER COLUMN year DROP NOT NULL`).catch(() => { })
+
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS message_id VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS user_tag VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS channel_id VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS type VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS rejected_by VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE loa_requests ADD COLUMN IF NOT EXISTS original_nickname VARCHAR(255)`).catch(() => { })
+
+    console.log('[ - DB MIGRATION - ] Fixing loa_requests timestamp columns...')
+
+    await client.query(`
+      DO $$ 
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns 
+        WHERE table_name = 'loa_requests' AND column_name = 'start_date';
+        
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE loa_requests DROP COLUMN start_date;
+          ALTER TABLE loa_requests ADD COLUMN start_date BIGINT;
+          RAISE NOTICE 'Recreated loa_requests.start_date as BIGINT';
+        ELSIF col_type IS NULL THEN
+          ALTER TABLE loa_requests ADD COLUMN start_date BIGINT;
+          RAISE NOTICE 'Added loa_requests.start_date as BIGINT';
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with loa_requests.start_date: %', SQLERRM;
+      END $$;
+    `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.start_date migration error:', err.message))
+
+    await client.query(`
+      DO $$ 
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns 
+        WHERE table_name = 'loa_requests' AND column_name = 'end_date';
+        
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE loa_requests DROP COLUMN end_date;
+          ALTER TABLE loa_requests ADD COLUMN end_date BIGINT;
+          RAISE NOTICE 'Recreated loa_requests.end_date as BIGINT';
+        ELSIF col_type IS NULL THEN
+          ALTER TABLE loa_requests ADD COLUMN end_date BIGINT;
+          RAISE NOTICE 'Added loa_requests.end_date as BIGINT';
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with loa_requests.end_date: %', SQLERRM;
+      END $$;
+    `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.end_date migration error:', err.message))
+
+    await client.query(`
+      DO $$ 
+      DECLARE
+        col_type TEXT;
+      BEGIN
+        SELECT data_type INTO col_type
+        FROM information_schema.columns 
+        WHERE table_name = 'loa_requests' AND column_name = 'created_at';
+        
+        IF col_type IS NOT NULL AND col_type != 'bigint' THEN
+          ALTER TABLE loa_requests DROP COLUMN created_at;
+          ALTER TABLE loa_requests ADD COLUMN created_at BIGINT;
+          RAISE NOTICE 'Recreated loa_requests.created_at as BIGINT';
+        ELSIF col_type IS NULL THEN
+          ALTER TABLE loa_requests ADD COLUMN created_at BIGINT;
+          RAISE NOTICE 'Added loa_requests.created_at as BIGINT';
+        END IF;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE NOTICE 'Error with loa_requests.created_at: %', SQLERRM;
+      END $$;
+    `).catch((err: any) => console.error('[ - DB MIGRATION - ] loa_requests.created_at migration error:', err.message))
+
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS username VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS user_key VARCHAR(255)`).catch(() => { })
+    await client.query(`ALTER TABLE free_script_users ADD COLUMN IF NOT EXISTS created_at BIGINT`).catch(() => { })
+
+    await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS whitelisted_at BIGINT`).catch(() => { })
+    await client.query(`ALTER TABLE booster_whitelist ADD COLUMN IF NOT EXISTS boost_count INTEGER DEFAULT 0`).catch(() => { })
+
+    await client.query(`ALTER TABLE prodete_reports ADD COLUMN IF NOT EXISTS channel_names JSONB DEFAULT '{}'::jsonb`).catch(() => { })
+
+    console.log("[ - POSTGRESQL - ] Table migrations completed")
+  } catch (err) {
+    console.error("[ - POSTGRESQL - ] Migration error:", (err as Error).message)
+  }
+}
+
+function get_table_name(collection: string): string {
+  const table_map: Record<string, string> = {
+    reputation_records: "reputation_records",
+    reputation_logs: "reputation_logs",
+    voice_channel_records: "voice_channel_records",
+    server_tag_users: "server_tag_users",
+    free_script_users: "free_script_users",
+    hwid_less_schedule: "hwid_less_schedule",
+    hwid_less_status: "hwid_less_status",
+    service_provider_user_cache: "service_provider_user_cache",
+    hwid_reset_tracker: "hwid_reset_tracker",
+    hwid_reset_cache: "hwid_reset_cache",
+    booster_whitelist: "booster_whitelist",
+    work_logs: "work_logs",
+    work_reports: "work_reports",
+    loa_requests: "loa_requests",
+    answer_stats: "answer_stats",
+    afk_users: "afk_users",
+    afk_ignored_channels: "afk_ignored_channels",
+    ghost_pings: "ghost_pings",
+    warnings: "warnings",
+    ticket_transcripts: "ticket_transcripts",
+    guild_settings: "guild_settings",
+    middleman_service_status: "middleman_service_status",
+    staff_voice_sessions    : "staff_voice_sessions",
+    staff_applications     : "staff_applications",
+  }
+
+  return table_map[collection] || "generic_data"
+}
+
+function build_where_clause(filter: object, start_index: number = 1): { clause: string; values: any[] } {
+  const keys = Object.keys(filter)
+  const values = Object.values(filter)
+
+  if (keys.length === 0) {
+    return { clause: "", values: [] }
+  }
+
+  const conditions: string[] = []
+  const final_values: any[] = []
+  let param_idx = start_index
+
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i]
+    const value = values[i]
+
+    if (value === null) {
+      conditions.push(`${key} IS NULL`)
+    } else if (typeof value === "object" && !Array.isArray(value) && !(value instanceof Date)) {
+      const operators = Object.keys(value)
+
+      for (const op of operators) {
+        const op_value = (value as any)[op]
+
+        switch (op) {
+          case "$lte":
+            conditions.push(`${key} <= $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$gte":
+            conditions.push(`${key} >= $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$lt":
+            conditions.push(`${key} < $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$gt":
+            conditions.push(`${key} > $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$ne":
+            conditions.push(`${key} != $${param_idx}`)
+            final_values.push(op_value)
+            param_idx++
+            break
+          case "$in":
+            if (Array.isArray(op_value)) {
+              const placeholders = op_value.map(() => `$${param_idx++}`).join(", ")
+              conditions.push(`${key} IN (${placeholders})`)
+              final_values.push(...op_value)
+            }
+            break
+          case "$nin":
+            if (Array.isArray(op_value)) {
+              const placeholders = op_value.map(() => `$${param_idx++}`).join(", ")
+              conditions.push(`${key} NOT IN (${placeholders})`)
+              final_values.push(...op_value)
+            }
+            break
+          default:
+            conditions.push(`${key} = $${param_idx}`)
+            final_values.push(value)
+            param_idx++
+        }
+      }
+    } else {
+      conditions.push(`${key} = $${param_idx}`)
+      final_values.push(value)
+      param_idx++
+    }
+  }
+
+  return {
+    clause: "WHERE " + conditions.join(" AND "),
+    values: final_values,
+  }
+}
+
+export async function find_one<T extends object>(
+  coll: string,
+  filter: object
+): Promise<T | null> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const filter_entries = Object.entries(filter)
+    const filter_conditions = filter_entries
+      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .join(" AND ")
+
+    const query = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
+    const result = await get_pool().query<{ data: T }>(query, [coll, ...filter_entries.map(([, v]) => String(v))])
+
+    if (result.rows.length === 0) return null
+    return result.rows[0].data
+  }
+
+  const { clause, values } = build_where_clause(filter)
+  const query = `SELECT * FROM ${table} ${clause} LIMIT 1`
+  const result = await get_pool().query(query, values)
+
+  if (result.rows.length === 0) return null
+  return convert_row_to_object<T>(result.rows[0])
+}
+
+export async function find_many<T extends object>(
+  coll: string,
+  filter: object = {}
+): Promise<T[]> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const filter_entries = Object.entries(filter)
+    const filter_conditions = filter_entries
+      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .join(" AND ")
+
+    const query = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
+    const result = await get_pool().query<{ data: T }>(query, [coll, ...filter_entries.map(([, v]) => String(v))])
+
+    return result.rows.map((row: { data: T }) => row.data)
+  }
+
+  const { clause, values } = build_where_clause(filter)
+  const query = `SELECT * FROM ${table} ${clause}`
+  const result = await get_pool().query(query, values)
+
+  return result.rows.map((row: any) => convert_row_to_object<T>(row))
+}
+
+export async function insert_one<T extends object>(
+  coll: string,
+  doc: T
+): Promise<string> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const query = `INSERT INTO generic_data (collection, data) VALUES ($1, $2) RETURNING id`
+    const result = await get_pool().query(query, [coll, JSON.stringify(doc)])
+    return result.rows[0].id.toString()
+  }
+
+  const keys = Object.keys(doc)
+  const values = Object.keys(doc).map(key => {
+    const value = (doc as any)[key]
+    if (table === "guild_settings" && key === "settings" && typeof value === "object" && !Array.isArray(value)) {
+      return JSON.stringify(value)
+    }
+    if (Array.isArray(value)) {
+      return value
+    }
+    return value
+  })
+  const placeholders = keys.map((_, index) => `$${index + 1}`).join(", ")
+  const columns = keys.join(", ")
+
+  const query = `INSERT INTO ${table} (${columns}) VALUES (${placeholders}) RETURNING id`
+  const result = await get_pool().query(query, values)
+
+  return result.rows[0].id.toString()
+}
+
+export async function update_one<T extends object>(
+  coll: string,
+  filter: object,
+  update: Partial<T>,
+  upsert: boolean = false
+): Promise<boolean> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const filter_entries = Object.entries(filter)
+    const filter_conditions = filter_entries
+      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .join(" AND ")
+
+    const existing_query = `SELECT id, data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
+    const existing_result = await get_pool().query(existing_query, [coll, ...filter_entries.map(([, v]) => String(v))])
+
+    if (existing_result.rows.length > 0) {
+      const merged_data = { ...existing_result.rows[0].data, ...update }
+      const update_query = `UPDATE generic_data SET data = $1 WHERE id = $2`
+      await get_pool().query(update_query, [JSON.stringify(merged_data), existing_result.rows[0].id])
+      return true
+    } else if (upsert) {
+      const new_doc = { ...filter, ...update }
+      await insert_one(coll, new_doc)
+      return true
+    }
+    return false
+  }
+
+  const { clause: where_clause, values: where_values } = build_where_clause(filter)
+
+  const existing_query = `SELECT id FROM ${table} ${where_clause} LIMIT 1`
+  const existing_result = await get_pool().query(existing_query, where_values)
+
+  if (existing_result.rows.length > 0) {
+    const update_keys = Object.keys(update)
+    const update_values = Object.keys(update).map(key => {
+      const value = (update as any)[key]
+      if (table === "guild_settings" && key === "settings" && typeof value === "object" && !Array.isArray(value)) {
+        return JSON.stringify(value)
+      }
+      if (Array.isArray(value)) {
+        return value
+      }
+      return value
+    })
+    const set_clause = update_keys.map((key, index) => `${key} = $${index + 1}`).join(", ")
+
+    const adjusted_where = where_clause.replace(/\$(\d+)/g, (_, num) => `$${parseInt(num) + update_keys.length}`)
+    const update_query = `UPDATE ${table} SET ${set_clause} ${adjusted_where}`
+    await get_pool().query(update_query, [...update_values, ...where_values])
+    return true
+  } else if (upsert) {
+    const new_doc = { ...filter, ...update }
+    await insert_one(coll, new_doc as T)
+    return true
+  }
+
+  return false
+}
+
+export async function delete_one(
+  coll: string,
+  filter: object
+): Promise<boolean> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const filter_entries = Object.entries(filter)
+    const filter_conditions = filter_entries
+      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .join(" AND ")
+
+    const query = `DELETE FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
+    const result = await get_pool().query(query, [coll, ...filter_entries.map(([, v]) => String(v))])
+    return (result.rowCount ?? 0) > 0
+  }
+
+  const { clause, values } = build_where_clause(filter)
+  const query = `DELETE FROM ${table} ${clause}`
+  const result = await get_pool().query(query, values)
+
+  return (result.rowCount ?? 0) > 0
+}
+
+export async function delete_many(
+  coll: string,
+  filter: object
+): Promise<number> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const filter_entries = Object.entries(filter)
+    const filter_conditions = filter_entries
+      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .join(" AND ")
+
+    const query = `DELETE FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
+    const result = await get_pool().query(query, [coll, ...filter_entries.map(([, v]) => String(v))])
+    return result.rowCount ?? 0
+  }
+
+  const { clause, values } = build_where_clause(filter)
+  const query = `DELETE FROM ${table} ${clause}`
+  const result = await get_pool().query(query, values)
+
+  return result.rowCount ?? 0
+}
+
+export async function increment(
+  coll: string,
+  filter: object,
+  field: string,
+  amount: number = 1
+): Promise<void> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const filter_entries = Object.entries(filter)
+    const filter_conditions = filter_entries
+      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .join(" AND ")
+
+    const existing_query = `SELECT id, data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} LIMIT 1`
+    const existing_result = await get_pool().query(existing_query, [coll, ...filter_entries.map(([, v]) => String(v))])
+
+    if (existing_result.rows.length > 0) {
+      const data = existing_result.rows[0].data
+      data[field] = (data[field] || 0) + amount
+      const update_query = `UPDATE generic_data SET data = $1 WHERE id = $2`
+      await get_pool().query(update_query, [JSON.stringify(data), existing_result.rows[0].id])
+    } else {
+      const new_doc = { ...filter, [field]: amount }
+      await insert_one(coll, new_doc)
+    }
+    return
+  }
+
+  const { clause: where_clause, values: where_values } = build_where_clause(filter)
+
+  const existing_query = `SELECT id FROM ${table} ${where_clause} LIMIT 1`
+  const existing_result = await get_pool().query(existing_query, where_values)
+
+  if (existing_result.rows.length > 0) {
+    const adjusted_where = where_clause.replace(/\$(\d+)/g, (_, num) => `$${parseInt(num) + 1}`)
+    const update_query = `UPDATE ${table} SET ${field} = COALESCE(${field}, 0) + $1 ${adjusted_where}`
+    await get_pool().query(update_query, [amount, ...where_values])
+  } else {
+    const new_doc = { ...filter, [field]: amount }
+    await insert_one(coll, new_doc as any)
+  }
+}
+
+export async function count(
+  coll: string,
+  filter: object = {}
+): Promise<number> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const filter_entries = Object.entries(filter)
+    const filter_conditions = filter_entries
+      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .join(" AND ")
+
+    const query = `SELECT COUNT(*) as count FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""}`
+    const result = await get_pool().query(query, [coll, ...filter_entries.map(([, v]) => String(v))])
+    return parseInt(result.rows[0].count)
+  }
+
+  const { clause, values } = build_where_clause(filter)
+  const query = `SELECT COUNT(*) as count FROM ${table} ${clause}`
+  const result = await get_pool().query(query, values)
+
+  return parseInt(result.rows[0].count)
+}
+
+export async function find_many_sorted<T extends object>(
+  coll: string,
+  filter: object = {},
+  sort_field: string,
+  sort_order: "ASC" | "DESC" = "ASC"
+): Promise<T[]> {
+  const table = get_table_name(coll)
+
+  if (table === "generic_data") {
+    const filter_entries = Object.entries(filter)
+    const filter_conditions = filter_entries
+      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .join(" AND ")
+
+    const query = `SELECT data FROM generic_data WHERE collection = $1 ${filter_conditions ? "AND " + filter_conditions : ""} ORDER BY data->>'${sort_field}' ${sort_order}`
+    const result = await get_pool().query<{ data: T }>(query, [coll, ...filter_entries.map(([, v]) => String(v))])
+
+    return result.rows.map((row: { data: T }) => row.data)
+  }
+
+  const { clause, values } = build_where_clause(filter)
+  const query = `SELECT * FROM ${table} ${clause} ORDER BY ${sort_field} ${sort_order}`
+  const result = await get_pool().query(query, values)
+
+  return result.rows.map((row: any) => convert_row_to_object<T>(row))
+}
+
+export async function update_jsonb_field(
+  coll: string,
+  filter: object,
+  jsonb_field: string,
+  jsonb_key: string,
+  increment_value: number
+): Promise<boolean> {
+  const table = get_table_name(coll)
+
+  const { clause: where_clause, values: where_values } = build_where_clause(filter)
+
+  const existing_query = `SELECT id, ${jsonb_field} FROM ${table} ${where_clause} LIMIT 1`
+  const existing_result = await get_pool().query(existing_query, where_values)
+
+  if (existing_result.rows.length === 0) {
+    const new_doc = { ...filter, [jsonb_field]: { [jsonb_key]: increment_value }, total: increment_value }
+    await insert_one(coll, new_doc as any)
+    return true
+  }
+
+  const current_jsonb = existing_result.rows[0][jsonb_field] || {}
+  const current_value = current_jsonb[jsonb_key] || 0
+  current_jsonb[jsonb_key] = current_value + increment_value
+
+  const adjusted_where = where_clause.replace(/\$(\d+)/g, (_, num) => `$${parseInt(num) + 2}`)
+  const update_query = `UPDATE ${table} SET ${jsonb_field} = $1, total = COALESCE(total, 0) + $2 ${adjusted_where}`
+  await get_pool().query(update_query, [JSON.stringify(current_jsonb), increment_value, ...where_values])
+
+  return true
+}
+
+// - Convert database row to object with proper type handling - \\
+// - Unix timestamp fields (BIGINT) are kept as numbers - \\
+// - Legacy TIMESTAMP fields are converted to Date objects - \\
+
+/**
+ * @param {any} row - Database row object
+ * @returns {T} Converted object with proper types
+ */
+function convert_row_to_object<T>(row: any): T {
+  const result: any = {}
+  const legacy_date_fields = [
+    "updated_at", "joined_at", "left_at",
+    "scheduled_time", "added_at", "last_tag_check"
+  ]
+  const unix_timestamp_fields = [
+    "whitelisted_at", "start_date", "end_date", "created_at", "cached_at", "last_updated",
+    "enabled_at", "expires_at", "disabled_at", "disable_notified_at"
+  ]
+
+  for (const [key, value] of Object.entries(row)) {
+    if (legacy_date_fields.includes(key)) {
+      result[key] = value ? new Date(value as string) : null
+    } else if (unix_timestamp_fields.includes(key)) {
+      result[key] = value ? parseInt(value as string) : null
+    } else {
+      result[key] = value
+    }
+  }
+
+  return result as T
+}
+
+export async function raw_query<T = any>(query: string, values: any[] = []): Promise<T[]> {
+  const result = await get_pool().query(query, values)
+  return result.rows as T[]
+}
+
+/**
+ * - INCREMENT TOTAL BYPASS COUNT - \\
+ * @returns Updated total count
+ */
+export async function increment_bypass_count(): Promise<number> {
+  try {
+    const result = await get_pool().query(
+      `UPDATE bypass_stats SET total_count = total_count + 1, updated_at = NOW() RETURNING total_count`
+    )
+    return Number(result.rows[0]?.total_count ?? 0)
+  } catch (error) {
+    console.error(`[ - BYPASS STATS - ] Failed to increment count:`, error)
+    return 0
+  }
+}
+
+/**
+ * - RECORD PER-GUILD BYPASS STAT FOR TODAY - \\
+ * @param guild_id - Discord guild ID
+ * @returns Promise<void>
+ */
+export async function record_bypass_guild_stat(guild_id: string): Promise<void> {
+  try {
+    await get_pool().query(
+      `INSERT INTO bypass_guild_stats (guild_id, date, count)
+       VALUES ($1, CURRENT_DATE, 1)
+       ON CONFLICT (guild_id, date) DO UPDATE
+         SET count = bypass_guild_stats.count + 1`,
+      [guild_id]
+    )
+  } catch (error) {
+    console.error(`[ - BYPASS GUILD STATS - ] Failed to record stat for guild ${guild_id}:`, error)
+  }
+}
+
+/**
+ * - CLEANUP EXPIRED BYPASS CACHE - \\
+ */
+export async function cleanup_expired_bypass_cache(): Promise<void> {
+  try {
+    const result = await get_pool().query(`DELETE FROM bypass_cache WHERE expires_at < NOW()`)
+    if (result.rowCount && result.rowCount > 0) {
+      console.log(`[ - BYPASS CACHE - ] Cleaned up ${result.rowCount} expired entries`)
+    }
+  } catch (error) {
+    console.error(`[ - BYPASS CACHE - ] Cleanup failed:`, error)
+  }
+}
+
+// - INSERT BYPASS LOG - \\
+
+interface bypass_log_entry {
+  guild_id   : string
+  user_id    : string
+  user_tag   : string
+  avatar     : string | null
+  url        : string
+  result_url : string | null
+  success    : boolean
+}
+
+/**
+ * @param entry - Bypass event to persist
+ * @returns Promise<void>
+ */
+export async function insert_bypass_log(entry: bypass_log_entry): Promise<void> {
+  try {
+    await get_pool().query(
+      `INSERT INTO bypass_logs (guild_id, user_id, user_tag, avatar, url, result_url, success)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [entry.guild_id, entry.user_id, entry.user_tag, entry.avatar, entry.url, entry.result_url, entry.success]
+    )
+  } catch (error) {
+    console.error(`[ - BYPASS LOG - ] Failed to insert log:`, error)
+  }
+}
