@@ -519,7 +519,9 @@ export default function StaffApplicationPage() {
                 onClick={() => {
                   set_form_lang(lang)
                   set_lang_modal_open(false)
-                  set_warn_modal_open(true)
+                  if (!already_applied) {
+                    set_warn_modal_open(true)
+                  }
                 }}
               >
                 {lang === "English" && "🇬🇧"}
@@ -603,7 +605,7 @@ export default function StaffApplicationPage() {
       </Dialog>
 
       {/* - ALREADY APPLIED MODAL - \\ */}
-      <Dialog open={already_applied} onOpenChange={() => {}}>
+      <Dialog open={already_applied && !lang_modal_open} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md [&>button]:hidden bg-[#09090b] border-border/40">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-white">
