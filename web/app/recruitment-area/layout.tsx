@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
 import { AppSidebar } from '@/components/shadcn-space/blocks/sidebar-01/app-sidebar'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { TooltipProvider }                  from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function RecruitmentLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -34,7 +34,11 @@ export default function RecruitmentLayout({ children }: { children: React.ReactN
   if (loading || !authorized) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background text-foreground dark">
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-4 w-32" />
+        </div>
       </div>
     )
   }

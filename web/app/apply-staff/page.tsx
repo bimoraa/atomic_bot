@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { ScrollArea }                                                                                                        from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage }                                                                               from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuCheckboxItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Skeleton }                                                                                                          from "@/components/ui/skeleton"
 import { Popover, PopoverContent, PopoverTrigger }                                                                           from "@/components/ui/popover"
 import { Calendar }                                                                                                          from "@/components/ui/calendar"
 import { AtomicLogo }                                                                                                        from "@/components/icons/atomic_logo"
@@ -567,8 +568,15 @@ export default function StaffApplicationPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background text-foreground">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex h-screen w-full flex-col space-y-4 items-center justify-center p-8 bg-background text-foreground">
+        <div className="flex items-center space-x-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+        <Skeleton className="h-[400px] w-full max-w-2xl rounded-xl" />
       </div>
     )
   }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { encrypt_session } from '@/lib/utils/session'
 
 // - DISCORD OAUTH CALLBACK - \\
 /**
@@ -69,16 +70,21 @@ export async function GET(req: NextRequest) {
 
     // - Set session cookie - \\
     const response = NextResponse.redirect(`${process.env.NEXT_PUBLIC_WEB_URL}${return_to}`)
-    response.cookies.set('discord_user', JSON.stringify({
+    const user_session = {
       id            : user_data.id,
       username      : user_data.username,
       avatar        : user_data.avatar,
       discriminator : user_data.discriminator,
-    }), {
+    }
+    
+    const signed_session = await encrypt_session(user_session)
+    
+    response.cookies.set('discord_user', signed_session, {
       httpOnly : true,
       secure   : process.env.NODE_ENV === 'production',
       sameSite : 'lax',
-      maxAge   : 60 * 60 * 24 * 7,
+      path     : '/',
+      maxAge   : 60 * 60 * 24 * 7, // 7 days
     })
 
     // - Store access token for server-side guild fetching - \\

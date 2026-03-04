@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomUUID }                from "crypto"
+import { encrypt_session, decrypt_session } from "@/lib/utils/session"
 import { has_user_applied, submit_application, delete_application, staff_application, get_user_application_uuid } from "@/lib/database/managers/staff_application_manager"
 import { connect }                   from "@/lib/utils/database"
 
@@ -248,7 +249,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = JSON.parse(discord_user_cookie.value)
+    const user = await decrypt_session(discord_user_cookie.value)
     if (!user || !user.id) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 })
     }
@@ -327,7 +328,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized. Please log in first." }, { status: 401 })
     }
 
-    const user = JSON.parse(discord_user_cookie.value)
+    const user = await decrypt_session(discord_user_cookie.value)
     if (!user || !user.id) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 })
     }
@@ -506,7 +507,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const user = JSON.parse(discord_user_cookie.value)
+    const user = await decrypt_session(discord_user_cookie.value)
     if (!user || !user.id) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 })
     }

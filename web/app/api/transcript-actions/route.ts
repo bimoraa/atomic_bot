@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool }                      from 'pg'
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+import { connect } from '@/lib/utils/database'
+import { decrypt_session } from '@/lib/utils/session'
 
 // - ENSURE TABLE EXISTS - \\
 const __ensure_table = async () => {
+  const pool = await connect()
+  if (!pool) throw new Error("No database connection")
   const client = await pool.connect()
   try {
     await client.query(`
@@ -24,6 +25,22 @@ const __ensure_table = async () => {
   }
 }
 
+// - GET ACTIONS FOR TRANSCRIPT - \\
+const __get_actions = async (transcript_id: string) => {
+  const pool = await connect()
+  if (!pool) throw new Error("No database connection")
+  const client = await pool.connect()
+  try {
+    const res = await client.query(
+      `SELECT * FROM transcript_message_actions WHERE transcript_id = $1 ORDER BY created_at ASC`,
+      [transcript_id]
+    )
+    return res.rows
+  } finally {
+    client.release()
+  }
+}
+
 // - POST /api/transcript-actions - \\
 /**
  * @description Save a flag, comment, or download action for a message
@@ -35,7 +52,7 @@ export async function POST(req: NextRequest) {
     await __ensure_table()
 
     const discord_user_cookie = req.cookies.get('discord_user')
-    const user = discord_user_cookie ? JSON.parse(discord_user_cookie.value) : null
+    const user = discord_user_cookie ? await decrypt_session(discord_user_cookie.value) : null
 
     const body         = await req.json()
     const action_type  = body.action_type  as string
@@ -51,6 +68,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid action_type' }, { status: 400 })
     }
 
+    const pool = await connect()
+    if (!pool) throw new Error("No database connection")
     const client = await pool.connect()
     try {
       const result = await client.query(
@@ -61,8 +80,8 @@ export async function POST(req: NextRequest) {
         [
           transcript_id,
           message_id,
-          user?.id   || null,
-          user?.username || null,
+          user?.id || 'anonymous',
+          user?.username || 'Anonymous',
           action_type,
           comment_text || null,
         ]
@@ -89,22 +108,26 @@ export async function GET(req: NextRequest) {
   try {
     await __ensure_table()
 
-    const transcript_id = req.nextUrl.searchParams.get('transcript_id')
-    if (!transcript_id) {
-      return NextResponse.json({ error: 'Missing transcript_id' }, { status: 400 })
-    }
+    if (req.method === 'GET') {
+      const { searchParams } = new URL(req.url)
+      const transcript_id = searchParams.get('transcript_id')
 
-    const client = await pool.connect()
-    try {
-      const result = await client.query(
-        `SELECT * FROM transcript_message_actions
-         WHERE transcript_id = $1
-         ORDER BY created_at ASC`,
-        [transcript_id]
-      )
-      return NextResponse.json({ actions: result.rows })
-    } finally {
-      client.release()
+      if (!transcript_id) {
+        return NextResponse.json({ error: 'Missing transcript_id' }, { status: 400 })
+      }
+
+      const pool = await connect()
+      if (!pool) throw new Error("No database connection")
+      const client = await pool.connect()
+      try {
+        const result = await client.query(
+          `SELECT * FROM transcript_message_actions WHERE transcript_id = $1 ORDER BY created_at ASC`,
+          [transcript_id]
+        )
+        return NextResponse.json({ actions: result.rows })
+      } finally {
+        client.release()
+      }
     }
   } catch (err) {
     console.error('[ - TRANSCRIPT ACTION GET - ] Error:', err)

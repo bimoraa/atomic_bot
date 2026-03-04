@@ -5,6 +5,7 @@ import { useState, Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Loader2, AlertCircle } from 'lucide-react'
 
 function LoginForm() {
@@ -89,8 +90,10 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-white" />
+      <div className="min-h-screen bg-black flex items-center justify-center p-8">
+        <div className="w-full max-w-sm">
+          <Skeleton className="h-[400px] w-full rounded-xl" />
+        </div>
       </div>
     }>
       <LoginForm />

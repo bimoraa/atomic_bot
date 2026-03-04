@@ -12,6 +12,7 @@ import { Calendar }                                                           fr
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger }   from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue }     from "@/components/ui/select"
 import { Input }                                                              from "@/components/ui/input"
+import { Skeleton }                                                           from "@/components/ui/skeleton"
 
 function handle_calendar_change(
   value: string | number,
@@ -143,8 +144,15 @@ export default function RecruitmentDashboard() {
 
   if (loading || !settings) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+      <div className="flex flex-col space-y-4 p-8">
+        <div className="flex items-center space-x-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+        <Skeleton className="h-[400px] w-full rounded-xl" />
       </div>
     )
   }

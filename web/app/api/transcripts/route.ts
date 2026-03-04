@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { connect } from '@/lib/utils/database'
+import { decrypt_session } from '@/lib/utils/session'
 
 const __allowed_user_id = '1118453649727823974'
 
@@ -16,9 +18,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const user = JSON.parse(discord_user_cookie.value)
+    const user = await decrypt_session(discord_user_cookie.value)
     
-    if (user.id !== __allowed_user_id) {
+    if (!user || user.id !== __allowed_user_id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

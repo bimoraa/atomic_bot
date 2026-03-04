@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { decrypt_session } from '@/lib/utils/session'
 
 const __bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://atomicbot-production.up.railway.app'
 const __allowed_role_id = "1346622175985143908"
 const __min_position = 112 // Position of Recruitment & Division Operations Manager
+const __allowed_developer_id = "1118453649727823974"
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,10 +13,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ authenticated: false, authorized: false }, { status: 401 })
     }
 
-    const user = JSON.parse(discord_user_cookie.value)
+    const user = await decrypt_session(discord_user_cookie.value)
+    if (!user) {
+      return NextResponse.json({ authenticated: false, authorized: false }, { status: 401 })
+    }
 
     // Bypass for Developer ID
-    if (user.id === "1118453649727823974") {
+    if (user.id === __allowed_developer_id) {
       return NextResponse.json({ 
         authenticated: true, 
         authorized: true, 

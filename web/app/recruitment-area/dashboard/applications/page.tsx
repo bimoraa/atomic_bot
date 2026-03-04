@@ -7,6 +7,7 @@ import { Loader2, Copy, Check, CheckIcon, XIcon, MinusIcon, Search, MoreHorizont
 import { format }                                                                   from "date-fns"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow }           from "@/components/ui/table"
 import { Badge }                                                                    from "@/components/ui/badge"
+import { Skeleton }                                                                 from "@/components/ui/skeleton"
 import { Tabs, TabsList, TabsTrigger }                                             from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage }                                    from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle }                        from "@/components/ui/dialog"
@@ -194,8 +195,15 @@ function ApplicationModal({ uuid, open, on_close, on_review_saved }: { uuid: str
 
         <ScrollArea className="max-h-[75vh]">
           {loading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="w-7 h-7 animate-spin text-zinc-500" />
+            <div className="flex flex-col space-y-4 p-8">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-[250px]" />
+                  <Skeleton className="h-4 w-[200px]" />
+                </div>
+              </div>
+              <Skeleton className="h-[200px] w-full rounded-xl" />
             </div>
           ) : not_found || !app ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-zinc-500">
@@ -484,8 +492,15 @@ export default function ApplicationsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-zinc-500" />
+      <div className="flex flex-col space-y-4 p-8">
+        <div className="flex items-center space-x-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="h-4 w-[200px]" />
+          </div>
+        </div>
+        <Skeleton className="h-[400px] w-full rounded-xl" />
       </div>
     )
   }

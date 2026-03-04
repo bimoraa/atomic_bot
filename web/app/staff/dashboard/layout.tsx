@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import AppSidebar from '@/components/shadcn-space/blocks/dashboard-shell-01/app-sidebar'
-import { Loader2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export type DiscordUser = {
   id: string;
@@ -33,8 +33,17 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
 
   if (loading || !user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background text-foreground dark">
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      <div className="flex h-screen w-full items-center justify-center bg-background text-foreground dark p-8">
+        <div className="flex flex-col space-y-4 w-full max-w-4xl">
+          <div className="flex items-center space-x-4">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-[250px]" />
+              <Skeleton className="h-4 w-[200px]" />
+            </div>
+          </div>
+          <Skeleton className="h-[400px] w-full rounded-xl" />
+        </div>
       </div>
     )
   }
