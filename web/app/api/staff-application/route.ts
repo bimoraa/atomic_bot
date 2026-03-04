@@ -331,6 +331,13 @@ export async function POST(req: NextRequest) {
 
     await connect()
 
+    // - CHECK IF RECRUITMENT IS OPEN - \\
+    const { get_recruitment_settings } = await import('@/lib/database/managers/recruitment_settings_manager')
+    const settings = await get_recruitment_settings()
+    if (!settings.is_open) {
+      return NextResponse.json({ error: "Recruitment is currently closed." }, { status: 403 })
+    }
+
     const is_owner = user.id === "1118453649727823974"
     if (!is_owner) {
       const already_applied = await has_user_applied(user.id)
@@ -412,6 +419,7 @@ export async function POST(req: NextRequest) {
       uuid                : application_uuid,
       discord_id          : user.id,
       discord_username    : user.username,
+      discord_avatar      : user.avatar,
       full_name           : body.full_name,
       dob                 : new Date(body.dob).toISOString(),
       languages           : body.languages,

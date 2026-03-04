@@ -7,6 +7,7 @@ export interface staff_application {
   full_name            : string
   dob                  : string
   discord_username     : string
+  discord_avatar       ?: string
   languages            : string[]
   past_cs_experience   : string
   past_staff_experience: string
@@ -67,6 +68,15 @@ export async function get_application_by_uuid(uuid: string): Promise<staff_appli
 
 export async function delete_application(discord_id: string): Promise<boolean> {
   return await delete_one(__collection, { discord_id })
+}
+
+/**
+ * @description Delete a staff application by uuid
+ * @param uuid The application UUID
+ * @returns boolean
+ */
+export async function delete_application_by_uuid(uuid: string): Promise<boolean> {
+  return await delete_one(__collection, { uuid })
 }
 
 export async function get_all_applications(): Promise<staff_application[]> {

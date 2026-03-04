@@ -601,7 +601,7 @@ async function init_tables(): Promise<void> {
 
     await client.query(`
       ALTER TABLE staff_applications 
-      ADD COLUMN IF NOT EXISTS active_other_hub TEXT
+      ADD COLUMN IF NOT EXISTS discord_avatar VARCHAR(255)
     `).catch(() => {})
 
     // - STAFF APPLICATION REVIEWS MIGRATION - \\

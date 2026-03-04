@@ -1,19 +1,37 @@
 'use client'
 
-import { useState, useEffect }                                                     from 'react'
+import { useState, useEffect, useRef }                                            from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }  from "@/components/ui/card"
 import { Button }                                                                   from "@/components/ui/button"
-import { Loader2, Copy, Check }                                                    from 'lucide-react'
+import { Loader2, Copy, Check, CheckIcon, XIcon, MinusIcon, Search, MoreHorizontal, Eye, StickyNote, ThumbsUp, Clock, ThumbsDown, Trash2 } from 'lucide-react'
 import { format }                                                                   from "date-fns"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow }           from "@/components/ui/table"
 import { Badge }                                                                    from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger }                                             from "@/components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage }                                    from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle }                        from "@/components/ui/dialog"
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuSeparator, DropdownMenuTrigger,
+}                                                                                  from "@/components/ui/dropdown-menu"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { ButtonGroup, ButtonGroupSeparator }                                       from "@/components/ui/button-group"
 import { Field, FieldLabel }                                                       from "@/components/ui/field"
 import { Input }                                                                    from "@/components/ui/input"
 import { Textarea }                                                                 from "@/components/ui/textarea"
 import { ScrollArea }                                                               from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipTrigger }                                from "@/components/ui/tooltip"
 import { toast }                                                                    from "sonner"
+import { cn }                                                                       from "@/lib/utils"
+import { buttonVariants }                                                           from "@/components/ui/button"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 interface staff_application {
   uuid                  : string
@@ -150,9 +168,17 @@ function ApplicationModal({ uuid, open, on_close, on_review_saved }: { uuid: str
     <Dialog open={open} onOpenChange={(v) => { if (!v) on_close() }}>
       <DialogContent className="max-w-4xl w-full bg-zinc-950 border-border/40 p-0 gap-0">
         <DialogHeader className="px-6 pt-5 pb-4 border-b border-border/40 flex flex-row items-start justify-between">
-          <div className="flex flex-col gap-0.5">
-            <DialogTitle className="text-lg font-bold text-white">Staff Application Data</DialogTitle>
-            <p className="text-sm text-muted-foreground font-normal">Submitted application details — read only.</p>
+          <div className="flex items-center gap-4">
+            {app && (
+              <Avatar className="w-10 h-10 rounded-full border border-border/40 shadow-sm hidden sm:block">
+                <AvatarImage src={avatar_url} />
+                <AvatarFallback className="bg-zinc-800 text-xs">{app.discord_username?.slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+            )}
+            <div className="flex flex-col gap-0.5">
+              <DialogTitle className="text-lg font-bold text-white">Staff Application Data</DialogTitle>
+              <p className="text-sm text-muted-foreground font-normal">Submitted application details — read only.</p>
+            </div>
           </div>
           {app && (
             <div className="flex items-center gap-2 mr-6 mt-1">
@@ -185,12 +211,46 @@ function ApplicationModal({ uuid, open, on_close, on_review_saved }: { uuid: str
                     <p className="text-xs text-muted-foreground">Discord account linked to this submission.</p>
                   </div>
 
-                  <Avatar className="w-24 h-24 rounded-full border-2 border-border/40 shadow-md">
-                    <AvatarImage src={avatar_url} />
-                    <AvatarFallback className="text-2xl bg-zinc-900 text-zinc-300">
-                      {app.discord_username?.charAt(0).toUpperCase() || '?'}
-                    </AvatarFallback>
-                  </Avatar>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative w-fit">
+                        <Avatar className={`w-24 h-24 rounded-full shadow-md ring-offset-background ring-offset-2 ring-2 ${
+                          flag === 'approved' ? 'ring-green-500'
+                          : flag === 'declined' ? 'ring-red-500'
+                          : 'ring-zinc-700'
+                        }`}>
+                          <AvatarImage src={avatar_url} />
+                          <AvatarFallback className="text-2xl bg-zinc-900 text-zinc-300">
+                            {app.discord_username?.charAt(0).toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className={`absolute -right-1.5 -bottom-1.5 inline-flex size-5 items-center justify-center rounded-full ${
+                          flag === 'approved' ? 'bg-green-500'
+                          : flag === 'declined' ? 'bg-red-500'
+                          : 'bg-zinc-600'
+                        }`}>
+                          {flag === 'approved' && <CheckIcon className="size-3 text-white" />}
+                          {flag === 'declined' && <XIcon     className="size-3 text-white" />}
+                          {flag !== 'approved' && flag !== 'declined' && <MinusIcon className="size-3 text-white" />}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="rounded-xl max-w-[220px] space-y-1" side="bottom" sideOffset={8}>
+                      <p className="text-xs font-semibold capitalize">{flag ?? 'Pending'}</p>
+                      {app.reviewed_by && (
+                        <p className="text-xs text-muted-foreground">
+                          {flag === 'approved' ? 'Approved' : flag === 'declined' ? 'Declined' : 'Reviewed'} by <span className="text-foreground font-medium">@{app.reviewed_by}</span>
+                          {app.reviewed_at ? ` · ${new Date(Number(app.reviewed_at)).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
+                        </p>
+                      )}
+                      {app.note && (
+                        <p className="text-xs text-muted-foreground border-t border-border/40 pt-1 mt-1">"{app.note}"</p>
+                      )}
+                      {!app.reviewed_by && !app.note && (
+                        <p className="text-xs text-muted-foreground">No review yet</p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
 
                   <div className="flex flex-col gap-1.5">
                     <h5 className="text-white text-base font-semibold">{app.full_name}</h5>
@@ -211,19 +271,46 @@ function ApplicationModal({ uuid, open, on_close, on_review_saved }: { uuid: str
                   <div className="flex flex-col gap-3 pt-4 border-t border-border/40">
                     <h6 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Review</h6>
 
-                    <div className="flex gap-2">
-                      {(['approved', 'pending', 'declined'] as const).map((f) => (
-                        <button
-                          key={f}
-                          onClick={() => set_flag(f)}
-                          className={`flex-1 py-1.5 rounded-md border text-xs font-medium transition-colors ${
-                            flag === f ? flag_styles[f] : 'bg-transparent border-border/40 text-zinc-600 hover:text-zinc-400'
-                          }`}
-                        >
-                          {f.charAt(0).toUpperCase() + f.slice(1)}
-                        </button>
-                      ))}
-                    </div>
+                    <ButtonGroup className="w-full pr-1">
+                      <Button
+                        onClick={() => set_flag('approved')}
+                        size="sm"
+                        variant={flag === 'approved' ? 'default' : 'outline'}
+                        className={`flex-1 text-xs font-medium ${
+                          flag === 'approved'
+                            ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                            : 'bg-transparent border-border/40 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'
+                        }`}
+                      >
+                        Approved
+                      </Button>
+                      <ButtonGroupSeparator />
+                      <Button
+                        onClick={() => set_flag('pending')}
+                        size="sm"
+                        variant={flag === 'pending' ? 'default' : 'outline'}
+                        className={`flex-1 text-xs font-medium ${
+                          flag === 'pending'
+                            ? 'bg-zinc-700 hover:bg-zinc-600 text-white border-zinc-700'
+                            : 'bg-transparent border-border/40 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'
+                        }`}
+                      >
+                        Pending
+                      </Button>
+                      <ButtonGroupSeparator />
+                      <Button
+                        onClick={() => set_flag('declined')}
+                        size="sm"
+                        variant={flag === 'declined' ? 'default' : 'outline'}
+                        className={`flex-1 text-xs font-medium ${
+                          flag === 'declined'
+                            ? 'bg-red-600 hover:bg-red-700 text-white border-red-600'
+                            : 'bg-transparent border-border/40 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/50'
+                        }`}
+                      >
+                        Declined
+                      </Button>
+                    </ButtonGroup>
 
                     <Textarea
                       placeholder="Add a note..."
@@ -302,23 +389,29 @@ function ApplicationModal({ uuid, open, on_close, on_review_saved }: { uuid: str
         {app && (
           <CardFooter className="px-6 py-4 border-t border-border/40 flex justify-between items-center bg-zinc-950 rounded-b-xl">
             <p className="text-xs text-zinc-500">Submitted: {applied_date}</p>
-            <div className="flex items-center gap-2">
+            <ButtonGroup>
               <Button
                 size="sm"
                 onClick={save_review}
                 disabled={saving}
-                className={`text-xs px-4 ${
+                className={`text-xs gap-1.5 ${
                   save_ok
                     ? 'bg-green-600 hover:bg-green-700 text-white'
                     : 'bg-white text-black hover:bg-zinc-200'
                 }`}
               >
-                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : save_ok ? 'Saved' : 'Save Review'}
+                {saving
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : save_ok
+                    ? <><CheckIcon className="w-3 h-3" /> Saved</>
+                    : <><CheckIcon className="w-3 h-3" /> Save Review</>
+                }
               </Button>
-              <Button variant="outline" size="sm" onClick={on_close} className="bg-zinc-900 border-border/40 text-zinc-300 hover:bg-zinc-800 hover:text-white">
-                Close
+              <ButtonGroupSeparator />
+              <Button variant="outline" size="sm" onClick={on_close} className="bg-zinc-900 border-border/40 text-zinc-300 hover:bg-zinc-800 hover:text-white gap-1.5 text-xs">
+                <XIcon className="w-3 h-3" /> Close
               </Button>
-            </div>
+            </ButtonGroup>
           </CardFooter>
         )}
       </DialogContent>
@@ -329,10 +422,51 @@ function ApplicationModal({ uuid, open, on_close, on_review_saved }: { uuid: str
 export default function ApplicationsPage() {
   const [loading,       set_loading]      = useState(true)
   const [applications,  set_applications] = useState<any[]>([])
-  const [selected_uuid, set_selected_uuid] = useState<string | null>(null)
+  const [selected_uuid,    set_selected_uuid]    = useState<string | null>(null)
+  const [delete_confirm_uuid, set_delete_confirm_uuid] = useState<string | null>(null)
+  const [quick_saving,      set_quick_saving]      = useState<string | null>(null)
+
+  // - SEARCH & FILTER STATE - \\
+  const [search_query,  set_search_query]  = useState('')
+  const [status_filter, set_status_filter] = useState<'all' | 'pending' | 'approved' | 'declined'>('all')
+
+  // - PAGINATION STATE - \\
+  const [current_page, set_current_page] = useState(1)
+  const items_per_page = 20
 
   function handle_review_saved(uuid: string, flag: staff_application['flag'], note: string) {
     set_applications(prev => prev.map(a => a.uuid === uuid ? { ...a, flag, note } : a))
+  }
+
+  async function quick_set_flag(uuid: string, flag: 'pending' | 'approved' | 'declined') {
+    set_quick_saving(uuid)
+    try {
+      const res = await fetch(`/api/recruitment-applications/${uuid}`, {
+        method : 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ flag })
+      })
+      if (!res.ok) throw new Error()
+      set_applications(prev => prev.map(a => a.uuid === uuid ? { ...a, flag } : a))
+      toast.success(`Marked as ${flag}`)
+    } catch {
+      toast.error('Failed to update status')
+    } finally {
+      set_quick_saving(null)
+    }
+  }
+
+  async function confirm_delete(uuid: string) {
+    try {
+      const res = await fetch(`/api/recruitment-applications/${uuid}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      set_applications(prev => prev.filter(a => a.uuid !== uuid))
+      toast.success('Application deleted')
+    } catch {
+      toast.error('Failed to delete application')
+    } finally {
+      set_delete_confirm_uuid(null)
+    }
   }
 
   useEffect(() => {
@@ -356,43 +490,100 @@ export default function ApplicationsPage() {
     )
   }
 
+  // - FILTER & SEARCH - \\
+  const filtered_applications = applications.filter(app => {
+    const q = search_query.toLowerCase()
+    const matches_search = !q
+      || app.full_name?.toLowerCase().includes(q)
+      || app.discord_username?.toLowerCase().includes(q)
+      || app.discord_id?.includes(q)
+    const matches_status = status_filter === 'all' || (app.flag ?? 'pending') === status_filter
+    return matches_search && matches_status
+  })
+
+  // - PAGINATION CALCULATIONS - \\
+  const total_pages = Math.ceil(filtered_applications.length / items_per_page) || 1
+  const current_items = filtered_applications.slice((current_page - 1) * items_per_page, current_page * items_per_page)
+
+  const render_pagination_pages = () => {
+    const pages = []
+    for (let i = 1; i <= total_pages; i++) {
+      pages.push(i)
+    }
+    return pages
+  }
+
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-white mb-2">Applications</h2>
-        <p className="text-muted-foreground text-sm">
-          Review all submitted staff applications.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-white mb-1.5">Applications</h2>
+          <p className="text-muted-foreground text-sm">
+            Review and manage all submitted staff applications.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-zinc-900 border-border/40 font-normal py-1">
+            {filtered_applications.length} / {applications.length}
+          </Badge>
+        </div>
       </div>
 
-      <Card className="bg-zinc-950/40 border-border/40">
-        <CardHeader>
-          <CardTitle className="text-xl text-white">Applications</CardTitle>
-          <CardDescription>Review all submitted staff applications</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-xl border border-border/40 overflow-hidden">
+      {/* - SEARCH & FILTER BAR - \\ */}
+      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+        <div className="relative flex-1 w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Input
+            placeholder="Search by name, username, or ID..."
+            value={search_query}
+            onChange={e => { set_search_query(e.target.value); set_current_page(1) }}
+            className="pl-9 bg-zinc-900/50 border-border/40 text-white placeholder:text-zinc-600 h-9"
+          />
+        </div>
+        <Tabs
+          value={status_filter}
+          onValueChange={v => { set_status_filter(v as typeof status_filter); set_current_page(1) }}
+        >
+          <TabsList>
+            {(['all', 'pending', 'approved', 'declined'] as const).map(s => {
+              const count = s === 'all'
+                ? applications.length
+                : applications.filter(a => (a.flag ?? 'pending') === s).length
+              return (
+                <TabsTrigger key={s} value={s} className="flex items-center gap-1 px-2.5 sm:px-3 capitalize">
+                  {s === 'all' ? 'All' : s}
+                  <Badge className="h-5 min-w-5 px-1 text-[10px]">{count}</Badge>
+                </TabsTrigger>
+              )
+            })}
+          </TabsList>
+        </Tabs>
+      </div>
+
+      <Card className="bg-zinc-950/40 border-border/40 shadow-xl">
+        <CardContent className="p-0">
+          <div className="rounded-xl overflow-hidden">
             <Table>
-              <TableHeader className="bg-zinc-900/50">
-                <TableRow className="border-border/40 hover:bg-transparent">
-                  <TableHead className="text-zinc-400 font-medium">Date</TableHead>
-                  <TableHead className="text-zinc-400 font-medium">Name</TableHead>
-                  <TableHead className="text-zinc-400 font-medium">Discord</TableHead>
-                  <TableHead className="text-zinc-400 font-medium">Age</TableHead>
-                  <TableHead className="text-zinc-400 font-medium">Past CS</TableHead>
-                  <TableHead className="text-zinc-400 font-medium">Status</TableHead>
-                  <TableHead className="text-zinc-400 font-medium text-right">Action</TableHead>
+              <TableHeader className="bg-zinc-900/50 border-b border-border/40">
+                <TableRow className="hover:bg-transparent border-0">
+                  <TableHead className="text-zinc-400 font-medium h-12">Applied Date</TableHead>
+                  <TableHead className="text-zinc-400 font-medium h-12">Name</TableHead>
+                  <TableHead className="text-zinc-400 font-medium h-12">Discord</TableHead>
+                  <TableHead className="text-zinc-400 font-medium h-12">Age</TableHead>
+                  <TableHead className="text-zinc-400 font-medium h-12">Experience</TableHead>
+                  <TableHead className="text-zinc-400 font-medium h-12">Status</TableHead>
+                  <TableHead className="text-right text-zinc-400 font-medium h-12 pr-6">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {applications.length === 0 ? (
-                  <TableRow className="border-border/40 hover:bg-zinc-900/50 transition-colors">
-                    <TableCell colSpan={7} className="text-center py-8 text-zinc-500">
-                      No applications found
+                {current_items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-32 text-center text-zinc-500">
+                      No applications found.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  applications.sort((a, b) => b.created_at - a.created_at).map((app) => {
+                  current_items.sort((a, b) => b.created_at - a.created_at).map((app) => {
                     let age = 0
                     if (app.dob) {
                       const dob_parsed = new Date(app.dob)
@@ -404,19 +595,67 @@ export default function ApplicationsPage() {
                       }
                     }
 
+                    const app_flag = app.flag ?? 'pending'
+
                     return (
-                      <TableRow key={app.uuid || app.discord_id} className="border-border/40 hover:bg-zinc-900/50 transition-colors">
-                        <TableCell className="text-zinc-300 font-medium whitespace-nowrap">
-                          {format(new Date(app.created_at), 'dd MMM yyyy')}
+                      <TableRow key={app.uuid || app.discord_id} className="border-b border-border/40 hover:bg-zinc-900/50 transition-colors">
+                        <TableCell className="text-zinc-300 font-medium whitespace-nowrap py-4">
+                          {format(new Date(app.created_at), 'dd MMM yyyy, HH:mm')}
                         </TableCell>
-                        <TableCell className="text-white font-medium">{app.full_name}</TableCell>
-                        <TableCell className="text-zinc-400">@{app.discord_username}</TableCell>
-                        <TableCell>
+                        <TableCell className="text-white font-medium py-4">{app.full_name}</TableCell>
+                        <TableCell className="text-zinc-400 py-4">
+                          <div className="flex items-center gap-2.5">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="relative w-fit shrink-0">
+                                  <Avatar className={`w-7 h-7 rounded-full ring-offset-background ring-offset-1 ring-1 ${
+                                    app_flag === 'approved' ? 'ring-green-500'
+                                    : app_flag === 'declined' ? 'ring-red-500'
+                                    : 'ring-zinc-700'
+                                  }`}>
+                                    <AvatarImage 
+                                      src={app.discord_avatar 
+                                        ? `https://cdn.discordapp.com/avatars/${app.discord_id}/${app.discord_avatar}.png?size=64` 
+                                        : `https://cdn.discordapp.com/embed/avatars/${(parseInt(app.discord_id) >> 22) % 6}.png`
+                                      } 
+                                    />
+                                    <AvatarFallback className="bg-zinc-800 text-[10px]">{app.discord_username?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <span className={`absolute -right-1 -bottom-1 inline-flex size-3.5 items-center justify-center rounded-full ${
+                                    app_flag === 'approved' ? 'bg-green-500'
+                                    : app_flag === 'declined' ? 'bg-red-500'
+                                    : 'bg-zinc-600'
+                                  }`}>
+                                    {app_flag === 'approved' && <CheckIcon className="size-2 text-white" />}
+                                    {app_flag === 'declined' && <XIcon     className="size-2 text-white" />}
+                                    {app_flag === 'pending'  && <MinusIcon className="size-2 text-white" />}
+                                  </span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="rounded-xl max-w-[220px] space-y-1">
+                                <p className="text-xs font-semibold capitalize">{app_flag}</p>
+                                {app.reviewed_by && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {app_flag === 'approved' ? 'Approved' : app_flag === 'declined' ? 'Declined' : 'Reviewed'} by <span className="text-foreground font-medium">@{app.reviewed_by}</span>
+                                  </p>
+                                )}
+                                {app.note && (
+                                  <p className="text-xs text-muted-foreground border-t border-border/40 pt-1 mt-1">"{app.note}"</p>
+                                )}
+                                {!app.reviewed_by && !app.note && (
+                                  <p className="text-xs text-muted-foreground">No review yet</p>
+                                )}
+                              </TooltipContent>
+                            </Tooltip>
+                            <span className="text-sm">@{app.discord_username}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-4">
                           <Badge variant="outline" className="bg-zinc-900 border-border/40 text-zinc-300 font-normal">
                             {age} y/o
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-4">
                           <Badge
                             variant="outline"
                             className={`font-medium border-0 ${app.past_cs_experience === 'Yes' ? 'bg-green-500/10 text-green-400' : 'bg-zinc-800/50 text-zinc-400'}`}
@@ -424,27 +663,48 @@ export default function ApplicationsPage() {
                             {app.past_cs_experience || 'No'}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-4">
                           <Badge
                             variant="outline"
-                            className={`text-xs font-medium border-0 ${
-                              app.flag === 'approved' ? 'bg-green-500/10 text-green-400'
-                              : app.flag === 'declined' ? 'bg-red-500/10 text-red-400'
-                              : 'bg-zinc-800/50 text-zinc-500'
+                            className={`text-xs font-medium ${
+                              app_flag === 'approved' ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                              : app_flag === 'declined' ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                              : 'bg-zinc-800/50 text-zinc-400 border-zinc-700/50'
                             }`}
                           >
                             {app.flag ? app.flag.charAt(0).toUpperCase() + app.flag.slice(1) : 'Pending'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => set_selected_uuid(app.uuid || app.discord_id)}
-                            className="bg-zinc-900/50 border-border/40 text-zinc-300 hover:text-white hover:bg-zinc-800"
-                          >
-                            View Details
-                          </Button>
+                        <TableCell className="text-right py-4 pr-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" disabled={quick_saving === app.uuid} className="h-8 w-8 text-zinc-500 hover:text-white hover:bg-zinc-800">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem onClick={() => set_selected_uuid(app.uuid || app.discord_id)}>
+                                <Eye className="h-4 w-4" /> View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => set_selected_uuid(app.uuid || app.discord_id)}>
+                                <StickyNote className="h-4 w-4" /> Add Note
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => quick_set_flag(app.uuid, 'approved')} disabled={app_flag === 'approved'}>
+                                <ThumbsUp className="h-4 w-4 text-green-400" /> Approve
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => quick_set_flag(app.uuid, 'pending')} disabled={app_flag === 'pending'}>
+                                <Clock className="h-4 w-4 text-zinc-400" /> Set Pending
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => quick_set_flag(app.uuid, 'declined')} disabled={app_flag === 'declined'}>
+                                <ThumbsDown className="h-4 w-4 text-red-400" /> Decline
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-red-400 focus:text-red-400 focus:bg-red-500/10" onClick={() => set_delete_confirm_uuid(app.uuid)}>
+                                <Trash2 className="h-4 w-4" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     )
@@ -453,6 +713,50 @@ export default function ApplicationsPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* - PAGINATION UI - \\ */}
+          {total_pages > 1 && (
+            <div className="mt-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      className={cn("bg-zinc-900/50 text-zinc-400 border border-border/40 hover:bg-zinc-800 hover:text-white cursor-pointer", current_page === 1 && "pointer-events-none opacity-50")}
+                      onClick={() => current_page > 1 && set_current_page(p => p - 1)}
+                    />
+                  </PaginationItem>
+
+                  {render_pagination_pages().map((page) => {
+                    const isActive = page === current_page
+                    return (
+                      <PaginationItem key={page}>
+                        <PaginationLink
+                          className={cn("cursor-pointer border border-border/40", {
+                            [buttonVariants({
+                              variant: "default",
+                              className: "shadow-none! hover:text-white dark:bg-white dark:text-black dark:hover:bg-zinc-200",
+                            })]: isActive,
+                            "bg-zinc-900/50 text-zinc-400 hover:bg-zinc-800 hover:text-white": !isActive,
+                          })}
+                          onClick={() => set_current_page(page)}
+                          isActive={isActive}
+                        >
+                          {page}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )
+                  })}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      className={cn("bg-zinc-900/50 text-zinc-400 border border-border/40 hover:bg-zinc-800 hover:text-white cursor-pointer", current_page === total_pages && "pointer-events-none opacity-50")}
+                      onClick={() => current_page < total_pages && set_current_page(p => p + 1)}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -464,6 +768,29 @@ export default function ApplicationsPage() {
           on_review_saved={handle_review_saved}
         />
       )}
+
+      {/* - DELETE CONFIRM DIALOG - \\ */}
+      <AlertDialog open={!!delete_confirm_uuid} onOpenChange={open => !open && set_delete_confirm_uuid(null)}>
+        <AlertDialogContent className="bg-zinc-950 border-border/40">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Delete Application?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              This action cannot be undone. The application will be permanently removed from the database.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-zinc-900 border-border/40 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => delete_confirm_uuid && confirm_delete(delete_confirm_uuid)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -103,6 +103,11 @@ const __translations = {
       desc : "Your account has been flagged and is not eligible to submit a staff application.",
       flag : "This device will not be able to fill out the form again.",
       btn  : "Go Back"
+    },
+    closed_dialog: {
+      title: "Recruitment is taking a break 👋",
+      desc : "We're currently closing staff applications for a bit. But don't worry, it's not forever! We'll let everyone know once the next wave opens. Stay tuned so you don't miss out!",
+      btn  : "Got it, take me back"
     }
   },
   Indonesia: {
@@ -176,6 +181,11 @@ const __translations = {
       desc : "Akunmu sudah ditandai dan tidak bisa mengirim lamaran staf.",
       flag : "Device ini tidak akan bisa mengisi form kembali.",
       btn  : "Kembali"
+    },
+    closed_dialog: {
+      title: "Rekrutmen Lagi Ditutup Dulu Ya 👋",
+      desc : "Untuk sekarang pendaftaran staff lagi kita tutup dulu. Tapi tenang aja, ini bukan selamanya kok. Nanti kalau gelombang berikutnya udah dibuka, bakal kita infoin lagi. Jadi stay tuned terus yaa, jangan sampai ketinggalan!",
+      btn  : "Oke, Balik Dulu"
     }
   },
   Mandarin: {
@@ -249,6 +259,11 @@ const __translations = {
       desc : "你的账号已被标记，无法提交员工申请。",
       flag : "此设备将无法再次填写表单。",
       btn  : "返回"
+    },
+    closed_dialog: {
+      title: "招募暂时休息一下 👋",
+      desc : "目前我们暂时关闭了员工申请。不过别担心，这不是永久的！等下一期开放时我们会通知大家的。请持续关注，别错过啦！",
+      btn  : "好的，带我返回"
     }
   },
   Japan: {
@@ -322,6 +337,11 @@ const __translations = {
       desc : "あなたのアカウントはフラグが立てられており、スタッフ申請を送ることができません。",
       flag : "このデバイスは二度とフォームに記入できません。",
       btn  : "戻る"
+    },
+    closed_dialog: {
+      title: "募集はちょっとお休み中 👋",
+      desc : "現在、スタッフの応募は一時的に締め切らせてもらっています。でも心配しないで、ずっとじゃないよ！次回の募集が始まったらまたお知らせするね。見逃さないようにチェックしててね！",
+      btn  : "わかった、戻る"
     }
   }
 }
@@ -332,19 +352,23 @@ export default function StaffApplicationPage() {
   const [loading, set_loading]               = useState(true)
   const [submitting, set_submitting]         = useState(false)
   const [user, set_user]                     = useState<any>(null)
-  const [already_applied, set_already_applied]     = useState(false)
-  const [warn_modal_open, set_warn_modal_open]     = useState(false)
-  const [lang_modal_open, set_lang_modal_open]     = useState(true)
-  const [form_lang, set_form_lang]                 = useState<keyof typeof __translations>("English")
-  const [warn_scrolled, set_warn_scrolled]         = useState(false)
+
+  const [wave_number, set_wave_number]       = useState(1)
+  const [is_open, set_is_open]               = useState(true)
+  const [already_applied, set_already_applied] = useState(false)
+  const [blacklisted,  set_blacklisted]                = useState(false)
+  const [success_uuid, set_success_uuid]               = useState<string | null>(null)
+  const [form_lang, set_form_lang]                     = useState<keyof typeof __translations>("English")
+
+  // - MODALS - \\
+  const [lang_modal_open, set_lang_modal_open]           = useState(true)
+  const [warn_modal_open, set_warn_modal_open]           = useState(false)
+  const [warn_scrolled, set_warn_scrolled]               = useState(false)
+  const [blacklist_modal_open, set_blacklist_modal_open] = useState(false)
+  const [closed_modal_open, set_closed_modal_open]       = useState(false)
+  const [confirm_submit_open, set_confirm_submit_open]   = useState(false)
   const warn_scroll_ref                            = useRef<HTMLDivElement>(null)
   const [month, setMonth]                          = useState<Date>(new Date(2005, 0))
-
-  const [confirm_submit_open, set_confirm_submit_open] = useState(false)
-  const [success_uuid, set_success_uuid]               = useState<string | null>(null)
-  const [wave_number,  set_wave_number]                = useState<number>(1)
-  const [blacklisted,  set_blacklisted]                = useState(false)
-  const [blacklist_modal_open, set_blacklist_modal_open] = useState(false)
 
   const [form_data, set_form_data] = useState({
     full_name           : "",
@@ -394,7 +418,10 @@ export default function StaffApplicationPage() {
   useEffect(() => {
     fetch('/api/recruitment-info')
       .then(r => r.json())
-      .then(d => { if (d?.wave_number) set_wave_number(d.wave_number) })
+      .then(d => { 
+        if (d?.wave_number) set_wave_number(d.wave_number)
+        if (d?.is_open !== undefined) set_is_open(d.is_open)
+      })
       .catch(() => {})
   }, [])
 
@@ -619,10 +646,12 @@ export default function StaffApplicationPage() {
                 variant="outline"
                 className="justify-start h-12 px-4 rounded-[12px] bg-transparent border-border/40 hover:bg-white/10 hover:text-white"
                 onClick={() => {
-                  set_form_lang(lang)
+                  set_form_lang(lang as keyof typeof __translations)
                   set_lang_modal_open(false)
                   if (blacklisted) {
                     set_blacklist_modal_open(true)
+                  } else if (!is_open) {
+                    set_closed_modal_open(true)
                   } else if (!already_applied) {
                     set_warn_modal_open(true)
                   }
@@ -657,6 +686,28 @@ export default function StaffApplicationPage() {
               className="w-full h-11 rounded-[12px] bg-white text-black hover:bg-white/90 text-[14px] font-medium"
             >
               {t.blacklist_dialog.btn}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* - CLOSED MODAL - \ */}
+      <Dialog open={closed_modal_open} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-[400px] p-6 bg-[#09090b] border border-border/40 shadow-2xl rounded-2xl [&>button]:hidden">
+          <DialogHeader className="space-y-2 text-left">
+            <DialogTitle className="text-[17px] font-semibold tracking-tight text-white">
+              {t.closed_dialog.title}
+            </DialogTitle>
+            <DialogDescription className="text-[14px] text-muted-foreground/80">
+              {t.closed_dialog.desc}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              onClick={() => router.push('/')}
+              className="w-full h-11 rounded-[12px] bg-white text-black hover:bg-white/90 text-[14px] font-medium"
+            >
+              {t.closed_dialog.btn}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { AppSidebar } from '@/components/shadcn-space/blocks/sidebar-01/app-sidebar'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { TooltipProvider }                  from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 
 export default function RecruitmentLayout({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,7 @@ export default function RecruitmentLayout({ children }: { children: React.ReactN
 
   return (
     <div className="dark bg-background text-foreground min-h-screen font-sans">
+      <TooltipProvider>
       <SidebarProvider>
         <div className="flex min-h-screen w-full">
           <AppSidebar />
@@ -56,6 +58,7 @@ export default function RecruitmentLayout({ children }: { children: React.ReactN
           </div>
         </div>
       </SidebarProvider>
+      </TooltipProvider>
       <Toaster position="top-center" theme="dark" className="pointer-events-auto" />
     </div>
   )

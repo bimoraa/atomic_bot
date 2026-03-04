@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse }        from 'next/server'
-import { update_application_review }        from '@/lib/database/managers/staff_application_manager'
-import { connect }                          from "@/lib/utils/database"
+import { NextRequest, NextResponse }                              from 'next/server'
+import { update_application_review, delete_application_by_uuid } from '@/lib/database/managers/staff_application_manager'
+import { connect }                                                from "@/lib/utils/database"
 
 const __bot_url         = process.env.NEXT_PUBLIC_BOT_URL || 'https://atomicbot-production.up.railway.app'
 const __allowed_role_id = "1346622175985143908"
@@ -53,6 +53,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ uu
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('[ - REVIEW PATCH API - ] Error:', error)
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+  }
+}
+
+/**
+ * @route DELETE /api/recruitment-applications/[uuid]
+ * @description Delete an application by UUID
+ */
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {
+  const user = await check_auth(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { uuid } = await params
+
+  try {
+    await connect()
+    await delete_application_by_uuid(uuid)
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('[ - DELETE APP API - ] Error:', error)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
