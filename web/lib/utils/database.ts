@@ -613,6 +613,18 @@ async function init_tables(): Promise<void> {
       ADD COLUMN IF NOT EXISTS reviewed_at BIGINT
     `).catch(() => {})
 
+    // - DEVICE FLAGS TABLE - \\
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS device_flags (
+        id          SERIAL PRIMARY KEY,
+        fp          VARCHAR(255) NOT NULL UNIQUE,
+        flagged_at  BIGINT NOT NULL
+      )
+    `)
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_device_flags_fp ON device_flags(fp)
+    `).catch(() => {})
+
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_staff_applications_discord_id ON staff_applications(discord_id)
     `).catch(() => {})
@@ -925,6 +937,7 @@ function get_table_name(collection: string): string {
     middleman_service_status: "middleman_service_status",
     staff_voice_sessions    : "staff_voice_sessions",
     staff_applications     : "staff_applications",
+    device_flags           : "device_flags",
   }
 
   return table_map[collection] || "generic_data"

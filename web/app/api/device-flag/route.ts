@@ -16,8 +16,10 @@ export async function GET(req: NextRequest) {
   try {
     await connect()
     const record = await find_one(__collection, { fp })
+    console.log("[ - DEVICE FLAG CHECK - ] fp:", fp, "record:", record)
     return NextResponse.json({ flagged: !!record })
-  } catch {
+  } catch (err) {
+    console.log("[ - DEVICE FLAG CHECK ERR - ]", err)
     return NextResponse.json({ flagged: false })
   }
 }
