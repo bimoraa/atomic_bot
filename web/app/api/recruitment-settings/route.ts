@@ -1,33 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { get_recruitment_settings, update_recruitment_settings } from '@/lib/database/managers/recruitment_settings_manager'
-import { connect } from "@/lib/utils/database"
-
-const __bot_url = process.env.NEXT_PUBLIC_BOT_URL || 'https://atomicbot-production.up.railway.app'
-const __allowed_role_id = "1346622175985143908"
-const __min_position = 112
-
-async function check_auth(req: NextRequest) {
-  try {
-    const discord_user_cookie = req.cookies.get('discord_user')
-    if (!discord_user_cookie) return null
-    
-    const user = JSON.parse(discord_user_cookie.value)
-    
-    if (user.id === "1118453649727823974") return user
-    
-    const res = await fetch(`${__bot_url}/api/member/${user.id}`)
-    if (!res.ok) return null
-    
-    const member_data = await res.json()
-    const has_role = member_data.roles?.some((r: any) => r.id === __allowed_role_id || r.position >= __min_position)
-    
-    if (!has_role) return null
-    
-    return user
-  } catch (error) {
-    return null
-  }
-}
+import { NextRequest, NextResponse }                                              from 'next/server'
+import { get_recruitment_settings, update_recruitment_settings }                  from '@/lib/database/managers/recruitment_settings_manager'
+import { connect }                                                                from "@/lib/utils/database"
+import { check_auth }                                                             from '@/lib/utils/auth'
 
 export async function GET(req: NextRequest) {
   const user = await check_auth(req)
@@ -52,13 +26,24 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const body = await req.json()
-    
-    const update_data: any = {}
-    if (body.is_open !== undefined) update_data.is_open = body.is_open
-    if (body.wave_number !== undefined) update_data.wave_number = body.wave_number
-    if (body.open_date !== undefined) update_data.open_date = body.open_date
+    const body        = await req.json()
+    const update_data: Record<string, any> = {}
+
+    if (body.is_open !== undefined) {
+      if (typeof body.is_open !== 'boolean') return NextResponse.json({ error: 'is_open must be a boolean' }, { status: 400 })
+      update_data.is_open = body.is_open
+    }
+    if (body.wave_number !== undefined) {
+      const wn = Number(body.wave_number)
+      if (!Number.isInteger(wn) || wn < 1) return NextResponse.json({ error: 'wave_number must be a positive integer' }, { status: 400 })
+      update_data.wave_number = wn
+    }
+    if (body.open_date  !== undefined) update_data.open_date  = body.open_date
     if (body.close_date !== undefined) update_data.close_date = body.close_date
+
+    if (Object.keys(update_data).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
 
     await connect()
     await update_recruitment_settings(update_data)

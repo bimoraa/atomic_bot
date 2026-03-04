@@ -369,11 +369,33 @@ export async function POST(req: NextRequest) {
 
     // - PARSE BODY - \\
     const body = await req.json()
-    
+
+    // - FIELD LENGTH LIMITS - \\
+    const __max_short = 200
+    const __max_long  = 2000
+    const __text_fields: [string, number][] = [
+      ['full_name',            __max_short],
+      ['why_join',             __max_long],
+      ['good_fit',             __max_long],
+      ['other_experience',     __max_long],
+      ['additional_questions', __max_long],
+      ['handle_upset_users',   __max_long],
+      ['handle_uncertainty',   __max_long],
+      ['unsure_case',          __max_long],
+    ]
+    for (const [field, max] of __text_fields) {
+      if (body[field] && typeof body[field] === 'string') {
+        body[field] = body[field].trim()
+        if (body[field].length > max) {
+          return NextResponse.json({ error: `Field '${field}' exceeds maximum length of ${max} characters` }, { status: 400 })
+        }
+      }
+    }
+
     // - VALIDATE REQUIRED FIELDS - \\
     const required_fields = [
-      "full_name", "dob", "languages", "past_cs_experience", 
-      "why_join", "good_fit", "other_experience", 
+      "full_name", "dob", "languages", "past_cs_experience",
+      "why_join", "good_fit", "other_experience",
       "working_mic", "understand_abuse", "additional_questions"
     ]
 
@@ -381,6 +403,16 @@ export async function POST(req: NextRequest) {
       if (!body[field] && body[field] !== 0) {
         return NextResponse.json({ error: `Missing required field: ${field}` }, { status: 400 })
       }
+    }
+
+    // - VALIDATE DOB - \\
+    const dob_date = new Date(body.dob)
+    if (isNaN(dob_date.getTime())) {
+      return NextResponse.json({ error: 'Invalid date of birth' }, { status: 400 })
+    }
+    const age_years = (Date.now() - dob_date.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+    if (age_years < 13) {
+      return NextResponse.json({ error: 'You must be at least 13 years old to apply' }, { status: 400 })
     }
 
     if (body.past_cs_experience === "Yes") {
