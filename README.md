@@ -172,6 +172,6 @@ MIT License — see [LICENSE.txt](LICENSE.txt)
 <div align="center">
 
 Made with Love by **Atomic Team (AZure48)**<br/>
-Developed by Lendowsky and Kim7
+Developed by Lendowsky, Kim7, kimsoyoun_
 
 </div>
