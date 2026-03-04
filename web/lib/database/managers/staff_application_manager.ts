@@ -21,6 +21,10 @@ export interface staff_application {
   understand_abuse     : string
   additional_questions : string
   created_at           : number
+  note                ?: string
+  flag                ?: 'pending' | 'approved' | 'declined'
+  reviewed_by         ?: string
+  reviewed_at         ?: number
 }
 
 const __collection = "staff_applications"
@@ -67,4 +71,18 @@ export async function delete_application(discord_id: string): Promise<boolean> {
 
 export async function get_all_applications(): Promise<staff_application[]> {
   return await db.find_many<staff_application>(__collection, {})
+}
+
+/**
+ * @description Update review fields (note, flag, reviewer) on an application by uuid
+ * @param uuid The application UUID
+ * @param data Partial review data to update
+ * @returns boolean
+ */
+export async function update_application_review(
+  uuid       : string,
+  data       : { note?: string; flag?: staff_application['flag']; reviewed_by?: string; reviewed_at?: number }
+): Promise<boolean> {
+  await db.update_one(__collection, { uuid }, data)
+  return true
 }

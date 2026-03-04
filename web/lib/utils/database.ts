@@ -629,21 +629,36 @@ async function init_tables(): Promise<void> {
 
     await client.query(`
       CREATE TABLE IF NOT EXISTS bypass_logs (
-        id         BIGSERIAL PRIMARY KEY,
-        guild_id   TEXT NOT NULL,
-        user_id    TEXT NOT NULL,
-        user_tag   TEXT NOT NULL,
-        avatar     TEXT,
-        url        TEXT NOT NULL,
+        id SERIAL PRIMARY KEY,
+        guild_id VARCHAR(50),
+        user_id VARCHAR(50),
+        user_tag VARCHAR(100),
+        avatar TEXT,
+        url TEXT NOT NULL,
         result_url TEXT,
-        success    BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        success BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-    `)
+    `).catch(() => {})
 
     await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_bypass_logs_guild ON bypass_logs(guild_id, created_at DESC)
-    `)
+      CREATE INDEX IF NOT EXISTS idx_bypass_logs_guild ON bypass_logs(guild_id)
+    `).catch(() => {})
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_bypass_logs_user ON bypass_logs(user_id)
+    `).catch(() => {})
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS recruitment_settings (
+        id VARCHAR(50) PRIMARY KEY,
+        is_open BOOLEAN DEFAULT false,
+        wave_number INTEGER DEFAULT 1,
+        open_date BIGINT,
+        close_date BIGINT,
+        updated_at BIGINT
+      )
+    `).catch(() => {})
 
     await migrate_tables(client)
 

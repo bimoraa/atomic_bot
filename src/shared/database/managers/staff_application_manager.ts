@@ -8,8 +8,9 @@ export interface staff_application {
   dob                  : string
   discord_username     : string
   languages            : string[]
-  communication_skills : number
-  explanation          : string
+  past_cs_experience   : string
+  past_staff_experience: string
+  active_other_hub     : string
   handle_upset_users   : string
   handle_uncertainty   : string
   why_join             : string

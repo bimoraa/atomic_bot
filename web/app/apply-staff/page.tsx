@@ -18,6 +18,7 @@ import { Calendar }                                                             
 import { AtomicLogo }                                                                                                        from "@/components/icons/atomic_logo"
 import { Loader2, CheckCircle2, Languages, FileText, CalendarIcon, ArrowUpRight, Bell }                                      from "lucide-react"
 import { format }                                                                                                            from "date-fns"
+import { get_device_fingerprint }                                                                                            from "@/lib/utils/fingerprint"
 import Image                                                                                                                 from "next/image"
 
 const __language_options = [
@@ -96,6 +97,12 @@ const __translations = {
       rule_4_title: "What We Expect",
       rule_4_desc: "You'll work together with other teams to keep the community running well. If something goes sideways, escalate it. Always stay professional when talking to people.",
       button: "Got It — Take Me to the Form"
+    },
+    blacklist_dialog: {
+      title: "You are blacklisted",
+      desc : "Your account has been flagged and is not eligible to submit a staff application.",
+      flag : "This device will not be able to fill out the form again.",
+      btn  : "Go Back"
     }
   },
   Indonesia: {
@@ -163,6 +170,12 @@ const __translations = {
       rule_4_title: "Yang Kami Harapkan",
       rule_4_desc: "Kamu bakal kerja bareng tim lain buat jaga komunitas tetap berjalan. Kalau ada masalah, escalate. Selalu jaga sikap waktu ngobrol sama orang.",
       button: "Oke Ngerti"
+    },
+    blacklist_dialog: {
+      title: "Kamu diblacklist",
+      desc : "Akunmu sudah ditandai dan tidak bisa mengirim lamaran staf.",
+      flag : "Device ini tidak akan bisa mengisi form kembali.",
+      btn  : "Kembali"
     }
   },
   Mandarin: {
@@ -230,6 +243,12 @@ const __translations = {
       rule_4_title: "我们的期望",
       rule_4_desc: "你会和其他团队一起维护社区的正常运转。出了问题就上报。和人沟通时要始终保持专业。",
       button: "明白了 — 带我去填表"
+    },
+    blacklist_dialog: {
+      title: "你已被列入黑名单",
+      desc : "你的账号已被标记，无法提交员工申请。",
+      flag : "此设备将无法再次填写表单。",
+      btn  : "返回"
     }
   },
   Japan: {
@@ -297,6 +316,12 @@ const __translations = {
       rule_4_title: "期待すること",
       rule_4_desc: "他のチームと協力してコミュニティを維持していくよ。問題があればちゃんとエスカレートして。人と話すときは常にプロとして接してね。",
       button: "わかった — フォームに進む"
+    },
+    blacklist_dialog: {
+      title: "ブラックリストに載っています",
+      desc : "あなたのアカウントはフラグが立てられており、スタッフ申請を送ることができません。",
+      flag : "このデバイスは二度とフォームに記入できません。",
+      btn  : "戻る"
     }
   }
 }
@@ -317,6 +342,9 @@ export default function StaffApplicationPage() {
 
   const [confirm_submit_open, set_confirm_submit_open] = useState(false)
   const [success_uuid, set_success_uuid]               = useState<string | null>(null)
+  const [wave_number,  set_wave_number]                = useState<number>(1)
+  const [blacklisted,  set_blacklisted]                = useState(false)
+  const [blacklist_modal_open, set_blacklist_modal_open] = useState(false)
 
   const [form_data, set_form_data] = useState({
     full_name           : "",
@@ -362,6 +390,14 @@ export default function StaffApplicationPage() {
     }
   }, [form_data, loading, already_applied, success_uuid])
 
+  // - FETCH RECRUITMENT INFO - \\
+  useEffect(() => {
+    fetch('/api/recruitment-info')
+      .then(r => r.json())
+      .then(d => { if (d?.wave_number) set_wave_number(d.wave_number) })
+      .catch(() => {})
+  }, [])
+
   // - CHECK AUTH AND APPLICATION STATUS - \\
   useEffect(() => {
     async function check_auth() {
@@ -375,11 +411,30 @@ export default function StaffApplicationPage() {
         const auth_data = await auth_res.json()
         set_user(auth_data.user)
 
+        // - CHECK DEVICE FINGERPRINT (HWID) - \\
+        const fp          = await get_device_fingerprint()
+        const fp_res      = await fetch(`/api/device-flag?fp=${fp}`)
+        const fp_data     = fp_res.ok ? await fp_res.json() : { flagged: false }
+        if (fp_data.flagged) {
+          set_blacklisted(true)
+          set_lang_modal_open(false)
+          set_blacklist_modal_open(true)
+          set_loading(false)
+          return
+        }
+
         const app_res = await fetch("/api/staff-application")
         if (app_res.ok) {
           const app_data = await app_res.json()
-          if (app_data.applied) {
-            set_already_applied(true)
+          if (app_data.applied) set_already_applied(true)
+          if (app_data.blacklisted) {
+            set_blacklisted(true)
+            // - PERSIST FINGERPRINT TO DB SO IT SURVIVES CACHE CLEARS - \\
+            fetch('/api/device-flag', {
+              method : 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body   : JSON.stringify({ fp })
+            }).catch(() => {})
           }
         }
 
@@ -566,7 +621,9 @@ export default function StaffApplicationPage() {
                 onClick={() => {
                   set_form_lang(lang)
                   set_lang_modal_open(false)
-                  if (!already_applied) {
+                  if (blacklisted) {
+                    set_blacklist_modal_open(true)
+                  } else if (!already_applied) {
                     set_warn_modal_open(true)
                   }
                 }}
@@ -582,13 +639,36 @@ export default function StaffApplicationPage() {
         </DialogContent>
       </Dialog>
 
+      {/* - BLACKLIST MODAL - \ */}
+      <Dialog open={blacklist_modal_open} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-[400px] p-6 bg-[#09090b] border border-border/40 shadow-2xl rounded-2xl [&>button]:hidden">
+          <DialogHeader className="space-y-2 text-left">
+            <DialogTitle className="text-[17px] font-semibold tracking-tight text-white">
+              {t.blacklist_dialog.title}
+            </DialogTitle>
+            <DialogDescription className="text-[14px] text-muted-foreground/80">
+              {t.blacklist_dialog.desc}
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-xs text-zinc-600 mt-2">{t.blacklist_dialog.flag}</p>
+          <DialogFooter className="mt-4">
+            <Button
+              onClick={() => router.push('/')}
+              className="w-full h-11 rounded-[12px] bg-white text-black hover:bg-white/90 text-[14px] font-medium"
+            >
+              {t.blacklist_dialog.btn}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* - RECRUITMENT WARNING MODAL - \\ */}
       <Dialog open={warn_modal_open} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-[500px] p-6 bg-[#09090b] border border-border/40 shadow-2xl rounded-2xl [&>button]:hidden">
           <DialogHeader className="space-y-2 text-left">
             <DialogTitle className="flex items-center gap-2.5 text-[17px] font-semibold tracking-tight text-white">
               <FileText className="h-[18px] w-[18px] text-white" />
-              {t.warning_dialog.title}
+              {t.warning_dialog.title.replace(/\d+/, String(wave_number))}
             </DialogTitle>
             <DialogDescription className="text-[14px] text-muted-foreground/80">
               {t.warning_dialog.desc}

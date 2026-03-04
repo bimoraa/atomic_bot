@@ -3,8 +3,12 @@ import { randomUUID }                from "crypto"
 import { has_user_applied, submit_application, delete_application, staff_application } from "@/lib/database/managers/staff_application_manager"
 import { connect }                   from "@/lib/utils/database"
 
+export const dynamic = 'force-dynamic'
+
 const __discord_api        = "https://discord.com/api/v10"
 const __application_channel = "1391997695425515531"
+const __blacklist_role_id  = "1266021026157035721"
+const __bot_url            = process.env.NEXT_PUBLIC_BOT_URL || 'https://atomicbot-production.up.railway.app'
 
 /**
  * @description Sends a Component V2 formatted staff application embed to the designated Discord channel.
@@ -176,11 +180,39 @@ export async function GET(req: NextRequest) {
     }
 
     await connect()
-    if (user.id === "1118453649727823974") {
-      return NextResponse.json({ applied: false })
+
+    const is_owner = user.id === "1118453649727823974"
+
+    // - CHECK BLACKLIST ROLE (REALTIME: BOT API) - \\
+    let blacklisted = false
+    try {
+      console.log("[ - BLACKLIST CHECK - ] fetching member for", user.id)
+      const controller = new AbortController()
+      const timeout_id = setTimeout(() => controller.abort(), 5000)
+
+      const member_res = await fetch(
+        `${__bot_url}/api/member/${user.id}`,
+        { signal: controller.signal }
+      )
+      clearTimeout(timeout_id)
+
+      const raw_text = await member_res.text()
+      console.log("[ - BLACKLIST CHECK - ] status:", member_res.status, "body:", raw_text.slice(0, 300))
+
+      if (member_res.ok) {
+        const member_data = JSON.parse(raw_text)
+        const roles: any[] = member_data.roles ?? []
+        blacklisted = roles.some((r: any) =>
+          typeof r === 'string' ? r === __blacklist_role_id : r.id === __blacklist_role_id
+        )
+        console.log("[ - BLACKLIST CHECK - ] roles count:", roles.length, "blacklisted:", blacklisted)
+      }
+    } catch (e) {
+      console.log("[ - BLACKLIST CHECK - ] error:", (e as Error).message)
     }
-    const applied = await has_user_applied(user.id)
-    return NextResponse.json({ applied })
+
+    const applied = is_owner ? false : await has_user_applied(user.id)
+    return NextResponse.json({ applied, blacklisted })
   } catch (error) {
     console.error("[ - STAFF APP CHECK API - ] Error:", error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
