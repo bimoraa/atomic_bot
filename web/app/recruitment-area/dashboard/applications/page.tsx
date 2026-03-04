@@ -490,16 +490,18 @@ export default function ApplicationsPage() {
     )
   }
 
-  // - FILTER & SEARCH - \\
-  const filtered_applications = applications.filter(app => {
-    const q = search_query.toLowerCase()
-    const matches_search = !q
-      || app.full_name?.toLowerCase().includes(q)
-      || app.discord_username?.toLowerCase().includes(q)
-      || app.discord_id?.includes(q)
-    const matches_status = status_filter === 'all' || (app.flag ?? 'pending') === status_filter
-    return matches_search && matches_status
-  })
+  // - FILTER, SEARCH & SORT - \\
+  const filtered_applications = applications
+    .filter(app => {
+      const q = search_query.toLowerCase()
+      const matches_search = !q
+        || app.full_name?.toLowerCase().includes(q)
+        || app.discord_username?.toLowerCase().includes(q)
+        || app.discord_id?.includes(q)
+      const matches_status = status_filter === 'all' || (app.flag ?? 'pending') === status_filter
+      return matches_search && matches_status
+    })
+    .sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
 
   // - PAGINATION CALCULATIONS - \\
   const total_pages = Math.ceil(filtered_applications.length / items_per_page) || 1
