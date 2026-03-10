@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - /setup guide-select-panel，部署带选择菜单的指南面板 - \
 // - /setup guide-select-panel command, deploys the guide panel with a select menu - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"

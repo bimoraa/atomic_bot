@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - AFK 功能的共享业务逻辑控制器 - \
 // - shared business logic controller for the AFK feature - \
 import { Message, Client } from "discord.js"

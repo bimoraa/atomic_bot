@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - 成员开始/停止 boost 服务器时触发的事件处理 - \
 // - handles guild member boost/unboost events - \
 import { Events, GuildMember, Message, PartialGuildMember } from "discord.js"

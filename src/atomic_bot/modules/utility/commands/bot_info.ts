@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - /bot-info slash command, shows bot information - \\
 import { ChatInputCommandInteraction, SlashCommandBuilder, version as djsVersion } from "discord.js"
 import { Command }  from "@shared/types/command"

@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - /afk-mod ignore，忽略某频道的 AFK 检测 - \
 // - /afk-mod ignore command, ignores AFK detection for a channel - \
 import { ChatInputCommandInteraction, ChannelType, SlashCommandSubcommandBuilder } from "discord.js"

@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - /afk-mod ignored，查看被忽略的 AFK 频道列表 - \
 // - /afk-mod ignored command, shows the list of AFK-ignored channels - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"

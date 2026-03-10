@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - /role-add 斜杠命令，给用户添加身份组 - \
 // - /role-add slash command, adds a role to a user - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, Role } from "discord.js"

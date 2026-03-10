@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - 所有交互的总调度入口，按钮、modal、选择菜单全从这里分发 - \
 // - main interaction dispatcher, all buttons/modals/selects get routed from here - \
 // - 交互路由器的主入口，所有的按钮（Button）、模态框（Modal）、字符串选择菜单（String Select）、用户选择菜单（User Select）、各种类型的交互响应和分发都在这里完成。无论任何交互类型，只要属于 Discord 交互的子类型，例如 Slash Command、Button Interaction、Modal Submit、Select Menu（包括 String Select、User Select、Role Select、Channel Select）、Autocomplete，全部都会经过这个超长的分发路由器来处理。

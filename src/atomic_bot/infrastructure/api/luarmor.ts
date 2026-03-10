@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - Luarmor API 的封装，处理白名单/key 相关请求 - \
 // - luarmor API wrapper, handles whitelist and key related requests - \
 import { logger, env } from "@shared/utils"

@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - 脚本面板「更新脚本」按钮和选择菜单的交互处理 - \
 // - handles the update script button and select menu interactions - \
 import { ButtonInteraction, StringSelectMenuInteraction } from "discord.js"

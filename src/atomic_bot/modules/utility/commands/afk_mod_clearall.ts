@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - /afk-mod clear-all，管理员清除所有用户的 AFK - \
 // - /afk-mod clear-all command, admin clears all users' AFK - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"

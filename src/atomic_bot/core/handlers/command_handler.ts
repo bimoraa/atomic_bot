@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - 斜杠命令的分发处理器，找到命令然后执行 - \
 // - slash command dispatcher, looks up the command and runs it - \
 import { ApplicationCommandType, Client, Collection, REST, Routes } from "discord.js";

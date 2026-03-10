@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - 服务提供商相关的业务逻辑控制器，包括频率限制等 - \
 // - business logic controller for service provider stuff, rate limiting included - \
 import { Client }                from "discord.js"

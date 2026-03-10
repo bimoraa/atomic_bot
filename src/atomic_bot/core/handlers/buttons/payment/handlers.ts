@@ -1,3 +1,12 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
 // - 处理支付相关的所有按钮，比如确认收款、踢人等 - \
 // - handles all payment buttons, like confirming payment and removing access - \
 import { ButtonInteraction, GuildMember } from "discord.js"
