@@ -10,6 +10,7 @@
 import { get_tempvoice_transcript }      from "@/lib/db"
 import { notFound, redirect }            from "next/navigation"
 import { cookies }                       from "next/headers"
+import { decrypt_session }               from "@/lib/utils/session"
 import { TempvoiceClientView }           from "./tempvoice_client_view"
 
 export default async function TempvoicePage({
@@ -25,13 +26,10 @@ export default async function TempvoicePage({
     redirect(`/login?return_to=/tempvoice/${id}`)
   }
 
-  let user_data = null
-  try {
-    user_data = JSON.parse(decodeURIComponent(discord_user.value))
-  } catch {
-    try {
-      user_data = JSON.parse(discord_user.value)
-    } catch { /* ignore */ }
+  const user_data = await decrypt_session(discord_user.value)
+
+  if (!user_data) {
+    redirect(`/login?return_to=/tempvoice/${id}`)
   }
 
   const transcript = await get_tempvoice_transcript(id)
