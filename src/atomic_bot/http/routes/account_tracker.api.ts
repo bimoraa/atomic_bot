@@ -24,10 +24,13 @@ import {
 }                                     from "@shared/database/managers/account_tracker.manager"
 import type { account_tracker_session } from "@models/account_tracker.model"
 
+// - 全局固定 guild 键，账户 tracker 不区分 guild - \\
+// - fixed global key, account tracker is not scoped per guild - \\
+const __global_key = "global"
+
 // - ─── payload 类型 ─── - \\
 // - ─── payload types ─── - \\
 interface tracker_post_body {
-  guild_id        : string
   username        : string
   user_id         : string
   server_code     : string
@@ -143,7 +146,6 @@ export function create_account_tracker_router(client: Client): Router {
       // - validate required body fields - \\
       const body = req.body as tracker_post_body
       const {
-        guild_id,
         username,
         user_id,
         server_code,
@@ -156,8 +158,8 @@ export function create_account_tracker_router(client: Client): Router {
         teleport_needed,
       } = body
 
-      if (!guild_id || !username || !user_id) {
-        res.status(400).json({ success: false, error: "Missing required fields: guild_id, username, user_id" })
+      if (!username || !user_id) {
+        res.status(400).json({ success: false, error: "Missing required fields: username, user_id" })
         return
       }
 
@@ -167,7 +169,7 @@ export function create_account_tracker_router(client: Client): Router {
       // - upsert session, status is set to Online by the server - \\
       const session: account_tracker_session = {
         key_hash,
-        guild_id,
+        guild_id : __global_key,
         username        : String(username).substring(0, 100),
         user_id         : String(user_id),
         server_code     : String(server_code   ?? ""),
@@ -184,12 +186,12 @@ export function create_account_tracker_router(client: Client): Router {
 
       await upsert_session(session)
 
-      // - 获取 guild 的 tracker 配置，更新 overview 消息 - \\
-      // - get guild tracker config and update the overview message - \\
-      const config = await get_tracker_config(guild_id)
+      // - 获取全局 tracker 配置，更新 overview 消息 - \\
+      // - get global tracker config and update the overview message - \\
+      const config = await get_tracker_config(__global_key)
       if (config) {
         try {
-          const guild   = await client.guilds.fetch(guild_id).catch(() => null)
+          const guild   = await client.guilds.fetch(config.guild_id).catch(() => null)
           const channel = guild
             ? await guild.channels.fetch(config.channel_id).catch(() => null) as TextChannel | null
             : null
@@ -198,8 +200,8 @@ export function create_account_tracker_router(client: Client): Router {
             : null
 
           if (message) {
-            const all_sessions = await get_all_sessions(guild_id)
-            await message.edit(build_overview_message(all_sessions, guild_id))
+            const all_sessions = await get_all_sessions(__global_key)
+            await message.edit(build_overview_message(all_sessions, __global_key))
           }
         } catch (edit_err) {
           console.log("[ - ACCOUNT TRACKER API - ] Failed to edit overview message:", edit_err)

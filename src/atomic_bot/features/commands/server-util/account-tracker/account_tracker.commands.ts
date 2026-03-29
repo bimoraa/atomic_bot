@@ -19,9 +19,13 @@ import { log_error }        from "@shared/utils/error_logger"
 import { get_all_sessions } from "@shared/database/managers/account_tracker.manager"
 import type { account_tracker_session } from "@models/account_tracker.model"
 
+// - 全局固定键，session 不区分 guild - \\
+// - fixed global key, sessions are not scoped per guild - \\
+const __global_key = "global"
+
 // - 支持的游戏列表 - \\
 // - supported game list - \\
-const __game_cdid = "CDID"
+const __game_cdid  = "CDID"
 
 /**
  * @description build ephemeral tracker overview message for a guild
@@ -99,8 +103,8 @@ export const command: Command = {
     try {
       await interaction.deferReply({ ephemeral: true })
 
-      const sessions = await get_all_sessions(guild_id)
-      await interaction.editReply(build_tracker_message(sessions, guild_id))
+      const sessions = await get_all_sessions(__global_key)
+      await interaction.editReply(build_tracker_message(sessions, __global_key))
     } catch (err) {
       await log_error(client, err as Error, "Track Account Command", {
         user_id  : interaction.user.id,

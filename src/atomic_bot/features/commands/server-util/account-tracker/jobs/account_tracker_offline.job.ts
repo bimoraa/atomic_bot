@@ -19,6 +19,10 @@ import {
 }                                from "@shared/database/managers/account_tracker.manager"
 import { build_overview_message } from "@atomic/http/routes/account_tracker.api"
 
+// - 全局固定键，sessions 不区分 guild - \\
+// - fixed global key, sessions are not scoped per guild - \\
+const __global_key        = "global"
+
 // - 5 分钟无上报视为离线 - \\
 // - if no post arrives within 5 min, the session is considered offline - \\
 const __offline_threshold = 5 * 60 * 1000
@@ -38,19 +42,7 @@ export function start_account_tracker_offline_checker(client: Client): void {
   setInterval(async () => {
     try {
       const all_sessions = await get_all_sessions_global()
-
-      // - 按 guild_id 分组，方便逐 guild 更新消息 - \\
-      // - group sessions by guild_id to update the message per guild - \\
-      const guild_map = new Map<string, string[]>()
-
-      for (const session of all_sessions) {
-        if (!guild_map.has(session.guild_id)) {
-          guild_map.set(session.guild_id, [])
-        }
-        guild_map.get(session.guild_id)!.push(session.key_hash)
-      }
-
-      const now = Date.now()
+      const now          = Date.now()
 
       for (const session of all_sessions) {
         const is_stale   = (now - session.updated_at) > __offline_threshold
@@ -63,29 +55,25 @@ export function start_account_tracker_offline_checker(client: Client): void {
         await upsert_session({ ...session, status: "Offline" })
       }
 
-      // - 为每个 guild 更新 Discord overview 消息 - \\
-      // - update the discord overview message for each guild - \\
-      for (const [guild_id] of guild_map) {
-        try {
-          const config = await get_tracker_config(guild_id)
-          if (!config?.channel_id || !config?.message_id) continue
+      // - 更新全局 tracker overview 消息 - \\
+      // - update global tracker overview message - \\
+      try {
+        const config = await get_tracker_config(__global_key)
+        if (!config?.channel_id || !config?.message_id || !config?.guild_id) return
 
-          const guild = await client.guilds.fetch(guild_id).catch(() => null)
-          if (!guild) continue
+        const guild = await client.guilds.fetch(config.guild_id).catch(() => null)
+        if (!guild) return
 
-          const channel = await guild.channels.fetch(config.channel_id).catch(() => null)
-          if (!channel || !(channel instanceof TextChannel)) continue
+        const channel = await guild.channels.fetch(config.channel_id).catch(() => null)
+        if (!channel || !(channel instanceof TextChannel)) return
 
-          const message = await channel.messages.fetch(config.message_id).catch(() => null)
-          if (!message) continue
+        const message = await channel.messages.fetch(config.message_id).catch(() => null)
+        if (!message) return
 
-          const updated_sessions = await get_all_sessions(guild_id)
-          await message.edit(build_overview_message(updated_sessions, guild_id))
-        } catch (err) {
-          await log_error(client, err as Error, "Account Tracker Offline Checker — Guild Update", {
-            guild_id,
-          }).catch(() => {})
-        }
+        const updated_sessions = await get_all_sessions(__global_key)
+        await message.edit(build_overview_message(updated_sessions, __global_key))
+      } catch (err) {
+        await log_error(client, err as Error, "Account Tracker Offline Checker — Overview Update").catch(() => {})
       }
     } catch (err) {
       await log_error(client, err as Error, "Account Tracker Offline Checker").catch(() => {})
