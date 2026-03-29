@@ -22,6 +22,7 @@ import { create_auto_responder_router }          from "./routes/auto_responder.a
 import { create_reaction_roles_router }          from "./routes/reaction_roles.api"
 import { create_custom_commands_router }         from "./routes/custom_commands.api"
 import { create_logs_router }                    from "./routes/logs.api"
+import { create_account_tracker_router }         from "./routes/account_tracker.api"
 
 export { warm_credits_cache_from_db } from "./routes/user.api"
 
@@ -82,6 +83,7 @@ export function start_webhook_server(client: Client): void {
   app.use("/api", create_reaction_roles_router(__main_guild_id))
   app.use("/api", create_custom_commands_router(__main_guild_id))
   app.use("/api", create_logs_router(client, __main_guild_id))
+  app.use("/api", create_account_tracker_router(client))
 
   const server = app.listen(__port, "0.0.0.0", () => {
     console.log(`[ - HTTP - ] Server listening on 0.0.0.0:${__port}`)

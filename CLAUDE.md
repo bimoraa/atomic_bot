@@ -50,7 +50,7 @@ const channel     = await guild.channels.fetch(channel_id)
 ## Dev Workflows
 
 ```bash
-# Build (required before deploy — also copies config/sub_commands/guide dirs)
+# Build (required before deploy — also copies config/sub-commands/guide docs)
 npm run build
 
 # Dev watch mode per bot
@@ -79,34 +79,26 @@ src/shared/
 └── database/       # DB managers, services, unified_ticket
 
 src/atomic_bot/
-├── interfaces/                     # ENTRY POINT LAYER
-│   ├── discord/
-│   │   ├── events/                 # Discord event handlers (guild_member/, message/, voice/)
-│   │   ├── handlers/               # command_handler.ts, sub_command_handler.ts
-│   │   └── router.ts               # Interaction dispatcher (buttons/modals/selects)
-│   └── http/
-│       ├── server.ts               # Express HTTP server
-│       └── routes/                 # REST API endpoints
+├── discord/                        # Discord gateway entry layer
+├── http/                           # Express HTTP server
+├── features/commands/<group>/<feature>/
+│   ├── *.commands.ts
+│   ├── buttons/
+│   ├── modals/
+│   ├── select-menus/
+│   ├── sub-commands/
+│   ├── controller/
+│   └── jobs/
 │
-├── modules/<feature>/              # FEATURE MODULES
-│   ├── commands/                   # Slash commands
-│   ├── interactions/
-│   │   ├── buttons/
-│   │   ├── modals/
-│   │   └── select_menus/
-│   ├── controllers/                # Feature controllers (when needed)
-│   ├── schedulers/                 # Feature schedulers (when needed)
-│   └── controller.ts               # Business logic
-│
-└── infrastructure/                 # EXTERNAL SERVICES
+└── integrations/                   # EXTERNAL SERVICES
     ├── api/
     ├── cache/
     └── webhooks/
 ```
 
 Example: `/reminder` + `/reminder-cancel`
-→ `modules/reminder/commands/reminder.ts`
-→ `modules/reminder/controller.ts` (imports `reminder_data` from `@models/reminder.model`)
+→ `features/commands/server-util/reminder/reminder.commands.ts`
+→ `features/commands/server-util/reminder/controller/reminder.controller.ts` (imports `reminder_data` from `@models/reminder.model`)
 → `shared/database/managers/reminder_manager.ts`
 
 **Rules:**
@@ -195,7 +187,7 @@ import { log_error } from "@shared/utils/error_logger"
 
 ## Code Style (STRICT)
 
-* **snake_case** for all identifiers, filenames, and folders — no camelCase
+* **snake_case** for identifiers and folders; use dot suffix filenames by role
 * **Align vertically** within a declaration block:
 
   * `=`

@@ -33,8 +33,8 @@ export async function load_sub_commands(): Promise<void> {
         return readdirSync(group_path, { withFileTypes: true })
           .filter((feature) => feature.isDirectory())
           .map((feature) => ({
-            group_name   : group.name,
-            feature_name : feature.name,
+            group_name      : group.name,
+            feature_name    : feature.name,
             subcommands_path: join(group_path, feature.name, "sub-commands"),
           }))
       })
@@ -67,8 +67,8 @@ export async function load_sub_commands(): Promise<void> {
           }
         }
       } catch {
-        // - feature 没有 subcommands 文件夹时跳过 - \\
-        // - skip features that do not expose subcommands - \\
+        // - feature 没有 sub_commands 文件夹时跳过 - \\
+        // - skip features that do not expose sub_commands - \\
       }
     }
   } catch (error) {

@@ -23,9 +23,9 @@ function walk_files(dir_path: string): string[] {
 }
 
 function load_interaction_registry(kind: interaction_kind): Map<string, interaction_module> {
-  const commands_root = join(__dirname, "../features/commands")
-  const registry      = new Map<string, interaction_module>()
-  const feature_aliases = new Set<string>()
+  const commands_root    = join(__dirname, "../features/commands")
+  const registry         = new Map<string, interaction_module>()
+  const feature_aliases  = new Set<string>()
 
   const feature_dirs = readdirSync(commands_root, { withFileTypes: true })
     .filter((group) => group.isDirectory())
@@ -87,8 +87,8 @@ function get_module<T extends interaction_module>(
   return module as T
 }
 
-const button_registry     = load_interaction_registry("buttons")
-const modal_registry      = load_interaction_registry("modals")
+const button_registry      = load_interaction_registry("buttons")
+const modal_registry       = load_interaction_registry("modals")
 const select_menu_registry = load_interaction_registry("select-menus")
 
 export function get_button_module<T extends interaction_module>(key: string): T {

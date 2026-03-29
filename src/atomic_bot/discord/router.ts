@@ -41,15 +41,16 @@ import { error_handler }                                     from "@shared/middl
 import { handle_role_permission_select }                     from "@atomic/features/commands/server-util/utility/get_role_permission.commands"
 import { get_button_module, get_modal_module, get_select_menu_module }  from "./interaction-registry"
 
-const stats_select = get_select_menu_module("stats")
-const guide_select = get_select_menu_module("guide")
-const reminder_select = get_select_menu_module("reminder")
-const middleman_select = get_select_menu_module("middleman")
-const share_settings_select = get_select_menu_module("share-settings")
-const staff_info_select = get_select_menu_module("staff-info")
-const tempvoice_select = get_select_menu_module("tempvoice")
-const work_select = get_select_menu_module("work")
-const version_select = get_select_menu_module("version")
+const stats_select           = get_select_menu_module("stats")
+const guide_select           = get_select_menu_module("guide")
+const reminder_select        = get_select_menu_module("reminder")
+const middleman_select       = get_select_menu_module("middleman")
+const share_settings_select  = get_select_menu_module("share-settings")
+const staff_info_select      = get_select_menu_module("staff-info")
+const tempvoice_select       = get_select_menu_module("tempvoice")
+const work_select            = get_select_menu_module("work")
+const version_select         = get_select_menu_module("version")
+const account_tracker_select = get_select_menu_module("account-tracker")
 
 const ask_buttons = get_button_module("ask")
 const community_buttons = get_button_module("community")
@@ -299,6 +300,10 @@ export async function handle_interaction(
       }
       if (await tempvoice_select.handle_tempvoice_region_select(interaction)) return
       if (await handle_ticket_select_menu(interaction)) return
+      if (interaction.customId.startsWith("account_tracker_select:")) {
+        await account_tracker_select.handle_account_tracker_select(interaction)
+        return
+      }
     } catch (err) {
       console.log("[ - SELECT MENU - ] error:", err)
       await log_error(client, err as Error, "StringSelectMenu", {

@@ -23,6 +23,10 @@ export const __btn_reminder_cancel_sel  = "reminder_cancel_select"
 // - select menu custom ids - \\
 export const __sel_payment_method = "payment_method_select"
 
+// - account tracker 选择菜单前缀 - \\
+// - account tracker select menu prefix - \\
+export const __sel_account_tracker = "account_tracker_select"
+
 // - 模态框的自定义 ID - \\
 // - modal custom ids - \\
 export const __modal_loa_request = "modal_loa_request"

@@ -46,9 +46,9 @@ flowchart TB
     IDX --> B_ENTRY["startup/bypass_bot.ts"]
 
     subgraph ATOMIC["Atomic Bot — Server Management"]
-        A_ENTRY --> A_CORE["core/handlers\ncommand · button · modal · select · event"]
-        A_CORE  --> A_MOD["modules/\nmoderation · tickets · payment · music\nreminder · tempvoice · afk · loa\nquarantine · reputation · staff · middleman · ..."]
-        A_CORE  --> A_INFRA["infrastructure/\napi · cache · webhooks"]
+        A_ENTRY --> A_CORE["discord/\nhandlers · router · events"]
+        A_CORE  --> A_MOD["features/commands/\ncommerce · media · moderation\nserver-management · server-util · staff-management"]
+        A_CORE  --> A_INFRA["integrations/\napi · cache · webhooks"]
     end
 
     subgraph JKT48_BOT["JKT48 Bot — Live Notifications"]
@@ -103,10 +103,10 @@ flowchart LR
 
     IC --> ITYPE{"Interaction\ntype"}
 
-    ITYPE -->|"ChatInputCommand"| SLASH["modules/cmd/*.ts\nexecute()"]
-    ITYPE -->|"ButtonInteraction"| BTN["core/handlers/buttons/\nor modules/.../buttons/"]
-    ITYPE -->|"ModalSubmit"| MDL["core/handlers/modals/\nor modules/.../modals/"]
-    ITYPE -->|"SelectMenu"| SEL["modules/.../select_menus/"]
+    ITYPE -->|"ChatInputCommand"| SLASH["features/commands/.../*.commands.ts\nexecute()"]
+    ITYPE -->|"ButtonInteraction"| BTN["features/commands/.../buttons/"]
+    ITYPE -->|"ModalSubmit"| MDL["features/commands/.../modals/"]
+    ITYPE -->|"SelectMenu"| SEL["features/commands/.../select-menus/"]
     ITYPE -->|"Autocomplete"| AUTO["command.autocomplete()"]
 
     VSU --> TV["tempvoice\nhandle_voice_state_update"]
@@ -340,25 +340,19 @@ src/
 │   └── bypass_bot.ts
 │
 ├── atomic_bot/               # Main server management bot
-│   ├── core/
-│   │   ├── client/
-│   │   ├── handlers/
-│   │   └── middleware/
-│   ├── guide/                # Guide markdown files
-│   ├── infrastructure/
+│   ├── discord/
+│   ├── http/
+│   ├── integrations/
 │   │   ├── api/
 │   │   ├── cache/
 │   │   └── webhooks/
-│   └── modules/
-│       ├── moderation/       # Ban, kick, warn, mute
-│       ├── music/            # DisTube playback
-│       ├── tickets/          # Support ticket system
-│       ├── payments/         # Payment handling
-│       ├── reminder/         # Persistent reminders
-│       ├── reputation/       # Rep system
-│       ├── staff/            # Staff tools
-│       ├── utility/          # General utilities
-│       ├── whitelister/      # Whitelist management
+│   └── features/commands/
+│       ├── commerce/         # middleman, tickets, scripts, whitelister
+│       ├── media/            # music
+│       ├── moderation/       # moderation + quarantine
+│       ├── server-management/# setup, tempvoice, staff-info, server
+│       ├── server-util/      # utility, guide, reminder, ask
+│       ├── staff-management/ # staff, loa, work, stats
 │       └── ...
 │
 ├── jkt48_bot/                # JKT48 live notification bot

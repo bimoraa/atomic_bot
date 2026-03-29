@@ -18,7 +18,6 @@ import {
 } from "discord.js"
 import { Command }                      from "@shared/types/command"
 import { component, api }               from "@shared/utils"
-import { build_question_panel as build_panel } from "@atomic/features/commands/server-util/ask/controller/ask.controller"
 
 export const ask_channel_id = "1250786601462923396"
 
@@ -143,8 +142,8 @@ export const command: Command = {
     const user        = interaction.user
     const user_avatar = user.displayAvatarURL({ extension: "png", size: 128 })
 
-    const channel = interaction.client.channels.cache.get(ask_channel_id) as TextChannel
-    if (!channel) {
+    const channel = await interaction.client.channels.fetch(ask_channel_id).catch(() => null)
+    if (!channel || !(channel instanceof TextChannel)) {
       await interaction.editReply({ content: "Ask channel not found." })
       return
     }
