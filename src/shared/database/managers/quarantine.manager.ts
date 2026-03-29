@@ -127,7 +127,11 @@ export async function get_auto_tag_quarantines(guild_id: string): Promise<quaran
 export async function get_expired_quarantines(): Promise<quarantined_member[]> {
   const now = Math.floor(Date.now() / 1000)
   return db.find_many<quarantined_member>(__collection, {})
-    .then(quarantines => quarantines.filter(q => q.release_at <= now))
+    .then(quarantines => quarantines.filter(q =>
+      // - 排除 AUTO_TAG_GUARD 记录，由 tag checker 单独处理 - \\
+      // - exclude AUTO_TAG_GUARD entries — managed separately by tag_quarantine_checker - \\
+      q.quarantined_by !== "AUTO_TAG_GUARD" && q.release_at <= now
+    ))
 }
 
 /**

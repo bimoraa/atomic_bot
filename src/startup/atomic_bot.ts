@@ -36,6 +36,7 @@ import { start_scheduler }                                               from "@
 import { start_weekly_reset_scheduler }                                  from "@atomic/features/commands/staff-management/work/jobs/weekly_work_reset.job"
 import { start_quarantine_scheduler }                                    from "@atomic/features/commands/moderation/quarantine/jobs/quarantine_release.job"
 import { start_tag_quarantine_checker }                                  from "@atomic/features/commands/moderation/quarantine/jobs/tag_quarantine_checker.job"
+import { is_quarantined }                                                from "@shared/database/managers/quarantine.manager"
 import { start_account_tracker_offline_checker }                         from "@atomic/features/commands/server-util/account-tracker/jobs/account_tracker_offline.job"
 import { load_middleman_tickets_on_startup }                             from "@atomic/features/commands/commerce/middleman/jobs/load_middleman_tickets.job"
 import { start_share_settings_forum_scheduler }                          from "@atomic/features/commands/commerce/share-settings/jobs/share_settings_forum.job"
@@ -329,6 +330,81 @@ client.on("interactionCreate", (interaction) => {
 
 client.on("userUpdate", async (old_user, new_user) => {
   await check_server_tag_change(client, old_user, new_user)
+})
+
+// - 隔离守卫：若被隔离成员被添加角色，立即移除并恢复隔离角色 - \\
+// - quarantine guard: if a quarantined member receives a role, strip it and re-apply quarantine - \\
+const __quarantine_guard_lock = new Set<string>()
+
+client.on("guildMemberUpdate", async (old_member, new_member) => {
+  try {
+    // - 只处理角色增加的情况 - \\
+    // - only process when roles were added - \\
+    if (new_member.roles.cache.size <= old_member.roles.cache.size) return
+
+    const lock_key = `${new_member.guild.id}:${new_member.id}`
+    if (__quarantine_guard_lock.has(lock_key)) return
+    __quarantine_guard_lock.add(lock_key)
+
+    try {
+      const quarantined = await is_quarantined(new_member.id, new_member.guild.id)
+      if (!quarantined) return
+
+      // - 强制拉取最新成员数据 - \\
+      // - force-fetch fresh member to ensure accurate role list - \\
+      const fresh = await new_member.guild.members.fetch({ user: new_member.id, force: true }).catch(() => null)
+      if (!fresh) return
+
+      const __quarantine_role = process.env.QUARANTINE_ROLE_ID ?? "1265318689130024992"
+
+      const managed_roles = fresh.roles.cache
+        .filter(r => r.managed || r.id === fresh.guild.id)
+        .map(r => r.id)
+
+      // - 移除所有非 managed 角色，只保留隔离角色 - \\
+      // - strip all non-managed roles, keep only quarantine role - \\
+      await fresh.roles.set(
+        [...managed_roles, __quarantine_role],
+        "Quarantine guard: role added while member was quarantined"
+      ).catch(() => {})
+
+      console.log(`[ - QUARANTINE GUARD - ] re-applied quarantine for ${fresh.user.tag}`)
+    } finally {
+      __quarantine_guard_lock.delete(lock_key)
+    }
+  } catch (err) {
+    await log_error(client, err as Error, "Quarantine Guard — GuildMemberUpdate", {
+      user_id  : new_member.id,
+      guild_id : new_member.guild.id,
+    }).catch(() => {})
+  }
+})
+
+// - 成员重新加入时，若仍在隔离记录中则立即重新应用隔离角色 - \\
+// - on rejoin, re-apply quarantine role if the member still has an active quarantine record - \\
+client.on("guildMemberAdd", async (member) => {
+  try {
+    const quarantined = await is_quarantined(member.id, member.guild.id)
+    if (!quarantined) return
+
+    const __quarantine_role = process.env.QUARANTINE_ROLE_ID ?? "1265318689130024992"
+
+    const managed_roles = member.roles.cache
+      .filter(r => r.managed || r.id === member.guild.id)
+      .map(r => r.id)
+
+    await member.roles.set(
+      [...managed_roles, __quarantine_role],
+      "Quarantine guard: member rejoined while still quarantined"
+    ).catch(() => {})
+
+    console.log(`[ - QUARANTINE GUARD - ] re-applied quarantine on rejoin for ${member.user.tag}`)
+  } catch (err) {
+    await log_error(client, err as Error, "Quarantine Guard — GuildMemberAdd", {
+      user_id  : member.id,
+      guild_id : member.guild.id,
+    }).catch(() => {})
+  }
 })
 
 client.on("messageCreate", async (message: Message) => {

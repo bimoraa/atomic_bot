@@ -15,6 +15,7 @@ import { log_error }                            from "@shared/utils/error_logger
 import { component, api, env, format }          from "@shared/utils"
 import { member_has_role }                      from "@shared/utils/discord_api"
 import { redeem_user_key }                      from "@atomic/features/commands/commerce/service-provider/controller/service_provider.controller"
+import { is_quarantined }                       from "@shared/database/managers/quarantine.manager"
 
 const __script_role_id = env.get("LUARMOR_SCRIPT_ROLE_ID", "1398313779380617459")
 
@@ -30,6 +31,26 @@ export async function handle_script_redeem_modal(interaction: ModalSubmitInterac
 
   const member   = interaction.member as GuildMember
   const user_key = interaction.fields.getTextInputValue("user_key").trim()
+
+  // - 被隔离的用户不能领取角色 - \\
+  // - quarantined users cannot redeem keys or receive roles - \\
+  const quarantined = await is_quarantined(member.id, interaction.guildId!)
+  if (quarantined) {
+    const message = component.build_message({
+      components: [
+        component.container({
+          components: [
+            component.text([
+              `## Access Denied`,
+              `You are currently quarantined and cannot redeem keys.`,
+            ]),
+          ],
+        }),
+      ],
+    })
+    await api.edit_deferred_reply(interaction, message)
+    return true
+  }
 
   const result = await redeem_user_key({ client: interaction.client, user_id: member.id, user_key })
 

@@ -15,6 +15,7 @@ import { log_error }                       from "@shared/utils/error_logger"
 import * as luarmor                        from "@atomic/integrations/api/luarmor"
 import { component, api, env, format }     from "@shared/utils"
 import { member_has_role }                 from "@shared/utils/discord_api"
+import { is_quarantined }                  from "@shared/database/managers/quarantine.manager"
 
 const __script_role_id = env.get("LUARMOR_SCRIPT_ROLE_ID", "1398313779380617459")
 
@@ -29,6 +30,29 @@ export async function handle_get_role(interaction: ButtonInteraction): Promise<v
   try {
     const member = interaction.member as GuildMember
     const guild  = interaction.guild!
+
+    // - 被隔离的用户不能领取角色 - \\
+    // - quarantined users cannot receive the script role - \\
+    const quarantined = await is_quarantined(member.id, guild.id)
+    if (quarantined) {
+      const message = component.build_message({
+        components: [
+          component.container({
+            components: [
+              component.section({
+                content: [
+                  `## Access Denied`,
+                  `You are currently quarantined and cannot receive roles.`,
+                ],
+                thumbnail: format.logo_url,
+              }),
+            ],
+          }),
+        ],
+      })
+      await api.edit_deferred_reply(interaction, message)
+      return
+    }
 
     const user_result = await luarmor.get_user_by_discord(member.id)
 

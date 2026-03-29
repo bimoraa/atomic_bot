@@ -256,7 +256,8 @@ export async function release_quarantine(options: release_quarantine_options) {
 
     const member = await guild.members.fetch(user_id).catch(() => null)
     if (!member) {
-      await remove_quarantine(user_id, guild.id)
+      // - 成员未找到时不删除 DB 记录，避免因 API 抖动误删隔离 - \\
+      // - do not delete db record when member is not found — prevents accidental release on api hiccup - \\
       return {
         success : false,
         error   : "Member not found in server.",
