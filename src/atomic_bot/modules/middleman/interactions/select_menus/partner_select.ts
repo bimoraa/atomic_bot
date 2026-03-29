@@ -13,8 +13,8 @@
 // - middleman partner select - \
 
 import { UserSelectMenuInteraction } from "discord.js"
-import { open_middleman_ticket } from "@atomic/modules/middleman/controller"
-import { is_middleman_service_open } from "@shared/database/managers/middleman_service_manager"
+import { open_middleman_ticket } from "@atomic/modules/middleman/controllers/middleman.controller"
+import { is_middleman_service_open } from "@shared/database/managers/middleman_service.manager"
 import { component } from "@shared/utils"
 
 /**

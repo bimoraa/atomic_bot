@@ -17,7 +17,7 @@ import {
   handle_stop,
   handle_pause_resume,
   build_queue_message,
-}                            from "../../controller"
+}                            from "../../controllers/music.controller"
 
 // ─── SKIP ─────────────────────────────────────────────────────────────────────
 /**

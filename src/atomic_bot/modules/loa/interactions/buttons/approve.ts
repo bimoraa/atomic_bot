@@ -10,7 +10,7 @@
 // - 批准 LOA 按钮的交互注册 - \
 // - registers the approve LOA button interaction - \
 import { ButtonInteraction }              from "discord.js"
-import { approve_loa, has_loa_permission } from "../../controller"
+import { approve_loa, has_loa_permission } from "../../controllers/loa.controller"
 import { ButtonHandler }                   from "@shared/types/interaction"
 
 export async function handle_loa_approve(interaction: ButtonInteraction): Promise<void> {

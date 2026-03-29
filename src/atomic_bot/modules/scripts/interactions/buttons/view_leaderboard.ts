@@ -13,7 +13,7 @@
 import { ButtonInteraction }          from "discord.js"
 import { log_error }                  from "@shared/utils/error_logger"
 import { component, api }             from "@shared/utils"
-import { get_execution_leaderboard }  from "@atomic/modules/service_provider/controller"
+import { get_execution_leaderboard }  from "@atomic/modules/service_provider/controllers/service_provider.controller"
 
 /**
  * @description handles the view leaderboard button — fetches and displays the top 10 execution leaderboard.

@@ -9,7 +9,7 @@
 
 import { ButtonInteraction }                                from "discord.js"
 import { log_error }                                        from "@shared/utils/error_logger"
-import { build_history_message, get_history_records }       from "@jkt48/core/controllers/jkt48_live_controller"
+import { build_history_message, get_history_records }       from "@jkt48/modules/live_info/controllers/jkt48_live.controller"
 
 /**
  * - 处理历史直播按钮 - \\

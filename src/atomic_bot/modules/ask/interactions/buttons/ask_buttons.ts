@@ -12,7 +12,7 @@
 import { ButtonInteraction, TextChannel } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
 import { modal }                          from "@shared/utils"
-import { create_thread_for_message }      from "@atomic/modules/ask/commands/ask"
+import { create_thread_for_message }      from "@atomic/modules/ask/routes/ask"
 
 export const button: ButtonHandler = {
   custom_id: /^ask_(staff_button|answer_)/,

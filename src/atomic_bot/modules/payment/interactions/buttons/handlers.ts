@@ -15,7 +15,7 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { api, component, time }  from "@shared/utils"
 import { member_has_role }          from "@shared/utils/discord_api"
-import { create_key_for_project, delete_user_from_project } from "../../../../infrastructure/api/luarmor"
+import { create_key_for_project, delete_user_from_project } from "@atomic/infrastructure/api/luarmor"
 import { add_work_log } from "@shared/database/trackers/work_tracker"
 
 const __admin_role_id   = "1277272542914281512"

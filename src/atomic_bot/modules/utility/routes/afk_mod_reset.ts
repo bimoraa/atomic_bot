@@ -1,0 +1,52 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
+// - /afk-mod reset，重置 AFK 相关设置 - \
+// - /afk-mod reset command, resets AFK settings - \
+import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"
+import { update_afk_reason }                                           from "@atomic/infrastructure/cache/afk"
+import { build_simple_message }                                        from "./afk_utils"
+
+/**
+ * - 构建 AFK 管理重置子命令 - \\
+ * - build afk mod reset subcommand - \\
+ * @param {SlashCommandSubcommandBuilder} subcommand - subcommand builder
+ * @returns {SlashCommandSubcommandBuilder} updated subcommand builder
+ */
+export function build_afk_mod_reset_subcommand(subcommand: SlashCommandSubcommandBuilder): SlashCommandSubcommandBuilder {
+  return subcommand
+    .setName("reset")
+    .setDescription("Reset the AFK message of a member")
+    .addUserOption((option) =>
+      option
+        .setName("user")
+        .setDescription("Target member")
+        .setRequired(true)
+    )
+}
+
+/**
+ * - 处理 AFK 管理重置 - \\
+ * - handle afk mod reset - \\
+ * @param {ChatInputCommandInteraction} interaction - discord interaction
+ * @returns {Promise<void>}
+ */
+export async function handle_afk_mod_reset(interaction: ChatInputCommandInteraction): Promise<void> {
+  const target  = interaction.options.getUser("user", true)
+  const updated = await update_afk_reason(target.id, "AFK")
+
+  if (!updated) {
+    const not_found = build_simple_message("## Error", ["Target user is not AFK."])
+    await interaction.editReply(not_found)
+    return
+  }
+
+  const message = build_simple_message("## AFK Message Reset", [`Reset AFK message for <@${target.id}>.`])
+  await interaction.editReply(message)
+}

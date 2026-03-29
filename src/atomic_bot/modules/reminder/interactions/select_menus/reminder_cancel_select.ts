@@ -10,7 +10,7 @@
 // - 取消提醒选择菜单的交互注册 - \
 // - registers the reminder cancel select menu interaction - \
 import { StringSelectMenuInteraction } from "discord.js"
-import { cancel_reminder }             from "../../controller"
+import { cancel_reminder }             from "../../controllers/reminder.controller"
 
 export async function handle_reminder_cancel_select(interaction: StringSelectMenuInteraction): Promise<void> {
   const selected_time = parseInt(interaction.values[0], 10)

@@ -22,7 +22,7 @@ import {
 import { logger, component, api, db }           from "../../utils"
 import { load_config }                          from "../../config/loader"
 import * as voice_tracker                       from "../trackers/voice_time_tracker"
-import * as tv_transcript                       from "../managers/tempvoice_transcript_manager"
+import * as tv_transcript                       from "../managers/tempvoice_transcript.manager"
 import { log_error }                            from "../../utils/error_logger"
 
 interface tempvoice_config {

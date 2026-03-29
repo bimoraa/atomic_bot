@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse }                              from 'next/server'
-import { update_application_review, delete_application_by_uuid } from '@/lib/database/managers/staff_application_manager'
+import { update_application_review, delete_application_by_uuid } from '@/lib/database/managers/staff_application.manager'
 import { connect }                                                from "@/lib/utils/database"
 import { check_auth, is_valid_uuid }                             from '@/lib/utils/auth'
 

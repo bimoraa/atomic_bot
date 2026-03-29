@@ -11,7 +11,7 @@
 // - registers the close button for middleman tickets - \
 import { ButtonInteraction, ThreadChannel, TextChannel } from "discord.js"
 import { close_ticket, get_ticket_config } from "@shared/database/unified_ticket"
-import { cancel_middleman_ticket, get_middleman_ticket } from "@shared/database/managers/middleman_manager"
+import { cancel_middleman_ticket, get_middleman_ticket } from "@shared/database/managers/middleman.manager"
 import { api } from "@shared/utils"
 import { ButtonHandler } from "@shared/types/interaction"
 

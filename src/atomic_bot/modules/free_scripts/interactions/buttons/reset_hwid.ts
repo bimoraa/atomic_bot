@@ -15,9 +15,9 @@
 import { ButtonInteraction, GuildMember }      from "discord.js"
 import { component, api, format }              from "@shared/utils"
 import { http, env, logger }                   from "@shared/utils"
-import { remove_free_script_access }           from "@shared/database/managers/free_script_manager"
-import { track_and_check_hwid_reset, create_rate_limit_message } from "@atomic/modules/service_provider/controller"
-import { is_hwid_enabled }                     from "@atomic/modules/setup/commands/hwid_control"
+import { remove_free_script_access }           from "@shared/database/managers/free_script.manager"
+import { track_and_check_hwid_reset, create_rate_limit_message } from "@atomic/modules/service_provider/controllers/service_provider.controller"
+import { is_hwid_enabled }                     from "@atomic/modules/setup/routes/hwid_control"
 import { member_has_role }                     from "@shared/utils/discord_api"
 
 const __log               = logger.create_logger("free_reset_hwid")

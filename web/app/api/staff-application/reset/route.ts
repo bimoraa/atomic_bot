@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { delete_application }        from "@/lib/database/managers/staff_application_manager"
+import { delete_application }        from "@/lib/database/managers/staff_application.manager"
 import { connect }                    from "@/lib/utils/database"
 
 const __admin_secret = process.env.ADMIN_SECRET

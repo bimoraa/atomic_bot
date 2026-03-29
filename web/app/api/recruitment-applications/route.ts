@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { get_all_applications }      from '@/lib/database/managers/staff_application_manager'
+import { get_all_applications }      from '@/lib/database/managers/staff_application.manager'
 import { connect }                   from "@/lib/utils/database"
 import { check_auth }                from '@/lib/utils/auth'
 

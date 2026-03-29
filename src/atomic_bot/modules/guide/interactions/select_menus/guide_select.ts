@@ -11,12 +11,12 @@
 // - registers the guide select menu interaction - \
 import { StringSelectMenuInteraction, TextChannel } from "discord.js"
 import { component, api }                           from "@shared/utils"
-import { guide_buttons, ParsedButton }              from "../../../../modules/setup/commands/guide_panel"
+import { guide_buttons, ParsedButton }              from "@atomic/modules/setup/routes/guide_panel"
 import fs                                           from "fs"
 import path                                         from "path"
 
 function load_guide(name: string): string | null {
-  const guide_path = path.join(process.cwd(), "src/atomic_bot/guide", `${name}.md`)
+  const guide_path = path.join(process.cwd(), "src/atomic_bot/modules/guide/docs", `${name}.md`)
   if (!fs.existsSync(guide_path)) return null
   return fs.readFileSync(guide_path, "utf-8")
 }

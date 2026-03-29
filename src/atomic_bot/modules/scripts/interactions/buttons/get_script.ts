@@ -13,7 +13,7 @@
 import { ButtonInteraction, GuildMember }  from "discord.js"
 import { component, api, format, modal }   from "@shared/utils"
 import { log_error }                       from "@shared/utils/error_logger"
-import { get_user_script }                 from "@atomic/modules/service_provider/controller"
+import { get_user_script }                 from "@atomic/modules/service_provider/controllers/service_provider.controller"
 import * as luarmor                        from "@atomic/infrastructure/api/luarmor"
 
 /**

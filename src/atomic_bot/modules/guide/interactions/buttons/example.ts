@@ -10,7 +10,7 @@
 // - 指南示例按钮的交互注册 - \
 // - registers the guide example button interaction - \
 import { ButtonInteraction } from "discord.js"
-import { guide_buttons }     from "../../../../modules/setup/commands/guide_panel"
+import { guide_buttons }     from "@atomic/modules/setup/routes/guide_panel"
 import { api, component }    from "@shared/utils"
 import { ButtonHandler }     from "@shared/types/interaction"
 

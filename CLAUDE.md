@@ -78,13 +78,30 @@ src/shared/
 ├── utils/          # Utility functions
 └── database/       # DB managers, services, unified_ticket
 
-src/atomic_bot/modules/<feature>/
-├── commands/           # STRICT: all slash commands here
-├── interactions/
-│   ├── buttons/        # export const button: ButtonHandler = { ... }
-│   ├── modals/         # export const modal: ModalHandler = { ... }
-│   └── select_menus/   # export const string_select / user_select
-└── controller.ts       # Business logic (import models from @models/*)
+src/atomic_bot/
+├── interfaces/                     # ENTRY POINT LAYER
+│   ├── discord/
+│   │   ├── events/                 # Discord event handlers (guild_member/, message/, voice/)
+│   │   ├── handlers/               # command_handler.ts, sub_command_handler.ts
+│   │   └── router.ts               # Interaction dispatcher (buttons/modals/selects)
+│   └── http/
+│       ├── server.ts               # Express HTTP server
+│       └── routes/                 # REST API endpoints
+│
+├── modules/<feature>/              # FEATURE MODULES
+│   ├── commands/                   # Slash commands
+│   ├── interactions/
+│   │   ├── buttons/
+│   │   ├── modals/
+│   │   └── select_menus/
+│   ├── controllers/                # Feature controllers (when needed)
+│   ├── schedulers/                 # Feature schedulers (when needed)
+│   └── controller.ts               # Business logic
+│
+└── infrastructure/                 # EXTERNAL SERVICES
+    ├── api/
+    ├── cache/
+    └── webhooks/
 ```
 
 Example: `/reminder` + `/reminder-cancel`

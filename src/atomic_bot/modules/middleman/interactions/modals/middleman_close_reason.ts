@@ -11,7 +11,7 @@
 // - handles the middleman close reason modal submission - \
 import { ModalSubmitInteraction, ThreadChannel, TextChannel } from "discord.js"
 import { close_ticket } from "@shared/database/unified_ticket"
-import { cancel_middleman_ticket, get_middleman_ticket } from "@shared/database/managers/middleman_manager"
+import { cancel_middleman_ticket, get_middleman_ticket } from "@shared/database/managers/middleman.manager"
 import { api } from "@shared/utils"
 import { get_ticket_config } from "@shared/database/unified_ticket"
 

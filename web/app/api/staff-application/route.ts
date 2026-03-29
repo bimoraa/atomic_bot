@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomUUID }                from "crypto"
 import { encrypt_session, decrypt_session } from "@/lib/utils/session"
-import { has_user_applied, submit_application, delete_application, staff_application, get_user_application_uuid } from "@/lib/database/managers/staff_application_manager"
+import { has_user_applied, submit_application, delete_application, staff_application, get_user_application_uuid } from "@/lib/database/managers/staff_application.manager"
 import { connect }                   from "@/lib/utils/database"
 
 export const dynamic = 'force-dynamic'
@@ -340,7 +340,7 @@ export async function POST(req: NextRequest) {
     const can_bypass   = is_owner && is_localhost
 
     // - CHECK IF RECRUITMENT IS OPEN - \\
-    const { get_recruitment_settings } = await import('@/lib/database/managers/recruitment_settings_manager')
+    const { get_recruitment_settings } = await import('@/lib/database/managers/recruitment_settings.manager')
     const settings = await get_recruitment_settings()
     if (!settings.is_open && !can_bypass) {
       return NextResponse.json({ error: "Recruitment is currently closed." }, { status: 403 })

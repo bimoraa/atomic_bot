@@ -1,0 +1,73 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
+// - 定时检查并自动释放到期的隔离用户 - \
+// - scheduler that auto-releases expired quarantined users - \
+import { Client }                   from "discord.js"
+import { logger }                   from "@shared/utils"
+import { get_expired_quarantines }  from "@shared/database/managers/quarantine.manager"
+import { release_quarantine }       from "@atomic/modules/quarantine/controllers/quarantine.controller"
+
+const log = logger.create_logger("quarantine_scheduler")
+
+/**
+ * @description start quarantine auto-release scheduler
+ * @param client - Discord Client instance
+ */
+export async function start_quarantine_scheduler(client: Client): Promise<void> {
+  log.info("Starting quarantine auto-release scheduler")
+
+  const check_and_release = async () => {
+    try {
+      const expired = await get_expired_quarantines()
+
+      if (expired.length === 0) {
+        return
+      }
+
+      log.info(`Found ${expired.length} expired quarantines to process`)
+
+      for (const quarantine of expired) {
+        try {
+          const guild = await client.guilds.fetch(quarantine.guild_id).catch(() => null)
+          if (!guild) {
+            log.warn(`Guild ${quarantine.guild_id} not found, skipping`)
+            continue
+          }
+
+          const result = await release_quarantine({
+            client,
+            guild,
+            user_id: quarantine.user_id,
+          })
+
+          if (result.success) {
+            log.info(`Released quarantine for user ${quarantine.user_id} in guild ${quarantine.guild_id}`)
+          } else {
+            log.error(`Failed to release quarantine for user ${quarantine.user_id}: ${result.error}`)
+          }
+        } catch (err) {
+          log.error(`Error processing quarantine for user ${quarantine.user_id}:`, err)
+        }
+      }
+    } catch (error) {
+      log.error("Error in quarantine scheduler:", error)
+    }
+  }
+
+  // - 每 5 分钟执行一次检查 - \\
+  // - run check every 5 minutes - \\
+  setInterval(check_and_release, 5 * 60 * 1000)
+
+  // - 10 秒后执行初始检查 - \\
+  // - run initial check after 10 seconds - \\
+  setTimeout(check_and_release, 10000)
+
+  log.info("Quarantine scheduler started successfully")
+}

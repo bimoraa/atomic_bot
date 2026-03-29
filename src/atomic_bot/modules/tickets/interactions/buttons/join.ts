@@ -19,7 +19,7 @@ import {
   ticket_issues,
   priority_log_channel_id,
   save_priority_ticket,
-} from "../../controller"
+} from "../../controllers/tickets.controller"
 import { is_admin, is_staff } from "@shared/database/settings/permissions"
 import { component, api, format } from "@shared/utils"
 import { build_ticket_log_message } from "@shared/database/unified_ticket/state"

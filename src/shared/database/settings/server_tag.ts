@@ -18,7 +18,7 @@ import {
   add_quarantine_history,
   get_quarantine_history,
   get_quarantine_count,
-}                                    from "../managers/quarantine_manager"
+}                                    from "../managers/quarantine.manager"
 
 interface server_tag_user {
   user_id    : string

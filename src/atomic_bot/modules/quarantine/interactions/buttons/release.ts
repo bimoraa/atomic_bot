@@ -10,7 +10,7 @@
 // - 隔离申诉释放按钮的交互注册 - \
 // - registers the quarantine release button interaction - \
 import { ButtonInteraction, GuildMember } from "discord.js"
-import { release_quarantine }             from "../../controller"
+import { release_quarantine }             from "../../controllers/quarantine.controller"
 import { component }                      from "@shared/utils"
 import { ButtonHandler }                  from "@shared/types/interaction"
 

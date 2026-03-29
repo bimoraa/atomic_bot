@@ -10,7 +10,7 @@
 // - 查看提醒列表按钮的交互注册 - \
 // - registers the reminder list button interaction - \
 import { ButtonInteraction }    from "discord.js"
-import { get_reminder_list } from "../../controller"
+import { get_reminder_list } from "../../controllers/reminder.controller"
 import { ButtonHandler }     from "@shared/types/interaction"
 
 export async function handle_reminder_list(interaction: ButtonInteraction): Promise<void> {

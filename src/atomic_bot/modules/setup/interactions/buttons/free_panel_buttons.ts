@@ -13,7 +13,7 @@ import { ButtonInteraction, GuildMember } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
 import { component, db }                  from "@shared/utils"
 import * as luarmor                       from "@atomic/infrastructure/api/luarmor"
-import { is_hwid_enabled }                from "@atomic/modules/setup/commands/hwid_control"
+import { is_hwid_enabled }                from "@atomic/modules/setup/routes/hwid_control"
 import { get_channel_leaderboard, format_time } from "@shared/database/trackers/voice_time_tracker"
 
 const __free_project_id     = "cd7560b7384fd815dafd993828c40d2b"

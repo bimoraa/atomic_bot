@@ -1,0 +1,91 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
+// - /staff set-discount，设置折扣 - \
+// - /staff set-discount command, sets a discount - \
+import {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+} from "discord.js"
+import { Command } from "@shared/types/command"
+import { load_config as load_cfg, save_config as save_cfg } from "@shared/config/loader"
+import { update_price_panel } from "@atomic/modules/setup/routes/script_price"
+
+interface PricingConfig {
+  channel_id:     string
+  message_id:     string | null
+  monthly_price:  number
+  lifetime_price: number
+  discount: {
+    percentage: number
+    applies_to: "monthly" | "lifetime" | "both"
+  }
+}
+
+function load_config(): PricingConfig {
+  return load_cfg<PricingConfig>("pricing")
+}
+
+function save_config(config: PricingConfig): void {
+  save_cfg<PricingConfig>("pricing", config)
+}
+
+export const command: Command = {
+  data: new SlashCommandBuilder()
+    .setName("set_discount")
+    .setDescription("Set discount for script pricing")
+    .addIntegerOption(option =>
+      option
+        .setName("percentage")
+        .setDescription("Discount percentage (0-100)")
+        .setRequired(true)
+        .setMinValue(0)
+        .setMaxValue(100)
+    )
+    .addStringOption(option =>
+      option
+        .setName("applies_to")
+        .setDescription("Apply discount to which price")
+        .setRequired(true)
+        .addChoices(
+          { name: "Monthly",  value: "monthly" },
+          { name: "Lifetime", value: "lifetime" },
+          { name: "Both",     value: "both" }
+        )
+    ) as SlashCommandBuilder,
+
+  async execute(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply({ flags: 64 })
+
+    const percentage = interaction.options.getInteger("percentage", true)
+    const applies_to = interaction.options.getString("applies_to", true) as "monthly" | "lifetime" | "both"
+
+    const config = load_config()
+    config.discount.percentage = percentage
+    config.discount.applies_to = applies_to
+    save_config(config)
+
+    if (config.message_id) {
+      const updated = await update_price_panel()
+      if (updated) {
+        await interaction.editReply({
+          content: `Discount set to **${percentage}%** for **${applies_to}** and pricing panel updated!`,
+        })
+      } else {
+        await interaction.editReply({
+          content: `Discount set to **${percentage}%** for **${applies_to}** but failed to update panel.`,
+        })
+      }
+    } else {
+      await interaction.editReply({
+        content: `Discount set to **${percentage}%** for **${applies_to}**. Use \`/script_price\` to send the panel.`,
+      })
+    }
+  },
+}

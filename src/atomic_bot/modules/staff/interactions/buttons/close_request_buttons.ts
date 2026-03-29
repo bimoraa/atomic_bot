@@ -10,7 +10,7 @@
 // - 关单请求按钮组件的定义和构建 - \
 // - button component definitions for close request - \
 import { ButtonInteraction, ThreadChannel } from "discord.js"
-import { close_ticket_by_deadline, cancel_close_request } from "@atomic/modules/staff/commands/close_request"
+import { close_ticket_by_deadline, cancel_close_request } from "@atomic/modules/staff/routes/close_request"
 import { component } from "@shared/utils"
 import { ButtonHandler } from "@shared/types/interaction"
 

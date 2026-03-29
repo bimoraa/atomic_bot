@@ -18,7 +18,7 @@ import {
   ask_channel_id, 
   create_thread_for_message,
   build_question_panel_no_answer 
-} from "../../../../modules/ask/commands/ask"
+} from "@atomic/modules/ask/routes/ask"
 import { is_staff, is_admin_or_mod } from "@shared/database/settings/permissions"
 
 const __answer_log_channel_id = "1446894637980713090"

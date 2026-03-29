@@ -1,0 +1,167 @@
+/*
+ * Atomicals Bot for Discord
+ * Copyright (C) 2026 Atomicals LancarJaya
+ *
+ * Licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License.
+ * You may not use this file except in compliance with the License.
+ * See the LICENSE file for more information.
+ */
+
+// - 成员开始/停止 boost 服务器时触发的事件处理 - \
+// - handles guild member boost/unboost events - \
+import { Events, GuildMember, Message, PartialGuildMember } from "discord.js"
+import { client }                    from "@startup/atomic_bot"
+import { load_config }               from "@shared/config/loader"
+import { send_booster_log }          from "@atomic/modules/booster/controllers/booster.controller"
+import * as booster_manager          from "@shared/database/managers/booster.manager"
+import { log_error }                 from "@shared/utils/error_logger"
+
+interface booster_config {
+  booster_log_channel_id: string
+  booster_media_url     : string
+}
+
+/**
+ * - 检查 Boost 系统消息 - \\
+ * - check boost system message - \\
+ * @param {Message} message - discord message
+ * @returns {boolean} true when message is boost system log
+ */
+function is_boost_system_message(message: Message): boolean {
+  const boost_message_types = new Set<number>([8, 9, 10, 11])
+  return boost_message_types.has(Number(message.type))
+}
+
+client.on(Events.MessageCreate, async (message: Message) => {
+  try {
+    if (!message.inGuild()) return
+    if (!is_boost_system_message(message)) return
+
+    const config = load_config<booster_config>("booster")
+
+    if (!config.booster_log_channel_id) {
+      console.error("[ - BOOSTER LOG - ] Booster log channel id is missing")
+      await log_error(
+        client,
+        new Error("Booster log channel id is missing"),
+        "booster_log_config",
+        {
+          guild_id : message.guild.id,
+        }
+      )
+      return
+    }
+
+    let new_boost_count = 1
+
+    try {
+      const whitelist_data = await booster_manager.get_whitelist(
+        message.author.id,
+        message.guild.id
+      )
+
+      if (whitelist_data) {
+        new_boost_count = (whitelist_data.boost_count || 0) + 1
+        await booster_manager.update_boost_count(
+          message.author.id,
+          message.guild.id,
+          new_boost_count
+        )
+      } else {
+        await booster_manager.add_whitelist(
+          message.author.id,
+          message.guild.id,
+          new_boost_count
+        )
+      }
+    } catch (db_error) {
+      console.error("[ - BOOSTER LOG - ] Failed to update boost count:", db_error)
+      await log_error(
+        client,
+        db_error instanceof Error ? db_error : new Error(String(db_error)),
+        "booster_log_db_update",
+        {
+          user_id  : message.author.id,
+          guild_id : message.guild.id,
+        }
+      )
+    }
+
+    const user_avatar = message.author.displayAvatarURL({ extension: "png", size: 256 })
+
+    await send_booster_log(
+      client,
+      config.booster_log_channel_id,
+      message.author.id,
+      new_boost_count,
+      user_avatar
+    )
+
+    console.log(`[ - BOOSTER LOG - ] Logged boost for ${message.author.tag}, total boosts: ${new_boost_count}`)
+  } catch (error) {
+    console.error("[ - BOOSTER LOG - ] Error processing boost message:", error)
+    await log_error(
+      client,
+      error instanceof Error ? error : new Error(String(error)),
+      "booster_log_message",
+      {
+        channel_id : message.channelId,
+        guild_id   : message.guildId,
+      }
+    )
+  }
+})
+
+client.on(Events.GuildMemberUpdate, async (old_member: GuildMember | PartialGuildMember, new_member: GuildMember) => {
+  try {
+    const is_boost_stop  = !new_member.premiumSince && old_member.premiumSince
+
+    if (!is_boost_stop) return
+
+    if (is_boost_stop) {
+      console.log(`[ - BOOSTER LOG - ] ${new_member.user.tag} stopped boosting the server`)
+
+      try {
+        const is_whitelisted = await booster_manager.is_whitelisted(
+          new_member.user.id,
+          new_member.guild.id
+        )
+
+        if (is_whitelisted) {
+          await booster_manager.remove_whitelist(
+            new_member.user.id,
+            new_member.guild.id
+          )
+          console.log(`[ - BOOSTER LOG - ] Removed whitelist for ${new_member.user.tag}`)
+        }
+      } catch (db_error) {
+        console.error("[ - BOOSTER LOG - ] Failed to remove whitelist:", db_error)
+        await log_error(
+          client,
+          db_error instanceof Error ? db_error : new Error(String(db_error)),
+          "booster_log_db_remove",
+          {
+            user_id  : new_member.user.id,
+            guild_id : new_member.guild.id,
+          }
+        )
+      }
+    }
+
+  } catch (error) {
+    console.error(`[ - BOOSTER LOG - ] Error processing booster update:`, error)
+    try {
+      await log_error(
+        client,
+        error instanceof Error ? error : new Error(String(error)),
+        "booster_log",
+        {
+          user_id  : new_member.user.id,
+          guild_id : new_member.guild.id,
+        }
+      )
+    } catch (log_err) {
+      console.error(`[ - BOOSTER LOG - ] Failed to log error:`, log_err)
+    }
+  }
+})

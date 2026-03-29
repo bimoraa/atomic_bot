@@ -14,11 +14,11 @@ import { log_error } from "@shared/utils/error_logger"
 import { db } from "@shared/utils"
 import { readdirSync } from "fs"
 import { join } from "path"
-import { start_idn_live_scheduler } from "@jkt48/core/schedulers/idn_live_monitor"
+import { start_idn_live_scheduler } from "@jkt48/modules/live_notify/schedulers/idn_live_monitor"
 import { handle_check_on_live_button } from "@jkt48/modules/live_info/interactions/buttons/check_on_live"
 import { handle_history_live_button } from "@jkt48/modules/live_info/interactions/buttons/history_live"
 import { run_middleware } from "@shared/middleware/runner"
-import { error_handler } from "@shared/middleware/error_handler"
+import { error_handler } from "@shared/middleware/error.handler"
 
 config()
 

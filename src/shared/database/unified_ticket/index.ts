@@ -9,7 +9,7 @@
 
 export * from "./state"
 export * from "./open"
-export * from "./controllers/ticket_controller"
+export * from "./controllers/ticket.controller"
 export * from "./actions/close"
 export * from "./actions/claim"
 export * from "./actions/join"

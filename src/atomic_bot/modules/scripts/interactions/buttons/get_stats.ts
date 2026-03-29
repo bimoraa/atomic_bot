@@ -13,7 +13,7 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { log_error }                       from "@shared/utils/error_logger"
 import { component, api, format }          from "@shared/utils"
-import { get_user_stats }                  from "@atomic/modules/service_provider/controller"
+import { get_user_stats }                  from "@atomic/modules/service_provider/controllers/service_provider.controller"
 
 /**
  * @description handles the get stats button — fetches Luarmor user stats and displays them.

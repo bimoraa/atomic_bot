@@ -18,7 +18,7 @@ import {
 import {
   complete_middleman_ticket,
   get_middleman_ticket,
-} from "@shared/database/managers/middleman_manager"
+} from "@shared/database/managers/middleman.manager"
 import { component, time, api, db } from "@shared/utils"
 import { log_error }                 from "@shared/utils/error_logger"
 import { ButtonHandler }             from "@shared/types/interaction"

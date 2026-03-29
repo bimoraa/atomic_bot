@@ -13,8 +13,8 @@
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { log_error }                       from "@shared/utils/error_logger"
 import { component, api, format }          from "@shared/utils"
-import { reset_user_hwid }                 from "@atomic/modules/service_provider/controller"
-import { is_hwid_enabled }                 from "@atomic/modules/setup/commands/hwid_control"
+import { reset_user_hwid }                 from "@atomic/modules/service_provider/controllers/service_provider.controller"
+import { is_hwid_enabled }                 from "@atomic/modules/setup/routes/hwid_control"
 
 /**
  * @description handles the reset hwid button — checks if enabled then resets the user's hardware id.

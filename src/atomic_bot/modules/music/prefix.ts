@@ -18,7 +18,7 @@ import {
   handle_stop,
   handle_pause_resume,
   build_queue_message,
-}                                                           from "@atomic/modules/music/controller"
+}                                                           from "@atomic/modules/music/controllers/music.controller"
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const __prefix         = "a!"

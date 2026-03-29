@@ -7,13 +7,13 @@
  * See the LICENSE file for more information.
  */
 
-export * from "./appeal_quarantine_manager"
-export * from "./booster_manager"
-export * from "./channel_manager"
-export * from "./free_script_manager"
-export * from "./middleman_manager"
-export * from "./middleman_service_manager"
-export * from "./quarantine_manager"
-export * from "./reputation_manager"
-export * from "./review_manager"
-export * from "./ticket_manager"
+export * from "./appeal_quarantine.manager"
+export * from "./booster.manager"
+export * from "./channel.manager"
+export * from "./free_script.manager"
+export * from "./middleman.manager"
+export * from "./middleman_service.manager"
+export * from "./quarantine.manager"
+export * from "./reputation.manager"
+export * from "./review.manager"
+export * from "./ticket.manager"

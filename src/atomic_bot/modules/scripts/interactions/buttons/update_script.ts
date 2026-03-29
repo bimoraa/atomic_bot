@@ -14,7 +14,7 @@ import { ButtonInteraction, StringSelectMenuInteraction } from "discord.js"
 import { log_error }                                      from "@shared/utils/error_logger"
 import { component }                                      from "@shared/utils"
 import { build_select_update_message,
-         perform_script_update }                          from "@atomic/modules/scripts/controller"
+         perform_script_update }                          from "@atomic/modules/scripts/controllers/scripts.controller"
 
 /**
  * @description handles the update script select menu — updates the Update button with the chosen script_id

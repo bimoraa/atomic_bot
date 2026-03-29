@@ -13,7 +13,7 @@
 // - loa request modal handler - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { request_loa }            from "@atomic/modules/loa/controller"
+import { request_loa }            from "@atomic/modules/loa/controllers/loa.controller"
 import { db }                     from "@shared/utils"
 import { log_error }              from "@shared/utils/error_logger"
 

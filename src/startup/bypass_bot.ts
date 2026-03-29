@@ -14,12 +14,12 @@ import { log_error } from "@shared/utils/error_logger"
 import { db } from "@shared/utils"
 import { readdirSync } from "fs"
 import { join } from "path"
-import { handle_auto_bypass, recover_stuck_bypass_sessions } from "@bypass/core/events/auto_bypass"
+import { handle_auto_bypass, recover_stuck_bypass_sessions } from "@bypass/modules/bypass/events/auto_bypass"
 import { handle_bypass_mobile_copy } from "@bypass/modules/bypass/interactions/buttons/bypass_mobile_copy"
 import { handle_bypass_request_log } from "@bypass/modules/bypass/interactions/buttons/bypass_request_log"
 import { handle_bypass_support_type_select } from "@bypass/modules/support/interactions/select_menus/bypass_support_type_select"
 import { run_middleware } from "@shared/middleware/runner"
-import { error_handler } from "@shared/middleware/error_handler"
+import { error_handler } from "@shared/middleware/error.handler"
 
 config()
 

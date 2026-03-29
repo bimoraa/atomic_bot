@@ -13,7 +13,7 @@
 // - review submit modal - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { submit_review }          from "../../controller"
+import { submit_review }          from "../../controllers/community.controller"
 
 export async function handle_review_modal(interaction: ModalSubmitInteraction) {
   await interaction.deferReply({ flags: 64 })

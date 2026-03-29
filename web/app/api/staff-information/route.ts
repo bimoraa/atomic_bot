@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse }                          from "next/server"
 import { decrypt_session }                                   from "@/lib/utils/session"
 import { connect }                                           from "@/lib/utils/database"
-import { get_all_tabs, save_all_tabs, save_tabs_payload }   from "@/lib/database/managers/staff_information_manager"
+import { get_all_tabs, save_all_tabs, save_tabs_payload }   from "@/lib/database/managers/staff_information.manager"
 
 const __bot_url             = process.env.NEXT_PUBLIC_BOT_URL || "https://atomicbot-production.up.railway.app"
 const __allowed_developer_id = "1118453649727823974"

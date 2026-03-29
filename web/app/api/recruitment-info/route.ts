@@ -1,5 +1,5 @@
 import { NextResponse }              from 'next/server'
-import { get_recruitment_settings }  from '@/lib/database/managers/recruitment_settings_manager'
+import { get_recruitment_settings }  from '@/lib/database/managers/recruitment_settings.manager'
 import { connect }                   from "@/lib/utils/database"
 
 /**

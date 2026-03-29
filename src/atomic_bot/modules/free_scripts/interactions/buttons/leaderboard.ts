@@ -15,7 +15,7 @@
 import { ButtonInteraction, GuildMember }   from "discord.js"
 import { component, api, format }           from "@shared/utils"
 import { http, env, logger }                from "@shared/utils"
-import { create_rate_limit_message }        from "@atomic/modules/service_provider/controller"
+import { create_rate_limit_message }        from "@atomic/modules/service_provider/controllers/service_provider.controller"
 import { member_has_role }                  from "@shared/utils/discord_api"
 
 const __log                 = logger.create_logger("free_leaderboard")

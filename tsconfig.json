@@ -33,5 +33,5 @@
     "preserveConstEnums": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "web/**/*"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "web/**/*", ".trash/**/*"]
 }
