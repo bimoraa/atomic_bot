@@ -61,6 +61,14 @@ export async function get_all_sessions(guild_id: string): Promise<account_tracke
 }
 
 /**
+ * @description get all sessions across all guilds (used by offline checker job)
+ * @returns list of account_tracker_session
+ */
+export async function get_all_sessions_global(): Promise<account_tracker_session[]> {
+  return db.find_many<account_tracker_session>(__sessions_col, {})
+}
+
+/**
  * @description get a single session by key_hash
  * @param guild_id - guild ID
  * @param key_hash - hashed script key (first 16 hex chars of sha256)

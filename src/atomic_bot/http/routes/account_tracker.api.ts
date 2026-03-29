@@ -11,7 +11,7 @@
 // - account tracker api route, receives script post data and updates discord message - \\
 import { Router, Request, Response }  from "express"
 import { Client, TextChannel }        from "discord.js"
-import { component }                  from "@shared/utils"
+import { component, time }            from "@shared/utils"
 import { log_error }                  from "@shared/utils/error_logger"
 import {
   validate_script_key,
@@ -31,19 +31,18 @@ interface tracker_post_body {
   username        : string
   user_id         : string
   server_code     : string
-  status          : string
   elapsed_time    : string
   current_money   : string
   money_received  : string
   total_earnings  : string
   average_earn    : string
-  estimated_done  : string
+  estimated_done  : number
   teleport_needed : number
 }
 
 // - ─── 构建 overview 消息（总览） ─── - \\
 // - ─── build overview message (tracker panel) ─── - \\
-function build_overview_message(sessions: account_tracker_session[], guild_id: string) {
+export function build_overview_message(sessions: account_tracker_session[], guild_id: string) {
   const total          = sessions.length
   const inner: any[]   = [component.text(`- Total Account: ${total}`)]
 
@@ -101,7 +100,7 @@ export function build_detail_message(s: account_tracker_session) {
           component.divider(2),
           component.text([
             "## Estimated to Done",
-            `- Estimated Time: ${s.estimated_done}`,
+            `- Estimated Time: ${time.full_date_time(s.estimated_done)}`,
             `- Teleport Needed: ${s.teleport_needed}x`,
           ]),
         ],
@@ -148,7 +147,6 @@ export function create_account_tracker_router(client: Client): Router {
         username,
         user_id,
         server_code,
-        status,
         elapsed_time,
         current_money,
         money_received,
@@ -165,21 +163,21 @@ export function create_account_tracker_router(client: Client): Router {
 
       const key_hash = derive_key_hash(script_key)
 
-      // - 更新 DB 中的账户 session - \\
-      // - upsert account session in db - \\
+      // - 更新 DB 中的账户 session，status 由服务端设为 Online - \\
+      // - upsert session, status is set to Online by the server - \\
       const session: account_tracker_session = {
         key_hash,
         guild_id,
         username        : String(username).substring(0, 100),
         user_id         : String(user_id),
-        server_code     : String(server_code  ?? ""),
-        status          : String(status        ?? "Unknown"),
-        elapsed_time    : String(elapsed_time  ?? "00:00:00"),
-        current_money   : String(current_money ?? "Rp. 0"),
+        server_code     : String(server_code   ?? ""),
+        status          : "Online",
+        elapsed_time    : String(elapsed_time   ?? "00:00:00"),
+        current_money   : String(current_money  ?? "Rp. 0"),
         money_received  : String(money_received ?? "Rp. 0"),
         total_earnings  : String(total_earnings ?? "Rp. 0"),
         average_earn    : String(average_earn   ?? "Rp. 0 /h"),
-        estimated_done  : String(estimated_done ?? "-"),
+        estimated_done  : Number(estimated_done ?? 0),
         teleport_needed : Number(teleport_needed ?? 0),
         updated_at      : Date.now(),
       }

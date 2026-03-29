@@ -35,7 +35,7 @@ export interface account_tracker_session {
   money_received   : string
   total_earnings   : string
   average_earn     : string
-  estimated_done   : string
+  estimated_done   : number
   teleport_needed  : number
   updated_at       : number
 }

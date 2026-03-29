@@ -36,6 +36,7 @@ import { start_scheduler }                                               from "@
 import { start_weekly_reset_scheduler }                                  from "@atomic/features/commands/staff-management/work/jobs/weekly_work_reset.job"
 import { start_quarantine_scheduler }                                    from "@atomic/features/commands/moderation/quarantine/jobs/quarantine_release.job"
 import { start_tag_quarantine_checker }                                  from "@atomic/features/commands/moderation/quarantine/jobs/tag_quarantine_checker.job"
+import { start_account_tracker_offline_checker }                         from "@atomic/features/commands/server-util/account-tracker/jobs/account_tracker_offline.job"
 import { load_middleman_tickets_on_startup }                             from "@atomic/features/commands/commerce/middleman/jobs/load_middleman_tickets.job"
 import { start_share_settings_forum_scheduler }                          from "@atomic/features/commands/commerce/share-settings/jobs/share_settings_forum.job"
 import * as share_settings                                               from "@atomic/features/commands/commerce/share-settings/controller/share_settings.controller"
@@ -275,6 +276,7 @@ client.once("ready", async () => {
       start_weekly_reset_scheduler()
       start_quarantine_scheduler(client)
       start_tag_quarantine_checker(client)
+      start_account_tracker_offline_checker(client)
       scan_banned_tags_on_startup(client).catch(() => {})
       start_free_script_checker(client)
       start_service_provider_cache(client)
