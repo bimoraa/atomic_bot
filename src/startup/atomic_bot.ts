@@ -128,6 +128,7 @@ import "@atomic/interfaces/discord/events/guild_member/guild_member_add"
 import "@atomic/interfaces/discord/events/guild_member/guild_member_booster"
 import "@atomic/interfaces/discord/events/voice/voice_state_update"
 import "@atomic/interfaces/discord/events/message/message_delete"
+import "@atomic/interfaces/discord/events/message/executor_update"
 
 /**
  * - 进语音频道，断了会自动重连，主打一个稳 - \\
