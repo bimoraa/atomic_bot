@@ -20,7 +20,7 @@ import { load_close_requests }                                           from "@
 import { load_all_tickets, flush_all_tickets }                           from "@shared/database/unified_ticket"
 import * as tempvoice                                                    from "@shared/database/services/tempvoice"
 import { register_audit_logs }                                           from "@shared/database/services/audit_log"
-import { handle_afk_return, handle_afk_mentions }                        from "@atomic/features/commands/server-util/utility/controller/utility.controller"
+import { handle_afk_return, handle_afk_mentions }                        from "@atomic/features/commands/server-util/afk/controller/afk.controller"
 import { load_afk_from_db, load_afk_ignored_channels_from_db }           from "@atomic/integrations/cache/afk"
 import { check_server_tag_change, scan_banned_tags_on_startup }           from "@shared/database/settings/server_tag"
 import { start_free_script_checker }                                     from "@shared/database/managers/free_script.manager"

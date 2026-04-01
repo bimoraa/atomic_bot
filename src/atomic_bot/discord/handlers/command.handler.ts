@@ -20,6 +20,38 @@ type extended_client = Client & {
   message_context_menu_commands?: Collection<string, MessageContextMenuCommand>
 }
 
+function collect_command_files(base_path: string): string[] {
+  if (!existsSync(base_path)) {
+    return []
+  }
+
+  const files: string[] = []
+  const items           = readdirSync(base_path, { withFileTypes: true })
+
+  for (const item of items) {
+    const item_path = join(base_path, item.name)
+
+    if (item.isDirectory()) {
+      files.push(...collect_command_files(item_path))
+      continue
+    }
+
+    if (
+      item.isFile() &&
+      (
+        item.name.endsWith(".commands.ts") ||
+        item.name.endsWith(".commands.js") ||
+        item.name.endsWith(".command.ts") ||
+        item.name.endsWith(".command.js")
+      )
+    ) {
+      files.push(item_path)
+    }
+  }
+
+  return files
+}
+
 export async function load_commands(client: extended_client) {
   client.commands                     = new Collection()
   client.message_context_menu_commands = new Collection()
@@ -41,17 +73,7 @@ export async function load_commands(client: extended_client) {
     })
 
   for (const feature of command_feature_dirs) {
-    const command_files = readdirSync(feature.feature_path, { withFileTypes: true })
-      .filter((item) =>
-        item.isFile() &&
-        (
-          item.name.endsWith(".commands.ts") ||
-          item.name.endsWith(".commands.js") ||
-          item.name.endsWith(".command.ts") ||
-          item.name.endsWith(".command.js")
-        )
-      )
-      .map((item) => join(feature.feature_path, item.name))
+    const command_files = collect_command_files(feature.feature_path)
 
     if (!existsSync(feature.feature_path) || command_files.length === 0) {
       continue

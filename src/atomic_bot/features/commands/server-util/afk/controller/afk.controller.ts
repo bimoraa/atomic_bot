@@ -12,16 +12,16 @@
 // - 工具模块控制器，处理AFK逻辑 - \
 // - utility controller, handles afk logic - \
 
-import { Message, Client } from "discord.js"
-import { remove_afk, get_afk, is_afk, is_ignored_channel } from "@atomic/integrations/cache/afk"
-import { component } from "@shared/utils"
-import { log_error } from "@shared/utils/error_logger"
+import { Message, Client }                                  from "discord.js"
+import { remove_afk, get_afk, is_afk, is_ignored_channel }  from "@atomic/integrations/cache/afk"
+import { component }                                        from "@shared/utils"
+import { log_error }                                        from "@shared/utils/error_logger"
 
 export async function handle_afk_return(message: Message): Promise<void> {
   if (message.guild && is_ignored_channel(message.guild.id, message.channel.id)) return
 
   const afk_removed = await remove_afk(message.author.id)
-  
+
   if (!afk_removed) return
 
   if (message.guild) {
@@ -44,7 +44,7 @@ export async function handle_afk_return(message: Message): Promise<void> {
   })
 
   const reply = await message.reply(welcome_back).catch(() => null)
-  
+
   if (reply) {
     setTimeout(() => {
       reply.delete().catch(() => {})
@@ -56,11 +56,11 @@ export async function handle_afk_mentions(message: Message): Promise<void> {
   if (message.guild && is_ignored_channel(message.guild.id, message.channel.id)) return
 
   const mentioned_users: Set<string> = new Set()
-  
+
   for (const mentioned of message.mentions.users.values()) {
     mentioned_users.add(mentioned.id)
   }
-  
+
   if (message.reference) {
     try {
       const replied_message = await message.fetchReference()
@@ -72,14 +72,14 @@ export async function handle_afk_mentions(message: Message): Promise<void> {
       console.log(`[ - AFK - ] Failed to fetch referenced message:`, error)
     }
   }
-  
+
   for (const user_id of mentioned_users) {
     if (!is_afk(user_id)) continue
 
     const afk_data = get_afk(user_id)
-    
+
     if (!afk_data) continue
-    
+
     console.log(`[ - AFK - ] Notifying about AFK user: ${user_id}`)
 
     const afk_notice = component.build_message({
@@ -103,7 +103,7 @@ export async function handle_afk_mentions(message: Message): Promise<void> {
         afk_reason   : afk_data.reason,
       }).catch(() => {})
     }
-    
+
     break
   }
 }

@@ -198,10 +198,10 @@ function build_forward_payload(message: executor_update_message, embed: executor
   }
 
   return component.build_message({
-    content: __role_config.REACTION_ROLE_EXECUTOR_UPDATE
-      ? format.role_mention(__role_config.REACTION_ROLE_EXECUTOR_UPDATE)
-      : undefined,
     components: [
+      ...(__role_config.REACTION_ROLE_EXECUTOR_UPDATE
+        ? [component.text(format.role_mention(__role_config.REACTION_ROLE_EXECUTOR_UPDATE))]
+        : []),
       component.container({
         components: [
           component.text([

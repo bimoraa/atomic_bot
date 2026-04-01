@@ -11,7 +11,7 @@
 // - /afk-mod ignored command, shows the list of AFK-ignored channels - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"
 import { get_ignored_channels }                                        from "@atomic/integrations/cache/afk"
-import { build_simple_message }                                        from "@atomic/features/commands/server-util/utility/afk_utils.commands"
+import { build_simple_message }                                        from "@atomic/features/commands/server-util/afk/afk_utils.commands"
 
 /**
  * - 构建 AFK 管理忽略列表子命令 - \\

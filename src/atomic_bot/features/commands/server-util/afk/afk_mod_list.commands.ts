@@ -11,7 +11,7 @@
 // - /afk-mod list command, shows the current list of AFK users - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"
 import { get_all_afk }                                                 from "@atomic/integrations/cache/afk"
-import { build_simple_message }                                        from "@atomic/features/commands/server-util/utility/afk_utils.commands"
+import { build_simple_message }                                        from "@atomic/features/commands/server-util/afk/afk_utils.commands"
 
 const MAX_ITEMS = 25
 
