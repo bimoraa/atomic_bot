@@ -12,7 +12,8 @@
 import { UserSelectMenuInteraction }                                from "discord.js"
 import { is_middleman_service_open }                                from "@shared/database/managers/middleman_service.manager"
 import { component }                                                from "@shared/utils"
-import { build_ticket_critical_error_reply }                        from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+import { build_ticket_critical_error_reply,
+         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * @description handles seller selection — shows buyer user-select next
@@ -23,8 +24,10 @@ export async function handle_middleman_seller_select(interaction: UserSelectMenu
   if (!interaction.customId.startsWith("middleman_penjual_select:")) return false
 
   await interaction.deferReply({ flags: 64 })
-  await interaction.editReply(build_ticket_critical_error_reply())
-  return true
+  if (await fetch_maintenance_mode()) {
+    await interaction.editReply(build_ticket_critical_error_reply())
+    return true
+  }
 
   const is_open = await is_middleman_service_open(interaction.guildId || "")
   if (!is_open) {

@@ -13,7 +13,8 @@ import { ButtonInteraction }                                        from "discor
 import { modal }                                                    from "@shared/utils"
 import { get_ticket_config }                                        from "@shared/database/unified_ticket"
 import { ButtonHandler }                                            from "@shared/types/interaction"
-import { build_ticket_critical_error_reply }                        from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+import { build_ticket_critical_error_reply,
+         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * @description shows modal to input close reason for middleman ticket
@@ -34,8 +35,10 @@ export async function handle_middleman_close_reason(interaction: ButtonInteracti
   }
 
   await interaction.deferReply({ flags: 64 })
-  await interaction.editReply(build_ticket_critical_error_reply())
-  return true
+  if (await fetch_maintenance_mode()) {
+    await interaction.editReply(build_ticket_critical_error_reply())
+    return true
+  }
 
   const close_modal = modal.create_modal(
     "middleman_close_reason_modal",

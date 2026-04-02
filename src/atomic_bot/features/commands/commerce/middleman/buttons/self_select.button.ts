@@ -9,14 +9,17 @@
 
 import { ButtonInteraction }                                        from "discord.js"
 import { component }                                                from "@shared/utils"
-import { build_ticket_critical_error_reply }                        from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+import { build_ticket_critical_error_reply,
+         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
 
 export async function handle_middleman_penjual_self(interaction: ButtonInteraction): Promise<boolean> {
   if (!interaction.customId.startsWith("middleman_penjual_self:")) return false
 
   await interaction.deferReply({ flags: 64 })
-  await interaction.editReply(build_ticket_critical_error_reply())
-  return true
+  if (await fetch_maintenance_mode()) {
+    await interaction.editReply(build_ticket_critical_error_reply())
+    return true
+  }
 
   const parts = interaction.customId.split(":")
   const range_id = parts[1]

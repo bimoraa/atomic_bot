@@ -12,7 +12,8 @@
 import { ButtonInteraction }                                        from "discord.js"
 import { api, component }                                           from "@shared/utils"
 import { ButtonHandler }                                            from "@shared/types/interaction"
-import { build_ticket_critical_error_reply }                        from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+import { build_ticket_critical_error_reply,
+         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * Handle button click for middleman service close info
@@ -22,8 +23,10 @@ import { build_ticket_critical_error_reply }                        from "@atomi
  */
 export async function handle_middleman_service_close_info(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferReply({ flags: 64 })
-  await interaction.editReply(build_ticket_critical_error_reply())
-  return
+  if (await fetch_maintenance_mode()) {
+    await interaction.editReply(build_ticket_critical_error_reply())
+    return
+  }
 
   const info_message = component.build_message({
     components: [
