@@ -9,9 +9,11 @@
 
 // - 中间人流程里选择交易范围的菜单交互 - \
 // - range select menu interaction for the middleman flow - \
-import { StringSelectMenuInteraction } from "discord.js"
-import { component }                   from "@shared/utils"
-import { is_middleman_service_open }   from "@shared/database/managers/middleman_service.manager"
+import { StringSelectMenuInteraction }                              from "discord.js"
+import { component }                                                from "@shared/utils"
+import { is_middleman_service_open }                                from "@shared/database/managers/middleman_service.manager"
+import { build_ticket_critical_error_reply }                        from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+import { log_error }                                                from "@shared/utils/error_logger"
 
 interface TransactionRange {
   id    : string
@@ -36,73 +38,81 @@ const __transaction_ranges: Record<string, TransactionRange> = {
 export async function handle_middleman_transaction_range_select(interaction: StringSelectMenuInteraction): Promise<void> {
   await interaction.deferReply({ flags: 64 })
 
-  const is_open = await is_middleman_service_open(interaction.guildId || "")
-  if (!is_open) {
+  try {
+    const is_open = await is_middleman_service_open(interaction.guildId || "")
+    if (!is_open) {
+      await interaction.editReply(component.build_message({
+        components: [
+          component.container({
+            components  : [component.text("## Middleman Service is Closed")],
+            accent_color: 15277667,
+          }),
+          component.container({
+            components: [
+              component.text(
+                "Layanan Midman sedang ditutup sementara.\n\n" +
+                "Mohon tunggu pengumuman resmi mengenai pembukaan kembali layanan.\n" +
+                "Segala bentuk transaksi yang mengatasnamakan midman di luar tanggung jawab kami."
+              ),
+            ],
+          }),
+        ],
+      }))
+      return
+    }
+
+    const selected_value = interaction.values[0]
+    const range_data     = __transaction_ranges[selected_value]
+
+    if (!range_data) {
+      await interaction.editReply(build_ticket_critical_error_reply())
+      return
+    }
+
     await interaction.editReply(component.build_message({
       components: [
         component.container({
-          components  : [component.text("## Middleman Service is Closed")],
-          accent_color: 15277667,
+          components: [
+            component.text("## <:ticket:1411878131366891580> - Pilih Penjual\n"),
+          ],
         }),
         component.container({
           components: [
-            component.text(
-              "Layanan Midman sedang ditutup sementara.\n\n" +
-              "Mohon tunggu pengumuman resmi mengenai pembukaan kembali layanan.\n" +
-              "Segala bentuk transaksi yang mengatasnamakan midman di luar tanggung jawab kami."
-            ),
+            component.text([
+              `- Rentang Transaksi: ${range_data.range}`,
+              `- Fee Rekber: ${range_data.fee}`,
+            ]),
+          ],
+          spoiler: false,
+        }),
+        component.container({
+          components: [
+            component.text("Silakan pilih siapa yang menjadi Penjual dalam transaksi ini.\n"),
+            {
+              type: 1,
+              components: [
+                {
+                  type      : 5,
+                  custom_id : `middleman_penjual_select:${selected_value}`,
+                  min_values: 1,
+                  max_values: 1,
+                } as any,
+              ],
+            },
+            component.divider(2),
+            component.section({
+              content  : "Klik ini jika Penjualnya anda sendiri ->",
+              accessory: component.secondary_button("Saya", `middleman_penjual_self:${selected_value}`),
+            }),
           ],
         }),
       ],
     }))
-    return
+  } catch (err) {
+    await log_error(interaction.client, err as Error, "Middleman Range Select", {
+      user_id : interaction.user.id,
+      guild_id: interaction.guildId ?? undefined,
+    }).catch(() => {})
+    await interaction.editReply(build_ticket_critical_error_reply()).catch(() => {})
   }
-
-  const selected_value = interaction.values[0]
-  const range_data     = __transaction_ranges[selected_value]
-
-  if (!range_data) {
-    await interaction.editReply({ content: "Invalid transaction range selected." })
-    return
-  }
-
-  await interaction.editReply(component.build_message({
-    components: [
-      component.container({
-        components: [
-          component.text("## <:ticket:1411878131366891580> - Pilih Penjual\n"),
-        ],
-      }),
-      component.container({
-        components: [
-          component.text([
-            `- Rentang Transaksi: ${range_data.range}`,
-            `- Fee Rekber: ${range_data.fee}`,
-          ]),
-        ],
-        spoiler: false,
-      }),
-      component.container({
-        components: [
-          component.text("Silakan pilih siapa yang menjadi Penjual dalam transaksi ini.\n"),
-          {
-            type: 1,
-            components: [
-              {
-                type      : 5,
-                custom_id : `middleman_penjual_select:${selected_value}`,
-                min_values: 1,
-                max_values: 1,
-              } as any,
-            ],
-          },
-          component.divider(2),
-          component.section({
-            content  : "Klik ini jika Penjualnya anda sendiri ->",
-            accessory: component.secondary_button("Saya", `middleman_penjual_self:${selected_value}`),
-          }),
-        ],
-      }),
-    ],
-  }))
 }

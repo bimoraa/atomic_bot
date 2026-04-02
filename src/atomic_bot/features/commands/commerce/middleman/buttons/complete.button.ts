@@ -9,7 +9,7 @@
 
 // - 中间人交易完成按钮的交互注册 - \
 // - registers the complete transaction button for middleman tickets - \
-import { ButtonInteraction, ThreadChannel, TextChannel } from "discord.js"
+import { ButtonInteraction, ThreadChannel, TextChannel }  from "discord.js"
 import {
   close_ticket,
   get_ticket,
@@ -19,9 +19,10 @@ import {
   complete_middleman_ticket,
   get_middleman_ticket,
 } from "@shared/database/managers/middleman.manager"
-import { component, time, api, db } from "@shared/utils"
-import { log_error }                 from "@shared/utils/error_logger"
-import { ButtonHandler }             from "@shared/types/interaction"
+import { component, time, api, db }                        from "@shared/utils"
+import { log_error }                                       from "@shared/utils/error_logger"
+import { ButtonHandler }                                   from "@shared/types/interaction"
+import { build_ticket_critical_error_reply }               from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
 
 interface TransactionRange {
   label : string
@@ -66,9 +67,10 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
 
   await interaction.deferReply({ flags: 64 })
 
-  const ticket_data = get_ticket(thread.id)
-  const config      = get_ticket_config("middleman")
-  const db_ticket   = await get_middleman_ticket(thread.id)
+  try {
+    const ticket_data = get_ticket(thread.id)
+    const config      = get_ticket_config("middleman")
+    const db_ticket   = await get_middleman_ticket(thread.id)
 
   if (ticket_data && config) {
     const range_data    = __transaction_ranges[ticket_data.issue_type || ""]
@@ -154,7 +156,15 @@ export async function handle_middleman_complete(interaction: ButtonInteraction):
     reason   : "Transaction completed successfully",
   })
 
-  await interaction.editReply({ content: "✅ Transaction completed! Ticket closed." })
+  await interaction.editReply({ content: "Transaction completed! Ticket closed." })
+  } catch (err) {
+    await log_error(interaction.client, err as Error, "Middleman Complete Button", {
+      user_id : interaction.user.id,
+      guild_id: interaction.guildId ?? undefined,
+    }).catch(() => {})
+    await interaction.editReply(build_ticket_critical_error_reply()).catch(() => {})
+  }
+
   return true
 }
 
