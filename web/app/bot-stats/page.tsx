@@ -538,7 +538,7 @@ export default function BotStatsPage() {
   // - DERIVED STATUS - \\
 
   const mem_pct = stats
-    ? Math.round((stats.memory.heap_used_mb / Math.max(stats.memory.heap_total_mb, 1)) * 100)
+    ? Math.round((stats.memory.heap_used_mb / 1024) * 100)
     : 0
 
   const ws_status     = stats    ? ms_to_status(stats.ws_ping)    : 'unknown' as service_status
@@ -567,8 +567,7 @@ export default function BotStatsPage() {
   const api_bars    = pad_bars(recent_bars.map(p => ms_to_status(p.api_latency)))
   const db_bars     = pad_bars(recent_bars.map(p => ms_to_status(p.db_latency)))
   const heap_bars   = pad_bars(recent_bars.map(p => {
-    const total = stats?.memory.heap_total_mb ?? 512
-    const pct   = (p.heap_mb / Math.max(total, 1)) * 100
+    const pct = (p.heap_mb / 1024) * 100
     return (pct < 70 ? 'operational' : pct < 90 ? 'degraded' : 'incident') as service_status
   }))
   const flat_bars   = (s: service_status): service_status[] =>
@@ -665,7 +664,7 @@ export default function BotStatsPage() {
                 icon_name = "solar:cpu-bold-duotone"
                 name      = "Bot Process"
                 value     = {stats ? `${mem_pct}%` : '\u2014'}
-                detail    = {stats ? `${stats.memory.heap_used_mb} MB / ${stats.memory.heap_total_mb} MB` : 'Connecting...'}
+                detail    = {stats ? `${stats.memory.heap_used_mb} MB / 1 GB` : 'Connecting...'}
                 status    = {heap_status}
                 bars      = {heap_bars}
                 loading   = {loading}
@@ -881,7 +880,7 @@ export default function BotStatsPage() {
               <MiniStat
                 label     = "Heap Used"
                 value     = {stats ? `${mem_pct}%` : '\u2014'}
-                sub       = {stats ? `${stats.memory.heap_used_mb} MB / ${stats.memory.heap_total_mb} MB` : undefined}
+                sub       = {stats ? `${stats.memory.heap_used_mb} MB / 1 GB` : undefined}
                 icon_name = "solar:cpu-bold-duotone"
                 status    = {heap_status}
                 loading   = {loading}
