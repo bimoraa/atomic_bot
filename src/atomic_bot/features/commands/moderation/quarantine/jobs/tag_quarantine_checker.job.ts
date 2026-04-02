@@ -59,6 +59,11 @@ export function start_tag_quarantine_checker(client: Client): void {
 
           // - TAG 已移除，释放隔离 - \\
           // - tag removed, release quarantine - \\
+          if (!member.manageable) {
+            log.info(`Skipping ${user.username} — cannot manage (higher role or owner)`)
+            continue
+          }
+
           // - 通过 REST 获取所有服务器角色以验证有效性 - \\
           // - fetch all guild roles via REST to check validity - \\
           const guild_roles   = await guild.roles.fetch().catch(() => null)
@@ -98,8 +103,8 @@ export function start_tag_quarantine_checker(client: Client): void {
             ],
           })
 
-          const server_log_ch    = guild.channels.cache.get(__server_tag_log_id)
-          const quarantine_log_ch = guild.channels.cache.get(__quarantine_log_id)
+          const server_log_ch     = await guild.channels.fetch(__server_tag_log_id).catch(() => null)
+          const quarantine_log_ch  = await guild.channels.fetch(__quarantine_log_id).catch(() => null)
           if (server_log_ch?.isTextBased())    await server_log_ch.send(release_msg).catch(() => {})
           if (quarantine_log_ch?.isTextBased()) await quarantine_log_ch.send(release_msg).catch(() => {})
         } catch (member_err) {
