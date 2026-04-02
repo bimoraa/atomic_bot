@@ -9,7 +9,7 @@
 
 import { Client }                             from "discord.js"
 import { load_config }                        from "@shared/config/loader"
-import { api, component, env, format, logger, time } from "@shared/utils"
+import { api, component, env, format, logger } from "@shared/utils"
 import { log_error }                          from "@shared/utils/error_logger"
 
 interface executor_update_config {
@@ -64,7 +64,6 @@ export interface executor_update_message {
 
 const __discord_api_base_url = "https://discord.com/api/v9"
 const __config               = load_config<executor_update_config>("executor_update")
-const __role_config          = load_config<Record<string, string>>("reaction_roles")
 const __log                  = logger.create_logger("executor_update")
 
 let __started                 = false
@@ -102,22 +101,6 @@ function compare_message_ids(a: string, b: string): number {
   }
 }
 
-function get_jump_url(message: executor_update_message): string | null {
-  if (!message.guild_id) return null
-  return format.message_url(message.guild_id, message.channel_id, message.id)
-}
-
-function get_author_name(message: executor_update_message): string {
-  return message.author?.global_name || message.author?.username || "Unknown Author"
-}
-
-function get_timestamp_unix(timestamp_value?: string): number | null {
-  if (!timestamp_value) return null
-
-  const unix = Math.floor(new Date(timestamp_value).getTime() / 1000)
-  return Number.isFinite(unix) && unix > 0 ? unix : null
-}
-
 function cleanup_embed_text(value?: string): string {
   if (!value) return ""
 
@@ -145,12 +128,6 @@ function get_embed_field(embed: executor_update_embed, field_name: string): stri
 }
 
 function build_forward_payload(message: executor_update_message, embed: executor_update_embed) {
-  const jump_url       = get_jump_url(message)
-  const message_time   = get_timestamp_unix(message.timestamp)
-  const updated_time   = get_timestamp_unix(message.edited_timestamp || undefined)
-  const attachment_urls = (message.attachments || [])
-    .map((attachment) => attachment.url)
-    .filter((url): url is string => Boolean(url))
   const title          = cleanup_embed_text(embed.title)
   const description    = cleanup_embed_text(embed.description)
   const new_version    = get_embed_field(embed, "New Version:")
@@ -160,95 +137,30 @@ function build_forward_payload(message: executor_update_message, embed: executor
 
   const detail_lines: string[] = []
 
-  if (new_version) {
-    detail_lines.push(`New Version: ${new_version}`)
-  }
-
-  if (roblox_version) {
-    detail_lines.push(`Roblox Version: ${roblox_version}`)
-  }
-
-  if (date_text) {
-    detail_lines.push(`Date: ${date_text}`)
-  }
-
-  const meta_lines: string[] = [
-    `- **Author:** ${get_author_name(message)}`,
-    `- **Message ID:** ${format.code(message.id)}`,
-  ]
-
-  if (message_time) {
-    meta_lines.push(`- **Posted:** ${time.full_date_time(message_time)} (${time.relative_time(message_time)})`)
-  }
-
-  if (updated_time) {
-    meta_lines.push(`- **Edited:** ${time.full_date_time(updated_time)} (${time.relative_time(updated_time)})`)
-  }
-
-  if (message.pinned) {
-    meta_lines.push(`- **Pinned:** Yes`)
-  }
-
-  if (message.mention_everyone) {
-    meta_lines.push(`- **Mention Everyone:** Yes`)
-  }
-
-  if (attachment_urls.length > 0) {
-    meta_lines.push(`- **Attachments:** ${attachment_urls.join("\n")}`)
-  }
+  if (new_version)    detail_lines.push(`New Version: ${format.code(new_version)}`)
+  if (roblox_version) detail_lines.push(`Roblox Version: ${format.code(roblox_version)}`)
+  if (date_text)      detail_lines.push(`Date: ${date_text}`)
 
   return component.build_message({
     components: [
-      ...(__role_config.REACTION_ROLE_EXECUTOR_UPDATE
-        ? [component.text(format.role_mention(__role_config.REACTION_ROLE_EXECUTOR_UPDATE))]
-        : []),
       component.container({
         components: [
           component.text([
-            title ? `## ${title}` : "## Executor Update",
-            description || format.italic("No description available."),
+            title       ? `## ${title}` : "## Executor Update",
+            description || "",
           ]),
         ],
       }),
       component.container({
         components: [
-          component.text(detail_lines.length > 0 ? detail_lines : "No embed fields available."),
+          component.text(detail_lines.length > 0 ? detail_lines : "No details available."),
           ...(changelog
             ? [
                 component.divider(2),
                 component.text([
                   "## Changelogs:",
-                  changelog,
+                  format.code_block(changelog),
                 ]),
-              ]
-            : []),
-        ],
-      }),
-      component.container({
-        components: [
-          ...(roblox_version
-            ? [
-                component.action_row(
-                  component.secondary_button(
-                    `Roblox Version: ${roblox_version.replace(/`/g, "")}`.slice(0, 80),
-                    `executor_update_version_${message.id}`,
-                    undefined,
-                    true,
-                  ),
-                ),
-              ]
-            : []),
-          ...(jump_url
-            ? [
-                component.action_row(
-                  component.link_button("Open Original Message", jump_url),
-                ),
-              ]
-            : []),
-          ...(meta_lines.length > 0
-            ? [
-                component.divider(2),
-                component.text(meta_lines),
               ]
             : []),
         ],
