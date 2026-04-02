@@ -51,9 +51,7 @@ export async function handle_bypass_request_log(interaction: ButtonInteraction):
       files     : [new AttachmentBuilder(buffer, { name: `bypass_log_${log_key}.txt` })], ephemeral: true,
     })
 
-    console.warn(`[ - BYPASS REQUEST LOG - ] Sent log to developer ${interaction.user.tag}`)
   } catch (error) {
-    console.error(`[ - BYPASS REQUEST LOG - ] Error:`, error)
     try {
       await interaction.reply({
         content   : "Failed to retrieve log.", ephemeral: true,

@@ -50,23 +50,18 @@ export async function handle_bypass_mobile_copy(interaction: ButtonInteraction):
         content   : `\`${bypass_key}\``, ephemeral: true,
       })
 
-      console.warn(`[ - BYPASS MOBILE COPY - ] Sent mobile copy to user ${interaction.user.id}`)
     } catch (db_error) {
-      console.error(`[ - BYPASS MOBILE COPY - ] Database error:`, db_error)
       await interaction.reply({
         content   : "Failed to retrieve bypass result. Please try again.", ephemeral: true,
       })
     }
 
   } catch (error: any) {
-    console.error(`[ - BYPASS MOBILE COPY - ] Error:`, error)
-
     try {
       await interaction.reply({
         content   : "An error occurred while processing your request", ephemeral: true,
       })
-    } catch (reply_error) {
-      console.error(`[ - BYPASS MOBILE COPY - ] Failed to send error message:`, reply_error)
+    } catch {
     }
   }
 }

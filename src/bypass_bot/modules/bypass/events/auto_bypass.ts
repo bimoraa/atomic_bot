@@ -27,7 +27,7 @@ async function track_bypass_session(msg_id: string, channel_id: string): Promise
      VALUES ($1, $2, NOW() + INTERVAL '2 hours')
      ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '2 hours'`,
     [__session_key(msg_id), channel_id]
-  ).catch((err: unknown) => console.error(`[ - AUTO BYPASS - ] Failed to track session:`, err))
+  ).catch(() => {})
 }
 
 /**
@@ -39,7 +39,7 @@ async function clear_bypass_session(msg_id: string): Promise<void> {
   await db.get_pool().query(
     `DELETE FROM bypass_cache WHERE key = $1`,
     [__session_key(msg_id)]
-  ).catch((err: unknown) => console.error(`[ - AUTO BYPASS - ] Failed to clear session:`, err))
+  ).catch(() => {})
 }
 
 /**
@@ -55,8 +55,6 @@ export async function recover_stuck_bypass_sessions(client: Client): Promise<voi
   ).catch(() => null)
 
   if (!result || result.rows.length === 0) return
-
-  console.warn(`[ - AUTO BYPASS - ] Recovering ${result.rows.length} stuck session(s)...`)
 
   const stuck_message = component.build_message({
     components: [
@@ -84,8 +82,7 @@ export async function recover_stuck_bypass_sessions(client: Client): Promise<voi
       if (!msg) continue
 
       await msg.edit(stuck_message).catch(() => {})
-    } catch (err) {
-      console.warn(`[ - AUTO BYPASS - ] Failed to recover session ${msg_id}:`, err)
+    } catch {
     }
 
     await db.get_pool().query(
@@ -93,8 +90,6 @@ export async function recover_stuck_bypass_sessions(client: Client): Promise<voi
       [row.key]
     ).catch(() => {})
   }
-
-  console.warn(`[ - AUTO BYPASS - ] Session recovery complete`)
 }
 
 /**
@@ -141,8 +136,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   if (message.partial) {
     try {
       message = await message.fetch()
-    } catch (err) {
-      console.error(`[ - AUTO BYPASS - ] Failed to fetch partial message:`, err)
+    } catch {
       return false
     }
   }
@@ -150,37 +144,26 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   const is_dm    = message.channel.isDMBased()
   const guild_id = message.guildId
 
-  console.warn(`[ - AUTO BYPASS - ] Message received - DM: ${is_dm}, Guild: ${guild_id || "N/A"}, Channel: ${message.channelId}`)
-
   if (!is_dm) {
     if (!guild_id) {
-      console.warn(`[ - AUTO BYPASS - ] No guild ID, skipping`)
       return false
     }
 
     const settings          = await guild_settings.get_all_guild_settings(guild_id)
     const bypass_channel_id = settings?.bypass_channel || null
 
-    console.warn(`[ - AUTO BYPASS - ] Bypass channel for guild ${guild_id}: ${bypass_channel_id || "NOT SET"}`)
-    
     if (!bypass_channel_id) {
-      console.warn(`[ - AUTO BYPASS - ] No bypass channel configured for guild ${guild_id}`)
       return false
     }
 
     if (message.channelId !== bypass_channel_id) {
-      console.warn(`[ - AUTO BYPASS - ] Message not in bypass channel (${message.channelId} !== ${bypass_channel_id})`)
       return false
     }
   }
 
   const url = extract_url_from_message(message)
-  console.warn(`[ - AUTO BYPASS - ] Extracted URL: ${url || "NONE"}`)
-  console.warn(`[ - AUTO BYPASS - ] Message content length: ${message.content?.length || 0}`)
-  console.warn(`[ - AUTO BYPASS - ] Message embeds: ${message.embeds.length}`)
-  
+
   if (!url) {
-    console.warn(`[ - AUTO BYPASS - ] No URL found in message`)
     return false
   }
 
@@ -213,7 +196,6 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
   if (is_dm) {
     const cooldown = check_dm_user_cooldown(message.author.id)
     if (!cooldown.allowed) {
-      console.warn(`[ - AUTO BYPASS - ] DM spam drop for ${message.author.id} (retry_after: ${cooldown.retry_after_ms}ms)`)
       return true
     }
   }
@@ -271,7 +253,6 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
     await track_bypass_session(processing_msg.id, processing_msg.channelId)
 
     const source = is_dm ? "DM" : "Channel"
-    console.warn(`[ - AUTO BYPASS - ] Processing URL from ${source}: ${url}`)
     const result = await bypass_link(url, async (attempt, _wait_ms, is_processing) => {
       // - 服务器仍在处理中则跳过重试消息 - \\
       // - skip retry message if server is still processing - \\
@@ -291,14 +272,13 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
             ],
           })
         )
-      } catch (err) {
-        console.warn(`[ - AUTO BYPASS - ] Failed to edit retry message:`, err)
+      } catch {
       }
     })
 
     // - 每次尝试递增计数 - \\
     // - increment count per attempt - \\
-    db.increment_bypass_count().catch(err => console.error(`[ - AUTO BYPASS - ] Failed to increment bypass count:`, err))
+    db.increment_bypass_count().catch(() => {})
 
     if (result.success && result.result) {
       if (message.guildId) {
@@ -310,15 +290,13 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
           url        : url,
           result_url : result.result,
           success    : true,
-        }).catch(err => console.error(`[ - AUTO BYPASS - ] Failed to insert log:`, err))
+        }).catch(() => {})
       }
 
       // - 记录每个服务器的绕过统计 - \\
       // - record per-guild bypass stat - \\
       if (message.guildId) {
-        db.record_bypass_guild_stat(message.guildId).catch(
-          err => console.error(`[ - AUTO BYPASS - ] Failed to record guild stat:`, err)
-        )
+        db.record_bypass_guild_stat(message.guildId).catch(() => {})
       }
 
       // - 存入数据库 - \\
@@ -332,9 +310,7 @@ export async function handle_auto_bypass(message: Message): Promise<boolean> {
            ON CONFLICT (key) DO UPDATE SET url = $2, expires_at = NOW() + INTERVAL '5 minutes'`,
           [cache_key, result.result]
         )
-        console.warn(`[ - AUTO BYPASS - ] Stored result with key: ${cache_key}`)
-      } catch (db_error) {
-        console.error(`[ - AUTO BYPASS - ] Failed to store in database:`, db_error)
+      } catch {
       }
 
       const success_message = component.build_message({

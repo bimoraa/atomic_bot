@@ -31,6 +31,7 @@ import {
 
 import { run_middleware }                                                  from "@shared/middleware/runner"
 import { error_handler }                                                  from "@shared/middleware/error.handler"
+
 import { handle_role_permission_select }                                   from "@atomic/features/commands/server-util/utility/get_role_permission.commands"
 import { get_button_module, get_modal_module, get_select_menu_module }     from "./interaction-registry"
 
@@ -76,6 +77,10 @@ const community_modal      = get_modal_module("community")
 const middleman_modal      = get_modal_module("middleman")
 const share_settings_modal = get_modal_module("share-settings")
 const staff_info_modal     = get_modal_module("staff-info")
+
+// - 模块级别的中间件链，避免每次指令调用时动态分配数组 - \\
+// - module-level middleware chain, avoids re-allocating the array on every command invocation - \\
+const __command_middleware = [error_handler]
 
 // - 反垃圾按钮逻辑，太小了就懒得单开一个文件了 - \\
 // - anti spam button logic, too small for its own file - \\
@@ -751,7 +756,7 @@ export async function handle_interaction(
   }
 
   const ctx = { interaction, client }
-  await run_middleware([error_handler], ctx, async () => {
+  await run_middleware(__command_middleware, ctx, async () => {
     await command.execute(interaction)
   })
 }

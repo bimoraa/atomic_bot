@@ -115,8 +115,6 @@ const view_bypass_guild_command: Command = {
 
       await interaction.editReply(summary_message)
     } catch (error) {
-      console.error("[ - BYPASS - ] Failed to view bypass guild list:", error)
-
       const error_message = component.build_message({
         components: [
           component.container({
