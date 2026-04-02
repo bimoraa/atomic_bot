@@ -12,6 +12,7 @@
 import express                                    from "express"
 import { Client }                                from "discord.js"
 import cors                                      from "cors"
+import { latency_middleware }                    from "./middleware/latency.middleware"
 import { create_health_router }                  from "./routes/health.api"
 import { create_webhook_router }                 from "./routes/webhook.api"
 import { create_bot_router }                     from "./routes/bot.api"
@@ -62,6 +63,10 @@ export function start_webhook_server(client: Client): void {
   }))
   app.use(express.json({ limit: "10mb" }))
   app.use(express.urlencoded({ extended: true, limit: "10mb" }))
+
+  // - 超轻量响应延迟追踪，X-Response-Time header + 环形缓冲区统计 - \\
+  // - ultra-lightweight latency tracking, X-Response-Time header + ring buffer stats - \\
+  app.use(latency_middleware)
 
   // - Railway 保活机制 - \\
   // - railway keepalive - \\

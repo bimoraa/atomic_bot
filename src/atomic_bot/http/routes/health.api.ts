@@ -9,8 +9,9 @@
 
 // - 健康检查和根路由的 API - \
 // - health check and root API router - \
-import { Router, Request, Response } from "express"
-import { Client }                    from "discord.js"
+import { Router, Request, Response }           from "express"
+import { Client }                              from "discord.js"
+import { get_latency_stats }                   from "../middleware/latency.middleware"
 
 /**
  * @description create health & root API router
@@ -73,6 +74,12 @@ export function create_health_router(
         },
       },
     })
+  })
+
+  // - 延迟统计端点，从内存环形缓冲区读取，零数据库开销 - \\
+  // - latency stats endpoint, reads from in-memory ring buffer, zero DB overhead - \\
+  router.get("/health/latency", (_req: Request, res: Response) => {
+    res.status(200).json(get_latency_stats())
   })
 
   return router
