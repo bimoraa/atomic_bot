@@ -100,6 +100,45 @@ export function create_bot_router(client: Client | null, guild_id: string): Rout
     }
   })
 
+  // - 专用于 web 仪表盘的机器人统计接口，包含数字形式的内存数据和 ping - \\
+  // - dedicated bot stats endpoint for web dashboard, numeric memory and ping values - \\
+  router.get("/bot-stats", async (req: Request, res: Response) => {
+    try {
+      if (!client?.isReady()) {
+        return res.status(503).json({ status: "starting", bot_ready: false })
+      }
+
+      const mem = process.memoryUsage()
+
+      // - 通过一次轻量 REST 请求测量 API 延迟 - \\
+      // - measure API latency via a lightweight REST call - \\
+      let api_latency_ms = client.ws.ping
+      try {
+        const api_start         = Date.now()
+        await (client.rest as any).get("/gateway")
+        api_latency_ms  = Date.now() - api_start
+      } catch {}
+
+      res.status(200).json({
+        status        : "alive",
+        bot_ready     : true,
+        ws_ping       : client.ws.ping,
+        api_latency   : api_latency_ms,
+        uptime        : process.uptime(),
+        memory        : {
+          rss_mb        : parseFloat((mem.rss        / 1024 / 1024).toFixed(2)),
+          heap_used_mb  : parseFloat((mem.heapUsed   / 1024 / 1024).toFixed(2)),
+          heap_total_mb : parseFloat((mem.heapTotal  / 1024 / 1024).toFixed(2)),
+          external_mb   : parseFloat((mem.external   / 1024 / 1024).toFixed(2)),
+        },
+        timestamp     : Date.now(),
+      })
+    } catch (err) {
+      console.error("[ - API BOT STATS - ] Error:", err)
+      res.status(500).json({ error: "Failed to get stats" })
+    }
+  })
+
   router.post("/bot-nickname", async (req: Request, res: Response) => {
     try {
       if (!client?.isReady()) return res.status(503).json({ error: "Bot not ready" })

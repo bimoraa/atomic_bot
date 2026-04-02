@@ -4,6 +4,8 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 })
 
+export { pool }
+
 /**
  * Returns total bypassed link count.
  * @returns Total count as number

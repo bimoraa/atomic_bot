@@ -1,7 +1,7 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { FileText, Home, Settings, LogOut, ChevronLeft, Menu, X, Link2, Bot } from 'lucide-react'
+import { FileText, Home, Settings, LogOut, ChevronLeft, Menu, X, Link2, Bot, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -12,7 +12,7 @@ interface dashboard_sidebar_props {
     username: string
     avatar?: string
   }
-  active_page?: 'transcripts' | 'home' | 'settings' | 'bypass' | 'bot'
+  active_page?: 'transcripts' | 'home' | 'settings' | 'bypass' | 'bot' | 'bot-stats'
 }
 
 export function DashboardSidebar({ user, active_page = 'transcripts' }: dashboard_sidebar_props) {
@@ -25,6 +25,7 @@ export function DashboardSidebar({ user, active_page = 'transcripts' }: dashboar
     { id: 'transcripts', label: 'Transcripts',    icon: FileText, href: '/dashboard' },
     { id: 'bypass',      label: 'Bypass',         icon: Link2,    href: '/bypass' },
     { id: 'bot',         label: 'Bot Management', icon: Bot,      href: '/dashboard/bot' },
+    { id: 'bot-stats',   label: 'Bot Stats',      icon: Activity, href: '/bot-stats' },
     { id: 'settings',    label: 'Settings',       icon: Settings, href: '/dashboard/settings' },
   ]
 
