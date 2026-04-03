@@ -1077,7 +1077,7 @@ export async function update_one<T extends object>(
   if (table === "generic_data") {
     const filter_entries    = Object.entries(filter)
     const filter_conditions = filter_entries
-      .map(([key], index) => `data->>'${key}' = $${index + 2}`)
+      .map(([key], index) => `data->>'${key}' = $${index + 3}`)
       .join(" AND ")
 
     // - 用 JSONB || 合并操作符，一次请求完成更新，省去 SELECT 往返 - \\
