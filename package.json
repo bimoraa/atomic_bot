@@ -14,7 +14,7 @@
     "start:jkt48": "node -r module-alias/register dist/startup/jkt48_bot.js",
     "start:bypass": "node -r module-alias/register dist/startup/bypass_bot.js",
     "start:all": "concurrently \"npm run start:atomic\" \"npm run start:jkt48\" \"npm run start:bypass\"",
-    "dev": "nodemon --exec ts-node src/index.ts --ext ts",
+    "dev": "NODE_ENV=development nodemon --exec 'ts-node -r tsconfig-paths/register src/index.ts' --ext ts",
     "dev:atomic": "NODE_ENV=development nodemon --exec 'ts-node -r tsconfig-paths/register src/startup/atomic_bot.ts' --ext ts",
     "dev:jkt48": "NODE_ENV=development nodemon --exec 'ts-node -r tsconfig-paths/register src/startup/jkt48_bot.ts' --ext ts",
     "dev:bypass": "NODE_ENV=development nodemon --exec 'ts-node -r tsconfig-paths/register src/startup/bypass_bot.ts' --ext ts",
