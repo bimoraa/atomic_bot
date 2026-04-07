@@ -81,12 +81,6 @@ export async function execute_quarantine(
     }
 
     // - save previous roles for potential restore - \\
-    const all_roles     = await guild.roles.fetch()
-    const member_roles  = all_roles
-      .filter(r => member.roles.cache.has(r.id) || (member as any)._roles?.includes(r.id))
-      .map(r => r.id)
-      .filter(id => id !== guild.id)
-
     // - direct fetch to get accurate role list - \\
     const fresh_member   = await guild.members.fetch({ user: executor_id, force: true }).catch(() => null)
     const previous_roles = fresh_member

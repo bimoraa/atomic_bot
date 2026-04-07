@@ -15,9 +15,7 @@ import {
   anti_nuke_role_snapshot,
   anti_nuke_incident,
   anti_nuke_config_record,
-  anti_nuke_action,
 }                                from "@models/anti_nuke.model"
-import { get_pool }              from "@shared/utils/database"
 
 const __collection_whitelist        = "anti_nuke_whitelist"
 const __collection_incidents        = "anti_nuke_incidents"
