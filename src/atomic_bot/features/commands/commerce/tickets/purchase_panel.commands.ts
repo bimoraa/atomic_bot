@@ -16,10 +16,10 @@ import {
   GuildMember,
 } from "discord.js"
 import { Command }          from "@shared/types/command"
-import { is_admin }         from "@shared/database/settings/permissions"
-import { component, api }   from "@shared/utils"
-import { log_error }        from "@shared/utils/error_logger"
-import { get_ticket_config } from "@shared/database/unified_ticket"
+import { is_admin }         from "@database/settings/permissions"
+import { component, api }   from "@utils"
+import { log_error }        from "@utils/error_logger"
+import { get_ticket_config } from "@database/unified_ticket"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

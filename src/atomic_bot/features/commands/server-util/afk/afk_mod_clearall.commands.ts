@@ -10,8 +10,8 @@
 // - /afk-mod clear-all，管理员清除所有用户的 AFK - \
 // - /afk-mod clear-all command, admin clears all users' AFK - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"
-import { get_all_afk, remove_afk }                                     from "@atomic/integrations/cache/afk"
-import { build_simple_message }                                        from "@atomic/features/commands/server-util/afk/afk_utils.commands"
+import { get_all_afk, remove_afk }                                     from "@integrations/cache/afk"
+import { build_simple_message }                                        from "@commands/server-util/afk/afk_utils.commands"
 
 /**
  * - 构建 AFK 管理清除全部子命令 - \\

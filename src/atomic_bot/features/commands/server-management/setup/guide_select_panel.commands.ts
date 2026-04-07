@@ -11,8 +11,8 @@
 // - /setup guide-select-panel command, deploys the guide panel with a select menu - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }                                                       from "@shared/types/command"
-import { is_admin }                                                      from "@shared/database/settings/permissions"
-import { api, component }                                                from "@shared/utils"
+import { is_admin }                                                      from "@database/settings/permissions"
+import { api, component }                                                from "@utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

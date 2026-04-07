@@ -11,9 +11,9 @@
 // - /whitelist unblacklist command, removes a user from the blacklist - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, User } from "discord.js"
 import { Command }          from "@shared/types/command"
-import { member_has_role }  from "@shared/utils/discord_api"
-import { delete_user_from_project, get_user_by_discord, unban_user }        from "@atomic/integrations/api/luarmor"
-import { component }                                                          from "@shared/utils"
+import { member_has_role }  from "@utils/discord_api"
+import { delete_user_from_project, get_user_by_discord, unban_user }        from "@integrations/api/luarmor"
+import { component }                                                          from "@utils"
 
 const __allowed_role_id = "1277272542914281512"
 const __project_id      = "6958841b2d9e5e049a24a23e376e0d77"

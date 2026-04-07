@@ -11,8 +11,8 @@
 // - /update-script slash command, updates the script version - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
 import { Command }                                                       from "@shared/types/command"
-import { component, http, env, db }                                      from "@shared/utils"
-import { log_error }                                                     from "@shared/utils/error_logger"
+import { component, http, env, db }                                      from "@utils"
+import { log_error }                                                     from "@utils/error_logger"
 
 const __collection              = "luarmor_scripts"
 const __key_details_url         = "https://api.luarmor.net/v3/keys"

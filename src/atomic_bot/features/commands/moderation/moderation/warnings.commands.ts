@@ -16,8 +16,8 @@ import {
   PermissionFlagsBits,
 }                      from "discord.js"
 import { Command }     from "@shared/types/command"
-import { component }   from "@shared/utils"
-import * as database   from "@shared/utils/database"
+import { component }   from "@utils"
+import * as database   from "@utils/database"
 
 interface Warning {
   warning_id  : string

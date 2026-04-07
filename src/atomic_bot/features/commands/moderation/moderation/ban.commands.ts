@@ -17,7 +17,7 @@ import {
   User,
 }                      from "discord.js"
 import { Command }     from "@shared/types/command"
-import { ban_member }  from "@atomic/features/commands/moderation/moderation/controller/moderation.controller"
+import { ban_member }  from "@commands/moderation/moderation/controller/moderation.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

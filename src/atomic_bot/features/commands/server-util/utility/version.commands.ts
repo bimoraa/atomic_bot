@@ -11,7 +11,7 @@
 // - /version slash command, shows script version information - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command } from "@shared/types/command"
-import { component, version as version_util } from "@shared/utils"
+import { component, version as version_util } from "@utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

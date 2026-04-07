@@ -17,9 +17,9 @@ import {
   TextChannel,
 } from "discord.js"
 import { Command } from "@shared/types/command"
-import { set_middleman_service_status } from "@shared/database/managers/middleman_service.manager"
-import { component, api } from "@shared/utils"
-import { log_error } from "@shared/utils/error_logger"
+import { set_middleman_service_status } from "@managers/middleman_service.manager"
+import { component, api } from "@utils"
+import { log_error } from "@utils/error_logger"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

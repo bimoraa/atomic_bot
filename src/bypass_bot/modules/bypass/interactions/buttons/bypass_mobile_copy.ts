@@ -8,7 +8,7 @@
  */
 
 import { ButtonInteraction } from "discord.js"
-import { db }                from "@shared/utils"
+import { db }                from "@utils"
 
 /**
  * @param {ButtonInteraction} interaction - button interaction

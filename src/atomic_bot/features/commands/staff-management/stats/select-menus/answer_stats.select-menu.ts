@@ -13,8 +13,8 @@
 // - answer stats select - \
 
 import { StringSelectMenuInteraction, GuildMember } from "discord.js"
-import { api } from "@shared/utils"
-import { get_staff_stats, build_stats_panel } from "@atomic/features/commands/staff-management/staff/get_answer_stats.commands"
+import { api } from "@utils"
+import { get_staff_stats, build_stats_panel } from "@commands/staff-management/staff/get_answer_stats.commands"
 
 export async function handle_answer_stats_select(interaction: StringSelectMenuInteraction): Promise<void> {
   await interaction.deferUpdate()

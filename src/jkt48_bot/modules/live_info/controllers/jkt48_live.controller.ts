@@ -8,8 +8,8 @@
  */
 
 import { Client }         from "discord.js"
-import { component, db }  from "@shared/utils"
-import { log_error }      from "@shared/utils/error_logger"
+import { component, db }  from "@utils"
+import { log_error }      from "@utils/error_logger"
 import * as idn_live      from "@jkt48/infrastructure/api/idn_live"
 import * as showroom_live from "@jkt48/infrastructure/api/showroom_live"
 

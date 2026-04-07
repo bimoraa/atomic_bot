@@ -12,7 +12,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js"
 import { Command } from "@shared/types/command"
-import { component, db } from "@shared/utils"
+import { component, db } from "@utils"
 
 interface guild_settings_record {
   guild_id  : string

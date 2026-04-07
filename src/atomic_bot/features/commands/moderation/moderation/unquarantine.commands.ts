@@ -16,8 +16,8 @@ import {
   PermissionFlagsBits,
 }                                from "discord.js"
 import { Command }                from "@shared/types/command"
-import { release_quarantine }     from "@atomic/features/commands/moderation/quarantine/controller/quarantine.controller"
-import { component }              from "@shared/utils"
+import { release_quarantine }     from "@commands/moderation/quarantine/controller/quarantine.controller"
+import { component }              from "@utils"
 
 /**
  * @description manually release a member from quarantine

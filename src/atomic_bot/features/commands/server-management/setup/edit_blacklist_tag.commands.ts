@@ -15,13 +15,13 @@ import {
   SlashCommandBuilder,
 }                            from "discord.js"
 import { Command }           from "@shared/types/command"
-import { component }         from "@shared/utils"
-import { log_error }         from "@shared/utils/error_logger"
+import { component }         from "@utils"
+import { log_error }         from "@utils/error_logger"
 import {
   add_banned_tag,
   remove_banned_tag,
   list_banned_tags,
-}                            from "@shared/database/settings/server_tag"
+}                            from "@database/settings/server_tag"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

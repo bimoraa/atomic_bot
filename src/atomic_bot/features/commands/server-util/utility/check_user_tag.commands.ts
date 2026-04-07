@@ -11,8 +11,8 @@
 // - /check-user-tag slash command, checks a user's tags - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, PermissionFlagsBits } from "discord.js"
 import { Command }                                                                           from "@shared/types/command"
-import { get_all_tagged_users, sync_guild_tagged_users }                                     from "@shared/database/settings/server_tag"
-import { component }                                                                         from "@shared/utils"
+import { get_all_tagged_users, sync_guild_tagged_users }                                     from "@database/settings/server_tag"
+import { component }                                                                         from "@utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

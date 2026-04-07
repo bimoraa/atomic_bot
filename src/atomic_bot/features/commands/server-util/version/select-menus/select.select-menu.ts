@@ -13,7 +13,7 @@
 // - version platform select - \
 
 import { StringSelectMenuInteraction } from "discord.js"
-import { time, format, component, version } from "@shared/utils"
+import { time, format, component, version } from "@utils"
 
 export async function handle_version_platform_select(interaction: StringSelectMenuInteraction): Promise<void> {
   const platform_name = interaction.values[0]

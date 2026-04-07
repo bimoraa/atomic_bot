@@ -13,9 +13,9 @@
 // - staff controller, handles devlog publishing - \
 
 import { Client }                       from "discord.js"
-import { load_config }                  from "@shared/config/loader"
-import { component, api, format, time } from "@shared/utils"
-import { log_error }                    from "@shared/utils/error_logger"
+import { load_config }                  from "@config/loader"
+import { component, api, format, time } from "@utils"
+import { log_error }                    from "@utils/error_logger"
 
 const config            = load_config<{ devlog_channel_id: string; priority_role_id: string }>("devlog")
 const devlog_channel_id = config.devlog_channel_id

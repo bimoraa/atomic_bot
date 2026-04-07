@@ -16,7 +16,7 @@ import {
   PermissionFlagsBits,
 }                        from "discord.js"
 import { Command }      from "@shared/types/command"
-import { warn_member }  from "@atomic/features/commands/moderation/moderation/controller/moderation.controller"
+import { warn_member }  from "@commands/moderation/moderation/controller/moderation.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

@@ -9,7 +9,7 @@
 
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { component }                                        from "@shared/utils"
+import { component }                                        from "@utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

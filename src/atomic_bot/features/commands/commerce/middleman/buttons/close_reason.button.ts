@@ -10,11 +10,11 @@
 // - 中间人关闭原因按钮的交互注册 - \
 // - registers the close reason button for middleman tickets - \
 import { ButtonInteraction }                                        from "discord.js"
-import { modal }                                                    from "@shared/utils"
-import { get_ticket_config }                                        from "@shared/database/unified_ticket"
+import { modal }                                                    from "@utils"
+import { get_ticket_config }                                        from "@database/unified_ticket"
 import { ButtonHandler }                                            from "@shared/types/interaction"
 import { build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+         fetch_maintenance_mode }                                   from "@commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * @description shows modal to input close reason for middleman ticket

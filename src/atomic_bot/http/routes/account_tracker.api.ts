@@ -11,17 +11,17 @@
 // - account tracker api route, receives script post data and updates discord message - \\
 import { Router, Request, Response }  from "express"
 import { Client, TextChannel }        from "discord.js"
-import { component, time }            from "@shared/utils"
-import { log_error }                  from "@shared/utils/error_logger"
+import { component, time }            from "@utils"
+import { log_error }                  from "@utils/error_logger"
 import {
   validate_script_key,
   derive_key_hash,
-}                                     from "@atomic/integrations/cache/account_tracker_key"
+}                                     from "@integrations/cache/account_tracker_key"
 import {
   get_tracker_config,
   get_all_sessions,
   upsert_session,
-}                                     from "@shared/database/managers/account_tracker.manager"
+}                                     from "@managers/account_tracker.manager"
 import type { account_tracker_session } from "@models/account_tracker.model"
 
 // - 全局固定 guild 键，账户 tracker 不区分 guild - \\

@@ -10,7 +10,7 @@
 // - /bot-info slash command, shows bot information - \\
 import { ChatInputCommandInteraction, SlashCommandBuilder, version as djsVersion } from "discord.js"
 import { Command }  from "@shared/types/command"
-import { component, time } from "@shared/utils"
+import { component, time } from "@utils"
 import os from "os"
 
 export const command: Command = {

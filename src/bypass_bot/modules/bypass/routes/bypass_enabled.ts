@@ -13,7 +13,7 @@ import {
   SlashCommandBuilder,
 } from "discord.js"
 import { Command } from "@shared/types/command"
-import { component, guild_settings } from "@shared/utils"
+import { component, guild_settings } from "@utils"
 
 /**
  * - 绕过启用命令 - \\

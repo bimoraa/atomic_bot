@@ -13,10 +13,10 @@
 // - temp voice button handlers - \
 
 import { ButtonInteraction, GuildMember, VoiceChannel, Guild } from "discord.js"
-import * as tempvoice                                          from "@shared/database/services/tempvoice"
-import * as voice_tracker                                      from "@shared/database/trackers/voice_time_tracker"
-import * as voice_interaction                                  from "@shared/database/trackers/voice_interaction_tracker"
-import { component, modal }                                    from "@shared/utils"
+import * as tempvoice                                          from "@services/tempvoice"
+import * as voice_tracker                                      from "@database/trackers/voice_time_tracker"
+import * as voice_interaction                                  from "@database/trackers/voice_interaction_tracker"
+import { component, modal }                                    from "@utils"
 
 /**
  * - 验证并获取语音频道 - \\

@@ -11,9 +11,9 @@
 // - /reminder-clear slash command, clears reminders - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { component, format, db }                            from "@shared/utils"
-import { log_error }                                        from "@shared/utils/error_logger"
-import { active_reminders }                                 from "@atomic/features/commands/server-util/reminder/reminder.commands"
+import { component, format, db }                            from "@utils"
+import { log_error }                                        from "@utils/error_logger"
+import { active_reminders }                                 from "@commands/server-util/reminder/reminder.commands"
 
 interface reminder_data {
   _id?       : any

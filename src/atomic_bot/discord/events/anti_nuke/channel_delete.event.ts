@@ -9,7 +9,7 @@
 
 // - anti-nuke: channel delete event listener - \\
 import { Events, GuildChannel, AuditLogEvent, ChannelType } from "discord.js"
-import { log_error }                                          from "@shared/utils/error_logger"
+import { log_error }                                          from "@utils/error_logger"
 import { client }                                             from "@startup/atomic_bot"
 import { fetch_audit_executor, should_skip, process_nuke_event } from "./shared"
 import { anti_nuke_channel_snapshot }                             from "@models/anti_nuke.model"

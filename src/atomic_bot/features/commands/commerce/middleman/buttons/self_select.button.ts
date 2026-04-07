@@ -8,9 +8,9 @@
  */
 
 import { ButtonInteraction }                                        from "discord.js"
-import { component }                                                from "@shared/utils"
+import { component }                                                from "@utils"
 import { build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+         fetch_maintenance_mode }                                   from "@commands/commerce/middleman/controller/middleman.controller"
 
 export async function handle_middleman_penjual_self(interaction: ButtonInteraction): Promise<boolean> {
   if (!interaction.customId.startsWith("middleman_penjual_self:")) return false

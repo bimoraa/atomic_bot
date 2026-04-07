@@ -10,9 +10,9 @@
 // - 定时同步共享设置到论坛帖的定时任务 - \
 // - scheduler that syncs share settings to forum posts - \
 import { Client }          from "discord.js"
-import { logger }          from "@shared/utils"
-import { log_error }       from "@shared/utils/error_logger"
-import * as share_settings from "@atomic/features/commands/commerce/share-settings/controller/share_settings.controller"
+import { logger }          from "@utils"
+import { log_error }       from "@utils/error_logger"
+import * as share_settings from "@commands/commerce/share-settings/controller/share_settings.controller"
 
 const log                        = logger.create_logger("share_settings_forum")
 const __forum_update_interval_ms = 15000

@@ -13,10 +13,10 @@
 // - payment approve/reject button handlers - \
 
 import { ButtonInteraction, GuildMember } from "discord.js"
-import { api, component, time }  from "@shared/utils"
-import { member_has_role }          from "@shared/utils/discord_api"
-import { create_key_for_project, delete_user_from_project } from "@atomic/integrations/api/luarmor"
-import { add_work_log } from "@shared/database/trackers/work_tracker"
+import { api, component, time }  from "@utils"
+import { member_has_role }          from "@utils/discord_api"
+import { create_key_for_project, delete_user_from_project } from "@integrations/api/luarmor"
+import { add_work_log } from "@database/trackers/work_tracker"
 
 const __admin_role_id   = "1277272542914281512"
 const __logo_url        = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"

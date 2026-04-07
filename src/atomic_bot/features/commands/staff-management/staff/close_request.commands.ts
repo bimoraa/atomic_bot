@@ -11,11 +11,11 @@
 // - /staff close-request command, sends a close request for a ticket - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, ThreadChannel, TextChannel, GuildMember } from "discord.js"
 import { Command } from "@shared/types/command"
-import { component, time, api, format, db } from "@shared/utils"
+import { component, time, api, format, db } from "@utils"
 import { client } from "@startup/atomic_bot"
-import { ticket_types, get_ticket } from "@shared/database/unified_ticket"
-import { close_ticket } from "@shared/database/unified_ticket/close"
-import { is_staff, is_admin_or_mod } from "@shared/database/settings/permissions"
+import { ticket_types, get_ticket } from "@database/unified_ticket"
+import { close_ticket } from "@database/unified_ticket/close"
+import { is_staff, is_admin_or_mod } from "@database/settings/permissions"
 
 const __collection_name = "close_requests"
 

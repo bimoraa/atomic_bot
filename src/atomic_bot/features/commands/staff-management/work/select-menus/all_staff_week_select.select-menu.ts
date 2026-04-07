@@ -13,8 +13,8 @@
 // - all staff work week select - \
 
 import { StringSelectMenuInteraction } from "discord.js"
-import { component, db } from "@shared/utils"
-import { format_salary } from "@shared/database/trackers/work_tracker"
+import { component, db } from "@utils"
+import { format_salary } from "@database/trackers/work_tracker"
 
 interface WorkLog {
   staff_id    : string

@@ -13,7 +13,7 @@
 // - work stats year select - \
 
 import { StringSelectMenuInteraction } from "discord.js"
-import { component } from "@shared/utils"
+import { component } from "@utils"
 
 function get_iso_week(date: Date): { week: number; year: number } {
   const target       = new Date(date.valueOf())

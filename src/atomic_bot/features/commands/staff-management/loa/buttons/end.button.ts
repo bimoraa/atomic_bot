@@ -10,7 +10,7 @@
 // - 结束 LOA 按钮的交互注册 - \
 // - registers the end LOA button interaction - \
 import { ButtonInteraction }            from "discord.js"
-import { end_loa, has_loa_permission } from "@atomic/features/commands/staff-management/loa/controller/loa.controller"
+import { end_loa, has_loa_permission } from "@commands/staff-management/loa/controller/loa.controller"
 import { ButtonHandler }               from "@shared/types/interaction"
 
 export async function handle_loa_end(interaction: ButtonInteraction): Promise<void> {

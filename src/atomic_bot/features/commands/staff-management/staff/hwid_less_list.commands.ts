@@ -11,7 +11,7 @@
 // - /staff hwid-less-list command, shows all users with HWID-less access - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { component, db, logger }                            from "@shared/utils"
+import { component, db, logger }                            from "@utils"
 
 const __log = logger.create_logger("hwid_less_list")
 

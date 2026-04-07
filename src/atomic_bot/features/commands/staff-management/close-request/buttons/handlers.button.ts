@@ -13,9 +13,9 @@
 // - close request button handlers - \
 
 import { ButtonInteraction, ThreadChannel, GuildMember } from "discord.js"
-import { component, api, db } from "@shared/utils"
-import { get_ticket, ticket_types } from "@shared/database/unified_ticket"
-import { close_ticket_by_deadline, cancel_close_request, get_close_request } from "@atomic/features/commands/staff-management/staff/close_request.commands"
+import { component, api, db } from "@utils"
+import { get_ticket, ticket_types } from "@database/unified_ticket"
+import { close_ticket_by_deadline, cancel_close_request, get_close_request } from "@commands/staff-management/staff/close_request.commands"
 
 function get_ticket_parent_ids(): string[] {
   return Object.values(ticket_types).map(config => config.ticket_parent_id)

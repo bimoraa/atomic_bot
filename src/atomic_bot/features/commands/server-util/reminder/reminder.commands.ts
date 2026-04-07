@@ -11,9 +11,9 @@
 // - /reminder slash command, sets a reminder - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, Client } from "discord.js"
 import { Command }                                           from "@shared/types/command"
-import { component, time, db, api }                          from "@shared/utils"
-import { log_error }                                         from "@shared/utils/error_logger"
-import { add_reminder }                                      from "@atomic/features/commands/server-util/reminder/controller/reminder.controller"
+import { component, time, db, api }                          from "@utils"
+import { log_error }                                         from "@utils/error_logger"
+import { add_reminder }                                      from "@commands/server-util/reminder/controller/reminder.controller"
 
 const is_dev        = process.env.NODE_ENV === "development"
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN

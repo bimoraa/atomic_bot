@@ -10,12 +10,12 @@
 // - 处理中间人关闭原因 modal 的提交 - \
 // - handles the middleman close reason modal submission - \
 import { ModalSubmitInteraction, ThreadChannel, TextChannel }       from "discord.js"
-import { close_ticket }                                             from "@shared/database/unified_ticket"
-import { cancel_middleman_ticket, get_middleman_ticket }            from "@shared/database/managers/middleman.manager"
-import { api }                                                      from "@shared/utils"
-import { get_ticket_config }                                        from "@shared/database/unified_ticket"
+import { close_ticket }                                             from "@database/unified_ticket"
+import { cancel_middleman_ticket, get_middleman_ticket }            from "@managers/middleman.manager"
+import { api }                                                      from "@utils"
+import { get_ticket_config }                                        from "@database/unified_ticket"
 import { build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+         fetch_maintenance_mode }                                   from "@commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * @description handles close reason modal submission for middleman ticket

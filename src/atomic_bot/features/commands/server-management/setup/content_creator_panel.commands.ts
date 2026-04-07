@@ -15,8 +15,8 @@ import {
   PermissionFlagsBits,
 } from "discord.js"
 import { Command } from "@shared/types/command"
-import { component, api } from "@shared/utils"
-import { get_ticket_config } from "@shared/database/unified_ticket/state"
+import { component, api } from "@utils"
+import { get_ticket_config } from "@database/unified_ticket/state"
 
 /**
  * Send content creator application panel with button to open modal

@@ -9,4 +9,4 @@
 
 // - 指南选择菜单模块的统一导出 - \
 // - barrel export for guide select menu interactions - \
-export { handle_guide_select, handle_guide_language_select } from "@atomic/features/commands/server-util/guide/select-menus/guide_select.select-menu"
+export { handle_guide_select, handle_guide_language_select } from "@commands/server-util/guide/select-menus/guide_select.select-menu"

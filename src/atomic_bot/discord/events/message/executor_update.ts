@@ -8,7 +8,7 @@
  */
 
 import { client }                         from "@startup/atomic_bot"
-import { start_executor_update_poller }   from "@atomic/features/commands/server-util/utility/jobs/executor_poller.job"
+import { start_executor_update_poller }   from "@commands/server-util/utility/jobs/executor_poller.job"
 
 client.once("ready", () => {
   void start_executor_update_poller(client)

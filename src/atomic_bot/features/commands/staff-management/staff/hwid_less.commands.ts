@@ -11,9 +11,9 @@
 // - /staff hwid-less command, grants a user HWID-less access - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command } from "@shared/types/command"
-import { update_project_settings } from "@atomic/integrations/api/luarmor"
-import { member_has_role }           from "@shared/utils/discord_api"
-import { component } from "@shared/utils"
+import { update_project_settings } from "@integrations/api/luarmor"
+import { member_has_role }           from "@utils/discord_api"
+import { component } from "@utils"
 
 const __project_id         = "6958841b2d9e5e049a24a23e376e0d77"
 const __required_role_id   = "1316021423206039596"

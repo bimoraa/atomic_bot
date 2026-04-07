@@ -11,10 +11,10 @@
 // - get script and mobile copy button handlers for the scripts panel - \\
 
 import { ButtonInteraction, GuildMember }  from "discord.js"
-import { component, api, format, modal }   from "@shared/utils"
-import { log_error }                       from "@shared/utils/error_logger"
-import { get_user_script }                 from "@atomic/features/commands/commerce/service-provider/controller/service_provider.controller"
-import * as luarmor                        from "@atomic/integrations/api/luarmor"
+import { component, api, format, modal }   from "@utils"
+import { log_error }                       from "@utils/error_logger"
+import { get_user_script }                 from "@commands/commerce/service-provider/controller/service_provider.controller"
+import * as luarmor                        from "@integrations/api/luarmor"
 
 /**
  * @description handles the get script button — retrieves and displays the user's loader script.

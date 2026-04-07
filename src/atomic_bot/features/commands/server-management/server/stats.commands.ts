@@ -14,7 +14,7 @@ import {
   SlashCommandBuilder,
 }                      from "discord.js"
 import { Command }     from "@shared/types/command"
-import { component }   from "@shared/utils"
+import { component }   from "@utils"
 import * as os         from "os"
 
 export const command: Command = {

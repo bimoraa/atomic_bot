@@ -11,7 +11,7 @@
 // - /loa slash command, manages staff leave of absence - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { get_loa_panel }                                    from "@atomic/features/commands/staff-management/loa/controller/loa.controller"
+import { get_loa_panel }                                    from "@commands/staff-management/loa/controller/loa.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

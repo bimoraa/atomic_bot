@@ -13,7 +13,7 @@
 // - devlog modal handler - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { publish_devlog }         from "@atomic/features/commands/staff-management/staff/controller/staff.controller"
+import { publish_devlog }         from "@commands/staff-management/staff/controller/staff.controller"
 
 export async function handle(interaction: ModalSubmitInteraction) {
   if (!interaction.customId.startsWith("devlog_modal")) return false

@@ -11,8 +11,8 @@
 // - /staff reset-work-stats command, resets a staff member's work stats - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
 import { Command } from "@shared/types/command"
-import { component, db } from "@shared/utils"
-import { WorkReport, WorkLog } from "@shared/database/trackers/work_tracker"
+import { component, db } from "@utils"
+import { WorkReport, WorkLog } from "@database/trackers/work_tracker"
 
 /**
  * - 从日志重计工作统计 - \\

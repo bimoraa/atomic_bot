@@ -13,7 +13,7 @@
 // - staff info edit modal - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { log_error }              from "@shared/utils/error_logger"
+import { log_error }              from "@utils/error_logger"
 
 /**
  * - 处理编辑员工信息模态框 - \\

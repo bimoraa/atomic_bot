@@ -10,8 +10,8 @@
 // - 防刷屏的内存缓存，记录用户最近的操作 - \
 // - in-memory anti-spam cache, tracks recent user actions - \
 import { Client, Message, GuildMember, PermissionFlagsBits } from "discord.js"
-import { component, format, time }                          from "@shared/utils"
-import { log_error }                                        from "@shared/utils/error_logger"
+import { component, format, time }                          from "@utils"
+import { log_error }                                        from "@utils/error_logger"
 
 interface spam_tracker {
   messages    : { content: string; timestamp: number }[]

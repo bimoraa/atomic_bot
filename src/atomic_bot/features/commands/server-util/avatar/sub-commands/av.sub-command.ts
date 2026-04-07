@@ -11,8 +11,8 @@
 // - ?av sub-command, view avatar by name/id/mention - \\
 import { Client, GuildMember, Message } from "discord.js"
 import { SubCommand }                   from "@shared/types/sub_command"
-import { component }                    from "@shared/utils"
-import { log_error }                    from "@shared/utils/error_logger"
+import { component }                    from "@utils"
+import { log_error }                    from "@utils/error_logger"
 
 // - 提及正则，支持 <@id> 和 <@!id> - \\
 // - mention regex, supports <@id> and <@!id> - \\

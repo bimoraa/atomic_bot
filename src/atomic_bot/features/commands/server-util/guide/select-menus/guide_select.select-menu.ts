@@ -10,8 +10,8 @@
 // - 指南选择菜单的交互注册 - \
 // - registers the guide select menu interaction - \
 import { StringSelectMenuInteraction, TextChannel } from "discord.js"
-import { component, api }                           from "@shared/utils"
-import { guide_buttons, ParsedButton }              from "@atomic/features/commands/server-management/setup/guide_panel.commands"
+import { component, api }                           from "@utils"
+import { guide_buttons, ParsedButton }              from "@commands/server-management/setup/guide_panel.commands"
 import fs                                           from "fs"
 import path                                         from "path"
 

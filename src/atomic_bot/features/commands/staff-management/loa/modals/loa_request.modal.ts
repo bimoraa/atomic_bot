@@ -13,9 +13,9 @@
 // - loa request modal handler - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { request_loa }            from "@atomic/features/commands/staff-management/loa/controller/loa.controller"
-import { db }                     from "@shared/utils"
-import { log_error }              from "@shared/utils/error_logger"
+import { request_loa }            from "@commands/staff-management/loa/controller/loa.controller"
+import { db }                     from "@utils"
+import { log_error }              from "@utils/error_logger"
 
 export async function handle_loa_request_modal(interaction: ModalSubmitInteraction): Promise<boolean> {
   if (interaction.customId !== "loa_request_modal") return false

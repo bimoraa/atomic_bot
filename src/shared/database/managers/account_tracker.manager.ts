@@ -9,7 +9,7 @@
 
 // - account tracker 数据库管理器 - \\
 // - account tracker database manager - \\
-import { db }                     from "@shared/utils"
+import { db }                     from "@utils"
 import type {
   account_tracker_config,
   account_tracker_session,

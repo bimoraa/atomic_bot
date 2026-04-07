@@ -8,7 +8,7 @@
  */
 
 import { ButtonInteraction, AttachmentBuilder } from "discord.js"
-import { db }                                   from "@shared/utils"
+import { db }                                   from "@utils"
 
 const __dev_id = "1118453649727823974"
 

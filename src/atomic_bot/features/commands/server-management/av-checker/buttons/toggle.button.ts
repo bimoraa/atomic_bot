@@ -11,8 +11,8 @@
 // - av checker toggle button - \\
 
 import { ButtonInteraction }  from "discord.js"
-import { component, api }     from "@shared/utils"
-import { log_error }          from "@shared/utils/error_logger"
+import { component, api }     from "@utils"
+import { log_error }          from "@utils/error_logger"
 
 /**
  * @description handle server/global avatar toggle buttons from ?av command

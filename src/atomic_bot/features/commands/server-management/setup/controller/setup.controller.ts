@@ -13,9 +13,9 @@
 // - setup controller - \
 
 import { ChatInputCommandInteraction, GuildMember, ChannelType } from "discord.js"
-import { guild_settings, component } from "@shared/utils"
-import { is_admin } from "@shared/database/settings/permissions"
-import { log_error } from "@shared/utils/error_logger"
+import { guild_settings, component } from "@utils"
+import { is_admin } from "@database/settings/permissions"
+import { log_error } from "@utils/error_logger"
 
 /**
  * @param {ChatInputCommandInteraction} interaction - discord interaction

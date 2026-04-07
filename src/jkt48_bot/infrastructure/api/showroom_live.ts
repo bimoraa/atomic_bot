@@ -15,8 +15,8 @@
 
 import axios           from "axios"
 import { Client }      from "discord.js"
-import * as file       from "@shared/utils/file"
-import { log_error }   from "@shared/utils/error_logger"
+import * as file       from "@utils/file"
+import { log_error }   from "@utils/error_logger"
 
 const __showroom_cfg_path = process.env.JKT48_SHOWROOM_CFG_PATH || file.resolve("assets", "jkt48", "jkt48_showroom.cfg")
 const __showroom_web_base = "https://www.showroom-live.com"

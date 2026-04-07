@@ -10,8 +10,8 @@
 // - 服务提供商缓存层 - \
 // - service provider cache layer - \
 import { Client } from "discord.js"
-import { db } from "@shared/utils"
-import { log_error } from "@shared/utils/error_logger"
+import { db } from "@utils"
+import { log_error } from "@utils/error_logger"
 import * as luarmor from "./luarmor"
 
 const CACHE_INTERVAL_MS       = 30 * 60 * 1000

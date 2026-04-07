@@ -10,10 +10,10 @@
 // - 中间人服务关闭信息按钮的交互注册 - \
 // - registers the service close info button for middleman - \
 import { ButtonInteraction }                                        from "discord.js"
-import { api, component }                                           from "@shared/utils"
+import { api, component }                                           from "@utils"
 import { ButtonHandler }                                            from "@shared/types/interaction"
 import { build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+         fetch_maintenance_mode }                                   from "@commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * Handle button click for middleman service close info

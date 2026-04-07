@@ -11,12 +11,12 @@
 // - /staff submit-payment command, submits a payment record - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, TextChannel, ThreadChannel, MessageFlags } from "discord.js"
 import { Command }                        from "@shared/types/command"
-import { is_staff }                       from "@shared/database/settings/permissions"
-import { api, time, component }           from "@shared/utils"
-import { log_error }                      from "@shared/utils/error_logger"
-import { load_config }                    from "@shared/config/loader"
-import { create_key_for_project, delete_user_from_project } from "@atomic/integrations/api/luarmor"
-import { add_work_log }                   from "@shared/database/trackers/work_tracker"
+import { is_staff }                       from "@database/settings/permissions"
+import { api, time, component }           from "@utils"
+import { log_error }                      from "@utils/error_logger"
+import { load_config }                    from "@config/loader"
+import { create_key_for_project, delete_user_from_project } from "@integrations/api/luarmor"
+import { add_work_log }                   from "@database/trackers/work_tracker"
 
 const payment_cfg             = load_config<{ submit_channel_id: string }>("payment")
 const payment_channel_id      = payment_cfg.submit_channel_id

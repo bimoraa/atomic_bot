@@ -11,7 +11,7 @@
 // - handles message delete events, mainly for the snipe feature - \
 import { Events, Message, PartialMessage, TextChannel } from "discord.js"
 import { client }                                       from "@startup/atomic_bot"
-import { component, format, api, db, time }             from "@shared/utils"
+import { component, format, api, db, time }             from "@utils"
 
 interface ghost_ping_entry {
   message_id : string

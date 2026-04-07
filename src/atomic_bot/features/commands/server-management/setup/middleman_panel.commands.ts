@@ -11,7 +11,7 @@
 // - /setup middleman-panel command, deploys the middleman panel - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
 import { Command }             from "@shared/types/command"
-import { component, api }      from "@shared/utils"
+import { component, api }      from "@utils"
 
 /**
  * @description setup command for creating middleman/rekber service panel

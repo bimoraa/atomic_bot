@@ -13,7 +13,7 @@
  * PostgreSQL caching for Luarmor user data to reduce API calls
  */
 
-import { db } from "@shared/utils"
+import { db } from "@utils"
 import type { luarmor_user } from "./luarmor"
 
 const USER_CACHE_COLLECTION = "service_provider_user_cache"

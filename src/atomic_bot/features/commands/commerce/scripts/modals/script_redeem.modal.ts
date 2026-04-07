@@ -11,11 +11,11 @@
 // - handles the script redeem modal submission - \\
 
 import { ModalSubmitInteraction, GuildMember } from "discord.js"
-import { log_error }                            from "@shared/utils/error_logger"
-import { component, api, env, format }          from "@shared/utils"
-import { member_has_role }                      from "@shared/utils/discord_api"
-import { redeem_user_key }                      from "@atomic/features/commands/commerce/service-provider/controller/service_provider.controller"
-import { is_quarantined }                       from "@shared/database/managers/quarantine.manager"
+import { log_error }                            from "@utils/error_logger"
+import { component, api, env, format }          from "@utils"
+import { member_has_role }                      from "@utils/discord_api"
+import { redeem_user_key }                      from "@commands/commerce/service-provider/controller/service_provider.controller"
+import { is_quarantined }                       from "@managers/quarantine.manager"
 
 const __script_role_id = env.get("LUARMOR_SCRIPT_ROLE_ID", "1398313779380617459")
 

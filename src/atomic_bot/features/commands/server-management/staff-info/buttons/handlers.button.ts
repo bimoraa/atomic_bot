@@ -13,9 +13,9 @@
 // - staff info button handler - \
 
 import { ButtonInteraction } from "discord.js"
-import { log_error } from "@shared/utils/error_logger"
-import { custom_id_to_file_name, get_staff_info_document } from "@shared/utils/staff_info_parser"
-import { container, divider, select_menu, text, type divider_component, type text_component, type action_row_component } from "@shared/utils/components"
+import { log_error } from "@utils/error_logger"
+import { custom_id_to_file_name, get_staff_info_document } from "@utils/staff_info_parser"
+import { container, divider, select_menu, text, type divider_component, type text_component, type action_row_component } from "@utils/components"
 
 export async function handle_staff_info_button(interaction: ButtonInteraction): Promise<void> {
   try {

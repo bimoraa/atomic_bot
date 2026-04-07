@@ -13,8 +13,8 @@
 // - temp voice region select - \
 
 import { StringSelectMenuInteraction, GuildMember, VoiceChannel } from "discord.js"
-import * as tempvoice                                              from "@shared/database/services/tempvoice"
-import { component }                                               from "@shared/utils"
+import * as tempvoice                                              from "@services/tempvoice"
+import { component }                                               from "@utils"
 
 function create_reply(message: string) {
   return component.build_message({

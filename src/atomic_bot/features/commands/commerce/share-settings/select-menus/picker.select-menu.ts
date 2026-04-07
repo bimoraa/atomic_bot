@@ -13,8 +13,8 @@
 // - share settings rod/skin picker - \
 
 import { StringSelectMenuInteraction } from "discord.js"
-import { log_error }                   from "@shared/utils/error_logger"
-import * as share_settings             from "@atomic/features/commands/commerce/share-settings/controller/share_settings.controller"
+import { log_error }                   from "@utils/error_logger"
+import * as share_settings             from "@commands/commerce/share-settings/controller/share_settings.controller"
 
 /**
  * - 处理共享设置选择器 - \\

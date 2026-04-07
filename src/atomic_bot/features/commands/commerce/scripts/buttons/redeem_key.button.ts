@@ -11,9 +11,9 @@
 // - redeem key button handler for the scripts panel - \\
 
 import { ButtonInteraction, GuildMember } from "discord.js"
-import { log_error }                       from "@shared/utils/error_logger"
-import * as luarmor                        from "@atomic/integrations/api/luarmor"
-import { component, api, format, modal }   from "@shared/utils"
+import { log_error }                       from "@utils/error_logger"
+import * as luarmor                        from "@integrations/api/luarmor"
+import { component, api, format, modal }   from "@utils"
 
 /**
  * @description handles the redeem key button — shows existing key info or opens redeem modal.

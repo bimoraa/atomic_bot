@@ -10,8 +10,8 @@
 // - /afk set，设置自定义 AFK 消息 - \
 // - /afk set command, sets a custom AFK message - \
 import { ChatInputCommandInteraction, GuildMember, SlashCommandSubcommandBuilder } from "discord.js"
-import { set_afk, is_ignored_channel }                                              from "@atomic/integrations/cache/afk"
-import { build_simple_message, sanitize_afk_reason }                                from "@atomic/features/commands/server-util/afk/afk_utils.commands"
+import { set_afk, is_ignored_channel }                                              from "@integrations/cache/afk"
+import { build_simple_message, sanitize_afk_reason }                                from "@commands/server-util/afk/afk_utils.commands"
 
 /**
  * - 构建 AFK 设置子命令 - \\

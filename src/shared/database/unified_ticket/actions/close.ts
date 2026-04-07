@@ -15,9 +15,9 @@ import {
   remove_user_open_ticket,
   delete_ticket_db,
   load_ticket,
-}                                                    from "@shared/database/unified_ticket/state"
-import { component, api, format, transcript, time } from "@shared/utils"
-import { log_error }                                from "@shared/utils/error_logger"
+}                                                    from "@database/unified_ticket/state"
+import { component, api, format, transcript, time } from "@utils"
+import { log_error }                                from "@utils/error_logger"
 
 interface CloseTicketOptions {
   thread: ThreadChannel

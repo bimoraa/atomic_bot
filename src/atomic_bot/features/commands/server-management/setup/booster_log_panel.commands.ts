@@ -11,7 +11,7 @@
 // - /setup booster-log-panel command, deploys the booster log panel - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, ChannelType } from "discord.js"
 import { Command }                                                       from "@shared/types/command"
-import { file }                                                          from "@shared/utils"
+import { file }                                                          from "@utils"
 
 const command: Command = {
   data: new SlashCommandBuilder()

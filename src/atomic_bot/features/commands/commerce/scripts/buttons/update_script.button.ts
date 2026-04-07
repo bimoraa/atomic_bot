@@ -11,10 +11,10 @@
 // - handles the update script button and select menu interactions - \\
 
 import { ButtonInteraction, StringSelectMenuInteraction } from "discord.js"
-import { log_error }                                      from "@shared/utils/error_logger"
-import { component }                                      from "@shared/utils"
+import { log_error }                                      from "@utils/error_logger"
+import { component }                                      from "@utils"
 import { build_select_update_message,
-         perform_script_update }                          from "@atomic/features/commands/commerce/scripts/controller/scripts.controller"
+         perform_script_update }                          from "@commands/commerce/scripts/controller/scripts.controller"
 
 /**
  * @description handles the update script select menu — updates the Update button with the chosen script_id

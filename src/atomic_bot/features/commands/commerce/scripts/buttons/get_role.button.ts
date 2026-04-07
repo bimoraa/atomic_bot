@@ -11,11 +11,11 @@
 // - get script role button handler for the scripts panel - \\
 
 import { ButtonInteraction, GuildMember } from "discord.js"
-import { log_error }                       from "@shared/utils/error_logger"
-import * as luarmor                        from "@atomic/integrations/api/luarmor"
-import { component, api, env, format }     from "@shared/utils"
-import { member_has_role }                 from "@shared/utils/discord_api"
-import { is_quarantined }                  from "@shared/database/managers/quarantine.manager"
+import { log_error }                       from "@utils/error_logger"
+import * as luarmor                        from "@integrations/api/luarmor"
+import { component, api, env, format }     from "@utils"
+import { member_has_role }                 from "@utils/discord_api"
+import { is_quarantined }                  from "@managers/quarantine.manager"
 
 const __script_role_id = env.get("LUARMOR_SCRIPT_ROLE_ID", "1398313779380617459")
 

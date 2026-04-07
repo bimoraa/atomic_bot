@@ -19,12 +19,12 @@ import {
   ThreadAutoArchiveDuration,
   ThreadChannel,
 }                               from "discord.js"
-import { api, component, db }    from "@shared/utils"
-import type { container_component, message_payload } from "@shared/utils"
-import { log_error }            from "@shared/utils/error_logger"
-import { member_has_role }      from "@shared/utils/discord_api"
-import { Cache }                from "@shared/utils/cache"
-import * as random              from "@shared/utils/random"
+import { api, component, db }    from "@utils"
+import type { container_component, message_payload } from "@utils"
+import { log_error }            from "@utils/error_logger"
+import { member_has_role }      from "@utils/discord_api"
+import { Cache }                from "@utils/cache"
+import * as random              from "@utils/random"
 
 const __settings_collection    = "rod_settings"
 const __settings_channel_id    = "1444073420030476309"

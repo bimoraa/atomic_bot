@@ -11,8 +11,8 @@
 // - /setup guide-panel command, deploys the guide panel - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember }  from "discord.js"
 import { Command }                                                        from "@shared/types/command"
-import { is_admin, is_staff }                                             from "@shared/database/settings/permissions"
-import { api, component }                                                 from "@shared/utils"
+import { is_admin, is_staff }                                             from "@database/settings/permissions"
+import { api, component }                                                 from "@utils"
 import fs                                                                 from "fs"
 import path                                                               from "path"
 

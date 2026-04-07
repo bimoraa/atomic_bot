@@ -12,8 +12,8 @@
 import { ModalSubmitInteraction }                                   from "discord.js"
 import { open_middleman_ticket,
          build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                                    from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
-import { log_error }                                                from "@shared/utils/error_logger"
+         fetch_maintenance_mode }                                    from "@commands/commerce/middleman/controller/middleman.controller"
+import { log_error }                                                from "@utils/error_logger"
 
 /**
  * @description handles transaction details modal — creates middleman ticket

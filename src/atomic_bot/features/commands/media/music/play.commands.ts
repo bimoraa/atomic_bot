@@ -11,9 +11,9 @@
 // - /play: drop your music query here - \\
 import { ChatInputCommandInteraction, GuildMember, SlashCommandBuilder } from "discord.js"
 import { Command }                                                        from "@shared/types/command"
-import { component }                                                      from "@shared/utils"
-import { log_error }                                                      from "@shared/utils/error_logger"
-import { handle_play }                                                    from "@atomic/features/commands/media/music/controller/music.controller"
+import { component }                                                      from "@utils"
+import { log_error }                                                      from "@utils/error_logger"
+import { handle_play }                                                    from "@commands/media/music/controller/music.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

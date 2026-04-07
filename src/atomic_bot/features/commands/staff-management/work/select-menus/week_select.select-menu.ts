@@ -13,13 +13,13 @@
 // - work stats week select - \
 
 import { StringSelectMenuInteraction } from "discord.js"
-import { api, component } from "@shared/utils"
+import { api, component } from "@utils"
 import {
   get_work_report,
   get_work_logs,
   get_year,
   format_salary,
-} from "@shared/database/trackers/work_tracker"
+} from "@database/trackers/work_tracker"
 
 export async function handle_work_stats_week_select(interaction: StringSelectMenuInteraction): Promise<void> {
   const [staff_id, week_str] = interaction.values[0].split(":")

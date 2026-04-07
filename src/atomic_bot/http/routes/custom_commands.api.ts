@@ -10,7 +10,7 @@
 // - 自定义指令的 CRUD API 路由 - \
 // - custom commands CRUD API router - \
 import { Router, Request, Response } from "express"
-import * as database                 from "@shared/utils/database"
+import * as database                 from "@utils/database"
 
 /**
  * @description create custom commands CRUD API router

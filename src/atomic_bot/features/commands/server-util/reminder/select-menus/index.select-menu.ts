@@ -9,4 +9,4 @@
 
 // - 提醒选择菜单交互的统一导出 - \
 // - barrel export for reminder select menu interactions - \
-export { handle_reminder_cancel_select } from "@atomic/features/commands/server-util/reminder/select-menus/reminder_cancel_select.select-menu"
+export { handle_reminder_cancel_select } from "@commands/server-util/reminder/select-menus/reminder_cancel_select.select-menu"

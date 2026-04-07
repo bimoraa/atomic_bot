@@ -10,7 +10,7 @@
 // - 提交 LOA 申请按钮的交互注册 - \
 // - registers the LOA request button interaction - \
 import { ButtonInteraction } from "discord.js"
-import { modal }             from "@shared/utils"
+import { modal }             from "@utils"
 import { ButtonHandler }     from "@shared/types/interaction"
 
 export async function handle_loa_request(interaction: ButtonInteraction): Promise<void> {

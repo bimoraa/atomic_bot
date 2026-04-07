@@ -16,8 +16,8 @@ import {
   PermissionFlagsBits,
 }                                            from "discord.js"
 import { Command }                            from "@shared/types/command"
-import { get_guild_quarantines }              from "@shared/database/managers/quarantine.manager"
-import { component, time }                    from "@shared/utils"
+import { get_guild_quarantines }              from "@managers/quarantine.manager"
+import { component, time }                    from "@utils"
 
 /**
  * @description list all quarantined members command

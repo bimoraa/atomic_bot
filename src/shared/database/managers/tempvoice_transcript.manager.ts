@@ -12,8 +12,8 @@
 
 import { randomUUID }           from "crypto"
 import { VoiceChannel, Collection }          from "discord.js"
-import { db }                   from "@shared/utils"
-import { log_error }            from "@shared/utils/error_logger"
+import { db }                   from "@utils"
+import { log_error }            from "@utils/error_logger"
 import type {
   tempvoice_transcript_data,
   tempvoice_transcript_message,

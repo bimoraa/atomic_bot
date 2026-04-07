@@ -8,12 +8,12 @@
  */
 
 import { Client, Message, PermissionFlagsBits }                                            from "discord.js"
-import { component }                                                                        from "@shared/utils"
-import { log_error }                                                                        from "@shared/utils/error_logger"
+import { component }                                                                        from "@utils"
+import { log_error }                                                                        from "@utils/error_logger"
 import {
   get_security_automod_config_or_default,
   list_security_automod_words,
-}                                                                                           from "@shared/database/managers/security_automod.manager"
+}                                                                                           from "@managers/security_automod.manager"
 
 /**
  * @description process one message against security automod banned-word rules

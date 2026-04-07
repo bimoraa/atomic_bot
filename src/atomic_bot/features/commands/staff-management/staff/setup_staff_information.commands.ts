@@ -16,14 +16,14 @@ import {
   TextChannel,
 } from "discord.js"
 import { Command }  from "@shared/types/command"
-import { is_admin } from "@shared/database/settings/permissions"
-import { log_error } from "@shared/utils/error_logger"
+import { is_admin } from "@database/settings/permissions"
+import { log_error } from "@utils/error_logger"
 import {
   container,
   text,
   action_row,
   secondary_button,
-} from "@shared/utils/components"
+} from "@utils/components"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

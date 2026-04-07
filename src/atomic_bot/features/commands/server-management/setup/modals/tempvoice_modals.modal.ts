@@ -11,7 +11,7 @@
 // - registers and handles temp voice settings modal interactions - \
 import { ModalSubmitInteraction, GuildMember, VoiceChannel } from "discord.js"
 import { ModalHandler }                                      from "@shared/types/interaction"
-import * as tempvoice from "@shared/database/services/tempvoice"
+import * as tempvoice from "@services/tempvoice"
 
 export const modal: ModalHandler = {
   custom_id: /^tempvoice_(rename|limit|region)_modal$/,

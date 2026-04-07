@@ -10,11 +10,11 @@
 // - 定时检查标签隔离状态的定时任务 - \
 // - scheduler that checks tag quarantine status periodically - \
 import { Client }                                       from "discord.js"
-import { logger }                                       from "@shared/utils"
-import { get_auto_tag_quarantines, remove_quarantine }  from "@shared/database/managers/quarantine.manager"
-import { component }                                    from "@shared/utils"
-import { log_error }                                    from "@shared/utils/error_logger"
-import { get_banned_tags }                              from "@shared/database/settings/server_tag"
+import { logger }                                       from "@utils"
+import { get_auto_tag_quarantines, remove_quarantine }  from "@managers/quarantine.manager"
+import { component }                                    from "@utils"
+import { log_error }                                    from "@utils/error_logger"
+import { get_banned_tags }                              from "@database/settings/server_tag"
 
 const log = logger.create_logger("tag_quarantine_checker")
 

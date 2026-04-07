@@ -13,10 +13,10 @@
 // - community controller, handles review submissions - \
 
 import { Client, TextChannel }        from "discord.js"
-import { load_config }                from "@shared/config/loader"
-import { component, time, api }       from "@shared/utils"
-import { log_error }                  from "@shared/utils/error_logger"
-import * as review_manager            from "@shared/database/managers/review.manager"
+import { load_config }                from "@config/loader"
+import { component, time, api }       from "@utils"
+import { log_error }                  from "@utils/error_logger"
+import * as review_manager            from "@managers/review.manager"
 
 const config = load_config<{ review_channel_id: string }>("review")
 

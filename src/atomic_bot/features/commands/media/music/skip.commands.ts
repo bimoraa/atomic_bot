@@ -11,9 +11,9 @@
 // - /skip slash command, skips the current track - \\
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { component }                                        from "@shared/utils"
-import { log_error }                                        from "@shared/utils/error_logger"
-import { handle_skip }                                      from "@atomic/features/commands/media/music/controller/music.controller"
+import { component }                                        from "@utils"
+import { log_error }                                        from "@utils/error_logger"
+import { handle_skip }                                      from "@commands/media/music/controller/music.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

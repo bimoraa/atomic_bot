@@ -10,7 +10,7 @@
 // - 处理关闭票务 modal 的提交 - \
 // - handles the ticket close modal submission - \
 import { ModalSubmitInteraction, ThreadChannel } from "discord.js"
-import { close_ticket } from "@shared/database/unified_ticket"
+import { close_ticket } from "@database/unified_ticket"
 
 export async function handle(interaction: ModalSubmitInteraction) {
   if (interaction.customId !== "priority_close_reason_modal") return false

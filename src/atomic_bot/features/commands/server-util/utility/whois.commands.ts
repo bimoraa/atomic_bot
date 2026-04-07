@@ -11,7 +11,7 @@
 // - /whois slash command, shows detailed info about a user - \
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from "discord.js"
 import { Command }  from "@shared/types/command"
-import { component } from "@shared/utils"
+import { component } from "@utils"
 
 const whois: Command = {
   data: new SlashCommandBuilder()

@@ -11,8 +11,8 @@
 // - /queue slash command, shows the current playback queue - \\
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { log_error }                                        from "@shared/utils/error_logger"
-import { build_queue_message }                              from "@atomic/features/commands/media/music/controller/music.controller"
+import { log_error }                                        from "@utils/error_logger"
+import { build_queue_message }                              from "@commands/media/music/controller/music.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

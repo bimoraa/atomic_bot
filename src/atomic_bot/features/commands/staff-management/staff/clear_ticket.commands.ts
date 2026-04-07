@@ -20,16 +20,16 @@ import {
   MessageFlags,
 }                            from "discord.js"
 import { Command }           from "@shared/types/command"
-import { component, db }     from "@shared/utils"
-import { is_admin_or_mod }   from "@shared/database/settings/permissions"
-import { close_ticket }      from "@shared/database/unified_ticket/close"
+import { component, db }     from "@utils"
+import { is_admin_or_mod }   from "@database/settings/permissions"
+import { close_ticket }      from "@database/unified_ticket/close"
 import { client }            from "@startup/atomic_bot"
 import {
   ticket_data,
   ticket_types,
   load_all_tickets,
-}                            from "@shared/database/unified_ticket"
-import { log_error }         from "@shared/utils/error_logger"
+}                            from "@database/unified_ticket"
+import { log_error }         from "@utils/error_logger"
 
 const __tickets_collection = "unified_tickets"
 

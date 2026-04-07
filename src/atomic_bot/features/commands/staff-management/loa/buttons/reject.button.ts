@@ -10,7 +10,7 @@
 // - 拒绝 LOA 按钮的交互注册 - \
 // - registers the reject LOA button interaction - \
 import { ButtonInteraction }              from "discord.js"
-import { reject_loa, has_loa_permission } from "@atomic/features/commands/staff-management/loa/controller/loa.controller"
+import { reject_loa, has_loa_permission } from "@commands/staff-management/loa/controller/loa.controller"
 import { ButtonHandler }                   from "@shared/types/interaction"
 
 export async function handle_loa_reject(interaction: ButtonInteraction): Promise<void> {

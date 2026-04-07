@@ -8,9 +8,9 @@
  */
 
 import { Client }                             from "discord.js"
-import { load_config }                        from "@shared/config/loader"
-import { api, component, env, format, logger } from "@shared/utils"
-import { log_error }                          from "@shared/utils/error_logger"
+import { load_config }                        from "@config/loader"
+import { api, component, env, format, logger } from "@utils"
+import { log_error }                          from "@utils/error_logger"
 
 interface executor_update_config {
   enabled            : boolean

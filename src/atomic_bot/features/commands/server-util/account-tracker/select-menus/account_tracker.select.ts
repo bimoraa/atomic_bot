@@ -10,10 +10,10 @@
 // - account tracker 选择菜单，显示单个账户的详情 - \\
 // - account tracker select menu, shows detail card for a selected account - \\
 import { StringSelectMenuInteraction }  from "discord.js"
-import { component }                    from "@shared/utils"
-import { log_error }                    from "@shared/utils/error_logger"
-import { get_session_by_hash }          from "@shared/database/managers/account_tracker.manager"
-import { build_detail_message }         from "@atomic/http/routes/account_tracker.api"
+import { component }                    from "@utils"
+import { log_error }                    from "@utils/error_logger"
+import { get_session_by_hash }          from "@managers/account_tracker.manager"
+import { build_detail_message }         from "@http/routes/account_tracker.api"
 
 // - 全局固定键，sessions 不区分 guild - \\
 // - fixed global key, sessions are not scoped per guild - \\

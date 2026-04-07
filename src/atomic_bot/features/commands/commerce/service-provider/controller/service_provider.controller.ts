@@ -13,9 +13,9 @@
 // - service provider controller, handles script logic - \
 
 import { Client }                from "discord.js"
-import { db, component }         from "@shared/utils"
-import { log_error }             from "@shared/utils/error_logger"
-import * as luarmor              from "@atomic/integrations/api/luarmor"
+import { db, component }         from "@utils"
+import { log_error }             from "@utils/error_logger"
+import * as luarmor              from "@integrations/api/luarmor"
 
 const __reset_collection            = "service_provider_resets"
 const __user_cache_collection       = "service_provider_user_cache"

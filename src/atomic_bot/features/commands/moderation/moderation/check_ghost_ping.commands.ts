@@ -11,7 +11,7 @@
 // - /check-ghost-ping slash command, checks for ghost pings - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { component, db, format, time }                      from "@shared/utils"
+import { component, db, format, time }                      from "@utils"
 
 interface ghost_ping_entry {
   message_id : string

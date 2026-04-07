@@ -11,11 +11,11 @@
 // - handles voice state update events, used for temp voice management - \
 import { Events, VoiceState } from "discord.js"
 import { client }             from "@startup/atomic_bot"
-import * as tempvoice         from "@shared/database/services/tempvoice"
+import * as tempvoice         from "@services/tempvoice"
 import {
   on_voice_join,
   on_voice_leave,
-}                             from "@atomic/features/commands/staff-management/staff/controller/staff_voice.controller"
+}                             from "@commands/staff-management/staff/controller/staff_voice.controller"
 
 client.on(Events.VoiceStateUpdate, async (old_state: VoiceState, new_state: VoiceState) => {
   try {

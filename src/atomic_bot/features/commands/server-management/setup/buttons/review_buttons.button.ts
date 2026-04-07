@@ -11,7 +11,7 @@
 // - registers review panel button interactions - \
 import { ButtonInteraction } from "discord.js"
 import { ButtonHandler }     from "@shared/types/interaction"
-import { modal }             from "@shared/utils"
+import { modal }             from "@utils"
 
 export const button: ButtonHandler = {
   custom_id: "review_submit",

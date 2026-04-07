@@ -18,8 +18,8 @@ import {
   Guild,
 } from "discord.js"
 import { Command }              from "@shared/types/command"
-import { is_admin }             from "@shared/database/settings/permissions"
-import { component, api, format } from "@shared/utils"
+import { is_admin }             from "@database/settings/permissions"
+import { component, api, format } from "@utils"
 
 interface ReactionRole {
   emoji_id   : string

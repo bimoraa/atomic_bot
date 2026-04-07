@@ -13,8 +13,8 @@
 // - ask staff modal handler - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { post_question }          from "@atomic/features/commands/server-util/ask/controller/ask.controller"
-import { ask_channel_id }         from "@atomic/features/commands/server-util/ask/ask.commands"
+import { post_question }          from "@commands/server-util/ask/controller/ask.controller"
+import { ask_channel_id }         from "@commands/server-util/ask/ask.commands"
 
 export async function handle_ask_staff_modal(interaction: ModalSubmitInteraction): Promise<void> {
   await interaction.deferReply({ flags: 64 })

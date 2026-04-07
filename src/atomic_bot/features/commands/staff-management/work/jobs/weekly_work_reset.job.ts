@@ -9,8 +9,8 @@
 
 // - 每周重置员工工作统计的定时任务 - \
 // - scheduler that resets weekly work stats every week - \
-import { logger, db, time } from "@shared/utils"
-import { get_week_number, get_year } from "@shared/database/trackers/work_tracker"
+import { logger, db, time } from "@utils"
+import { get_week_number, get_year } from "@database/trackers/work_tracker"
 
 const __work_reports_collection = "work_reports"
 const log                       = logger.create_logger("weekly_work_reset")

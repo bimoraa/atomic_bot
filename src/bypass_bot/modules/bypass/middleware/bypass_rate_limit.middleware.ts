@@ -7,7 +7,7 @@
  * See the LICENSE file for more information.
  */
 
-import { Cache } from "@shared/utils/cache"
+import { Cache } from "@utils/cache"
 
 const __rate_limit_window_ms = 30_000
 const __rate_limit_max       = 20

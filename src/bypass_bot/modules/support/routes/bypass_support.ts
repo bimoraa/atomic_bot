@@ -13,7 +13,7 @@ import {
 } from "discord.js"
 import { Command }                 from "@shared/types/command"
 import { get_supported_services }  from "@bypass/modules/bypass/services/bypass.service"
-import { component, api, cache }   from "@shared/utils"
+import { component, api, cache }   from "@utils"
 
 /**
  * - 绕过支持命令 - \\

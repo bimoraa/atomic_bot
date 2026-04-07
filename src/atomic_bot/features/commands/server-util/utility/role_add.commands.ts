@@ -11,9 +11,9 @@
 // - /role-add slash command, adds a role to a user - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember, Role } from "discord.js"
 import { Command }         from "@shared/types/command"
-import { is_admin }        from "@shared/database/settings/permissions"
-import { api, component }  from "@shared/utils"
-import { member_has_role } from "@shared/utils/discord_api"
+import { is_admin }        from "@database/settings/permissions"
+import { api, component }  from "@utils"
+import { member_has_role } from "@utils/discord_api"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

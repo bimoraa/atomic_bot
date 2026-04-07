@@ -13,7 +13,7 @@
 // - edit rules modal - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { component, api, format } from "@shared/utils"
+import { component, api, format } from "@utils"
 
 const rules_channel_id = "1250373760016715866"
 

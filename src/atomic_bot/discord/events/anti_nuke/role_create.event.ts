@@ -9,7 +9,7 @@
 
 // - anti-nuke: role create event listener - \\
 import { Events, Role, AuditLogEvent } from "discord.js"
-import { log_error }                    from "@shared/utils/error_logger"
+import { log_error }                    from "@utils/error_logger"
 import { client }                       from "@startup/atomic_bot"
 import { fetch_audit_executor, should_skip, process_nuke_event } from "./shared"
 

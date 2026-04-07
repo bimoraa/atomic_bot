@@ -11,10 +11,10 @@
 // - handles guild member boost/unboost events - \
 import { Events, GuildMember, Message, PartialGuildMember } from "discord.js"
 import { client }                    from "@startup/atomic_bot"
-import { load_config }               from "@shared/config/loader"
-import { send_booster_log }          from "@atomic/features/commands/server-management/booster/controller/booster.controller"
-import * as booster_manager          from "@shared/database/managers/booster.manager"
-import { log_error }                 from "@shared/utils/error_logger"
+import { load_config }               from "@config/loader"
+import { send_booster_log }          from "@commands/server-management/booster/controller/booster.controller"
+import * as booster_manager          from "@managers/booster.manager"
+import { log_error }                 from "@utils/error_logger"
 
 interface booster_config {
   booster_log_channel_id: string

@@ -8,7 +8,7 @@
  */
 
 // - anti-nuke database manager: whitelist, config, incidents, snapshots - \\
-import { db }                    from "@shared/utils"
+import { db }                    from "@utils"
 import {
   anti_nuke_whitelist_record,
   anti_nuke_channel_snapshot,

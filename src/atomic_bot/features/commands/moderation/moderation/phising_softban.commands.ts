@@ -16,9 +16,9 @@ import {
   PermissionFlagsBits,
 } from "discord.js"
 import type { MessageContextMenuCommand } from "@shared/types/command"
-import { component }                      from "@shared/utils"
-import { log_error }                      from "@shared/utils/error_logger"
-import { is_admin, is_staff }             from "@shared/database/settings/permissions"
+import { component }                      from "@utils"
+import { log_error }                      from "@utils/error_logger"
+import { is_admin, is_staff }             from "@database/settings/permissions"
 
 // - 1 day in seconds - \\
 const __softban_delete_seconds = 1 * 24 * 60 * 60

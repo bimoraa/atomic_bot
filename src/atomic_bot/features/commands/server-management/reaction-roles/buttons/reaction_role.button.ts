@@ -13,10 +13,10 @@
 // - reaction role toggle button handler - \
 
 import { ButtonInteraction, GuildMember } from "discord.js"
-import { load_config }                    from "@shared/config/loader"
-import { component }                      from "@shared/utils"
-import { log_error }                      from "@shared/utils/error_logger"
-import { member_has_role }                from "@shared/utils/discord_api"
+import { load_config }                    from "@config/loader"
+import { component }                      from "@utils"
+import { log_error }                      from "@utils/error_logger"
+import { member_has_role }                from "@utils/discord_api"
 
 const __role_config = load_config("reaction_roles") as Record<string, string>
 

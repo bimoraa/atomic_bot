@@ -9,9 +9,9 @@
 
 import axios              from "axios"
 import { Client }         from "discord.js"
-import { db, component }  from "@shared/utils"
-import { log_error }      from "@shared/utils/error_logger"
-import { Cache }          from "@shared/utils/cache"
+import { db, component }  from "@utils"
+import { log_error }      from "@utils/error_logger"
+import { Cache }          from "@utils/cache"
 import * as idn_live      from "@jkt48/infrastructure/api/idn_live"
 import * as showroom_live from "@jkt48/infrastructure/api/showroom_live"
 

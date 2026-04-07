@@ -11,7 +11,7 @@
 // - /reminder-list slash command, shows all your reminders - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { get_reminder_list }                                from "@atomic/features/commands/server-util/reminder/controller/reminder.controller"
+import { get_reminder_list }                                from "@commands/server-util/reminder/controller/reminder.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

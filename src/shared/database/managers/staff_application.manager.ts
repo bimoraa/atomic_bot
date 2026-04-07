@@ -7,8 +7,8 @@
  * See the LICENSE file for more information.
  */
 
-import * as db             from "@shared/utils/database"
-import { delete_one }      from "@shared/utils/database"
+import * as db             from "@utils/database"
+import { delete_one }      from "@utils/database"
 
 export interface staff_application {
   uuid                 ?: string

@@ -15,8 +15,8 @@ import {
   TextChannel,
 } from "discord.js"
 import { Command } from "@shared/types/command"
-import { component, api, format, http } from "@shared/utils"
-import { load_config as load_cfg, save_config as save_cfg } from "@shared/config/loader"
+import { component, api, format, http } from "@utils"
+import { load_config as load_cfg, save_config as save_cfg } from "@config/loader"
 
 interface PricingConfig {
   channel_id:     string

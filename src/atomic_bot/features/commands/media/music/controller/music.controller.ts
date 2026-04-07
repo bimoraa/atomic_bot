@@ -12,15 +12,15 @@
 import { ChatInputCommandInteraction, Client, ButtonInteraction, TextChannel, GuildMember, VoiceBasedChannel, Message } from "discord.js"
 import { Player }                                                                                               from "shoukaku"
 import axios                                                                                                   from "axios"
-import { component }                                                                                           from "@shared/utils"
-import { log_error }                                                                                           from "@shared/utils/error_logger"
+import { component }                                                                                           from "@utils"
+import { log_error }                                                                                           from "@utils/error_logger"
 import {
   track_data,
   guild_queue,
   lavalink_track,
   lavalink_response,
 }                                                                                                              from "@models/music.model"
-import { get_shoukaku }                                                                                        from "@atomic/integrations/lavalink/shoukaku"
+import { get_shoukaku }                                                                                        from "@integrations/lavalink/shoukaku"
 
 // ─── GUILD QUEUE MAP ──────────────────────────────────────────────────────────
 const guild_queues = new Map<string, guild_queue>()

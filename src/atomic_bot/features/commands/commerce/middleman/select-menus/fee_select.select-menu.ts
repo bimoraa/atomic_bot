@@ -10,9 +10,9 @@
 // - 中间人流程里选择手续费的菜单交互 - \
 // - fee select menu interaction for the middleman flow - \
 import { StringSelectMenuInteraction }                              from "discord.js"
-import { modal }                                                    from "@shared/utils"
+import { modal }                                                    from "@utils"
 import { build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+         fetch_maintenance_mode }                                   from "@commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * @description handles fee payer selection — shows item detail modal

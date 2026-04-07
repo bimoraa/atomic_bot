@@ -13,7 +13,7 @@
 // - review submit button - \
 
 import { ButtonInteraction } from "discord.js"
-import { modal } from "@shared/utils"
+import { modal } from "@utils"
 
 export async function handle_review_submit(interaction: ButtonInteraction) {
   const review_modal = modal.create_modal(

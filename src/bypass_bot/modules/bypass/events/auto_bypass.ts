@@ -9,8 +9,8 @@
 
 import { Message, Client } from "discord.js"
 import { bypass_link }    from "@bypass/modules/bypass/services/bypass.service"
-import { component, db, guild_settings } from "@shared/utils"
-import { log_error }                     from "@shared/utils/error_logger"
+import { component, db, guild_settings } from "@utils"
+import { log_error }                     from "@utils/error_logger"
 import { check_bypass_rate_limit, check_dm_user_cooldown } from "@bypass/modules/bypass/middleware/bypass_rate_limit.middleware"
 
 const __session_key = (msg_id: string) => `bypass_session_${msg_id}`

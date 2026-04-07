@@ -11,8 +11,8 @@
 // - handles the script redeem key modal submission - \
 import { ModalSubmitInteraction } from "discord.js"
 import { ModalHandler }           from "@shared/types/interaction"
-import { component }              from "@shared/utils"
-import * as luarmor               from "@atomic/integrations/api/luarmor"
+import { component }              from "@utils"
+import * as luarmor               from "@integrations/api/luarmor"
 
 export const modal: ModalHandler = {
   custom_id: "script_redeem_key_modal",

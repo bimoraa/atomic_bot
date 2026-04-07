@@ -11,9 +11,9 @@
 // - /staff get-answer-stats command, shows staff answer statistics - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command } from "@shared/types/command"
-import { component, api, db } from "@shared/utils"
-import { staff_role_id }  from "@shared/database/settings/permissions"
-import { member_has_role } from "@shared/utils/discord_api"
+import { component, api, db } from "@utils"
+import { staff_role_id }  from "@database/settings/permissions"
+import { member_has_role } from "@utils/discord_api"
 
 const __collection_name = "answer_stats"
 

@@ -15,8 +15,8 @@ import {
   TextChannel,
   PermissionFlagsBits,
 }                                     from "discord.js"
-import { component, time }            from "@shared/utils"
-import { log_error }                  from "@shared/utils/error_logger"
+import { component, time }            from "@utils"
+import { log_error }                  from "@utils/error_logger"
 import {
   save_incident,
   get_incident,
@@ -24,8 +24,8 @@ import {
   get_channel_snapshots,
   get_role_snapshots,
   get_config,
-}                                     from "@shared/database/managers/anti_nuke_manager"
-import { mark_quarantined, clear_user } from "@atomic/integrations/cache/anti_nuke_tracker"
+}                                     from "@managers/anti_nuke_manager"
+import { mark_quarantined, clear_user } from "@integrations/cache/anti_nuke_tracker"
 import { anti_nuke_channel_snapshot,
   anti_nuke_role_snapshot,
   anti_nuke_action,

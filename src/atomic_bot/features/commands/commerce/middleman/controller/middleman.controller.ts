@@ -22,13 +22,13 @@ import {
   set_ticket,
   save_ticket_immediate,
   TicketData,
-} from "@shared/database/unified_ticket"
+} from "@database/unified_ticket"
 import {
   create_middleman_ticket,
   count_user_active_tickets,
-} from "@shared/database/managers/middleman.manager"
-import { component, time, api, format }                 from "@shared/utils"
-import { log_error }                                     from "@shared/utils/error_logger"
+} from "@managers/middleman.manager"
+import { component, time, api, format }                 from "@utils"
+import { log_error }                                     from "@utils/error_logger"
 import {
   TransactionRange,
   TransactionDetails,

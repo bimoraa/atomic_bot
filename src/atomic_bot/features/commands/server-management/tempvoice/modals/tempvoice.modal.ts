@@ -13,8 +13,8 @@
 // - temp voice modal handler - \
 
 import { ModalSubmitInteraction, GuildMember, VoiceChannel, Guild } from "discord.js"
-import * as tempvoice                                               from "@shared/database/services/tempvoice"
-import { component }                                                from "@shared/utils"
+import * as tempvoice                                               from "@services/tempvoice"
+import { component }                                                from "@utils"
 
 /**
  * - 验证并获取语音频道 - \\

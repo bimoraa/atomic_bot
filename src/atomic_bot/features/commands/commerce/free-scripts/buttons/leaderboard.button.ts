@@ -13,10 +13,10 @@
 // - free script leaderboard button - \
 
 import { ButtonInteraction, GuildMember }   from "discord.js"
-import { component, api, format }           from "@shared/utils"
-import { http, env, logger }                from "@shared/utils"
-import { create_rate_limit_message }        from "@atomic/features/commands/commerce/service-provider/controller/service_provider.controller"
-import { member_has_role }                  from "@shared/utils/discord_api"
+import { component, api, format }           from "@utils"
+import { http, env, logger }                from "@utils"
+import { create_rate_limit_message }        from "@commands/commerce/service-provider/controller/service_provider.controller"
+import { member_has_role }                  from "@utils/discord_api"
 
 const __log                 = logger.create_logger("free_leaderboard")
 const FREE_PROJECT_ID       = "cd7560b7384fd815dafd993828c40d2b"

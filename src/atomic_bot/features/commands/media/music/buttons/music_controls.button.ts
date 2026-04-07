@@ -10,14 +10,14 @@
 // - 音乐控制按钮处理器：Skip / Pause-Resume / Stop / Queue - \\
 // - music control button handlers: Skip / Pause-Resume / Stop / Queue - \\
 import { ButtonInteraction } from "discord.js"
-import { component }         from "@shared/utils"
-import { log_error }         from "@shared/utils/error_logger"
+import { component }         from "@utils"
+import { log_error }         from "@utils/error_logger"
 import {
   handle_skip,
   handle_stop,
   handle_pause_resume,
   build_queue_message,
-}                            from "@atomic/features/commands/media/music/controller/music.controller"
+}                            from "@commands/media/music/controller/music.controller"
 
 // ─── SKIP ─────────────────────────────────────────────────────────────────────
 /**

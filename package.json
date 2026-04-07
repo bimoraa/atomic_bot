@@ -47,14 +47,26 @@
     "ytsr": "^3.8.4"
   },
   "_moduleAliases": {
-    "@shared": "dist/shared",
-    "@atomic": "dist/atomic_bot",
-    "@jkt48": "dist/jkt48_bot",
-    "@bypass": "dist/bypass_bot",
-    "@startup": "dist/startup",
-    "@constants": "dist/shared/constants",
-    "@enums": "dist/shared/enums",
-    "@models": "dist/shared/models"
+    "@shared":       "dist/shared",
+    "@atomic":       "dist/atomic_bot",
+    "@jkt48":        "dist/jkt48_bot",
+    "@bypass":       "dist/bypass_bot",
+    "@startup":      "dist/startup",
+
+    "@constants":    "dist/shared/constants",
+    "@enums":        "dist/shared/enums",
+    "@models":       "dist/shared/models",
+
+    "@utils":        "dist/shared/utils",
+    "@config":       "dist/shared/config",
+    "@database":     "dist/shared/database",
+    "@managers":     "dist/shared/database/managers",
+    "@services":     "dist/shared/database/services",
+
+    "@discord":      "dist/atomic_bot/discord",
+    "@http":         "dist/atomic_bot/http",
+    "@commands":     "dist/atomic_bot/features/commands",
+    "@integrations": "dist/atomic_bot/integrations"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

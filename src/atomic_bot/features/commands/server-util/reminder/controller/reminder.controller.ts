@@ -10,8 +10,8 @@
 // - 提醒功能的模块控制器 - \
 // - module controller for the reminder feature - \
 import { Client }                                                         from "discord.js"
-import { component, time, db, api }                                      from "@shared/utils"
-import { log_error }                                                     from "@shared/utils/error_logger"
+import { component, time, db, api }                                      from "@utils"
+import { log_error }                                                     from "@utils/error_logger"
 import {
   reminder_data,
   reminder_list_options,
@@ -135,7 +135,7 @@ export async function add_reminder(options: add_reminder_options) {
   try {
     await db.insert_one("reminders", reminder)
 
-    const { schedule_reminder } = await import("@atomic/features/commands/server-util/reminder/reminder.commands")
+    const { schedule_reminder } = await import("@commands/server-util/reminder/reminder.commands")
     schedule_reminder(client, reminder)
 
     const confirmation = component.build_message({
@@ -210,7 +210,7 @@ export async function cancel_reminder(options: cancel_reminder_options) {
         }
       }
 
-      const { active_reminders } = await import("@atomic/features/commands/server-util/reminder/reminder.commands")
+      const { active_reminders } = await import("@commands/server-util/reminder/reminder.commands")
       const key                  = `${user_id}:${remind_at}`
       const timeout              = active_reminders.get(key)
 
@@ -233,7 +233,7 @@ export async function cancel_reminder(options: cancel_reminder_options) {
         }
       }
 
-      const { active_reminders } = await import("@atomic/features/commands/server-util/reminder/reminder.commands")
+      const { active_reminders } = await import("@commands/server-util/reminder/reminder.commands")
       for (const [key, timeout] of active_reminders.entries()) {
         if (key.startsWith(`${user_id}:`)) {
           clearTimeout(timeout)

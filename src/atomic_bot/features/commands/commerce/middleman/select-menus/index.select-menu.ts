@@ -12,9 +12,9 @@
 // - 中间人选择菜单处理器汇总 - \\
 // - middleman select menu handlers all in one place - \\
 
-export { handle_middleman_transaction_range_select } from "@atomic/features/commands/commerce/middleman/select-menus/range_select.select-menu"
-export { handle_middleman_seller_select }            from "@atomic/features/commands/commerce/middleman/select-menus/seller_select.select-menu"
-export { handle_middleman_buyer_select }             from "@atomic/features/commands/commerce/middleman/select-menus/buyer_select.select-menu"
-export { handle_middleman_partner_select }           from "@atomic/features/commands/commerce/middleman/select-menus/partner_select.select-menu"
-export { handle_middleman_fee_select }               from "@atomic/features/commands/commerce/middleman/select-menus/fee_select.select-menu"
-export { handle_middleman_member_select }            from "@atomic/features/commands/commerce/middleman/select-menus/member_select.select-menu"
+export { handle_middleman_transaction_range_select } from "@commands/commerce/middleman/select-menus/range_select.select-menu"
+export { handle_middleman_seller_select }            from "@commands/commerce/middleman/select-menus/seller_select.select-menu"
+export { handle_middleman_buyer_select }             from "@commands/commerce/middleman/select-menus/buyer_select.select-menu"
+export { handle_middleman_partner_select }           from "@commands/commerce/middleman/select-menus/partner_select.select-menu"
+export { handle_middleman_fee_select }               from "@commands/commerce/middleman/select-menus/fee_select.select-menu"
+export { handle_middleman_member_select }            from "@commands/commerce/middleman/select-menus/member_select.select-menu"

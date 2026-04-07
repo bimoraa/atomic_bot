@@ -8,7 +8,7 @@
  */
 
 // - utility functions for the afk feature - \\
-import { component } from "@shared/utils"
+import { component } from "@utils"
 
 /**
  * - build simple message - \\

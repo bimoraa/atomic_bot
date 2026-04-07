@@ -7,7 +7,7 @@
  * See the LICENSE file for more information.
  */
 
-import { db }                                                                            from "@shared/utils"
+import { db }                                                                            from "@utils"
 import { security_automod_config_model, security_automod_word_model }                   from "@models/security_automod.model"
 
 const __config_collection = "security_automod_config"

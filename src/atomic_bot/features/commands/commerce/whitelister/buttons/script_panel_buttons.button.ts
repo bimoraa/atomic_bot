@@ -11,10 +11,10 @@
 // - button component definitions for the script panel - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
-import { component, modal }              from "@shared/utils"
-import * as luarmor                      from "@atomic/integrations/api/luarmor"
-import { is_hwid_enabled }               from "@atomic/features/commands/server-management/setup/hwid_control.commands"
-import { get_user_stats }                from "@atomic/features/commands/commerce/whitelister/controller/whitelister.controller"
+import { component, modal }              from "@utils"
+import * as luarmor                      from "@integrations/api/luarmor"
+import { is_hwid_enabled }               from "@commands/server-management/setup/hwid_control.commands"
+import { get_user_stats }                from "@commands/commerce/whitelister/controller/whitelister.controller"
 
 const __sp_whitelisted_role_id = "1398313779380617459"
 const __sp_buyer_role_id       = "1364930933148352522"

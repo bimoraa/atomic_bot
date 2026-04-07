@@ -14,9 +14,9 @@ import {
   SlashCommandBuilder,
 }                         from "discord.js"
 import { Command }        from "@shared/types/command"
-import { api }            from "@shared/utils"
-import { log_error }      from "@shared/utils/error_logger"
-import * as share_settings from "@atomic/features/commands/commerce/share-settings/controller/share_settings.controller"
+import { api }            from "@utils"
+import { log_error }      from "@utils/error_logger"
+import * as share_settings from "@commands/commerce/share-settings/controller/share_settings.controller"
 
 /**
  * - 执行设置排行榜命令 - \\

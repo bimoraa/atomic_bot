@@ -11,9 +11,9 @@
 // - registers temp voice panel button interactions - \
 import { ButtonInteraction, GuildMember, VoiceChannel } from "discord.js"
 import { ButtonHandler }                                from "@shared/types/interaction"
-import { component, modal }                            from "@shared/utils"
-import * as tempvoice                                  from "@shared/database/services/tempvoice"
-import { get_channel_leaderboard, format_time }        from "@shared/database/trackers/voice_time_tracker"
+import { component, modal }                            from "@utils"
+import * as tempvoice                                  from "@services/tempvoice"
+import { get_channel_leaderboard, format_time }        from "@database/trackers/voice_time_tracker"
 
 async function get_owner_channel(interaction: ButtonInteraction): Promise<VoiceChannel | null> {
   const member = interaction.member as GuildMember

@@ -11,11 +11,11 @@
 // - button component definitions for payment - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
-import { component, api, time }           from "@shared/utils"
-import { is_staff }                       from "@shared/database/settings/permissions"
-import { create_key_for_project, delete_user_from_project } from "@atomic/integrations/api/luarmor"
-import { add_work_log }                   from "@shared/database/trackers/work_tracker"
-import { log_error }                      from "@shared/utils/error_logger"
+import { component, api, time }           from "@utils"
+import { is_staff }                       from "@database/settings/permissions"
+import { create_key_for_project, delete_user_from_project } from "@integrations/api/luarmor"
+import { add_work_log }                   from "@database/trackers/work_tracker"
+import { log_error }                      from "@utils/error_logger"
 
 const __whitelist_project_id = "6958841b2d9e5e049a24a23e376e0d77"
 const __payment_channel_id   = "1392574025498366061"

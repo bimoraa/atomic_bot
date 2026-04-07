@@ -11,9 +11,9 @@
 // - view leaderboard button handler for the scripts panel - \\
 
 import { ButtonInteraction }          from "discord.js"
-import { log_error }                  from "@shared/utils/error_logger"
-import { component, api }             from "@shared/utils"
-import { get_execution_leaderboard }  from "@atomic/features/commands/commerce/service-provider/controller/service_provider.controller"
+import { log_error }                  from "@utils/error_logger"
+import { component, api }             from "@utils"
+import { get_execution_leaderboard }  from "@commands/commerce/service-provider/controller/service_provider.controller"
 
 /**
  * @description handles the view leaderboard button — fetches and displays the top 10 execution leaderboard.

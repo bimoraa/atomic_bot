@@ -10,8 +10,8 @@
 // - 审核管理控制中心，主打一个稳准狠 - \\
 // - moderation controller, keeping the peace - \\
 import { Client, GuildMember, User, Guild } from "discord.js"
-import { component }                        from "@shared/utils"
-import { log_error }                        from "@shared/utils/error_logger"
+import { component }                        from "@utils"
+import { log_error }                        from "@utils/error_logger"
 
 interface ban_member_options {
   client       : Client
@@ -380,7 +380,7 @@ export async function warn_member(options: warn_member_options) {
       await target.send(dm_message)
     } catch {}
 
-    const { add_warning } = await import("@atomic/features/commands/moderation/moderation/warnings.commands")
+    const { add_warning } = await import("@commands/moderation/moderation/warnings.commands")
     await add_warning(guild.id, target.id, executor.id, reason)
 
     const avatar_url = target.user.displayAvatarURL({ size: 512 })

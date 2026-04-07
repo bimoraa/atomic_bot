@@ -10,14 +10,14 @@
 // - 定时检查并自动标记长时间未上报的账户为离线 - \\
 // - scheduler that auto-flags stale sessions as offline when no post arrives - \\
 import { Client, TextChannel }   from "discord.js"
-import { log_error }             from "@shared/utils/error_logger"
+import { log_error }             from "@utils/error_logger"
 import {
   get_all_sessions,
   get_all_sessions_global,
   upsert_session,
   get_tracker_config,
-}                                from "@shared/database/managers/account_tracker.manager"
-import { build_overview_message } from "@atomic/http/routes/account_tracker.api"
+}                                from "@managers/account_tracker.manager"
+import { build_overview_message } from "@http/routes/account_tracker.api"
 
 // - 全局固定键，sessions 不区分 guild - \\
 // - fixed global key, sessions are not scoped per guild - \\

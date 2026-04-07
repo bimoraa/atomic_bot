@@ -14,9 +14,9 @@ import {
   SlashCommandBuilder,
 }                           from "discord.js"
 import { Command }          from "@shared/types/command"
-import { component }        from "@shared/utils"
-import { log_error }        from "@shared/utils/error_logger"
-import { get_all_sessions } from "@shared/database/managers/account_tracker.manager"
+import { component }        from "@utils"
+import { log_error }        from "@utils/error_logger"
+import { get_all_sessions } from "@managers/account_tracker.manager"
 import type { account_tracker_session } from "@models/account_tracker.model"
 
 // - 全局固定键，session 不区分 guild - \\

@@ -10,9 +10,9 @@
 // - 定时检查并自动释放到期的隔离用户 - \
 // - scheduler that auto-releases expired quarantined users - \
 import { Client }                   from "discord.js"
-import { logger }                   from "@shared/utils"
-import { get_expired_quarantines }  from "@shared/database/managers/quarantine.manager"
-import { release_quarantine }       from "@atomic/features/commands/moderation/quarantine/controller/quarantine.controller"
+import { logger }                   from "@utils"
+import { get_expired_quarantines }  from "@managers/quarantine.manager"
+import { release_quarantine }       from "@commands/moderation/quarantine/controller/quarantine.controller"
 
 const log = logger.create_logger("quarantine_scheduler")
 

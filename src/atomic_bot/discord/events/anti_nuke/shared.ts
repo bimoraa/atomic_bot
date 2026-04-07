@@ -16,23 +16,23 @@ import {
   get_config,
   save_channel_snapshot,
   save_role_snapshot,
-}                                             from "@shared/database/managers/anti_nuke_manager"
+}                                             from "@managers/anti_nuke_manager"
 import {
   track_event,
   get_context_bias,
   is_already_quarantined,
   mark_quarantined,
-}                                             from "@atomic/integrations/cache/anti_nuke_tracker"
+}                                             from "@integrations/cache/anti_nuke_tracker"
 import {
   execute_quarantine,
   send_soft_alert,
-}                                             from "@atomic/features/commands/moderation/anti-nuke/controller/anti_nuke.controller"
+}                                             from "@commands/moderation/anti-nuke/controller/anti_nuke.controller"
 import {
   anti_nuke_event_type,
   anti_nuke_channel_snapshot,
   anti_nuke_role_snapshot,
 }                                             from "@models/anti_nuke.model"
-import { save_incident }                      from "@shared/database/managers/anti_nuke_manager"
+import { save_incident }                      from "@managers/anti_nuke_manager"
 
 // - audit log fetch delay in ms — gives Discord time to write the entry - \\
 const __audit_log_delay_ms = 600

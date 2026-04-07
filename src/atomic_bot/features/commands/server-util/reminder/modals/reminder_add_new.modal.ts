@@ -13,7 +13,7 @@
 // - add new reminder modal - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { add_reminder }           from "@atomic/features/commands/server-util/reminder/controller/reminder.controller"
+import { add_reminder }           from "@commands/server-util/reminder/controller/reminder.controller"
 
 const max_minutes = 10080
 

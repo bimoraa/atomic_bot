@@ -11,7 +11,7 @@
 // - server settings API router - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
-import * as database                 from "@shared/utils/database"
+import * as database                 from "@utils/database"
 
 /**
  * @description create bot settings API router

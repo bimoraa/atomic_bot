@@ -11,7 +11,7 @@
 // - member select menu interaction for the middleman flow - \
 import { UserSelectMenuInteraction, ThreadChannel }                 from "discord.js"
 import { build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+         fetch_maintenance_mode }                                   from "@commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * @description handles member selection to add to middleman ticket

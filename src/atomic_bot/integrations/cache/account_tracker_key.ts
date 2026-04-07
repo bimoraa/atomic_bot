@@ -10,7 +10,7 @@
 // - script_key 验证缓存，防止重复请求 Luarmor - \\
 // - script_key validation cache, prevents hammering luarmor - \\
 import { createHash }        from "crypto"
-import { get_user_by_key }   from "@atomic/integrations/api/luarmor"
+import { get_user_by_key }   from "@integrations/api/luarmor"
 
 // - 有效 key TTL: 30 分钟，无效 key TTL: 5 分钟 - \\
 // - valid key ttl: 30 min, invalid key ttl: 5 min - \\

@@ -9,8 +9,8 @@
 
 import { randomUUID }          from "crypto"
 import { Client, TextChannel } from "discord.js"
-import { db, logger }          from "@shared/utils"
-import { count_voice_time }    from "@atomic/features/commands/staff-management/staff/controller/staff_voice.controller"
+import { db, logger }          from "@utils"
+import { count_voice_time }    from "@commands/staff-management/staff/controller/staff_voice.controller"
 
 export interface prodete_entry {
   rank              : number

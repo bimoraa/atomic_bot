@@ -10,7 +10,7 @@
 // - 新增提醒按钮的交互注册 - \
 // - registers the add new reminder button interaction - \
 import { ButtonInteraction } from "discord.js"
-import { modal }             from "@shared/utils"
+import { modal }             from "@utils"
 import { ButtonHandler }     from "@shared/types/interaction"
 
 export async function handle_reminder_add_new(interaction: ButtonInteraction): Promise<void> {

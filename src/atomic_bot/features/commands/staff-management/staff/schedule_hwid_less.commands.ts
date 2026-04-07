@@ -11,9 +11,9 @@
 // - /staff schedule-hwid-less command, schedules HWID-less access - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }                 from "@shared/types/command"
-import { update_project_settings } from "@atomic/integrations/api/luarmor"
-import { member_has_role }           from "@shared/utils/discord_api"
-import { component, db, logger }   from "@shared/utils"
+import { update_project_settings } from "@integrations/api/luarmor"
+import { member_has_role }           from "@utils/discord_api"
+import { component, db, logger }   from "@utils"
 
 const __log              = logger.create_logger("schedule_hwid_less")
 const __project_id       = "6958841b2d9e5e049a24a23e376e0d77"

@@ -15,9 +15,9 @@ import {
   GuildMember,
 } from "discord.js"
 import { Command }        from "@shared/types/command"
-import { is_admin }       from "@shared/database/settings/permissions"
-import { component, api } from "@shared/utils"
-import { http, env, logger } from "@shared/utils"
+import { is_admin }       from "@database/settings/permissions"
+import { component, api } from "@utils"
+import { http, env, logger } from "@utils"
 
 const __log             = logger.create_logger("mass_user_note")
 const __free_project_id = "cd7560b7384fd815dafd993828c40d2b"

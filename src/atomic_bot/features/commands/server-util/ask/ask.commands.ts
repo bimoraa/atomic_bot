@@ -17,7 +17,7 @@ import {
   MessageType,
 } from "discord.js"
 import { Command }                      from "@shared/types/command"
-import { component, api }               from "@shared/utils"
+import { component, api }               from "@utils"
 
 export const ask_channel_id = "1250786601462923396"
 

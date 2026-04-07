@@ -10,8 +10,8 @@
 // - /afk-mod ignore，忽略某频道的 AFK 检测 - \
 // - /afk-mod ignore command, ignores AFK detection for a channel - \
 import { ChatInputCommandInteraction, ChannelType, SlashCommandSubcommandBuilder } from "discord.js"
-import { add_ignored_channel, remove_ignored_channel, is_ignored_channel }          from "@atomic/integrations/cache/afk"
-import { build_simple_message }                                                     from "@atomic/features/commands/server-util/afk/afk_utils.commands"
+import { add_ignored_channel, remove_ignored_channel, is_ignored_channel }          from "@integrations/cache/afk"
+import { build_simple_message }                                                     from "@commands/server-util/afk/afk_utils.commands"
 
 /**
  * - 构建 AFK 管理忽略子命令 - \\

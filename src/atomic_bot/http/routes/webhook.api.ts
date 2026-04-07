@@ -11,7 +11,7 @@
 // - webhook router, currently handles github webhooks - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
-import { handle_github_webhook }     from "@atomic/integrations/webhooks/github"
+import { handle_github_webhook }     from "@integrations/webhooks/github"
 
 /**
  * @description create webhook router

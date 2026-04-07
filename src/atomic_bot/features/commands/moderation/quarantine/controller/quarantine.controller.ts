@@ -10,9 +10,9 @@
 // - 隔离功能的模块控制器 - \\
 // - module controller for the quarantine feature - \\
 import { Client, GuildMember, Guild, Role, TextChannel } from "discord.js"
-import { component, time }                               from "@shared/utils"
-import { log_error }                                     from "@shared/utils/error_logger"
-import { is_admin, is_staff }                            from "@shared/database/settings/permissions"
+import { component, time }                               from "@utils"
+import { log_error }                                     from "@utils/error_logger"
+import { is_admin, is_staff }                            from "@database/settings/permissions"
 import {
   add_quarantine,
   remove_quarantine,
@@ -21,7 +21,7 @@ import {
   add_quarantine_history,
   get_quarantine_history,
   get_quarantine_count,
-}                                                        from "@shared/database/managers/quarantine.manager"
+}                                                        from "@managers/quarantine.manager"
 import { quarantine_member_options, release_quarantine_options } from "@models/quarantine.model"
 import { __quarantine_role_id }                          from "@constants/roles"
 import { __quarantine_log_channel_id }                   from "@constants/channels"

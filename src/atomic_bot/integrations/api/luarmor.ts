@@ -9,7 +9,7 @@
 
 // - Luarmor API 的封装，处理白名单/key 相关请求 - \
 // - luarmor API wrapper, handles whitelist and key related requests - \
-import { logger, env } from "@shared/utils"
+import { logger, env } from "@utils"
 import * as luarmor_db_cache from "./luarmor_db_cache"
 
 const __base_url                              = "https://api.luarmor.net/v3"

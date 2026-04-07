@@ -11,11 +11,11 @@
 // - button component definitions for staff info - \
 import { ButtonInteraction } from "discord.js"
 import { ButtonHandler }     from "@shared/types/interaction"
-import { component, api }   from "@shared/utils"
+import { component, api }   from "@utils"
 import {
   get_staff_info_document,
   custom_id_to_file_name,
-} from "@shared/utils/staff_info_parser"
+} from "@utils/staff_info_parser"
 
 export const button: ButtonHandler = {
   custom_id: /^staff_info_/,

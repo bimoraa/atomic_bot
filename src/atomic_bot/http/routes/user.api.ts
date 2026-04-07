@@ -11,7 +11,7 @@
 // - user data API router - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
-import * as database                 from "@shared/utils/database"
+import * as database                 from "@utils/database"
 
 // - 成员缓存 - \\
 // - member cache - \\

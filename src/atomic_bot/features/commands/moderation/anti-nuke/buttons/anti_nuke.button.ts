@@ -9,9 +9,9 @@
 
 // - anti-nuke undo button handler - \\
 import { ButtonInteraction } from "discord.js"
-import { component }         from "@shared/utils"
-import { log_error }         from "@shared/utils/error_logger"
-import { undo_quarantine }   from "@atomic/features/commands/moderation/anti-nuke/controller/anti_nuke.controller"
+import { component }         from "@utils"
+import { log_error }         from "@utils/error_logger"
+import { undo_quarantine }   from "@commands/moderation/anti-nuke/controller/anti_nuke.controller"
 
 /**
  * @description handle anti_nuke_undo button — reverts a quarantine action

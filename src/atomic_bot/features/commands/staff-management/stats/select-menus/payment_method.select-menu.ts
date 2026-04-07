@@ -13,8 +13,8 @@
 // - payment method select - \
 
 import { StringSelectMenuInteraction } from "discord.js"
-import { component, api } from "@shared/utils"
-import { get_ticket } from "@shared/database/unified_ticket"
+import { component, api } from "@utils"
+import { get_ticket } from "@database/unified_ticket"
 
 // - 支付详情接口定义 - \\
 // - payment detail interfaces - \\

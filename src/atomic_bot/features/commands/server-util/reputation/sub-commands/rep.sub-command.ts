@@ -11,8 +11,8 @@
 // - reputation sub-command, handles giving or removing rep from users - \
 import { Client, Message } from "discord.js"
 import { SubCommand }      from "@shared/types/sub_command"
-import { component }       from "@shared/utils"
-import * as reputation     from "@shared/database/managers/reputation.manager"
+import { component }       from "@utils"
+import * as reputation     from "@managers/reputation.manager"
 
 const rep_command: SubCommand = {
   name       : "rep",

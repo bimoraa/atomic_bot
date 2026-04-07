@@ -9,7 +9,7 @@
 
 // - bypass link service - \\
 
-import { get_pool } from "@shared/utils/database"
+import { get_pool } from "@utils/database"
 
 const __bypass_api_key         = process.env.BYPASS_API_KEY || ""
 const __bypass_api_url         = process.env.BYPASS_API_URL || ""

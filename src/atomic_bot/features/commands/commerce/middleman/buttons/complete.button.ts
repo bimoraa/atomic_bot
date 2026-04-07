@@ -14,16 +14,16 @@ import {
   close_ticket,
   get_ticket,
   get_ticket_config,
-} from "@shared/database/unified_ticket"
+} from "@database/unified_ticket"
 import {
   complete_middleman_ticket,
   get_middleman_ticket,
-} from "@shared/database/managers/middleman.manager"
-import { component, time, api, db }                        from "@shared/utils"
-import { log_error }                                       from "@shared/utils/error_logger"
+} from "@managers/middleman.manager"
+import { component, time, api, db }                        from "@utils"
+import { log_error }                                       from "@utils/error_logger"
 import { ButtonHandler }                                   from "@shared/types/interaction"
 import { build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                          from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+         fetch_maintenance_mode }                          from "@commands/commerce/middleman/controller/middleman.controller"
 
 interface TransactionRange {
   label : string

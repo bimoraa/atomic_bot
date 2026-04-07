@@ -9,7 +9,7 @@
 
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { log_error }                                        from "@shared/utils/error_logger"
+import { log_error }                                        from "@utils/error_logger"
 import { build_history_message, get_history_records }       from "@jkt48/modules/live_info/controllers/jkt48_live.controller"
 
 export const command: Command = {

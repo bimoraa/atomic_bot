@@ -11,9 +11,9 @@
 // - AFK sub-command handler, detects when AFK users are mentioned - \\
 import { Client, Message }                     from "discord.js"
 import { SubCommand }                        from "@shared/types/sub_command"
-import { set_afk, is_ignored_channel }       from "@atomic/integrations/cache/afk"
-import { component }                         from "@shared/utils"
-import { sanitize_afk_reason }               from "@atomic/features/commands/server-util/afk/afk_utils.commands"
+import { set_afk, is_ignored_channel }       from "@integrations/cache/afk"
+import { component }                         from "@utils"
+import { sanitize_afk_reason }               from "@commands/server-util/afk/afk_utils.commands"
 
 const afk_command: SubCommand = {
   name       : "afk",

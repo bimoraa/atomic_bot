@@ -15,9 +15,9 @@ import {
   GuildMember,
 }                               from "discord.js"
 import { Command }              from "@shared/types/command"
-import { is_admin }             from "@shared/database/settings/permissions"
-import * as luarmor             from "@atomic/integrations/api/luarmor"
-import { component, api, format } from "@shared/utils"
+import { is_admin }             from "@database/settings/permissions"
+import * as luarmor             from "@integrations/api/luarmor"
+import { component, api, format } from "@utils"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

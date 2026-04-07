@@ -11,14 +11,14 @@
 // - /staff prodete command, handles product deletion operations - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }                   from "@shared/types/command"
-import { component, format, logger } from "@shared/utils"
-import { is_admin }                   from "@shared/database/settings/permissions"
+import { component, format, logger } from "@utils"
+import { is_admin }                   from "@database/settings/permissions"
 import {
   build_prodete_report,
   get_prodete_report_by_dates,
   type prodete_entry,
   type prodete_report,
-} from "@atomic/features/commands/staff-management/staff/controller/prodete.controller"
+} from "@commands/staff-management/staff/controller/prodete.controller"
 
 const __web_base_url = process.env.WEB_URL || "https://maxime.up.railway.app"
 const __date_regex   = /^\d{2}-\d{2}-\d{4}$/

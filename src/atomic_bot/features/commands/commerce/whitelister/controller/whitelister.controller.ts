@@ -10,9 +10,9 @@
 // - 白名单管理功能的模块控制器 - \
 // - module controller for the whitelister feature - \
 import { Client, User }    from "discord.js"
-import { component }       from "@shared/utils"
-import { log_error }       from "@shared/utils/error_logger"
-import * as luarmor        from "@atomic/integrations/api/luarmor"
+import { component }       from "@utils"
+import { log_error }       from "@utils/error_logger"
+import * as luarmor        from "@integrations/api/luarmor"
 
 interface whitelist_options {
   user       : User

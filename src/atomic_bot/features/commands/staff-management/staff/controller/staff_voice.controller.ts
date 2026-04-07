@@ -8,8 +8,8 @@
  */
 
 import { Client } from "discord.js"
-import { db, logger } from "@shared/utils"
-import * as time from "@shared/utils/timestamp"
+import { db, logger } from "@utils"
+import * as time from "@utils/timestamp"
 
 // - 内存中的活跃会话存储："guild_id:user_id" -> 会话 - \\
 // - in-memory active session store: "guild_id:user_id" -> session - \\

@@ -11,9 +11,9 @@
 // - /resume slash command, resumes paused playback - \\
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                          from "@shared/types/command"
-import { component }                                        from "@shared/utils"
-import { log_error }                                        from "@shared/utils/error_logger"
-import { handle_pause_resume }                              from "@atomic/features/commands/media/music/controller/music.controller"
+import { component }                                        from "@utils"
+import { log_error }                                        from "@utils/error_logger"
+import { handle_pause_resume }                              from "@commands/media/music/controller/music.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

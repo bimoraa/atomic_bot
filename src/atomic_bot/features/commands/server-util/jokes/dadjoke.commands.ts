@@ -14,8 +14,8 @@ import {
   SlashCommandBuilder,
 }                           from "discord.js"
 import { Command }          from "@shared/types/command"
-import { component }        from "@shared/utils"
-import { log_error }        from "@shared/utils/error_logger"
+import { component }        from "@utils"
+import { log_error }        from "@utils/error_logger"
 
 const indonesian_dad_jokes = [
   {

@@ -12,5 +12,5 @@
 // - 统计选择菜单汇总 - \
 // - stats select menus index - \
 
-export { handle_answer_stats_select } from "@atomic/features/commands/staff-management/stats/select-menus/answer_stats.select-menu"
-export { handle_payment_method_select } from "@atomic/features/commands/staff-management/stats/select-menus/payment_method.select-menu"
+export { handle_answer_stats_select } from "@commands/staff-management/stats/select-menus/answer_stats.select-menu"
+export { handle_payment_method_select } from "@commands/staff-management/stats/select-menus/payment_method.select-menu"

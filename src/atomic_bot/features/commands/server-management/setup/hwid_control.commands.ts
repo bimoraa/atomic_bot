@@ -11,8 +11,8 @@
 // - /setup hwid-control command, configures HWID control settings - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }     from "@shared/types/command"
-import { component }   from "@shared/utils"
-import { db }          from "@shared/utils"
+import { component }   from "@utils"
+import { db }          from "@utils"
 
 interface hwid_config {
   _id?   : string

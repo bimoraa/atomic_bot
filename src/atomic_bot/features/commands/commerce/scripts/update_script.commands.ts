@@ -11,9 +11,9 @@
 // - /push-script slash command, uploads local script file to Luarmor API - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                       from "@shared/types/command"
-import { component }                     from "@shared/utils"
-import { log_error }                     from "@shared/utils/error_logger"
-import { build_update_script_message }   from "@atomic/features/commands/commerce/scripts/controller/scripts.controller"
+import { component }                     from "@utils"
+import { log_error }                     from "@utils/error_logger"
+import { build_update_script_message }   from "@commands/commerce/scripts/controller/scripts.controller"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

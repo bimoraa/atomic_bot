@@ -9,8 +9,8 @@
 
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from "discord.js"
 import { Command }                                                            from "@shared/types/command"
-import { component, db }                                                      from "@shared/utils"
-import { log_error }                                                          from "@shared/utils/error_logger"
+import { component, db }                                                      from "@utils"
+import { log_error }                                                          from "@utils/error_logger"
 
 const __guild_notification_settings_collection = "jkt48_guild_notification_settings"
 

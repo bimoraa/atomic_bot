@@ -13,8 +13,8 @@ import {
   ThreadChannel,
   GuildMember,
 } from "discord.js"
-import { is_admin, is_staff }        from "@shared/database/settings/permissions"
-import { member_has_role }             from "@shared/utils/discord_api"
+import { is_admin, is_staff }        from "@database/settings/permissions"
+import { member_has_role }             from "@utils/discord_api"
 import {
   get_ticket_config,
   get_ticket,
@@ -24,8 +24,8 @@ import {
   get_join_claim_cooldown_remaining_ms,
   activate_join_claim_cooldown,
   build_ticket_log_message,
-}                                    from "@shared/database/unified_ticket/state"
-import { component, api, format }    from "@shared/utils"
+}                                    from "@database/unified_ticket/state"
+import { component, api, format }    from "@utils"
 
 const __helper_role_id    = "1357767950421065981"
 

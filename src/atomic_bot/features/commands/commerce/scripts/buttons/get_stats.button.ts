@@ -11,9 +11,9 @@
 // - get stats button handler for the scripts panel - \\
 
 import { ButtonInteraction, GuildMember } from "discord.js"
-import { log_error }                       from "@shared/utils/error_logger"
-import { component, api, format }          from "@shared/utils"
-import { get_user_stats }                  from "@atomic/features/commands/commerce/service-provider/controller/service_provider.controller"
+import { log_error }                       from "@utils/error_logger"
+import { component, api, format }          from "@utils"
+import { get_user_stats }                  from "@commands/commerce/service-provider/controller/service_provider.controller"
 
 /**
  * @description handles the get stats button — fetches Luarmor user stats and displays them.

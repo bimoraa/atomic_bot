@@ -13,9 +13,9 @@
 // - share settings continue button - \
 
 import { ButtonInteraction } from "discord.js"
-import { modal }             from "@shared/utils"
-import { log_error }         from "@shared/utils/error_logger"
-import * as share_settings   from "@atomic/features/commands/commerce/share-settings/controller/share_settings.controller"
+import { modal }             from "@utils"
+import { log_error }         from "@utils/error_logger"
+import * as share_settings   from "@commands/commerce/share-settings/controller/share_settings.controller"
 
 /**
  * - 处理共享设置继续 - \\

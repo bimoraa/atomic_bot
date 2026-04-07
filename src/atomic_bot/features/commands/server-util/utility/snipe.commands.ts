@@ -14,8 +14,8 @@ import {
   SlashCommandBuilder,
 } from "discord.js"
 import { Command }                   from "@shared/types/command"
-import { component, api }            from "@shared/utils"
-import { get_last_deleted_message }  from "@atomic/integrations/cache/snipe"
+import { component, api }            from "@utils"
+import { get_last_deleted_message }  from "@integrations/cache/snipe"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

@@ -11,10 +11,10 @@
 // - reset hwid button handler for the scripts panel - \\
 
 import { ButtonInteraction, GuildMember } from "discord.js"
-import { log_error }                       from "@shared/utils/error_logger"
-import { component, api, format }          from "@shared/utils"
-import { reset_user_hwid }                 from "@atomic/features/commands/commerce/service-provider/controller/service_provider.controller"
-import { is_hwid_enabled }                 from "@atomic/features/commands/server-management/setup/hwid_control.commands"
+import { log_error }                       from "@utils/error_logger"
+import { component, api, format }          from "@utils"
+import { reset_user_hwid }                 from "@commands/commerce/service-provider/controller/service_provider.controller"
+import { is_hwid_enabled }                 from "@commands/server-management/setup/hwid_control.commands"
 
 /**
  * @description handles the reset hwid button — checks if enabled then resets the user's hardware id.

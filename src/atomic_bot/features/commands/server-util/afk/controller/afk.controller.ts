@@ -13,9 +13,9 @@
 // - utility controller, handles afk logic - \
 
 import { Message, Client }                                  from "discord.js"
-import { remove_afk, get_afk, is_afk, is_ignored_channel }  from "@atomic/integrations/cache/afk"
-import { component }                                        from "@shared/utils"
-import { log_error }                                        from "@shared/utils/error_logger"
+import { remove_afk, get_afk, is_afk, is_ignored_channel }  from "@integrations/cache/afk"
+import { component }                                        from "@utils"
+import { log_error }                                        from "@utils/error_logger"
 
 export async function handle_afk_return(message: Message): Promise<void> {
   if (message.guild && is_ignored_channel(message.guild.id, message.channel.id)) return

@@ -16,7 +16,7 @@ import {
   PermissionFlagsBits,
 }                            from "discord.js"
 import { Command }            from "@shared/types/command"
-import { quarantine_member }  from "@atomic/features/commands/moderation/quarantine/controller/quarantine.controller"
+import { quarantine_member }  from "@commands/moderation/quarantine/controller/quarantine.controller"
 
 /**
  * @description quarantine member command - restricts member from viewing all channels

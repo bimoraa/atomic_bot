@@ -10,15 +10,15 @@
 // - 音乐前缀命令处理器 (a!play, a!skip, a!stop, a!pause, a!resume, a!queue) - \\
 // - music prefix command handler (a!play, a!skip, a!stop, a!pause, a!resume, a!queue) - \\
 import { Message, GuildMember, Client, VoiceBasedChannel } from "discord.js"
-import { component }                                        from "@shared/utils"
-import { log_error }                                        from "@shared/utils/error_logger"
+import { component }                                        from "@utils"
+import { log_error }                                        from "@utils/error_logger"
 import {
   handle_play_prefix,
   handle_skip,
   handle_stop,
   handle_pause_resume,
   build_queue_message,
-}                                                           from "@atomic/features/commands/media/music/controller/music.controller"
+}                                                           from "@commands/media/music/controller/music.controller"
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const __prefix         = "a!"

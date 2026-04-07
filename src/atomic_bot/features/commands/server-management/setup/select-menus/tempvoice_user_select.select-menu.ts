@@ -11,7 +11,7 @@
 // - registers the temp voice user select menu interaction - \
 import { UserSelectMenuInteraction, GuildMember, VoiceChannel } from "discord.js"
 import { UserSelectMenuHandler }                                from "@shared/types/interaction"
-import * as tempvoice from "@shared/database/services/tempvoice"
+import * as tempvoice from "@services/tempvoice"
 
 export const user_select: UserSelectMenuHandler = {
   custom_id: /^tempvoice_(trust|untrust|invite|kick|block|unblock|transfer)_select:/,

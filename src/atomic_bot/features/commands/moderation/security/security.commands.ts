@@ -14,8 +14,8 @@ import {
   SlashCommandBuilder,
 }                                                                 from "discord.js"
 import { Command }                                                from "@shared/types/command"
-import { component }                                              from "@shared/utils"
-import { log_error }                                              from "@shared/utils/error_logger"
+import { component }                                              from "@utils"
+import { log_error }                                              from "@utils/error_logger"
 import {
   add_security_automod_word,
   get_security_automod_config_or_default,
@@ -23,7 +23,7 @@ import {
   normalize_security_automod_word,
   remove_security_automod_word,
   upsert_security_automod_config,
-}                                                                 from "@shared/database/managers/security_automod.manager"
+}                                                                 from "@managers/security_automod.manager"
 
 function build_security_message(title: string, lines: string[], accent: number = component.from_hex("#5865F2")): object {
   return component.build_message({

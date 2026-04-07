@@ -14,8 +14,8 @@ import {
   SlashCommandBuilder,
 } from "discord.js"
 import { Command } from "@shared/types/command"
-import { load_config as load_cfg, save_config as save_cfg } from "@shared/config/loader"
-import { update_price_panel } from "@atomic/features/commands/server-management/setup/script_price.commands"
+import { load_config as load_cfg, save_config as save_cfg } from "@config/loader"
+import { update_price_panel } from "@commands/server-management/setup/script_price.commands"
 
 interface PricingConfig {
   channel_id:     string

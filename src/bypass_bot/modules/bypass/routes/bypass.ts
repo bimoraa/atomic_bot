@@ -15,8 +15,8 @@ import fs from "fs"
 import path from "path"
 import { Command } from "@shared/types/command"
 import { bypass_link, bypass_max_retry } from "@bypass/modules/bypass/services/bypass.service"
-import * as component from "@shared/utils/components"
-import { api, cache, db, guild_settings } from "@shared/utils"
+import * as component from "@utils/components"
+import { api, cache, db, guild_settings } from "@utils"
 import { check_bypass_rate_limit } from "@bypass/modules/bypass/middleware/bypass_rate_limit.middleware"
 
 /**

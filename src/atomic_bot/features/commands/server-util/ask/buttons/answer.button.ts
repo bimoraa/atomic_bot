@@ -13,13 +13,13 @@
 // - answer question button - \
 
 import { ButtonInteraction, TextChannel, GuildMember, ChannelType, ThreadChannel } from "discord.js"
-import { component, api, db } from "@shared/utils"
+import { component, api, db } from "@utils"
 import { 
   ask_channel_id, 
   create_thread_for_message,
   build_question_panel_no_answer 
-} from "@atomic/features/commands/server-util/ask/ask.commands"
-import { is_staff, is_admin_or_mod } from "@shared/database/settings/permissions"
+} from "@commands/server-util/ask/ask.commands"
+import { is_staff, is_admin_or_mod } from "@database/settings/permissions"
 
 const __answer_log_channel_id = "1446894637980713090"
 const __collection_name       = "answer_stats"

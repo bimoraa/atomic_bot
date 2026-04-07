@@ -8,7 +8,7 @@
  */
 
 import { Client }                      from "discord.js"
-import { logger }                      from "@shared/utils"
+import { logger }                      from "@utils"
 import { start_live_monitoring }       from "@jkt48/modules/live_notify/controllers/idn_live.controller"
 
 const log = logger.create_logger("idn_live_monitor")

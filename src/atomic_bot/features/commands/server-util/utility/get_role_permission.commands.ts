@@ -17,7 +17,7 @@ import {
 import { Command } from "@shared/types/command"
 import { readdirSync } from "fs"
 import { join } from "path"
-import { component, api, file } from "@shared/utils"
+import { component, api, file } from "@utils"
 
 interface RolesMapping {
   [key: string]: string

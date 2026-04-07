@@ -11,7 +11,7 @@
 // - logs API router - \
 import { Router, Request, Response } from "express"
 import { Client }                    from "discord.js"
-import * as database                 from "@shared/utils/database"
+import * as database                 from "@utils/database"
 
 /**
  * @description create activity logs & transcripts API router

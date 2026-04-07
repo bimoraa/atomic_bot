@@ -16,15 +16,15 @@ import {
   PermissionFlagsBits,
 } from "discord.js"
 import { Command }                                                     from "@shared/types/command"
-import { log_error }                                                   from "@shared/utils/error_logger"
-import { build_simple_message }                                        from "@atomic/features/commands/server-util/afk/afk_utils.commands"
-import { build_afk_set_subcommand, handle_afk_set }                    from "@atomic/features/commands/server-util/afk/afk_set.commands"
-import { build_afk_mod_clear_subcommand, handle_afk_mod_clear }        from "@atomic/features/commands/server-util/afk/afk_mod_clear.commands"
-import { build_afk_mod_clearall_subcommand, handle_afk_mod_clearall }  from "@atomic/features/commands/server-util/afk/afk_mod_clearall.commands"
-import { build_afk_mod_ignore_subcommand, handle_afk_mod_ignore }      from "@atomic/features/commands/server-util/afk/afk_mod_ignore.commands"
-import { build_afk_mod_ignored_subcommand, handle_afk_mod_ignored }    from "@atomic/features/commands/server-util/afk/afk_mod_ignored.commands"
-import { build_afk_mod_list_subcommand, handle_afk_mod_list }          from "@atomic/features/commands/server-util/afk/afk_mod_list.commands"
-import { build_afk_mod_reset_subcommand, handle_afk_mod_reset }        from "@atomic/features/commands/server-util/afk/afk_mod_reset.commands"
+import { log_error }                                                   from "@utils/error_logger"
+import { build_simple_message }                                        from "@commands/server-util/afk/afk_utils.commands"
+import { build_afk_set_subcommand, handle_afk_set }                    from "@commands/server-util/afk/afk_set.commands"
+import { build_afk_mod_clear_subcommand, handle_afk_mod_clear }        from "@commands/server-util/afk/afk_mod_clear.commands"
+import { build_afk_mod_clearall_subcommand, handle_afk_mod_clearall }  from "@commands/server-util/afk/afk_mod_clearall.commands"
+import { build_afk_mod_ignore_subcommand, handle_afk_mod_ignore }      from "@commands/server-util/afk/afk_mod_ignore.commands"
+import { build_afk_mod_ignored_subcommand, handle_afk_mod_ignored }    from "@commands/server-util/afk/afk_mod_ignored.commands"
+import { build_afk_mod_list_subcommand, handle_afk_mod_list }          from "@commands/server-util/afk/afk_mod_list.commands"
+import { build_afk_mod_reset_subcommand, handle_afk_mod_reset }        from "@commands/server-util/afk/afk_mod_reset.commands"
 
 export const command: Command = {
   data: new SlashCommandBuilder()

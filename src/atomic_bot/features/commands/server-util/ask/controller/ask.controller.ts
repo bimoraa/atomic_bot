@@ -10,8 +10,8 @@
 // - ask 功能的模块控制器 - \
 // - module controller for the ask feature - \
 import { Client, TextChannel } from "discord.js"
-import { component, api }      from "@shared/utils"
-import { log_error }           from "@shared/utils/error_logger"
+import { component, api }      from "@utils"
+import { log_error }           from "@utils/error_logger"
 
 interface ask_question_options {
   client       : Client

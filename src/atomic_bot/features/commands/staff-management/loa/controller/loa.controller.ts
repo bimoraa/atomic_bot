@@ -10,8 +10,8 @@
 // - LOA 请假功能的模块控制器 - \\
 // - module controller for the LOA feature - \\
 import { Client }                                 from "discord.js"
-import { component, time, db, api, logger }      from "@shared/utils"
-import { log_error }                             from "@shared/utils/error_logger"
+import { component, time, db, api, logger }      from "@utils"
+import { log_error }                             from "@utils/error_logger"
 import {
   loa_data,
   request_loa_options,

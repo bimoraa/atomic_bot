@@ -16,8 +16,8 @@ import {
   User,
 }                           from "discord.js"
 import { Command }          from "@shared/types/command"
-import { member_has_role }  from "@shared/utils/discord_api"
-import { whitelist }        from "@atomic/features/commands/commerce/whitelister/controller/whitelister.controller"
+import { member_has_role }  from "@utils/discord_api"
+import { whitelist }        from "@commands/commerce/whitelister/controller/whitelister.controller"
 
 const __allowed_role_id = "1277272542914281512"
 

@@ -10,9 +10,9 @@
 // - 中间人流程里选择买家的菜单交互 - \
 // - buyer select menu interaction for the middleman flow - \
 import { UserSelectMenuInteraction }                                from "discord.js"
-import { component }                                                from "@shared/utils"
+import { component }                                                from "@utils"
 import { build_ticket_critical_error_reply,
-         fetch_maintenance_mode }                                   from "@atomic/features/commands/commerce/middleman/controller/middleman.controller"
+         fetch_maintenance_mode }                                   from "@commands/commerce/middleman/controller/middleman.controller"
 
 /**
  * @description handles buyer selection — shows fee payer string-select next

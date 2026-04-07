@@ -19,22 +19,22 @@ import {
   AutocompleteInteraction,
 }                                                            from "discord.js"
 import { Command, MessageContextMenuCommand }                from "@shared/types/command"
-import { can_use_command }                                   from "@shared/database/settings/command_permissions"
-import { log_error, handle_error_log_button }                from "@shared/utils/error_logger"
-import { component }                                         from "@shared/utils"
+import { can_use_command }                                   from "@database/settings/command_permissions"
+import { log_error, handle_error_log_button }                from "@utils/error_logger"
+import { component }                                         from "@utils"
 import {
   handle_ticket_button,
   handle_ticket_modal,
   handle_ticket_select_menu,
   handle_ticket_user_select,
-}                                                            from "@shared/database/unified_ticket"
+}                                                            from "@database/unified_ticket"
 
 import { run_middleware }                                                  from "@shared/middleware/runner"
 import { error_handler }                                                  from "@shared/middleware/error.handler"
 
-import { handle_role_permission_select }                                   from "@atomic/features/commands/server-util/utility/get_role_permission.commands"
+import { handle_role_permission_select }                                   from "@commands/server-util/utility/get_role_permission.commands"
 import { get_button_module, get_modal_module, get_select_menu_module }     from "./interaction-registry"
-import { handle_anti_nuke_undo }                                            from "@atomic/features/commands/moderation/anti-nuke/buttons/anti_nuke.button"
+import { handle_anti_nuke_undo }                                            from "@commands/moderation/anti-nuke/buttons/anti_nuke.button"
 
 const stats_select           = get_select_menu_module("stats")
 const guide_select           = get_select_menu_module("guide")

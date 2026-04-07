@@ -13,7 +13,7 @@
 // - staff info language select - \
 
 import { StringSelectMenuInteraction } from "discord.js"
-import { log_error }                   from "@shared/utils/error_logger"
+import { log_error }                   from "@utils/error_logger"
 
 /**
  * - 处理员工信息语言选择 - \\

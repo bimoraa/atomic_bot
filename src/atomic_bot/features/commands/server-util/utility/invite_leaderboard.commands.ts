@@ -11,8 +11,8 @@
 // - /invite-leaderboard slash command, shows the invite leaderboard - \
 import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js"
 import { Command }                                           from "@shared/types/command"
-import { api, component, db }                                from "@shared/utils"
-import { log_error }                                         from "@shared/utils/error_logger"
+import { api, component, db }                                from "@utils"
+import { log_error }                                         from "@utils/error_logger"
 
 const __invite_leaderboard_collection = "invite_leaderboard"
 

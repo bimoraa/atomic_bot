@@ -15,9 +15,9 @@
 
 import axios           from "axios"
 import { Client }      from "discord.js"
-import * as db         from "@shared/utils/database"
-import * as file       from "@shared/utils/file"
-import { log_error }   from "@shared/utils/error_logger"
+import * as db         from "@utils/database"
+import * as file       from "@utils/file"
+import { log_error }   from "@utils/error_logger"
 
 const __idn_live_base         = "https://www.idn.app"
 const __idn_mobile_api        = "https://mobile-api.idntimes.com/v3/livestreams"

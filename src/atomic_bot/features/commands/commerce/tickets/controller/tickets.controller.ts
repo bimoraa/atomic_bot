@@ -10,8 +10,8 @@
 // - 票务系统的模块控制器 - \
 // - module controller for the ticket system - \
 import { GuildMember }                                from "discord.js"
-import { load_config }                               from "@shared/config/loader"
-import { db }                                        from "@shared/utils"
+import { load_config }                               from "@config/loader"
+import { db }                                        from "@utils"
 import { purchase_ticket_data, priority_ticket_data } from "@models/ticket.model"
 
 const __purchase_tickets_collection = "purchase_tickets"

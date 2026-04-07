@@ -11,9 +11,9 @@
 // - /staff work-stats command, shows staff work statistics - \
 import { ChatInputCommandInteraction, SlashCommandBuilder, GuildMember } from "discord.js"
 import { Command }        from "@shared/types/command"
-import { member_has_role } from "@shared/utils/discord_api"
-import { component } from "@shared/utils"
-import { get_week_number } from "@shared/database/trackers/work_tracker"
+import { member_has_role } from "@utils/discord_api"
+import { component } from "@utils"
+import { get_week_number } from "@database/trackers/work_tracker"
 
 const __admin_role_id = "1277272542914281512"
 

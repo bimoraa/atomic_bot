@@ -10,7 +10,7 @@
 // - 消息计数缓存，用于统计用户发消息数量 - \
 // - message counter cache, tracks how many messages each user sends - \
 import { TextChannel, AnyThreadChannel } from "discord.js"
-import { logger, array } from "@shared/utils"
+import { logger, array } from "@utils"
 
 type fetchable_channel = TextChannel | AnyThreadChannel
 

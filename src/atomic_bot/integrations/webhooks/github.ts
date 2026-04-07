@@ -10,8 +10,8 @@
 // - 处理来自 GitHub 的 webhook 事件 - \
 // - handles incoming github webhook events - \
 import { Client }                      from "discord.js"
-import { api, component, format }      from "@shared/utils"
-import { log_error }                   from "@shared/utils/error_logger"
+import { api, component, format }      from "@utils"
+import { log_error }                   from "@utils/error_logger"
 
 const is_dev        = process.env.NODE_ENV === "development"
 const discord_token = is_dev ? process.env.DEV_DISCORD_TOKEN : process.env.DISCORD_TOKEN

@@ -13,8 +13,8 @@ import {
   SlashCommandBuilder,
   PermissionFlagsBits,
 }                               from "discord.js"
-import { component, time }      from "@shared/utils"
-import { log_error }            from "@shared/utils/error_logger"
+import { component, time }      from "@utils"
+import { log_error }            from "@utils/error_logger"
 import { Command }              from "@shared/types/command"
 import {
   get_config,
@@ -24,7 +24,7 @@ import {
   add_whitelist,
   remove_whitelist,
   get_recent_incidents,
-}                               from "@shared/database/managers/anti_nuke_manager"
+}                               from "@managers/anti_nuke_manager"
 
 /**
  * @description /anti-nuke slash command — manage anti-nuke system settings

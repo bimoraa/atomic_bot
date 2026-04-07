@@ -9,7 +9,7 @@
 
 // - AFK 状态的内存缓存 - \\
 // - in-memory cache for AFK status - \\
-import { db } from "@shared/utils"
+import { db } from "@utils"
 
 interface AfkData {
   user_id           : string

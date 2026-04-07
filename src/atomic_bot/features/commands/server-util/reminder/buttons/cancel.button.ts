@@ -10,7 +10,7 @@
 // - 取消提醒按钮的交互注册 - \
 // - registers the cancel reminder button interaction - \
 import { ButtonInteraction }  from "discord.js"
-import { component, time, db } from "@shared/utils"
+import { component, time, db } from "@utils"
 import { ButtonHandler }        from "@shared/types/interaction"
 
 interface reminder_data {

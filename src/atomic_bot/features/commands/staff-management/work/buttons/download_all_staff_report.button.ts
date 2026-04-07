@@ -13,10 +13,10 @@
 // - download all staff report button - \
 
 import { ButtonInteraction }            from "discord.js"
-import { db, component }                from "@shared/utils"
-import { format_salary }                from "@shared/database/trackers/work_tracker"
-import { get_week_date_range }          from "@atomic/features/commands/staff-management/work/select-menus/year_select.select-menu"
-import { log_error }                    from "@shared/utils/error_logger"
+import { db, component }                from "@utils"
+import { format_salary }                from "@database/trackers/work_tracker"
+import { get_week_date_range }          from "@commands/staff-management/work/select-menus/year_select.select-menu"
+import { log_error }                    from "@utils/error_logger"
 
 interface WorkLog {
   staff_id    : string

@@ -8,8 +8,8 @@
  */
 
 import { StringSelectMenuInteraction } from "discord.js"
-import { component, cache }            from "@shared/utils"
-import { log_error }                   from "@shared/utils/error_logger"
+import { component, cache }            from "@utils"
+import { log_error }                   from "@utils/error_logger"
 
 /**
  * - 处理绕过支持类型选择 - \\

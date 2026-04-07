@@ -13,9 +13,9 @@
 // - share settings modal - \
 
 import { ModalSubmitInteraction } from "discord.js"
-import { api, component }          from "@shared/utils"
-import { log_error }               from "@shared/utils/error_logger"
-import * as share_settings         from "@atomic/features/commands/commerce/share-settings/controller/share_settings.controller"
+import { api, component }          from "@utils"
+import { log_error }               from "@utils/error_logger"
+import * as share_settings         from "@commands/commerce/share-settings/controller/share_settings.controller"
 
 /**
  * - 处理共享设置模态框 - \\

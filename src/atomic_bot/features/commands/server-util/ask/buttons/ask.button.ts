@@ -11,8 +11,8 @@
 // - button definitions and builders for the ask feature - \
 import { ButtonInteraction, TextChannel } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
-import { modal }                          from "@shared/utils"
-import { create_thread_for_message }      from "@atomic/features/commands/server-util/ask/ask.commands"
+import { modal }                          from "@utils"
+import { create_thread_for_message }      from "@commands/server-util/ask/ask.commands"
 
 export const button: ButtonHandler = {
   custom_id: /^ask_(staff_button|answer_)/,

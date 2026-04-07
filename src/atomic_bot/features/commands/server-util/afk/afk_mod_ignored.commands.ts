@@ -10,8 +10,8 @@
 // - /afk-mod ignored，查看被忽略的 AFK 频道列表 - \
 // - /afk-mod ignored command, shows the list of AFK-ignored channels - \
 import { ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from "discord.js"
-import { get_ignored_channels }                                        from "@atomic/integrations/cache/afk"
-import { build_simple_message }                                        from "@atomic/features/commands/server-util/afk/afk_utils.commands"
+import { get_ignored_channels }                                        from "@integrations/cache/afk"
+import { build_simple_message }                                        from "@commands/server-util/afk/afk_utils.commands"
 
 /**
  * - 构建 AFK 管理忽略列表子命令 - \\

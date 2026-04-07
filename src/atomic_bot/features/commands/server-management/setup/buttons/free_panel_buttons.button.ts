@@ -11,10 +11,10 @@
 // - registers free panel button interactions - \
 import { ButtonInteraction, GuildMember } from "discord.js"
 import { ButtonHandler }                  from "@shared/types/interaction"
-import { component, db }                  from "@shared/utils"
-import * as luarmor                       from "@atomic/integrations/api/luarmor"
-import { is_hwid_enabled }                from "@atomic/features/commands/server-management/setup/hwid_control.commands"
-import { get_channel_leaderboard, format_time } from "@shared/database/trackers/voice_time_tracker"
+import { component, db }                  from "@utils"
+import * as luarmor                       from "@integrations/api/luarmor"
+import { is_hwid_enabled }                from "@commands/server-management/setup/hwid_control.commands"
+import { get_channel_leaderboard, format_time } from "@database/trackers/voice_time_tracker"
 
 const __free_project_id     = "cd7560b7384fd815dafd993828c40d2b"
 const __free_script_role_id = "1347086323575423048"
