@@ -7,8 +7,8 @@
  * See the LICENSE file for more information.
  */
 
-// - 子命令的分发处理器，找到对应子命令然后执行 - \
-// - sub-command dispatcher, looks up the sub-command and runs it - \
+// - 子命令的分发处理器，找到对应子命令然后执行 - \\
+// - sub-command dispatcher, looks up the sub-command and runs it - \\
 import { Collection }  from "discord.js"
 import { SubCommand }  from "@shared/types/sub_command"
 import { existsSync, readdirSync } from "fs"

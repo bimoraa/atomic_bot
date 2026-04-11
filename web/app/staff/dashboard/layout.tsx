@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import AppSidebar from '@/components/shadcn-space/blocks/dashboard-shell-01/app-sidebar'
+import AppSidebar from                
 import { Skeleton } from '@/components/ui/skeleton'
 
 export type DiscordUser = {

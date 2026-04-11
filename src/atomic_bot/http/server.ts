@@ -12,20 +12,20 @@
 import express                                    from "express"
 import { Client }                                from "discord.js"
 import cors                                      from "cors"
-import { latency_middleware }                    from "./middleware/latency.middleware"
-import { create_health_router }                  from "./routes/health.api"
-import { create_webhook_router }                 from "./routes/webhook.api"
-import { create_bot_router }                     from "./routes/bot.api"
-import { create_user_router }                    from "./routes/user.api"
-import { create_guild_router }                   from "./routes/guild.api"
-import { create_settings_router }                from "./routes/settings.api"
-import { create_auto_responder_router }          from "./routes/auto_responder.api"
-import { create_reaction_roles_router }          from "./routes/reaction_roles.api"
-import { create_custom_commands_router }         from "./routes/custom_commands.api"
-import { create_logs_router }                    from "./routes/logs.api"
-import { create_account_tracker_router }         from "./routes/account_tracker.api"
+import { latency_middleware }                    from "@http/middleware/latency.middleware"
+import { create_health_router }                  from "@http/routes/health.api"
+import { create_webhook_router }                 from "@http/routes/webhook.api"
+import { create_bot_router }                     from "@http/routes/bot.api"
+import { create_user_router }                    from "@http/routes/user.api"
+import { create_guild_router }                   from "@http/routes/guild.api"
+import { create_settings_router }                from "@http/routes/settings.api"
+import { create_auto_responder_router }          from "@http/routes/auto_responder.api"
+import { create_reaction_roles_router }          from "@http/routes/reaction_roles.api"
+import { create_custom_commands_router }         from "@http/routes/custom_commands.api"
+import { create_logs_router }                    from "@http/routes/logs.api"
+import { create_account_tracker_router }         from "@http/routes/account_tracker.api"
 
-export { warm_credits_cache_from_db } from "./routes/user.api"
+export { warm_credits_cache_from_db } from "@http/routes/user.api"
 
 const __port          = parseInt(process.env.PORT || process.env.WEBHOOK_PORT || "3456", 10)
 const __public_url    = process.env.PUBLIC_URL || `http://localhost:${__port}`
@@ -61,20 +61,12 @@ export function start_webhook_server(client: Client): void {
     origin     : process.env.DASHBOARD_URL || "http://localhost:3000",
     credentials: true,
   }))
-  app.use(express.json({ limit: "10mb" }))
-  app.use(express.urlencoded({ extended: true, limit: "10mb" }))
+  app.use(express.json({ limit: "512kb" }))
+  app.use(express.urlencoded({ extended: false, limit: "512kb" }))
 
   // - 超轻量响应延迟追踪，X-Response-Time header + 环形缓冲区统计 - \\
   // - ultra-lightweight latency tracking, X-Response-Time header + ring buffer stats - \\
   app.use(latency_middleware)
-
-  // - Railway 保活机制 - \\
-  // - railway keepalive - \\
-  app.use((_req, res, next) => {
-    res.setHeader("Connection", "keep-alive")
-    res.setHeader("Keep-Alive", "timeout=120")
-    next()
-  })
 
   // - 挂载路由器 - \\
   // - mount routers - \\
@@ -96,6 +88,11 @@ export function start_webhook_server(client: Client): void {
     console.log(`[ - HTTP - ] Health: ${__public_url}/health`)
     console.log(`[ - HTTP - ] Webhook: ${__public_url}/webhook/github`)
   })
+
+  // - 在 TCP 层设置 keep-alive，避免每个请求都设置 header - \\
+  // - keep-alive at TCP level — no per-request header overhead - \\
+  server.keepAliveTimeout = 120_000
+  server.headersTimeout   = 125_000
 
   server.on("error", (err: Error) => {
     console.error("[ - HTTP - ] Server error:", err)
