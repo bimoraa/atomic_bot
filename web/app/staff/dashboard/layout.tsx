@@ -10,9 +10,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import AppSidebar from                
-import { Skeleton } from '@/components/ui/skeleton'
+import { useRouter }           from 'next/navigation'
+import AppSidebar              from '@/components/features/staff/app_sidebar'
+import { Skeleton }            from '@/components/ui/skeleton'
 
 export type DiscordUser = {
   id: string;
