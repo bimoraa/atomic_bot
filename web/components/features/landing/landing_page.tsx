@@ -8,7 +8,8 @@ import {
   DialogDescription, DialogFooter, DialogHeader,
   DialogOverlay, DialogPortal, DialogTitle,
 } from '@/components/animate-ui/primitives/radix/dialog'
-import { X } from 'lucide-react'
+import { X }                                                             from 'lucide-react'
+import { LinkPreview }                                                   from '@/components/ui/link-preview'
 import {
   Ticket, Key, Bell, BillCheck, ShieldCheck, ChatRoundDots,
   Bolt, Earth, Chart, Lock, Monitor, Code,
@@ -20,7 +21,7 @@ import {
 } from '@solar-icons/react'
 
 // - section dot nav index - \\
-const __sections = ['hero', 'atomic', 'bypass', 'jkt48', 'moderation', 'stack', 'cta', 'credit'] as const
+const __sections = ['hero', 'atomic', 'bypass', 'jkt48', 'moderation', 'web', 'stack', 'cta', 'credit'] as const
 type Section = typeof __sections[number]
 
 // - github svg icon - \\
@@ -77,6 +78,57 @@ function Stat({ value, label }: { value: string; label: string }) {
   )
 }
 
+// - web page entry card — title uses LinkPreview hover screenshot - \\
+function WebPageEntry({
+  full_url,
+  path,
+  title,
+  desc,
+  icon : Icon,
+  badge,
+}: {
+  full_url: string
+  path    : string
+  title   : string
+  desc    : string
+  icon    : React.ElementType
+  badge   : string
+}) {
+  return (
+    <div className="h-full rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden hover:border-white/[0.10] transition-colors duration-300">
+      {/* - browser chrome - \\ */}
+      <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[0.04] bg-white/[0.01]">
+        <span className="w-1.5 h-1.5 rounded-full bg-white/[0.07]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-white/[0.07]" />
+        <span className="w-1.5 h-1.5 rounded-full bg-white/[0.07]" />
+        <span className="ml-2 flex-1 truncate text-[0.58rem] text-[#2a2a2a] font-mono tracking-tight">
+          azure48.xyz{path}
+        </span>
+      </div>
+      {/* - card body - \\ */}
+      <div className="p-3.5 flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#3d3d3d]"><SolarIcon icon={Icon} size={12} iconStyle="LineDuotone" /></span>
+            <LinkPreview
+              url={full_url}
+              width={240}
+              height={150}
+              className="text-[0.78rem] text-white/70 hover:text-white/90 transition-colors font-normal"
+            >
+              {title}
+            </LinkPreview>
+          </div>
+          <span className="shrink-0 text-[0.55rem] text-[#2e2e2e] px-1.5 py-0.5 rounded-full border border-white/[0.04]">
+            {badge}
+          </span>
+        </div>
+        <p className="text-[0.67rem] text-[#3a3a3a] leading-relaxed">{desc}</p>
+      </div>
+    </div>
+  )
+}
+
 // - animated section wrapper - \\
 // - content area scrollable on mobile so long sections don't force premature nav - \\
 function Slide({
@@ -121,14 +173,234 @@ function Slide({
   )
 }
 
+// - welcome intro overlay — plays once on first mount - \\
+// - atomic logo svg (static) - \\
+function AtomicLogo({ size = 72 }: { size?: number }) {
+  const ratio = 202 / 251
+  return (
+    <svg
+      width={size}
+      height={size * ratio}
+      viewBox="0 0 251 202"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M130.598 118.252L69.9985 195.951C67.2675 199.453 63.0748 201.5 58.6341 201.5H7.5C3.63401 201.5 0.5 198.366 0.5 194.5V141.21C0.5 136.638 2.0667 132.203 4.93908 128.646L103.903 6.0769C106.751 2.54996 111.041 0.5 115.574 0.5H167.645C171.511 0.5 174.645 3.63401 174.645 7.5V90.7925C174.645 94.6585 177.779 97.7925 181.645 97.7925H245.5C248.261 97.7925 250.5 100.031 250.5 102.793V199.777C250.5 200.729 249.729 201.5 248.777 201.5H189.161C168.163 201.5 151.141 184.478 151.141 163.48V125.316C151.141 118.972 145.999 113.83 139.655 113.83C136.116 113.83 132.775 115.461 130.598 118.252Z" fill="#ffffff" />
+      <path d="M167.646 0.25C171.649 0.250115 174.896 3.49601 174.896 7.5V90.793C174.896 94.5207 177.918 97.543 181.646 97.543H245.5C248.4 97.543 250.75 99.8935 250.75 102.793V199.777C250.75 200.867 249.867 201.75 248.777 201.75H189.161C168.025 201.75 150.891 184.616 150.891 163.479V125.315C150.89 119.11 145.861 114.08 139.655 114.08C136.193 114.08 132.924 115.675 130.795 118.405L70.1953 196.105C67.4169 199.668 63.1513 201.75 58.6338 201.75H7.5C3.49594 201.75 0.25 198.504 0.25 194.5V141.21C0.25 136.58 1.83586 132.09 4.74414 128.488L103.709 5.91992C106.604 2.33429 110.966 0.25 115.574 0.25H167.646Z" stroke="#ffffff" strokeOpacity="0.3" strokeWidth="0.5" />
+    </svg>
+  )
+}
+
+// - animated atomic logo: stroke draws in, fill blossoms after - \\
+function AnimatedAtomicLogo({ size = 88 }: { size?: number }) {
+  const ratio = 202 / 251
+  return (
+    <svg
+      width={size}
+      height={size * ratio}
+      viewBox="0 0 251 202"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {/* - outline traces the shape first - \\ */}
+      <motion.path
+        d="M167.646 0.25C171.649 0.250115 174.896 3.49601 174.896 7.5V90.793C174.896 94.5207 177.918 97.543 181.646 97.543H245.5C248.4 97.543 250.75 99.8935 250.75 102.793V199.777C250.75 200.867 249.867 201.75 248.777 201.75H189.161C168.025 201.75 150.891 184.616 150.891 163.479V125.315C150.89 119.11 145.861 114.08 139.655 114.08C136.193 114.08 132.924 115.675 130.795 118.405L70.1953 196.105C67.4169 199.668 63.1513 201.75 58.6338 201.75H7.5C3.49594 201.75 0.25 198.504 0.25 194.5V141.21C0.25 136.58 1.83586 132.09 4.74414 128.488L103.709 5.91992C106.604 2.33429 110.966 0.25 115.574 0.25H167.646Z"
+        stroke="#ffffff"
+        strokeWidth="1.5"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: [0, 1, 1, 0] }}
+        transition={{
+          pathLength : { duration: 1.4, ease: 'easeInOut' },
+          opacity    : { duration: 1.8, times: [0, 0.06, 0.72, 1] },
+        }}
+      />
+      {/* - fill appears after stroke finishes drawing - \\ */}
+      <motion.path
+        d="M130.598 118.252L69.9985 195.951C67.2675 199.453 63.0748 201.5 58.6341 201.5H7.5C3.63401 201.5 0.5 198.366 0.5 194.5V141.21C0.5 136.638 2.0667 132.203 4.93908 128.646L103.903 6.0769C106.751 2.54996 111.041 0.5 115.574 0.5H167.645C171.511 0.5 174.645 3.63401 174.645 7.5V90.7925C174.645 94.6585 177.779 97.7925 181.645 97.7925H245.5C248.261 97.7925 250.5 100.031 250.5 102.793V199.777C250.5 200.729 249.729 201.5 248.777 201.5H189.161C168.163 201.5 151.141 184.478 151.141 163.48V125.316C151.141 118.972 145.999 113.83 139.655 113.83C136.116 113.83 132.775 115.461 130.598 118.252Z"
+        fill="#ffffff"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.3, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+      />
+    </svg>
+  )
+}
+
+function WelcomeAnimation({ on_done }: { on_done: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(on_done, 3000)
+    return () => clearTimeout(t)
+  }, [on_done])
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0a0a] overflow-hidden"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+    >
+
+      {/* - blob 1: purple — floating near center - \\ */}
+      <motion.div
+        className="absolute pointer-events-none"
+        initial={{ opacity: 0, x: 10, y: -15 }}
+        animate={{
+          opacity : 1,
+          x       : [10, 28, -5, 22, 10],
+          y       : [-15, 5, -30, -8, -15],
+        }}
+        exit={{ opacity: 0 }}
+        transition={{
+          opacity : { duration: 0.7, ease: 'easeOut' },
+          x       : { delay: 0.7, duration: 9, repeat: Infinity, ease: 'easeInOut' },
+          y       : { delay: 0.7, duration: 11, repeat: Infinity, ease: 'easeInOut' },
+        }}
+        style={{
+          width      : 480,
+          height     : 480,
+          background : 'radial-gradient(circle, rgba(115,0,255,0.32) 0%, transparent 70%)',
+          top        : '50%',
+          left       : '50%',
+          marginTop  : -240,
+          marginLeft : -240,
+          willChange : 'transform, opacity',
+        }}
+      />
+
+      {/* - blob 2: blue — offset top-left of center - \\ */}
+      <motion.div
+        className="absolute pointer-events-none"
+        initial={{ opacity: 0, x: -55, y: -35 }}
+        animate={{
+          opacity : 1,
+          x       : [-55, -35, -70, -42, -55],
+          y       : [-35, -55, -15, -45, -35],
+        }}
+        exit={{ opacity: 0 }}
+        transition={{
+          opacity : { delay: 0.4, duration: 0.7, ease: 'easeOut' },
+          x       : { delay: 1.1, duration: 10, repeat: Infinity, ease: 'easeInOut' },
+          y       : { delay: 1.1, duration: 8,  repeat: Infinity, ease: 'easeInOut' },
+        }}
+        style={{
+          width      : 360,
+          height     : 360,
+          background : 'radial-gradient(circle, rgba(0,183,255,0.22) 0%, transparent 70%)',
+          top        : '50%',
+          left       : '50%',
+          marginTop  : -180,
+          marginLeft : -180,
+          willChange : 'transform, opacity',
+        }}
+      />
+
+      {/* - blob 3: red — offset bottom-right of center - \\ */}
+      <motion.div
+        className="absolute pointer-events-none"
+        initial={{ opacity: 0, x: 45, y: 50 }}
+        animate={{
+          opacity : 1,
+          x       : [45, 62, 28, 55, 45],
+          y       : [50, 30, 65, 42, 50],
+        }}
+        exit={{ opacity: 0 }}
+        transition={{
+          opacity : { delay: 0.8, duration: 0.7, ease: 'easeOut' },
+          x       : { delay: 1.5, duration: 8,  repeat: Infinity, ease: 'easeInOut' },
+          y       : { delay: 1.5, duration: 12, repeat: Infinity, ease: 'easeInOut' },
+        }}
+        style={{
+          width      : 320,
+          height     : 320,
+          background : 'radial-gradient(circle, rgba(255,0,64,0.18) 0%, transparent 70%)',
+          top        : '50%',
+          left       : '50%',
+          marginTop  : -160,
+          marginLeft : -160,
+          willChange : 'transform, opacity',
+        }}
+      />
+
+      {/* - blob 4: teal — offset top-right of center - \\ */}
+      <motion.div
+        className="absolute pointer-events-none"
+        initial={{ opacity: 0, x: 60, y: -45 }}
+        animate={{
+          opacity : 1,
+          x       : [60, 44, 72, 52, 60],
+          y       : [-45, -28, -58, -38, -45],
+        }}
+        exit={{ opacity: 0 }}
+        transition={{
+          opacity : { delay: 1.2, duration: 0.7, ease: 'easeOut' },
+          x       : { delay: 1.9, duration: 11, repeat: Infinity, ease: 'easeInOut' },
+          y       : { delay: 1.9, duration: 9,  repeat: Infinity, ease: 'easeInOut' },
+        }}
+        style={{
+          width      : 280,
+          height     : 280,
+          background : 'radial-gradient(circle, rgba(0,229,183,0.18) 0%, transparent 70%)',
+          top        : '50%',
+          left       : '50%',
+          marginTop  : -140,
+          marginLeft : -140,
+          willChange : 'transform, opacity',
+        }}
+      />
+
+      {/* - blob 5: pink — offset bottom-left of center - \\ */}
+      <motion.div
+        className="absolute pointer-events-none"
+        initial={{ opacity: 0, x: -48, y: 42 }}
+        animate={{
+          opacity : 1,
+          x       : [-48, -32, -60, -40, -48],
+          y       : [42, 58, 28, 50, 42],
+        }}
+        exit={{ opacity: 0 }}
+        transition={{
+          opacity : { delay: 1.6, duration: 0.7, ease: 'easeOut' },
+          x       : { delay: 2.3, duration: 7,  repeat: Infinity, ease: 'easeInOut' },
+          y       : { delay: 2.3, duration: 10, repeat: Infinity, ease: 'easeInOut' },
+        }}
+        style={{
+          width      : 240,
+          height     : 240,
+          background : 'radial-gradient(circle, rgba(228,120,255,0.17) 0%, transparent 70%)',
+          top        : '50%',
+          left       : '50%',
+          marginTop  : -120,
+          marginLeft : -120,
+          willChange : 'transform, opacity',
+        }}
+      />
+
+      {/* - icon build animation - \\ */}
+      <motion.div
+        className="relative"
+        initial={{ opacity: 0, filter: 'blur(0px)' }}
+        animate={{ opacity: 1, filter: 'blur(0px)' }}
+        exit={{ opacity: 0, scale: 2.8, filter: 'blur(24px)', transition: { duration: 0.6, ease: [0.2, 0, 0.8, 1] } }}
+        transition={{ duration: 0.25 }}
+        style={{ filter: 'drop-shadow(0 0 28px rgba(115, 0, 255, 0.6)) drop-shadow(0 0 56px rgba(115, 0, 255, 0.2))' }}
+      >
+        <AnimatedAtomicLogo size={96} />
+      </motion.div>
+
+    </motion.div>
+  )
+}
+
 // - main landing page - \\
 export function LandingPage() {
   const [current, set_current]         = useState(0)
   const [discord_dialog, set_discord]  = useState(false)
-  const [direction, set_direction] = useState<'down' | 'up'>('down')
-  const [locked, set_locked]       = useState(false)
-  const touch_start                = useRef<number>(0)
-  const container_ref              = useRef<HTMLDivElement>(null)
+  const [direction, set_direction]     = useState<'down' | 'up'>('down')
+  const [locked, set_locked]           = useState(false)
+  const [intro_done, set_intro_done]   = useState(false)
+  const touch_start                    = useRef<number>(0)
+  const container_ref                  = useRef<HTMLDivElement>(null)
 
   // - navigate to a section - \\
   const go_to = useCallback((idx: number) => {
@@ -204,13 +476,18 @@ export function LandingPage() {
       style={{ letterSpacing: '-0.02em' }}
     >
 
+      {/* - welcome intro overlay - \\ */}
+      <AnimatePresence>
+        {!intro_done && <WelcomeAnimation on_done={() => set_intro_done(true)} />}
+      </AnimatePresence>
+
       {/* - ambient glow blobs, per-section - \\ */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
 
-        {/* atomic — #7300FF */}
+        {/* atomic — #7300FF top-right */}
         <motion.div
           className="absolute rounded-full"
-          animate={{ opacity: current === 1 ? 0.18 : 0 }}
+          animate={{ opacity: section_name === 'atomic' ? 0.18 : 0 }}
           transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
           style={{
             width     : 700,
@@ -222,10 +499,10 @@ export function LandingPage() {
           }}
         />
 
-        {/* bypass — #FF0040 */}
+        {/* bypass — #FF0040 bottom-left */}
         <motion.div
           className="absolute rounded-full"
-          animate={{ opacity: current === 2 ? 0.16 : 0 }}
+          animate={{ opacity: section_name === 'bypass' ? 0.16 : 0 }}
           transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
           style={{
             width     : 650,
@@ -237,10 +514,10 @@ export function LandingPage() {
           }}
         />
 
-        {/* jkt48 — E478FF, center-bottom */}
+        {/* jkt48 — #E478FF bottom-center */}
         <motion.div
           className="absolute rounded-full"
-          animate={{ opacity: current === 3 ? 0.18 : 0 }}
+          animate={{ opacity: section_name === 'jkt48' ? 0.18 : 0 }}
           transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
           style={{
             width     : 600,
@@ -253,10 +530,10 @@ export function LandingPage() {
           }}
         />
 
-        {/* hero, moderation, stack, cta, credit — #00B7FF top-center-right */}
+        {/* hero / cta — #00B7FF top-right */}
         <motion.div
           className="absolute rounded-full"
-          animate={{ opacity: [0, 4, 5, 6, 7].includes(current) ? 0.14 : 0 }}
+          animate={{ opacity: (section_name === 'hero' || section_name === 'cta') ? 0.14 : 0 }}
           transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
           style={{
             width     : 650,
@@ -268,10 +545,10 @@ export function LandingPage() {
           }}
         />
 
-        {/* hero, moderation, stack, cta, credit — #00B7FF center-bottom */}
+        {/* hero / cta — #00B7FF bottom-center soft */}
         <motion.div
           className="absolute rounded-full"
-          animate={{ opacity: [0, 4, 5, 6, 7].includes(current) ? 0.12 : 0 }}
+          animate={{ opacity: (section_name === 'hero' || section_name === 'cta') ? 0.09 : 0 }}
           transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
           style={{
             width     : 600,
@@ -284,10 +561,55 @@ export function LandingPage() {
           }}
         />
 
+        {/* moderation — #FF6B00 top-left */}
+        <motion.div
+          className="absolute rounded-full"
+          animate={{ opacity: section_name === 'moderation' ? 0.15 : 0 }}
+          transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
+          style={{
+            width     : 620,
+            height    : 620,
+            background: 'radial-gradient(circle, #FF6B00 0%, transparent 65%)',
+            filter    : 'blur(85px)',
+            top       : '-10%',
+            left      : '-5%',
+          }}
+        />
+
+        {/* web — #00E5B7 right-center */}
+        <motion.div
+          className="absolute rounded-full"
+          animate={{ opacity: section_name === 'web' ? 0.13 : 0 }}
+          transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
+          style={{
+            width     : 660,
+            height    : 660,
+            background: 'radial-gradient(circle, #00E5B7 0%, transparent 65%)',
+            filter    : 'blur(85px)',
+            top       : '5%',
+            right     : '-18%',
+          }}
+        />
+
+        {/* stack — #3B82F6 bottom-right */}
+        <motion.div
+          className="absolute rounded-full"
+          animate={{ opacity: section_name === 'stack' ? 0.14 : 0 }}
+          transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
+          style={{
+            width     : 600,
+            height    : 600,
+            background: 'radial-gradient(circle, #3B82F6 0%, transparent 65%)',
+            filter    : 'blur(80px)',
+            bottom    : '-15%',
+            right     : '5%',
+          }}
+        />
+
         {/* credit — #FFFFFF soft top-left */}
         <motion.div
           className="absolute rounded-full"
-          animate={{ opacity: current === 7 ? 0.06 : 0 }}
+          animate={{ opacity: section_name === 'credit' ? 0.06 : 0 }}
           transition={{ duration: 1.6, ease: [0.4, 0, 0.2, 1] }}
           style={{
             width     : 500,
@@ -382,7 +704,7 @@ export function LandingPage() {
               <motion.div
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                 transition={{ delay: 0.42 }}
-                className="flex flex-wrap gap-1.5"
+                className="flex flex-wrap gap-1.5 mb-4"
               >
                 {['TypeScript', 'Node.js', 'discord.js v14', 'PostgreSQL', 'Next.js 15', 'Railway'].map(t => (
                   <Pill key={t} label={t} />
@@ -391,8 +713,8 @@ export function LandingPage() {
 
               <motion.p
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                transition={{ delay: 0.55 }}
-                className="mt-6 text-[#2e2e2e] text-[0.7rem]"
+                transition={{ delay: 0.6 }}
+                className="mt-2 text-[#2e2e2e] text-[0.7rem]"
               >
                 check the{' '}
                 <a href="/terms-of-service" className="hover:text-[#555] underline underline-offset-2 transition-colors">
@@ -581,7 +903,90 @@ export function LandingPage() {
           </div>
         </Slide>
 
-        {/* ─── 5 · STACK ──────────────────────────────────────── */}
+        {/* ─── 5 · WEB DASHBOARD ───────────────────────────────── */}
+        <Slide id="web" active={section_name === 'web'} direction={direction} scrollable>
+          <div className="w-full max-w-5xl mx-auto px-6 sm:px-16">
+            <div className="mb-6">
+              <h2
+                className="text-[1.7rem] sm:text-[2.3rem] font-normal text-white mb-2.5 leading-tight"
+                style={{ letterSpacing: '-0.03em' }}
+              >
+                Web Dashboard
+              </h2>
+              <p className="text-[#4a4a4a] text-[0.82rem] max-w-lg leading-relaxed mb-4">
+                Next.js 15 App Router, shadcn/ui, dark mode only.
+                some pages are public, some need login. all wired to the same Postgres backend the bots use.
+              </p>
+              <div className="flex flex-wrap gap-1.5 mb-5">
+                {['Next.js 15', 'shadcn/ui', 'Tailwind CSS', 'Auth.js', 'dark only'].map(t => <Pill key={t} label={t} />)}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-w-2xl">
+              {[
+                {
+                  path    : '/dashboard',
+                  title   : 'Dashboard',
+                  desc    : 'admin panel for tickets, staff management, and mod logs. login required.',
+                  icon    : Monitor,
+                  badge   : 'protected',
+                  full_url: 'https://azure48.xyz/dashboard',
+                },
+                {
+                  path    : '/bypass',
+                  title   : 'Bypass Tool',
+                  desc    : 'public bypass page. same backend powering the Discord /bypass command.',
+                  icon    : LinkMinimalistic,
+                  badge   : 'public',
+                  full_url: 'https://azure48.xyz/bypass',
+                },
+                {
+                  path    : '/bot-stats',
+                  title   : 'Bot Stats',
+                  desc    : 'real-time stats — bypass count, uptime, command usage breakdown.',
+                  icon    : Chart,
+                  badge   : 'public',
+                  full_url: 'https://azure48.xyz/bot-stats',
+                },
+                {
+                  path    : '/staff-information',
+                  title   : 'Staff Info',
+                  desc    : 'view active staff list, roles, and contact info. synced from DB.',
+                  icon    : UsersGroupRounded,
+                  badge   : 'public',
+                  full_url: 'https://azure48.xyz/staff-information',
+                },
+                {
+                  path    : '/apply-staff',
+                  title   : 'Apply as Staff',
+                  desc    : 'open application form for joining the server staff team.',
+                  icon    : ClipboardList,
+                  badge   : 'public',
+                  full_url: 'https://azure48.xyz/apply-staff',
+                },
+                {
+                  path    : '/transcript/[id]',
+                  title   : 'Ticket Transcript',
+                  desc    : 'read-only viewer for closed ticket transcripts. shareable by link.',
+                  icon    : DocumentText,
+                  badge   : 'public',
+                  full_url: 'https://azure48.xyz/transcript',
+                },
+              ].map((p, i) => (
+                <motion.div
+                  key={p.title}
+                  className="h-full"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05, duration: 0.35 }}
+                >
+                  <WebPageEntry {...p} />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </Slide>
+
+        {/* ─── 6 · STACK ──────────────────────────────────────── */}
         <Slide id="stack" active={section_name === 'stack'} direction={direction} scrollable>
           <div className="w-full max-w-5xl mx-auto px-6 sm:px-16">
             <div className="mb-7">
@@ -653,7 +1058,7 @@ export function LandingPage() {
           </div>
         </Slide>
 
-        {/* ─── 6 · CTA ────────────────────────────────────────── */}
+        {/* ─── 7 · CTA ────────────────────────────────────────── */}
         <Slide id="cta" active={section_name === 'cta'} direction={direction}>
           <div className="w-full max-w-5xl mx-auto px-6 sm:px-16">
             <div className="max-w-xs">
@@ -709,7 +1114,7 @@ export function LandingPage() {
           </div>
         </Slide>
 
-        {/* ─── 7 · CREDIT ─────────────────────────────────────── */}
+        {/* ─── 8 · CREDIT ─────────────────────────────────────── */}
         <Slide id="credit" active={section_name === 'credit'} direction={direction}>
           <div className="w-full max-w-5xl mx-auto px-6 sm:px-16 flex flex-col gap-12">
 
