@@ -327,6 +327,15 @@ function WelcomeAnimation({ on_done }: { on_done: () => void }) {
     return () => clearTimeout(t)
   }, [on_done])
 
+  // - play sfx immediately — mount is triggered by user click, so autoplay is allowed - \\
+  useEffect(() => {
+    const sfx   = new Audio('/startup-sfx-atmc.mp3')
+    sfx.volume  = 1
+    sfx.preload = 'auto'
+    sfx.play().catch(() => {})
+    return () => { sfx.pause(); sfx.src = '' }
+  }, [])
+
   return (
     <motion.div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0a0a] overflow-hidden"
@@ -366,7 +375,9 @@ export function LandingPage() {
   const [direction, set_direction]     = useState<'down' | 'up'>('down')
   const [locked, set_locked]           = useState(false)
   const [intro_done, set_intro_done]   = useState(false)
-  const [card_hovered, set_card_hovered] = useState(false)
+  const [touched,       set_touched]       = useState(false)
+  const [gate_exiting,  set_gate_exiting]  = useState(false)
+  const [card_hovered,  set_card_hovered]  = useState(false)
   const touch_start                    = useRef<number>(0)
   const container_ref                  = useRef<HTMLDivElement>(null)
 
@@ -444,9 +455,54 @@ export function LandingPage() {
       style={{ letterSpacing: '-0.02em' }}
     >
 
+      {/* - touch gate: shown before welcome, ensures user gesture for audio - \\ */}
+      <AnimatePresence>
+        {!touched && (
+          <motion.div
+            key="touch-gate"
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-[#0a0a0a]"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
+          >
+            {/* - animated gradient shimmer on text - \\ */}
+            <style>{`
+              @keyframes __shimmer_sweep {
+                0%   { background-position: 200% center }
+                100% { background-position: -200% center }
+              }
+              .touch-gate-label {
+                background          : linear-gradient(90deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.85) 35%, rgba(255,255,255,0.85) 55%, rgba(255,255,255,0.18) 100%);
+                background-size     : 300% auto;
+                -webkit-background-clip: text;
+                background-clip     : text;
+                -webkit-text-fill-color: transparent;
+                animation           : __shimmer_sweep 3.5s linear infinite;
+              }
+            `}</style>
+            <motion.button
+              onClick={() => { if (!gate_exiting) set_gate_exiting(true) }}
+              className="relative px-8 py-4 text-base font-medium select-none cursor-pointer"
+              initial={{ opacity: 0, y: 8, scale: 1, filter: 'blur(0px)' }}
+              animate={gate_exiting
+                ? { opacity: 0, scale: 1.7, filter: 'blur(16px)', y: 0 }
+                : { opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }
+              }
+              transition={gate_exiting
+                ? { duration: 0.55, ease: [0.4, 0, 0.2, 1] }
+                : { delay: 0.3, duration: 0.6, ease: 'easeOut' }
+              }
+              onAnimationComplete={() => { if (gate_exiting) set_touched(true) }}
+              style={{ letterSpacing: '-0.02em' }}
+            >
+              <span className="touch-gate-label">touch me gng</span>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* - welcome intro overlay - \\ */}
       <AnimatePresence>
-        {!intro_done && <WelcomeAnimation on_done={() => set_intro_done(true)} />}
+        {touched && !intro_done && <WelcomeAnimation on_done={() => set_intro_done(true)} />}
       </AnimatePresence>
 
       {/* - ambient glow blobs, per-section - \\ */}
