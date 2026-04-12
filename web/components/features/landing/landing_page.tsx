@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback }                   from 'react'
-import { motion, AnimatePresence }                                       from 'motion/react'
+import { motion, AnimatePresence, useMotionValue, useAnimationFrame } from 'motion/react'
 import { GeistSans }                                                     from 'geist/font/sans'
 import {
   Dialog, DialogClose, DialogContent,
@@ -19,6 +19,48 @@ import {
   Layers, ServerMinimalistic, LinkMinimalistic,
   DocumentText, Cpu,
 } from '@solar-icons/react'
+
+// - continuously orbiting glow blob, driven by sin/cos — zero keyframe jank - \\
+function FloatingBlob({
+  color, size, rx, ry, speed, phase,
+}: {
+  color : string
+  size  : number
+  rx    : number
+  ry    : number
+  speed : number
+  phase : number
+}) {
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+
+  useAnimationFrame((t) => {
+    const angle = (t / 1000) * speed + phase
+    x.set(Math.cos(angle) * rx)
+    y.set(Math.sin(angle) * ry)
+  })
+
+  return (
+    <motion.div
+      style={{
+        x,
+        y,
+        position   : 'absolute',
+        width      : size,
+        height     : size,
+        borderRadius: '50%',
+        background : `radial-gradient(circle, ${color} 0%, transparent 65%)`,
+        filter     : 'blur(22px)',
+        top        : '50%',
+        left       : '50%',
+        marginTop  : -(size / 2),
+        marginLeft : -(size / 2),
+        willChange : 'transform',
+        pointerEvents: 'none',
+      }}
+    />
+  )
+}
 
 // - section dot nav index - \\
 const __sections = ['hero', 'atomic', 'bypass', 'jkt48', 'moderation', 'web', 'stack', 'cta', 'credit'] as const
@@ -226,6 +268,59 @@ function AnimatedAtomicLogo({ size = 88 }: { size?: number }) {
   )
 }
 
+// - welcome blob: fully imperative — single useAnimationFrame drives opacity + orbit - \\
+// - no declarative animate props = zero conflict, zero jitter - \\
+function WelcomeBlob({
+  color, size, rx, ry, speed, phase, fade_delay = 0, ox = 0, oy = 0,
+}: {
+  color      : string
+  size       : number
+  rx         : number
+  ry         : number
+  speed      : number
+  phase      : number
+  fade_delay?: number
+  ox?        : number
+  oy?        : number
+}) {
+  const x       = useMotionValue(ox)
+  const y       = useMotionValue(oy)
+  const opacity = useMotionValue(0)
+
+  useAnimationFrame((t) => {
+    const secs    = t / 1000
+    const elapsed = Math.max(0, secs - fade_delay)
+
+    // - smooth linear fade over 0.8s after delay - \\
+    opacity.set(Math.min(1, elapsed / 0.8))
+
+    // - continuous elliptical orbit using absolute clock - \\
+    x.set(ox + Math.cos(secs * speed + phase) * rx)
+    y.set(oy + Math.sin(secs * speed + phase) * ry)
+  })
+
+  return (
+    <motion.div
+      style={{
+        x, y, opacity,
+        position          : 'absolute',
+        width             : size,
+        height            : size,
+        borderRadius      : '50%',
+        background        : `radial-gradient(circle, ${color} 0%, transparent 65%)`,
+        filter            : 'blur(28px)',
+        top               : '50%',
+        left              : '50%',
+        marginTop         : -(size / 2),
+        marginLeft        : -(size / 2),
+        willChange        : 'transform, opacity',
+        pointerEvents     : 'none',
+        backfaceVisibility: 'hidden',
+      }}
+    />
+  )
+}
+
 function WelcomeAnimation({ on_done }: { on_done: () => void }) {
   useEffect(() => {
     const t = setTimeout(on_done, 3000)
@@ -241,140 +336,12 @@ function WelcomeAnimation({ on_done }: { on_done: () => void }) {
       transition={{ duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
     >
 
-      {/* - blob 1: purple — floating near center - \\ */}
-      <motion.div
-        className="absolute pointer-events-none"
-        initial={{ opacity: 0, x: 10, y: -15 }}
-        animate={{
-          opacity : 1,
-          x       : [10, 28, -5, 22, 10],
-          y       : [-15, 5, -30, -8, -15],
-        }}
-        exit={{ opacity: 0 }}
-        transition={{
-          opacity : { duration: 0.7, ease: 'easeOut' },
-          x       : { delay: 0.7, duration: 9, repeat: Infinity, ease: 'easeInOut' },
-          y       : { delay: 0.7, duration: 11, repeat: Infinity, ease: 'easeInOut' },
-        }}
-        style={{
-          width      : 480,
-          height     : 480,
-          background : 'radial-gradient(circle, rgba(115,0,255,0.32) 0%, transparent 70%)',
-          top        : '50%',
-          left       : '50%',
-          marginTop  : -240,
-          marginLeft : -240,
-          willChange : 'transform, opacity',
-        }}
-      />
-
-      {/* - blob 2: blue — offset top-left of center - \\ */}
-      <motion.div
-        className="absolute pointer-events-none"
-        initial={{ opacity: 0, x: -55, y: -35 }}
-        animate={{
-          opacity : 1,
-          x       : [-55, -35, -70, -42, -55],
-          y       : [-35, -55, -15, -45, -35],
-        }}
-        exit={{ opacity: 0 }}
-        transition={{
-          opacity : { delay: 0.4, duration: 0.7, ease: 'easeOut' },
-          x       : { delay: 1.1, duration: 10, repeat: Infinity, ease: 'easeInOut' },
-          y       : { delay: 1.1, duration: 8,  repeat: Infinity, ease: 'easeInOut' },
-        }}
-        style={{
-          width      : 360,
-          height     : 360,
-          background : 'radial-gradient(circle, rgba(0,183,255,0.22) 0%, transparent 70%)',
-          top        : '50%',
-          left       : '50%',
-          marginTop  : -180,
-          marginLeft : -180,
-          willChange : 'transform, opacity',
-        }}
-      />
-
-      {/* - blob 3: red — offset bottom-right of center - \\ */}
-      <motion.div
-        className="absolute pointer-events-none"
-        initial={{ opacity: 0, x: 45, y: 50 }}
-        animate={{
-          opacity : 1,
-          x       : [45, 62, 28, 55, 45],
-          y       : [50, 30, 65, 42, 50],
-        }}
-        exit={{ opacity: 0 }}
-        transition={{
-          opacity : { delay: 0.8, duration: 0.7, ease: 'easeOut' },
-          x       : { delay: 1.5, duration: 8,  repeat: Infinity, ease: 'easeInOut' },
-          y       : { delay: 1.5, duration: 12, repeat: Infinity, ease: 'easeInOut' },
-        }}
-        style={{
-          width      : 320,
-          height     : 320,
-          background : 'radial-gradient(circle, rgba(255,0,64,0.18) 0%, transparent 70%)',
-          top        : '50%',
-          left       : '50%',
-          marginTop  : -160,
-          marginLeft : -160,
-          willChange : 'transform, opacity',
-        }}
-      />
-
-      {/* - blob 4: teal — offset top-right of center - \\ */}
-      <motion.div
-        className="absolute pointer-events-none"
-        initial={{ opacity: 0, x: 60, y: -45 }}
-        animate={{
-          opacity : 1,
-          x       : [60, 44, 72, 52, 60],
-          y       : [-45, -28, -58, -38, -45],
-        }}
-        exit={{ opacity: 0 }}
-        transition={{
-          opacity : { delay: 1.2, duration: 0.7, ease: 'easeOut' },
-          x       : { delay: 1.9, duration: 11, repeat: Infinity, ease: 'easeInOut' },
-          y       : { delay: 1.9, duration: 9,  repeat: Infinity, ease: 'easeInOut' },
-        }}
-        style={{
-          width      : 280,
-          height     : 280,
-          background : 'radial-gradient(circle, rgba(0,229,183,0.18) 0%, transparent 70%)',
-          top        : '50%',
-          left       : '50%',
-          marginTop  : -140,
-          marginLeft : -140,
-          willChange : 'transform, opacity',
-        }}
-      />
-
-      {/* - blob 5: pink — offset bottom-left of center - \\ */}
-      <motion.div
-        className="absolute pointer-events-none"
-        initial={{ opacity: 0, x: -48, y: 42 }}
-        animate={{
-          opacity : 1,
-          x       : [-48, -32, -60, -40, -48],
-          y       : [42, 58, 28, 50, 42],
-        }}
-        exit={{ opacity: 0 }}
-        transition={{
-          opacity : { delay: 1.6, duration: 0.7, ease: 'easeOut' },
-          x       : { delay: 2.3, duration: 7,  repeat: Infinity, ease: 'easeInOut' },
-          y       : { delay: 2.3, duration: 10, repeat: Infinity, ease: 'easeInOut' },
-        }}
-        style={{
-          width      : 240,
-          height     : 240,
-          background : 'radial-gradient(circle, rgba(228,120,255,0.17) 0%, transparent 70%)',
-          top        : '50%',
-          left       : '50%',
-          marginTop  : -120,
-          marginLeft : -120,
-          willChange : 'transform, opacity',
-        }}
-      />
+      {/* - welcome blobs: continuous sin/cos orbit, staggered fade-in - \\ */}
+      <WelcomeBlob color="rgba(115,0,255,0.32)"  size={480} rx={28} ry={20} speed={0.9}  phase={0}   fade_delay={0}   ox={0}   oy={0}   />
+      <WelcomeBlob color="rgba(0,183,255,0.22)"   size={360} rx={24} ry={30} speed={-1.3} phase={1.2} fade_delay={0.4} ox={-55} oy={-35} />
+      <WelcomeBlob color="rgba(255,0,64,0.18)"    size={320} rx={20} ry={24} speed={1.7}  phase={2.4} fade_delay={0.8} ox={45}  oy={50}  />
+      <WelcomeBlob color="rgba(0,229,183,0.18)"   size={280} rx={26} ry={18} speed={-1.1} phase={0.8} fade_delay={1.2} ox={60}  oy={-45} />
+      <WelcomeBlob color="rgba(228,120,255,0.17)" size={240} rx={18} ry={26} speed={2.0}  phase={3.6} fade_delay={1.6} ox={-48} oy={42}  />
 
       {/* - icon build animation - \\ */}
       <motion.div
@@ -399,6 +366,7 @@ export function LandingPage() {
   const [direction, set_direction]     = useState<'down' | 'up'>('down')
   const [locked, set_locked]           = useState(false)
   const [intro_done, set_intro_done]   = useState(false)
+  const [card_hovered, set_card_hovered] = useState(false)
   const touch_start                    = useRef<number>(0)
   const container_ref                  = useRef<HTMLDivElement>(null)
 
@@ -1129,21 +1097,48 @@ export function LandingPage() {
             </motion.h2>
 
             {/* - creator card - \ */}
-            <motion.a
-              href="https://github.com/bimoraa"
-              target="_blank"
-              rel="noopener noreferrer"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.14, duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-              className="group flex items-center gap-5 max-w-md"
-            >
-              <img
-                src="https://github.com/bimoraa.png"
-                alt="bimoraa"
-                width={64}
-                height={64}
-                className="rounded-full shrink-0 grayscale group-hover:grayscale-0 transition-all duration-500"
-              />
+            <div className="relative max-w-md">
+
+              <motion.a
+                href="https://github.com/bimoraa"
+                target="_blank"
+                rel="noopener noreferrer"
+                initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.14, duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+                onHoverStart={() => set_card_hovered(true)}
+                onHoverEnd={() => set_card_hovered(false)}
+                className="group relative flex items-center gap-5 z-10"
+                style={{ isolation: 'isolate' }}
+              >
+
+              {/* - avatar + blobs wrapper - \\ */}
+              <div className="relative shrink-0">
+                {/* - hover blobs — always animating, visibility controlled by parent opacity - \\ */}
+                <motion.div
+                  className="absolute pointer-events-none"
+                  animate={{ opacity: card_hovered ? 1 : 0 }}
+                  transition={{ duration: 0.5, ease: 'easeInOut' }}
+                  style={{ inset: '-40px', zIndex: 0 }}
+                >
+                  {/* - purple: clockwise orbit - \\ */}
+                  <FloatingBlob color="rgba(115,0,255,0.40)"  size={200} rx={30} ry={22} speed={1.1}  phase={0}   />
+                  {/* - blue: counter orbit - \\ */}
+                  <FloatingBlob color="rgba(0,183,255,0.32)"   size={160} rx={26} ry={32} speed={-1.5} phase={1.2} />
+                  {/* - pink: diagonal - \\ */}
+                  <FloatingBlob color="rgba(228,120,255,0.28)" size={150} rx={22} ry={18} speed={1.9}  phase={2.4} />
+                  {/* - teal: tight - \\ */}
+                  <FloatingBlob color="rgba(0,229,183,0.26)"   size={130} rx={28} ry={26} speed={-1.3} phase={0.8} />
+                  {/* - red: fast small - \\ */}
+                  <FloatingBlob color="rgba(255,0,64,0.22)"    size={120} rx={18} ry={28} speed={2.2}  phase={3.6} />
+                </motion.div>
+                <img
+                  src="https://github.com/bimoraa.png"
+                  alt="bimoraa"
+                  width={64}
+                  height={64}
+                  className="relative z-10 rounded-full grayscale group-hover:grayscale-0 transition-all duration-500"
+                />
+              </div>
               <div className="flex flex-col gap-2">
                 <span
                   className="text-[1.6rem] font-normal text-white/80 leading-none group-hover:text-white transition-colors duration-300"
@@ -1167,6 +1162,7 @@ export function LandingPage() {
                 </div>
               </div>
             </motion.a>
+            </div>
 
             {/* - motivational quote - \ */}
             <motion.div
