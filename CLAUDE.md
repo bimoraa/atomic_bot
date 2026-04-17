@@ -283,3 +283,19 @@ Component folders:
 * Prioritize performance and efficiency in all code, including hosting costs and database usage
 * Tolong agar kodingan lebih rapih, terorganisir, dan ikuti struktur file/folder yang sudah ada di project, dan manusiawi sebisa mungkin\
 * Commit message harus pake bahasa indonesia gaul, simple, dan jelas
+
+---
+
+Harus selalu memakai path alias / module alias
+
+--- 
+
+Hindari penggunakan style comment seperti ini 
+```ts
+// ─── salary balance ────────────────────────────────────────────
+```
+
+Harusnya seperti ini
+```ts
+// !!! salary balance !!! \\
+``` 

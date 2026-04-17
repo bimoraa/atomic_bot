@@ -638,6 +638,46 @@ async function init_tables(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_bypass_logs_guild ON bypass_logs(guild_id, created_at DESC)
     `)
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS feature_suggestions (
+        id                  VARCHAR(36) PRIMARY KEY,
+        user_id             VARCHAR(255) NOT NULL,
+        guild_id            VARCHAR(255) NOT NULL,
+        suggest_type        VARCHAR(50) NOT NULL,
+        game_name           VARCHAR(255),
+        game_id             VARCHAR(255),
+        game_image           TEXT,
+        feature_description TEXT NOT NULL,
+        reason              TEXT,
+        status              VARCHAR(50) DEFAULT 'pending',
+        discord_message_id  VARCHAR(255),
+        created_at          BIGINT NOT NULL
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_feature_suggestions_guild ON feature_suggestions(guild_id)
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_feature_suggestions_status ON feature_suggestions(status)
+    `)
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS feature_suggestion_votes (
+        id            SERIAL PRIMARY KEY,
+        suggestion_id VARCHAR(36) NOT NULL REFERENCES feature_suggestions(id) ON DELETE CASCADE,
+        user_id       VARCHAR(255) NOT NULL,
+        source        VARCHAR(50) NOT NULL DEFAULT 'discord',
+        created_at    BIGINT NOT NULL,
+        UNIQUE(suggestion_id, user_id)
+      )
+    `)
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_feature_suggestion_votes_suggestion ON feature_suggestion_votes(suggestion_id)
+    `)
+
     await migrate_tables(client)
 
     console.log("[ - POSTGRESQL - ] Tables initialized")
@@ -894,6 +934,8 @@ function get_table_name(collection: string): string {
     middleman_service_status: "middleman_service_status",
     staff_voice_sessions    : "staff_voice_sessions",
     staff_applications     : "staff_applications",
+    feature_suggestions    : "feature_suggestions",
+    feature_suggestion_votes: "feature_suggestion_votes",
   }
 
   return table_map[collection] || "generic_data"

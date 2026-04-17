@@ -28,3 +28,5 @@ export const __middleman_staff_ids: string[] = [
 ]
 
 export const __midman_user_id = "713377329623072822"
+
+export const __cc_role_id = "1284060046048886845"

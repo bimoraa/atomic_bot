@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "figma-use": {
+      "source": "figma/mcp-server-guide",
+      "sourceType": "github",
+      "computedHash": "1e03ce6307bb56bd32b5f2c30e7f01d266f39d88b3f320d58ff351018c67311d"
+    },
     "optimize": {
       "source": "pbakaus/impeccable",
       "sourceType": "github",

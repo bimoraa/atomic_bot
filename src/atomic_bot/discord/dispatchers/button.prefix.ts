@@ -31,6 +31,7 @@ const reaction_role_buttons  = get_button_module("reaction-roles")
 const scripts_buttons        = get_button_module("scripts")
 const share_settings_buttons = get_button_module("share-settings")
 const staff_info_buttons     = get_button_module("staff-info")
+const suggest_feature_buttons = get_button_module("suggest-feature")
 const work_buttons           = get_button_module("work")
 
 /**
@@ -128,4 +129,5 @@ export const button_prefix: ButtonPrefixEntry[] = [
   ["share_settings_prev:",       (i)    => share_settings_buttons.handle_share_settings_pagination(i)],
   ["share_settings_star:",       (i)    => share_settings_buttons.handle_give_star(i)],
   ["staff_info_",                (i)    => staff_info_buttons.handle_staff_info_button(i)],
+  ["suggest_upvote:",            (i)    => suggest_feature_buttons.handle_suggest_upvote(i)],
 ]

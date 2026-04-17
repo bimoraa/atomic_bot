@@ -11,6 +11,10 @@ import { Client, Guild, Invite } from "discord.js"
 import { component, db }         from "../../utils"
 import { load_config }           from "../../config/loader"
 import { log_error }             from "../../utils/error_logger"
+import { member_has_role }       from "../../utils/discord_api"
+import * as cc_salary_manager    from "../managers/cc_salary.manager"
+
+const __cc_role_id = "1284060046048886845"
 
 interface invite_logger_config {
   invite_log_channel_id: string
@@ -287,6 +291,28 @@ export async function start_invite_logger(client: Client): Promise<void> {
       })
 
       await increment_invite_leaderboard(client, guild, used_invite)
+
+      // - 如果邀请者是 content creator，记录 CC 邀请 - \\
+      // - if inviter is a content creator, record cc invite - \\
+      if (used_invite?.inviter_id) {
+        try {
+          const inviter_member = await guild.members.fetch(used_invite.inviter_id).catch(() => null)
+          if (inviter_member && member_has_role(inviter_member, __cc_role_id)) {
+            await cc_salary_manager.record_invite(
+              used_invite.inviter_id,
+              member.id,
+              guild.id,
+              used_invite.code,
+            )
+          }
+        } catch (cc_err) {
+          await log_error(client, cc_err as Error, "CC Invite Tracking", {
+            inviter_id : used_invite.inviter_id,
+            member_id  : member.id,
+            guild_id   : guild.id,
+          }).catch(() => {})
+        }
+      }
     } catch (error) {
       await log_error(client, error as Error, "invite_logger_member_add", {
         guild_id  : member.guild?.id,

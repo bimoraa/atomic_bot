@@ -25,7 +25,9 @@ const middleman_buttons      = get_button_module("middleman")
 const music_buttons          = get_button_module("music")
 const reminder_buttons       = get_button_module("reminder")
 const scripts_buttons        = get_button_module("scripts")
+const suggest_feature_buttons = get_button_module("suggest-feature")
 const tempvoice_buttons      = get_button_module("tempvoice")
+const cc_salary_buttons      = get_button_module("cc-salary")
 
 /**
  * @description exact-match map for button interactions — keyed by full customId
@@ -75,4 +77,8 @@ export const button_exact = new Map<string, ButtonHandler>([
   ["music_skip",                 (i) => music_buttons.handle_music_skip(i)],
   ["music_pause_resume",         (i) => music_buttons.handle_music_pause_resume(i)],
   ["music_stop",                 (i) => music_buttons.handle_music_stop(i)],
+  ["suggest_feature",            (i) => suggest_feature_buttons.handle_suggest_feature(i)],
+  ["cc_check_earnings",          (i) => cc_salary_buttons.handle_cc_check_earnings(i)],
+  ["cc_get_invite",              (i) => cc_salary_buttons.handle_cc_get_invite(i)],
+  ["cc_view_invite_logs",        (i) => cc_salary_buttons.handle_cc_view_invite_logs(i)],
 ])

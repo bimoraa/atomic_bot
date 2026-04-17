@@ -30,3 +30,14 @@ export const __sel_account_tracker = "account_tracker_select"
 // - 模态框的自定义 ID - \\
 // - modal custom ids - \\
 export const __modal_loa_request = "modal_loa_request"
+
+// - 功能建议的自定义 ID - \\
+// - feature suggestion custom ids - \\
+export const __btn_suggest_feature = "suggest_feature"
+export const __btn_suggest_upvote  = "suggest_upvote:"
+export const __sel_suggest_type    = "suggest_type_select"
+
+// - content creator salary custom ids - \\
+export const __btn_cc_check_earnings   = "cc_check_earnings"
+export const __btn_cc_get_invite       = "cc_get_invite"
+export const __btn_cc_view_invite_logs = "cc_view_invite_logs"

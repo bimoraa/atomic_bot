@@ -17,6 +17,7 @@ import { api, component, time }  from "@utils"
 import { member_has_role }          from "@utils/discord_api"
 import { create_key_for_project, delete_user_from_project } from "@integrations/api/luarmor"
 import { add_work_log } from "@database/trackers/work_tracker"
+import * as cc_salary_manager from "@managers/cc_salary.manager"
 
 const __admin_role_id   = "1277272542914281512"
 const __logo_url        = "https://github.com/bimoraa/atomic_bot/blob/main/assets/images/atomic_logo.png?raw=true"
@@ -226,6 +227,19 @@ export async function handle_payment_approve(interaction: ButtonInteraction) {
     undefined,
     amount
   )
+
+  // - 如果买家是通过 CC 邀请加入的，给 CC 加工资 - \\
+  // - if buyer was invited by a cc, credit the cc - \\
+  try {
+    const guild_id   = interaction.guildId!
+    const cc_invite  = await cc_salary_manager.find_inviter(customer_id, guild_id)
+    if (cc_invite) {
+      await cc_salary_manager.add_earning(cc_invite.cc_id, guild_id, customer_id, "system")
+    }
+  } catch {
+    // - 静默失败，不影响主流程 - \\
+    // - silent fail, don't block main flow - \\
+  }
 
   const approved_message = component.build_message({
     components: [
