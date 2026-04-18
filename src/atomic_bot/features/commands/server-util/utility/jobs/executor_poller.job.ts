@@ -133,7 +133,7 @@ function build_forward_payload(message: executor_update_message, embed: executor
   const new_version    = get_embed_field(embed, "New Version:")
   const roblox_version = get_embed_field(embed, "Roblox Version:")
   const date_text      = get_embed_field(embed, "Date:")
-  const changelog      = get_embed_field(embed, "Changelog:")
+  const changelog      = get_embed_field(embed, "Changelog:").replace(/^```[a-z]*\n?/i, "").replace(/\n?```$/i, "").trim()
 
   const detail_lines: string[] = []
 
