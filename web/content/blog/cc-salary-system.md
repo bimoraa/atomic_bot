@@ -1,7 +1,7 @@
 ---
 uuid: c8f3a291-6e4d-4b7a-9f2e-5d1a8c3b7e09
 title: Sistem Gaji Content Creator
-description: Mulai 20 April, setiap Content Creator yang ngajak member beli script akan otomatis menerima komisi Rp 2.500 per transaksi. Ini adalah pertama kalinya CC dibayar.
+description: Mulai 20 April, setiap Content Creator yang ngajak member beli script bakal otomatis dapet komisi Rp 2.500 per transaksi. Ini pertama kalinya CC dibayar di server ini.
 date: Sat 18 Apr 04.13
 readTime: 8 min read
 category: Management
@@ -10,23 +10,25 @@ author: shinapusu (v32encrypt)
 avatar: https://cdn.discordapp.com/avatars/1118453649727823974/28344ca04d18da4a43d483bbd2c870a8.png?size=4096
 ---
 
-Mulai 20 April, setiap CC yang berhasil ngajak member beli script bakal otomatis dapet komisi Rp 2.500 per transaksi. Tidak perlu laporan manual, tidak perlu ngejar siapapun. Dan ini pertama kalinya CC dibayar di server ini.
+Mulai 20 April, setiap CC yang berhasil ngajak member beli script bakal otomatis dapet komisi Rp 2.500 per transaksi. Ga perlu laporan manual, ga perlu ngejar siapa-siapa. Dan ini pertama kalinya CC dibayar di server ini.
 
 ---
 
 ## Kenapa baru sekarang?
 
-Jujur aja, sebelumnya tidak ada sistem gaji untuk CC sama sekali. CC ngajak orang masuk, orang itu beli, tapi CC tidak dapat apa-apa. Kita tahu itu tidak adil, hanya saja tidak ada yang pernah bikin sistemnya.
+Jujur aja, sebelumnya memang ga ada sistem gaji untuk CC sama sekali. CC ngajak orang masuk, orang itu beli, tapi CC ga dapet apa-apa. Kita tau itu ga adil, cuma ya... ga ada yang pernah bikin sistemnya.
 
-Tidak ada yang komplain karena tidak ada yang tahu seharusnya ada sistem. Baru waktu kita mulai mikir "harusnya CC dikasih sesuatu" kita sadar tidak ada cara untuk ngitungnya. Siapa yang ngajak siapa? Tidak ada data. Tidak pernah dicatat.
+Ga ada yang komplain juga, karena ga ada yang sadar harusnya ada sistem. Baru pas kita kepikiran "harusnya CC dikasih sesuatu", baru kerasa — kita bahkan ga punya cara buat ngitungnya.
 
-Jadi ya, dibangun dari nol sekalian.
+Siapa ngajak siapa? Ga ada data. Ga pernah dicatat.
+
+Jadi sekalian dibangun dari nol.
 
 ---
 
 ## 1. Tracking invite member
 
-Setiap ada user baru bergabung ke server, bot langsung ngecek: link invite mana yang dipakai? Siapa yang bikin link itu? Kalau pembuatnya punya role CC, relasi itu langsung disimpan sebagai "user ini dibawa oleh CC ini."
+Setiap ada user baru join, bot langsung ngecek: dia masuk pake invite siapa? Siapa yang bikin link itu? Kalau pembuatnya punya role CC, relasi itu langsung disimpan.
 
 ```mermaid
 flowchart TD
@@ -44,15 +46,17 @@ flowchart TD
   style F fill:#3BA55D,stroke:#2D7D46,color:#fff
 ```
 
-CC tidak perlu melakukan apa-apa, tracking jalan otomatis di background. Kita sengaja tidak mengecek eligibility CC pada saat join karena status CC bisa berubah kapan saja. Lebih aman dicek langsung di momen pembayaran.
+CC ga perlu ngapa-ngapain, semua jalan otomatis di background.
+
+Kita sengaja ga ngecek eligibility CC saat join, karena role bisa berubah kapan aja. Lebih aman dicek pas momen pembayaran.
 
 ---
 
 ## 2. Alur komisi pembayaran
 
-Setiap admin menyetujui pembayaran, sistem langsung ngecek apakah ada CC yang ngajak pembeli tersebut.
+Setiap admin approve pembayaran, sistem langsung ngecek apakah ada CC yang ngajak buyer tersebut.
 
-Kalau ada dan CC-nya masih aktif (masih punya rolenya), Rp 2.500 langsung masuk ke saldo mereka dan kejadiannya dicatat. Kalau rolenya sudah dicabut, tidak ada komisi yang keluar. Simpel.
+Kalau ada dan CC-nya masih aktif, Rp 2.500 langsung masuk ke saldo mereka dan dicatat. Kalau role-nya udah dicabut, ya ga dapet komisi. Simpel.
 
 ```mermaid
 flowchart TD
@@ -74,15 +78,15 @@ flowchart TD
   style H fill:#5865F2,stroke:#4752C4,color:#fff
 ```
 
-Setiap komisi disimpan dengan referensi ke transaksi yang memicunya. Jadi kalau ada CC yang nanya "kok saldo saya segini?", kita bisa trace setiap Rp 2.500 balik ke pembelian spesifiknya.
+Setiap komisi punya referensi ke transaksi yang memicunya. Jadi kalau ada CC nanya “kok saldo saya segini?”, semuanya bisa ditrace.
 
-Kita pilih flat rate daripada persentase karena harga script sudah standar, dan flat rate jauh lebih gampang dijelaskan ke semua pihak.
+Kita pake flat rate, bukan persentase. Soalnya harga script udah standar, dan ini jauh lebih gampang dijelasin ke semua orang.
 
 ---
 
 ## 3. Panel CC
 
-CC bisa akses semuanya lewat panel tombol di channel khusus. Tidak ada slash command yang perlu dihafalkan, cukup tekan tombol.
+Semua akses CC ada di panel tombol. Ga ada slash command ribet, tinggal klik.
 
 ```mermaid
 flowchart LR
@@ -102,19 +106,19 @@ flowchart LR
   style G fill:#111118,stroke:#2a2a35,color:#aaa
 ```
 
-Cek Penghasilan — menampilkan saldo saat ini, total yang pernah diterima, dan jumlah invite. Satu layar, tidak perlu buka spreadsheet.
+**Cek Penghasilan** — saldo sekarang, total earning, dan jumlah invite. Satu layar, beres.
 
-Ambil Invite Link — klik sekali, dapat link personal. Bot membuat link permanen yang terikat ke akun, jadi setiap kali tombol ini ditekan selalu menghasilkan link yang sama. Tidak ada expiry, aman dipasang di konten tanpa khawatir link mati keesokan harinya.
+**Ambil Invite Link** — klik sekali, dapet link personal. Permanen, ga ada expiry.
 
-Lihat Log Invite — daftar siapa saja yang bergabung lewat link CC, lengkap dengan info apakah mereka sudah beli. Berguna untuk lihat conversion rate yang sebenarnya, bukan sekadar angka invite.
+**Lihat Log Invite** — lihat siapa aja yang join lewat link CC + siapa yang udah beli. Bisa langsung keliatan conversion rate real.
 
-Semua respons bersifat ephemeral, hanya terlihat oleh CC yang bersangkutan.
+Semua response ephemeral — cuma kelihatan ke CC itu sendiri.
 
 ---
 
 ## 4. Command manager
 
-Manager punya command group `/cc-salary` untuk keperluan administratif.
+Manager punya `/cc-salary` buat handle semuanya.
 
 ```mermaid
 flowchart LR
@@ -134,37 +138,31 @@ flowchart LR
   style G fill:#3BA55D,stroke:#2D7D46,color:#fff
 ```
 
-`check` — lihat saldo dan statistik CC manapun. Berguna saat ada dispute atau kasus support yang perlu konfirmasi data.
+`check` — cek saldo & stats CC mana aja.
 
-`add` — tambah komisi manual untuk kasus referral yang terjadi di luar sistem, misalnya via DM atau media sosial. Tercatat di log dengan tag `manual` supaya bisa dibedakan dari yang otomatis.
+`add` — tambah komisi manual (misalnya dari DM / luar sistem). Ditandai `manual` di log.
 
-`reset` — nol-in saldo CC setelah transfer dikonfirmasi sudah dikirim. Selalu dilakukan manual oleh manager, tidak pernah otomatis. (Karena otomatis itu scary.)
+`reset` — nol-in saldo setelah payout. Manual, ga pernah otomatis.
 
-`withdraw` — catat pencairan sebagai selesai beserta referensi transaksinya. CC langsung dapat notifikasi setelah prosesnya beres.
+`withdraw` — catat pencairan + kirim notifikasi ke CC.
 
-`log` — seluruh riwayat aktivitas saldo CC: setiap komisi masuk, tambahan manual, pencairan, semua ada timestamp-nya.
+`log` — histori lengkap semua transaksi saldo.
 
-`leaderboard` — peringkat CC berdasarkan total penghasilan. Reset setiap bulan, top 3 dapat shoutout di channel announcements.
+`leaderboard` — ranking CC berdasarkan earning. Reset tiap bulan.
 
 ---
 
 ## Bagaimana data disimpan
 
-Semua data tersimpan di PostgreSQL dalam tiga tabel:
+Semua data disimpan di PostgreSQL:
 
-- `cc_invites` — relasi siapa ngajak siapa. Tidak pernah dihapus meskipun user sudah keluar dari server, karena mereka bisa balik kapan saja.
-- `cc_salary` — satu baris per CC, berisi saldo aktif dan total lifetime earning.
-- `cc_salary_log` — log append-only untuk seluruh aktivitas saldo. Tidak ada yang diedit atau dihapus di sini. Ini audit trail-nya.
+* `cc_invites` — siapa ngajak siapa (ga pernah dihapus)
+* `cc_salary` — saldo aktif + total earning
+* `cc_salary_log` — semua histori (append-only, ga pernah diedit)
 
-Bot tidak pernah membaca cache member atau role Discord karena cache-nya memang dinonaktifkan untuk efisiensi memori. Setiap pengecekan role menggunakan REST fetch langsung, jadi datanya selalu akurat meskipun bot baru saja restart.
-
----
-
-Sistem ini aktif mulai 20 April. Kalau ada pertanyaan soal cara kerja invite atau proses pencairan, tanyakan di channel CC sebelum tanggal tersebut.
+Bot ga pake cache member/role Discord (sengaja dimatiin buat hemat memori). Semua pengecekan role pakai REST fetch langsung, jadi selalu akurat walaupun bot restart.
 
 ---
 
-Sistem ini aktif mulai 20 April. Jika ada pertanyaan terkait cara kerja invite atau proses pencairan, silakan tanyakan di channel CC sebelum tanggal tersebut.
-
-
+Sistem ini aktif mulai 20 April. Kalau ada pertanyaan terkait cara kerja invite atau proses pencairan, langsung tanyakan di channel CC sebelum tanggal tersebut.
 
