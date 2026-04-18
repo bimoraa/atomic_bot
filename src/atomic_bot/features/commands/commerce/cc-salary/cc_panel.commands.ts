@@ -93,7 +93,7 @@ export const command: Command = {
             }),
           ],
         }),
-        flags: 64,
+        ephemeral: true,
       })
     } catch (err) {
       await log_error(interaction.client, err as Error, "Send CC Panel Command", {

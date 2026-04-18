@@ -11,6 +11,7 @@
 // - cc panel get invite link button handler - \\
 
 import { ButtonInteraction, GuildMember } from "discord.js"
+import { component }                      from "@utils"
 import { member_has_role }                from "@utils/discord_api"
 import { log_error }                      from "@utils/error_logger"
 import { build_invite_link_message }      from "@commands/commerce/cc-salary/controller/cc_salary.controller"
@@ -28,8 +29,10 @@ export async function handle_cc_get_invite(interaction: ButtonInteraction): Prom
 
     if (!member_has_role(member, __cc_role_id)) {
       await interaction.reply({
-        content  : "You don't have the Content Creator role.",
-        flags    : 64,
+        ...component.build_message({
+          components: [component.container({ components: [component.text("You don't have the Content Creator role.")] })],
+        }),
+        ephemeral: true,
       })
       return
     }
@@ -38,12 +41,19 @@ export async function handle_cc_get_invite(interaction: ButtonInteraction): Prom
 
     await interaction.reply({
       ...message,
-      flags: 64,
+      ephemeral: true,
     })
   } catch (err) {
     await log_error(interaction.client, err as Error, "CC Get Invite Button", {
       user_id  : interaction.user.id,
       guild_id : interaction.guildId ?? undefined,
+    }).catch(() => {})
+
+    await interaction.reply({
+      ...component.build_message({
+        components: [component.container({ components: [component.text("An error occurred. Please try again.")] })],
+      }),
+      ephemeral: true,
     }).catch(() => {})
   }
 }
