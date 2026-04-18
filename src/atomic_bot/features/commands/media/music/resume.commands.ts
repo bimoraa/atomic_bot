@@ -15,7 +15,7 @@ import { component }                                        from "@utils"
 import { log_error }                                        from "@utils/error_logger"
 import { handle_pause_resume }                              from "@commands/media/music/controller/music.controller"
 
-export const command: Command = {
+export const _music_resume_cmd = {
   data: new SlashCommandBuilder()
     .setName("resume")
     .setDescription("Resume a paused track"),

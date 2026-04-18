@@ -15,7 +15,7 @@ import { component }                                        from "@utils"
 import { log_error }                                        from "@utils/error_logger"
 import { handle_stop }                                      from "@commands/media/music/controller/music.controller"
 
-export const command: Command = {
+export const _music_stop_cmd = {
   data: new SlashCommandBuilder()
     .setName("stop")
     .setDescription("Stop playback, clear the queue, and leave the voice channel"),

@@ -15,7 +15,7 @@ import { component }                                        from "@utils"
 import { log_error }                                        from "@utils/error_logger"
 import { handle_skip }                                      from "@commands/media/music/controller/music.controller"
 
-export const command: Command = {
+export const _music_skip_cmd = {
   data: new SlashCommandBuilder()
     .setName("skip")
     .setDescription("Skip the current track (or multiple)")

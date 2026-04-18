@@ -15,7 +15,7 @@ import { component }                                                      from "
 import { log_error }                                                      from "@utils/error_logger"
 import { handle_play }                                                    from "@commands/media/music/controller/music.controller"
 
-export const command: Command = {
+export const _music_play_cmd = {
   data: new SlashCommandBuilder()
     .setName("play")
     .setDescription("Play a song from Spotify, Apple Music, YouTube, or a search query")

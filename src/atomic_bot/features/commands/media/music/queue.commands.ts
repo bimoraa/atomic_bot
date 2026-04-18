@@ -14,7 +14,7 @@ import { Command }                                          from "@shared/types/
 import { log_error }                                        from "@utils/error_logger"
 import { build_queue_message }                              from "@commands/media/music/controller/music.controller"
 
-export const command: Command = {
+export const _music_queue_cmd = {
   data: new SlashCommandBuilder()
     .setName("queue")
     .setDescription("Show the current music queue")
