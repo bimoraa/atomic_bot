@@ -7,44 +7,57 @@
  * See the LICENSE file for more information.
  */
 
-'use client'
-
-import dynamic from 'next/dynamic'
-import Link    from 'next/link'
-
-const GridScan  = dynamic(() => import('@/components/animations/grid_scan').then(m => m.GridScan), { ssr: false })
-const ASCIIText = dynamic(() => import('@/components/animations/ascii_text'), { ssr: false })
+import Link          from 'next/link'
+import { AtomicLogo } from '@/components/icons/atomic_logo'
 
 export default function NotFound() {
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-black flex items-center justify-center">
+    <div className="min-h-screen w-full bg-black text-white flex flex-col">
 
-      {/* - BACKGROUND GRID - \\ */}
-      <div className="absolute inset-0 z-0">
-        <GridScan
-          sensitivity         = {0.55}
-          lineThickness       = {1}
-          linesColor          = "#392e4e"
-          gridScale           = {0.1}
-          scanColor           = "#FF9FFC"
-          scanOpacity         = {0.4}
-          enablePost          = {true}
-          bloomIntensity      = {0.6}
-          chromaticAberration = {0.002}
-          noiseIntensity      = {0.01}
-          style               = {{ width: '100%', height: '100%' }}
-        />
-      </div>
+      {/* - red blur glow - */}
+      <div
+        className="pointer-events-none fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] opacity-20 blur-3xl rounded-full z-0"
+        style={{ background: "radial-gradient(ellipse, #ef4444 0%, transparent 70%)" }}
+      />
 
-      {/* - CONTENT - \\ */}
-      <div className="relative z-10 flex flex-col items-center gap-4 text-center px-6 select-none">
-        <div style={{ width: '800px', height: '280px' }}>
-          <ASCIIText
-            text          = "404"
-            enableWaves   = {true}
-            asciiFontSize = {6}
-            textFontSize  = {320}
-          />
+      {/* - topbar - */}
+      <header className="py-4 relative z-10">
+        <div className="max-w-3xl mx-auto px-5">
+          <nav className="flex items-center justify-between px-4 h-11 rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-md">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              <AtomicLogo className="w-4 h-4 text-white/60" />
+              <span className="text-sm text-white/40 font-medium">Atomic</span>
+            </Link>
+            <Link
+              href="/"
+              className="text-xs text-white/30 hover:text-white/60 transition-colors"
+            >
+              Go back home →
+            </Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* - content - */}
+      <div className="flex-1 flex items-center justify-center px-5 relative z-10">
+        <div className="max-w-lg w-full">
+          <p
+            className="text-[4rem] sm:text-[5rem] font-semibold leading-none text-white mb-6 tracking-tight"
+          >
+            404
+          </p>
+          <p className="text-[#888] text-sm leading-relaxed mb-1">
+            This page ain’t here, might not exist or something broke on our end.
+          </p>
+          <p className="text-[#888] text-sm leading-relaxed mb-8">
+            You sure you’re in the right place?
+          </p>
+          <Link
+            href="/"
+            className="text-sm text-white/40 hover:text-white/70 transition-colors"
+          >
+            Go back home →
+          </Link>
         </div>
       </div>
 

@@ -975,12 +975,12 @@ export function LandingPage() {
                   full_url: 'https://azure48.xyz/bypass',
                 },
                 {
-                  path    : '/bot-stats',
+                  path    : '/status',
                   title   : 'Bot Stats',
                   desc    : 'real-time stats — bypass count, uptime, command usage breakdown.',
                   icon    : Chart,
                   badge   : 'public',
-                  full_url: 'https://azure48.xyz/bot-stats',
+                  full_url: 'https://azure48.xyz/status',
                 },
                 {
                   path    : '/staff-information',

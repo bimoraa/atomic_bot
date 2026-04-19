@@ -29,6 +29,8 @@ import { Separator }             from '@/components/ui/separator'
 import { Skeleton }              from '@/components/ui/skeleton'
 import { cn }                    from '@/lib/utils'
 import { Icon }                  from '@iconify/react'
+import Link                      from 'next/link'
+import { AtomicLogo }            from '@/components/icons/atomic_logo'
 
 // - TYPES - \\
 
@@ -199,9 +201,7 @@ function StatusIcon({ status, size = 'w-5 h-5' }: { status: service_status; size
                    : status === 'degraded'    ? 'solar:danger-triangle-bold-duotone'
                    :                            'solar:expressionless-square-bold'
   return (
-    <div className={`${size} rounded-full ${theme.icon_bg} flex items-center justify-center flex-shrink-0`}>
-      <Icon icon={icon_name} width="55%" height="55%" color="white" />
-    </div>
+    <Icon icon={icon_name} className={`${size} ${theme.text} flex-shrink-0`} />
   )
 }
 
@@ -440,6 +440,7 @@ export default function BotStatsPage() {
   const [history, set_history]     = useState<history_point[]>([])
   const [connected, set_connected] = useState(false)
   const [loading, set_loading]     = useState(true)
+  const [scrolled, set_scrolled]   = useState(false)
   const event_source_ref           = useRef<EventSource | null>(null)
 
   // - 实时运行时间计时器引用 - \\
@@ -498,6 +499,13 @@ export default function BotStatsPage() {
     const id = setInterval(tick, 250)
     return () => clearInterval(id)
   }, [stats])
+
+  // - scroll listener for topbar shrink - \\
+  useEffect(() => {
+    const on_scroll = () => set_scrolled(window.scrollY > 16)
+    window.addEventListener("scroll", on_scroll, { passive: true })
+    return () => window.removeEventListener("scroll", on_scroll)
+  }, [])
 
   // - 拉取初始快照 - \\
   // - load initial snapshot on mount - \\
@@ -580,44 +588,57 @@ export default function BotStatsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div
+      className="min-h-screen bg-[#060608] text-white"
+      style={{ letterSpacing: "-0.2px" }}
+    >
 
-      {/* - TOPBAR (shadcnspace dashboard style) - \\ */}
-      <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+      {/* - top blur gradient - */}
+      <div
+        className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] opacity-15 blur-3xl rounded-full z-0"
+        style={{ background: "radial-gradient(ellipse, #5865F2 0%, transparent 70%)" }}
+      />
 
-          {/* - left: brand + breadcrumb - \\ */}
-          <div className="flex items-center gap-3 shrink-0">
-            <img src="/atomc.svg" alt="Atomic" className="w-7 h-7" />
-            <span className="font-semibold text-sm">Atomic Bot</span>
-            <Separator orientation="vertical" className="h-4 hidden sm:block mx-1" />
-            <nav className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground">
-              <span>Dashboard</span>
-              <span className="mx-1 opacity-40">/</span>
-              <span className="text-foreground font-medium">Status</span>
-            </nav>
-          </div>
-
-          {/* - right: controls - \\ */}
-          <div className="flex items-center gap-2 shrink-0">
-
-            {/* - bell placeholder - \ */}
-            <button className="w-8 h-8 rounded-full border border-border bg-muted/30 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-              <Icon icon="solar:bell-bold-duotone" width={14} height={14} />
-            </button>
-
-            {/* - overall status pill - \\ */}
-            {!loading && (
-              <div className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full border font-semibold ${status_theme(overall_status).pill}`}>
-                <StatusIcon status={overall_status} size="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{status_label(overall_status)}</span>
-              </div>
+      {/* - topbar — floating pill style - */}
+      <header className={cn("fixed top-0 inset-x-0 z-50 transition-all duration-300", scrolled ? "py-2" : "py-4")}>
+        <div className="max-w-5xl mx-auto px-5">
+          <nav
+            className={cn(
+              "flex items-center justify-between px-4 h-11 rounded-2xl border transition-all duration-300",
+              scrolled
+                ? "bg-[#0c0c0e]/90 border-white/[0.07] backdrop-blur-xl"
+                : "bg-[#0c0c0e]/60 border-white/[0.05] backdrop-blur-md",
             )}
-          </div>
+          >
+            {/* - logo breadcrumb - */}
+            <Link href="/" className="flex items-center gap-2 shrink-0">
+              <AtomicLogo className="w-4 h-4 text-white/70" />
+              <span className="text-sm text-white/50 font-medium">Atomic</span>
+              <span className="text-[#2a2a2e] text-xs mx-0.5">/</span>
+              <span className="text-sm text-white/30 font-medium">Bot Status</span>
+            </Link>
+
+            {/* - right: live indicator + status pill - */}
+            <div className="flex items-center gap-3">
+              {!loading && (
+                <div className={cn(
+                  "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium",
+                  overall_status === 'operational' ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                  : overall_status === 'degraded'  ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                  : overall_status === 'incident'  ? "bg-red-500/10 border-red-500/20 text-red-400"
+                  :                                   "bg-white/5 border-white/10 text-white/30",
+                )}>
+                  <StatusIcon status={overall_status} size="w-3 h-3" />
+                  <span className="hidden sm:inline">{status_label(overall_status)}</span>
+                </div>
+              )}
+            </div>
+          </nav>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 pb-16 space-y-10">
+      {/* - page content - */}
+      <main className="max-w-5xl mx-auto px-5 pt-28 lg:pt-36 pb-28 space-y-10 relative z-10">
 
         {/* - HERO SECTION - \\ */}
         <OverallHero
