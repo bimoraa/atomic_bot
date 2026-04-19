@@ -32,6 +32,9 @@ export function middleware(request: NextRequest): NextResponse {
   // - already on the target path, skip to avoid infinite rewrite - \\
   if (pathname.startsWith(target)) return NextResponse.next()
 
+  // - pass api routes through untouched - \\
+  if (pathname.startsWith("/api/")) return NextResponse.next()
+
   const url = request.nextUrl.clone()
   url.pathname = target + (pathname === "/" ? "" : pathname)
   url.search   = search
